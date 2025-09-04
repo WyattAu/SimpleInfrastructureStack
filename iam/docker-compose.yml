@@ -106,6 +106,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.authentik.rule=Host(`${SUBDOMAIN_AUTH}.${DOMAIN}`)"
       - "traefik.http.routers.authentik.tls=true"
+      - "traefik.http.routers.authentik.service=authentik"
       - "traefik.http.routers.authentik.tls.certresolver=cloudflare"
       - "traefik.http.services.authentik.loadbalancer.server.port=9000"
 
