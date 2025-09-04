@@ -1,10 +1,14 @@
 global:
   checkNewVersion: true
   sendAnonymousUsage: false
+
 log:
   level: INFO
+
 api:
   dashboard: true
+
+# EntryPoints are static definitions of network entry points into Traefik.
 entryPoints:
   http:
     address: ":80"
@@ -17,6 +21,8 @@ entryPoints:
     address: ":443"
   matrix:
     address: ":8448"
+
+# Providers instruct Traefik where to find routing configuration.
 providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
@@ -24,10 +30,6 @@ providers:
   file:
     directory: /etc/traefik
     watch: true
-certificatesResolvers:
-  cloudflare:
-    acme:
-      email: ${ACME_EMAIL}
-      storage: /letsencrypt/acme.json
-      dnsChallenge:
-        provider: cloudflare
+
+# The Certificate Resolvers are defined via command-line arguments in the
+# docker-compose.yml file to allow for environment variable substitution.
