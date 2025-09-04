@@ -69,7 +69,7 @@ services:
     cap_drop: [all]
     security_opt: ["no-new-privileges:true"]
     environment:
-      - CLOUDFLARE_API_TOKEN=${CF_API_TOKEN}
+      - CF_API_TOKEN=${CF_API_TOKEN}
       - ZONE=${DOMAIN}
       - SUBDOMAINS="${SUBDOMAIN_TRAEFIK},${SUBDOMAIN_AUTH},${SUBDOMAIN_GRAFANA},${SUBDOMAIN_STATUS},${SUBDOMAIN_GITEA},${SUBDOMAIN_WOODPECKER},${SUBDOMAIN_TAIGA},${SUBDOMAIN_MATRIX},${SUBDOMAIN_HOMEPAGE}"
       - UPDATE_CRON=*/5 * * * *
