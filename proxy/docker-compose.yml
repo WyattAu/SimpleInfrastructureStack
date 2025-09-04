@@ -19,7 +19,7 @@ services:
       - ${APPDATA_PATH}/proxy/certs:/letsencrypt
     # The environment section is used here ONLY for the DNS challenge API key.
     environment:
-      - CF_API_TOKEN=${CF_API_TOKEN}
+      - - CLOUDFLARE_DNS_API_TOKEN=${CF_API_TOKEN}
     # The command section is used to build the dynamic parts of the configuration
     # using variables from the .env file. This is the correct and robust method.
     command:
