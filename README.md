@@ -14,7 +14,7 @@ This foundational phase prepares the host environment. Do not skip any steps.
 SSH into your TrueNAS SCALE server or a management machine that has `git` installed. Clone the repository to a local directory. This will be your reference for all configurations.
 
 ```bash
-git clone <your_repository_url>/SimpleInfrastructureStack.git
+git clone https://github.com/WyattAu/SimpleInfrastructureStack.git
 cd SimpleInfrastructureStack
 ```
 
