@@ -23,14 +23,14 @@ All persistent application data will be stored on dedicated ZFS datasets to enab
 
 - In the TrueNAS UI, navigate to `Datasets`.
 - Create a parent dataset for all Docker data (e.g., `yourpool/docker`).
-- Inside this, create the primary `appdata` dataset: `yourpool/docker/appdata`.
+- Inside this, create the primary `appdata` dataset: `yourpool/docker/sis/appdata`.
 - Under `appdata`, create a dataset for each logical stack. The final paths must match what will be in your environment files:
-  - `/mnt/yourpool/docker/appdata/proxy`
-  - `/mnt/yourpool/docker/appdata/iam`
-  - `/mnt/yourpool/docker/appdata/monitoring`
-  - `/mnt/yourpool/docker/appdata/dev`
-  - `/mnt/yourpool/docker/appdata/collaboration`
-  - `/mnt/yourpool/docker/appdata/operations`
+  - `/mnt/yourpool/docker/sis/appdata/proxy`
+  - `/mnt/yourpool/docker/sis/appdata/iam`
+  - `/mnt/yourpool/docker/sis/appdata/monitoring`
+  - `/mnt/yourpool/docker/sis/appdata/dev`
+  - `/mnt/yourpool/docker/sis/appdata/collaboration`
+  - `/mnt/yourpool/docker/sis/appdata/operations`
 - Recommendation: For each dataset, set `Compression` to `lz4` and `Enable Atime` to `off`.
 
 3. Create Docker Networks:
@@ -149,7 +149,7 @@ Deploy this stack now to monitor the health of all subsequent deployments.
 - Copy the contents of your `collaboration/.env` file.
 - CRITICAL - Manual `homeserver.yaml` Configuration:
   1. Deploy the stack. The `synapse` container will start and then exit. This is expected.
-  2. On your TrueNAS server, navigate to the volume path: `/mnt/yourpool/docker/appdata/collaboration/synapse_data`. You will find a generated `homeserver.yaml`.
+  2. On your TrueNAS server, navigate to the volume path: `/mnt/yourpool/docker/sis/appdata/collaboration/synapse_data`. You will find a generated `homeserver.yaml`.
   3. Edit this file extensively. You must configure the `database` section to point to the PostgreSQL container, set up the `registration_shared_secret`, and review all other settings.
   4. Go back to Portainer -> `Stacks` -> `collaboration` and click Update the stack (with the "re-pull image" option disabled). The Synapse container should now start and stay running.
 
@@ -172,7 +172,7 @@ Deploy this stack now to monitor the health of all subsequent deployments.
 2. Test the OIDC login for Gitea, Grafana, and Taiga.
 3. Test the full CI/CD loop: Push a commit to a test repository in Gitea and verify that a Woodpecker pipeline is automatically triggered.
 4. Verify that you can register a user on your Matrix server and send messages.
-5. In TrueNAS, navigate to `Datasets` and configure a periodic snapshot task for the parent `yourpool/docker/appdata` dataset to ensure you have regular, consistent backups of all application data.
+5. In TrueNAS, navigate to `Datasets` and configure a periodic snapshot task for the parent `yourpool/docker/sis/appdata` dataset to ensure you have regular, consistent backups of all application data.
 6.
 
 ## Project structure
