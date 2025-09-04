@@ -64,13 +64,18 @@ services:
     image: favonia/cloudflare-ddns:${VERSION_CLOUDFLARE_DDNS}
     container_name: cloudflare-ddns
     restart: unless-stopped
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [all]
+    security_opt: ["no-new-privileges:true"]
     environment:
       - CLOUDFLARE_API_TOKEN=${CF_API_TOKEN}
       - ZONE=${DOMAIN}
-      - SUBDOMAINS=${SUBDOMAIN_TRAEFIK},${SUBDOMAIN_AUTH},${SUBDOMAIN_GRAFANA},${SUBDOMAIN_STATUS},${SUBDOMAIN_GITEA},${SUBDOMAIN_WOODPECKER},${SUBDOMAIN_TAIGA},${SUBDOMAIN_MATRIX},${SUBDOMAIN_HOMEPAGE}
+      - SUBDOMAINS="${SUBDOMAIN_TRAEFIK},${SUBDOMAIN_AUTH},${SUBDOMAIN_GRAFANA},${SUBDOMAIN_STATUS},${SUBDOMAIN_GITEA},${SUBDOMAIN_WOODPECKER},${SUBDOMAIN_TAIGA},${SUBDOMAIN_MATRIX},${SUBDOMAIN_HOMEPAGE}"
       - UPDATE_CRON=*/5 * * * *
       - PROXIED=true
       - TTL=1
+      - TZ=${TZ}
 
 networks:
   traefik-public:
