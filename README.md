@@ -173,7 +173,6 @@ Deploy this stack now to monitor the health of all subsequent deployments.
 3. Test the full CI/CD loop: Push a commit to a test repository in Gitea and verify that a Woodpecker pipeline is automatically triggered.
 4. Verify that you can register a user on your Matrix server and send messages.
 5. In TrueNAS, navigate to `Datasets` and configure a periodic snapshot task for the parent `yourpool/docker/sis/appdata` dataset to ensure you have regular, consistent backups of all application data.
-6.
 
 ## Project structure
 
