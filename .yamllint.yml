@@ -1,0 +1,11 @@
+# configuration for the YAML linter
+extends: default
+rules:
+  line-length:
+    max: 120
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+    check-multi-line-strings: true
+  truthy:
+    allowed-values: ['true', 'false']

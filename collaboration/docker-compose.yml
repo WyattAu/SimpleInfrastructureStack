@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  database:
+    image: postgres:${VERSION_POSTGRES}
+    container_name: matrix-db
+    restart: unless-stopped
+    networks:
+      - shared-internal-net
+    volumes:
+      - ${APPDATA_PATH}/collaboration/matrix-db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${MATRIX_DB_PASS}
+      - POSTGRES_DB=synapse
+      # Required settings for Synapse database
+      - POSTGRES_INITDB_ARGS=--encoding='UTF8' --lc-collate='C' --lc-ctype='C'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d synapse -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  synapse:
+    image: matrixdotorg/synapse:${VERSION_MATRIX_SYNAPSE}
+    container_name: matrix-synapse
+    restart: unless-stopped
+    networks:
+      - shared-internal-net
+      - traefik-public
+    volumes:
+      - ${APPDATA_PATH}/collaboration/synapse_data:/data
+    depends_on:
+      database:
+        condition: service_healthy
+    # !!! CRITICAL INSTRUCTIONS !!!
+    # 1. First time running, uncomment the 'command' line below to generate a homeserver.yaml.
+    #    docker-compose up -d
+    # 2. Stop the container immediately after it starts.
+    #    docker-compose down
+    # 3. Edit the generated /collaboration/synapse_data/homeserver.yaml.
+    #    - Set up the database connection details.
+    #    - Set 'enable_registration: true' and add the registration_shared_secret.
+    #    - Configure federation and other critical settings.
+    # 4. Comment out the 'command' line again.
+    # 5. Start the stack normally.
+    #    docker-compose up -d
+    #
+    # command: generate -H matrix.${DOMAIN} --report-stats=no
+
+networks:
+  traefik-public:
+    external: true
+  shared-internal-net:
+    external: true
