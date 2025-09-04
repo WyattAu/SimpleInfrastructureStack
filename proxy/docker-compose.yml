@@ -35,6 +35,7 @@ services:
       # --- API & Logging ---
       - "--api.dashboard=true"
       - "--log.level=INFO"
+      - "--ping=true"
       # --- Certificate Resolver ---
       - "--certificatesresolvers.cloudflare.acme.email=${ACME_EMAIL}"
       - "--certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json"
