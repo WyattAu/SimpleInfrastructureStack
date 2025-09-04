@@ -1,0 +1,150 @@
+# Location: /operations/docker-compose.yml
+
+version: '3.8'
+
+services:
+  # --------------------------------------------------------------------
+  # SERVICE: Homepage Dashboard
+  # --------------------------------------------------------------------
+  homepage:
+    image: ghcr.io/gethomepage/homepage:${VERSION_HOMEPAGE}
+    container_name: homepage
+    user: "1000:1000"
+    restart: unless-stopped
+    networks:
+      - traefik-public
+    volumes:
+      - ${APPDATA_PATH}/operations/homepage_config:/app/config:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.homepage.rule=Host(`${SUBDOMAIN_HOMEPAGE}.${DOMAIN}`)"
+      - "traefik.http.routers.homepage.tls=true"
+      - "traefik.http.routers.homepage.tls.certresolver=cloudflare"
+      - "traefik.http.services.homepage.loadbalancer.server.port=3000"
+      - "traefik.http.routers.homepage.middlewares=authentik@docker"
+
+  # --------------------------------------------------------------------
+  # STACK: Taiga Project Management
+  # --------------------------------------------------------------------
+  taiga-db:
+    image: postgres:${VERSION_POSTGRES}
+    container_name: taiga-db
+    restart: unless-stopped
+    networks:
+      - shared-internal-net
+    volumes:
+      - ${APPDATA_PATH}/operations/taiga-db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=taiga
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${TAIGA_DB_PASS}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d taiga -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  taiga-rabbitmq:
+    image: rabbitmq:${VERSION_RABBITMQ}
+    container_name: taiga-rabbitmq
+    restart: unless-stopped
+    networks:
+      - shared-internal-net
+    volumes:
+      - ${APPDATA_PATH}/operations/taiga-rabbitmq:/var/lib/rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=${TAIGA_RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${TAIGA_RABBITMQ_PASSWORD}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running", "-q"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  taiga-back:
+    image: taigaio/taiga-back:latest
+    container_name: taiga-back
+    restart: unless-stopped
+    networks:
+      - shared-internal-net
+    depends_on:
+      taiga-db:
+        condition: service_healthy
+      taiga-rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ${APPDATA_PATH}/operations/taiga-media:/taiga-back/media
+    environment:
+      - TAIGA_SECRET_KEY=${TAIGA_SECRET_KEY}
+      - TAIGA_SITES_SCHEME=https
+      - TAIGA_SITES_DOMAIN=${SUBDOMAIN_TAIGA}.${DOMAIN}
+      - TAIGA_DB_HOST=taiga-db
+      - TAIGA_DB_NAME=taiga
+      - TAIGA_DB_USER=${POSTGRES_USER}
+      - TAIGA_DB_PASSWORD=${TAIGA_DB_PASS}
+      - TAIGA_RABBITMQ_HOST=taiga-rabbitmq
+      - TAIGA_RABBITMQ_USER=${TAIGA_RABBITMQ_USER}
+      - TAIGA_RABBITMQ_PASS=${TAIGA_RABBITMQ_PASSWORD}
+      - TAIGA_RABBITMQ_VHOST=taiga
+      # OIDC Integration with Authentik (Manual UI setup required in Authentik)
+      - TAIGA_ENABLE_OIDC=True
+      - TAIGA_OIDC_CLIENT_ID=${TAIGA_OIDC_CLIENT_ID}
+      - TAIGA_OIDC_CLIENT_SECRET=${TAIGA_OIDC_CLIENT_SECRET}
+      - TAIGA_OIDC_WELL_KNOWN_URL=https://${SUBDOMAIN_AUTH}.${DOMAIN}/application/o/.well-known/openid-configuration
+
+  taiga-events:
+    image: taigaio/taiga-events:latest
+    container_name: taiga-events
+    restart: unless-stopped
+    networks:
+      - shared-internal-net
+    depends_on:
+      taiga-rabbitmq:
+        condition: service_healthy
+    environment:
+      - TAIGA_SECRET_KEY=${TAIGA_SECRET_KEY}
+      - TAIGA_RABBITMQ_HOST=taiga-rabbitmq
+      - TAIGA_RABBITMQ_USER=${TAIGA_RABBITMQ_USER}
+      - TAIGA_RABBITMQ_PASS=${TAIGA_RABBITMQ_PASSWORD}
+      - TAIGA_RABBITMQ_VHOST=taiga
+
+  taiga-front:
+    image: taigaio/taiga-front:latest
+    container_name: taiga-front
+    restart: unless-stopped
+    networks:
+      - shared-internal-net
+    environment:
+      - TAIGA_FRONTS_SITES_SCHEME=https
+      - TAIGA_FRONTS_SITES_DOMAIN=${SUBDOMAIN_TAIGA}.${DOMAIN}
+      - TAIGA_FRONTS_API_HOST=https://${SUBDOMAIN_TAIGA}.${DOMAIN}/api/v1/
+      - TAIGA_FRONTS_EVENTS_URL=wss://${SUBDOMAIN_TAIGA}.${DOMAIN}/events
+
+  taiga-gateway:
+    image: taigaio/taiga-gateway:latest
+    container_name: taiga-gateway
+    restart: unless-stopped
+    networks:
+      - shared-internal-net
+      - traefik-public
+    depends_on:
+      - taiga-back
+      - taiga-front
+      - taiga-events
+    environment:
+      - TAIGA_HOST=${SUBDOMAIN_TAIGA}.${DOMAIN}
+      - TAIGA_SSL=True
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.taiga.rule=Host(`${SUBDOMAIN_TAIGA}.${DOMAIN}`)"
+      - "traefik.http.routers.taiga.tls=true"
+      - "traefik.http.routers.taiga.tls.certresolver=cloudflare"
+      - "traefik.http.services.taiga.loadbalancer.server.port=80"
+      # Taiga has its own OIDC integration, so it's not protected by forward auth
+
+networks:
+  traefik-public:
+    external: true
+  shared-internal-net:
+    external: true

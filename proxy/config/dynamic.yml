@@ -1,0 +1,13 @@
+tcp:
+  routers:
+    matrix:
+      rule: "HostSNI(`*`)"
+      entryPoints:
+        - "matrix"
+      service: "matrix-synapse"
+      tls: {}
+  services:
+    matrix-synapse:
+      loadBalancer:
+        servers:
+          - address: "matrix-synapse:8448"

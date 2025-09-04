@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:${VERSION_TRAEFIK}
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - traefik-public # Connects to the outside world and exposed services
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8448:8448" # For Matrix Federation
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Read-only for security
+      - ./config:/etc/traefik:ro # Configuration is read-only
+      - ${APPDATA_PATH}/proxy/certs:/letsencrypt # Volume for SSL certs
+    environment:
+      - CF_API_TOKEN=${CF_API_TOKEN}
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      # --- Traefik Dashboard ---
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`${SUBDOMAIN_TRAEFIK}.${DOMAIN}`)"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.tls=true"
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=cloudflare"
+      - "traefik.http.routers.traefik-dashboard.middlewares=authentik@docker" # Secured by Authentik
+      # --- Authentik Forward Auth Middleware Definition ---
+      # This middleware is defined here but used by other services to protect them.
+      - "traefik.http.middlewares.authentik.forwardauth.address=http://authentik-proxy:9000/outpost.goauthentik.io/auth/traefik"
+      - "traefik.http.middlewares.authentik.forwardauth.trustForwardHeader=true"
+      - "traefik.http.middlewares.authentik.forwardauth.authResponseHeaders=X-authentik-username,X-authentik-groups,X-authentik-email,X-authentik-name,X-authentik-uid"
+
+  cloudflare-ddns:
+    image: favonia/cloudflare-ddns:${VERSION_CLOUDFLARE_DDNS}
+    container_name: cloudflare-ddns
+    restart: unless-stopped
+    environment:
+      - API_KEY=${CF_API_TOKEN}
+      - ZONE=${DOMAIN}
+      # Comma-separated list of all subdomains to manage
+      - SUBDOMAINS=${SUBDOMAIN_TRAEFIK},${SUBDOMAIN_AUTH},${SUBDOMAIN_GRAFANA},${SUBDOMAIN_STATUS},${SUBDOMAIN_GITEA},${SUBDOMAIN_WOODPECKER},${SUBDOMAIN_TAIGA},${SUBDOMAIN_MATRIX},${SUBDOMAIN_HOMEPAGE}
+      - PROXIED=true
+      - TTL=1 # Auto TTL
+
+networks:
+  traefik-public:
+    external: true

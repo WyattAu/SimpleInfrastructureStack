@@ -1,0 +1,59 @@
+name: CI Configuration Validation
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  validate-infrastructure:
+    name: Validate Docker Compose & YAML Configuration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Lint YAML Files
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: "."
+          config_file: ".yamllint.yml"
+          strict: true
+
+      - name: Install Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+
+      - name: Aggregate .env.example Files for Validation
+        run: |
+          echo "Preparing a unified .env file from all .env.example files..."
+          # This command finds all .env.example files, concatenates them,
+          # sorts them, and removes duplicates, creating a clean .env file for testing.
+          find . -name '.env.example' -exec cat {} + | sort -u > .env
+          echo "Dummy .env file created."
+          # Add a placeholder for the outpost token which is not in any example file
+          # This is necessary because the token is generated manually post-deployment.
+          echo "AUTHENTIK_OUTPOST_TOKEN=placeholder_for_ci_check" >> .env
+          echo "File Contents:"
+          cat .env
+
+      - name: Validate All Docker Compose Files
+        run: |
+          # This script iterates through each directory containing a docker-compose.yml
+          # and runs the 'config' command, which is the ultimate syntax and variable check.
+          # The script will fail if any of the compose files are invalid.
+          for dir in $(find . -name 'docker-compose.yml' -exec dirname {} \;); do
+            echo "Validating Docker Compose in directory: $dir"
+            docker-compose -f "$dir/docker-compose.yml" --env-file ./.env config > /dev/null
+            if [ $? -ne 0 ]; then
+              echo "::error::Validation failed for Docker Compose file in $dir"
+              exit 1
+            fi
+            echo "Validation successful for $dir"
+          done
+
+      - name: All Checks Passed
+        run: echo "All infrastructure configuration files are valid."
