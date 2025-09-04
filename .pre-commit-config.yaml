@@ -1,5 +1,3 @@
-# Location: /.pre-commit-config.yaml
-
 repos:
   # Standard hooks for basic file hygiene
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -9,7 +7,8 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
         # Exclude the dynamic.yml as it can be empty, causing syntax errors
-        exclude: ^proxy/config/dynamic\.yml$
+        # and exclude the GitHub Actions workflow file.
+        exclude: ^(proxy/config/dynamic\.yml|\.github/workflows/ci\.yml)$
       - id: check-added-large-files
 
   # The primary code formatter for YAML and Markdown
@@ -18,6 +17,7 @@ repos:
     hooks:
       - id: prettier
         types: [yaml, markdown]
+        exclude: ^\.github/workflows/ci\.yml$
 
   # A stricter linter for YAML best practices (beyond just formatting)
   - repo: https://github.com/adrienverge/yamllint
