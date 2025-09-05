@@ -109,7 +109,6 @@ services:
       - AUTHENTIK_HOST=http://authentik-server:9000
       - AUTHENTIK_TOKEN=${AUTHENTIK_OUTPOST_TOKEN}
       - AUTHENTIK_INSECURE=true
-    labels:
 
 networks:
   traefik-public:
