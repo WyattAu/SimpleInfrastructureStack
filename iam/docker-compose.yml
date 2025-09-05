@@ -64,6 +64,13 @@ services:
       - AUTHENTIK_POSTGRESQL__PASSWORD=${AUTHENTIK_DB_PASS}
       - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY}
     command: server
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.authentik.rule=Host(`${SUBDOMAIN_AUTH}.${DOMAIN}`)"
+      - "traefik.http.routers.authentik.service=authentik"
+      - "traefik.http.routers.authentik.tls=true"
+      - "traefik.http.routers.authentik.tls.certresolver=cloudflare"
+      - "traefik.http.services.authentik.loadbalancer.server.port=9000"
 
   worker:
     image: ghcr.io/goauthentik/server:${VERSION_AUTHENTIK}
@@ -103,12 +110,6 @@ services:
       - AUTHENTIK_TOKEN=${AUTHENTIK_OUTPOST_TOKEN}
       - AUTHENTIK_INSECURE=true
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.authentik.rule=Host(`${SUBDOMAIN_AUTH}.${DOMAIN}`)"
-      - "traefik.http.routers.authentik.tls=true"
-      - "traefik.http.routers.authentik.service=authentik"
-      - "traefik.http.routers.authentik.tls.certresolver=cloudflare"
-      - "traefik.http.services.authentik.loadbalancer.server.port=9000"
 
 networks:
   traefik-public:
