@@ -1,0 +1,32 @@
+# ===================================================================
+# Woodpecker ci example
+# ===================================================================
+
+when:
+  - event: [push, pull_request]
+    branch: main
+
+steps:
+  - name: lint
+    image: golangci/golangci-lint:v1.56.2
+    commands:
+      - golangci-lint run
+
+  - name: test
+    image: golang:1.22
+    commands:
+      - go test -v ./...
+
+  - name: build-and-push
+    image: woodpeckerci/plugin-kaniko-buildx
+    when:
+      - event: push
+        branch: main
+    settings:
+      registry: registry.yourdomain.com
+      username:
+        from_secret: gitea_registry_user
+      password:
+        from_secret: gitea_registry_password
+      repo: registry.yourcompany.com/my-org/my-app
+      tags: ${CI_COMMIT_SHA}

@@ -2,203 +2,195 @@
 
 Simple infrasturcture stack for personal usage.
 
-## Implementation Procedure: SimpleInfrastructureStack Deployment
+## Implementation Procedure
 
-It is critical to follow the phases in the specified order, as there are dependencies between the service stacks.
+### Phase 0: Host and System Preparation (One-Time Setup)
 
-### Phase 0: Prerequisites and Foundational Setup
+Objective: To prepare the TrueNAS host with the foundational users, directories, and networks required by all subsequent stacks.
 
-This foundational phase prepares the host environment. Do not skip any steps.
+Procedure:
 
-1. Clone the Git Repository:
-   SSH into your TrueNAS SCALE server or a management machine that has `git` installed. Clone the repository to a local directory. This will be your reference for all configurations.
+1.  Create ZFS Datasets:
 
-```bash
-git clone https://github.com/WyattAu/SimpleInfrastructureStack.git
-cd SimpleInfrastructureStack
-```
+    - In the TrueNAS UI, navigate to Datasets.
+    - Create the parent dataset: `/mnt/mainpool/sis`.
+    - Under `sis`, create the `appdata` and `backups` child datasets.
+    - Under `sis/appdata`, create the child datasets for each stack: `proxy`, `iam`, `operations`, `collaboration`, `monitoring`, `storage`, `utility`.
 
-2. Configure TrueNAS ZFS Datasets:
-   All persistent application data will be stored on dedicated ZFS datasets to enable snapshots and robust data management.
+2.  Create Dedicated User:
 
-- In the TrueNAS UI, navigate to `Datasets`.
-- Create a parent dataset for all Docker data (e.g., `yourpool/docker`).
-- Inside this, create the primary `appdata` dataset: `yourpool/docker/sis/appdata`.
-- Under `appdata`, create a dataset for each logical stack. The final paths must match what will be in your environment files:
-  - `/mnt/yourpool/docker/sis/appdata/proxy`
-  - `/mnt/yourpool/docker/sis/appdata/iam`
-  - `/mnt/yourpool/docker/sis/appdata/monitoring`
-  - `/mnt/yourpool/docker/sis/appdata/dev`
-  - `/mnt/yourpool/docker/sis/appdata/collaboration`
-  - `/mnt/yourpool/docker/sis/appdata/operations`
-- Recommendation: For each dataset, set `Compression` to `lz4` and `Enable Atime` to `off`.
+    - In the TrueNAS UI, create a local user `dapps` with UID/GID `1001`.
+    - Disable password login.
 
-3. Create Docker Networks:
-   Manually create the required external networks via the TrueNAS SCALE shell. This ensures all stacks can communicate correctly.
+3.  Set Data Permissions:
 
-```bash
-docker network create traefik-public
-docker network create shared-internal-net
-```
+    - Edit the permissions on the `/mnt/mainpool/sis` dataset, granting `dapps` full control, and apply them recursively.
 
-4. Prepare Environment Variable Files:
-   The repository does not contain `.env` files with secrets. You must create them.
+4.  Create Shared Docker Networks:
+    - SSH into your TrueNAS host.
+    - Execute:
+      ```bash
+      docker network create traefik_net
+      docker network create backend_net
+      ```
 
-- For each stack directory (`proxy`, `iam`, etc.), create a corresponding `.env` file.
-- Copy the contents from the `*.env.example` files in the repository into your new local `.env` files.
-- Crucially, generate all required secrets and credentials. Use `openssl rand -hex 32` or a password manager to generate strong, unique values for every placeholder marked with `!!!`.
-- Create a single, consolidated `master.env` file on your local machine by combining all the individual `.env` files. This master file will be used for copy-pasting into Portainer. Ensure there are no duplicate variable names with conflicting values.
+Verification:
 
-### Phase 1: Deployment of the Access Layer (Proxy Stack)
+- `ls -la /mnt/mainpool/sis/appdata` shows directories owned by `dapps`.
+- `docker network ls` shows `traefik_net` and `backend_net`.
 
-This stack is the entrypoint for all other services and must be deployed first.
+### Phase 1: Portainer and GitHub Integration
 
-1. Log into your Portainer instance.
-2. Navigate to `Stacks` > `Add stack`.
-3. Name: `proxy`
-4. Build method: `Git Repository`
-5. Repository URL: `https://github.com/WyattAu/SimpleInfrastructureStack.git`
-6. Repository reference: `refs/heads/main`
-7. Compose path: `proxy/docker-compose.yml`
-8. Environment variables:
-   - Click `Advanced options`.
-   - Copy the entire contents of your local `proxy/.env` file and paste them into the `Environment variables` text box.
-9. Click Deploy the stack.
-10. Verification:
-    - Check the logs for the `traefik` container. You should see it successfully parsing the command-line arguments, including your ACME email address. It should NOT show any errors about being unable to parse `${ACME_EMAIL}`.
-    - Check the logs for the `cloudflare-ddns` container to confirm it is successfully updating your DNS records.
-    - Navigate to the Traefik dashboard at `https://traefik.your-domain.com`. You will get a `404 page not found` error, but the browser must show a valid, secure SSL certificate (a padlock icon). This confirms that the ACME challenge via Cloudflare DNS was successful, which was the part that depended on the environment variable.
+Objective: To securely connect Portainer to your private GitHub repository.
 
-### Phase 2: Deployment of the Identity Layer (IAM Stack)
+Procedure:
 
-This stack provides authentication for all others. It is the most complex to set up due to its manual post-deployment steps.
+1.  Generate a GitHub Personal Access Token (PAT):
 
-1. In Portainer, navigate to `Stacks` > `Add stack`.
-2. Name: `iam`
-3. Build method: `Git Repository`
-4. Repository URL & Reference: (Same as before)
-5. Compose path: `iam/docker-compose.yml`
-6. Environment variables: Copy and paste the contents of your `iam/.env` file.
-7. Click Deploy the stack. Wait for all containers to be running and healthy.
-8. CRITICAL - Post-Deployment Configuration:
+    - In GitHub, go to Settings -> Developer settings -> Personal access tokens -> Tokens (classic).
+    - Click Generate new token.
+    - Note: "Fine-grained tokens" are newer but may have compatibility issues with some tools. "Classic" tokens are a safe bet.
+    - Give the token a descriptive name (e.g., `portainer-truenas-deploy`).
+    - Set an expiration date.
+    - Under Select scopes, check the `repo` scope. This grants full control of private repositories.
+    - Click Generate token.
+    - CRITICAL: Copy the token immediately. You will never see it again. Store it securely in a password manager.
 
-   - Create Admin User: In Portainer, go to `Containers`, find `authentik-server`, and click the `>_` icon to open a console. Select `/bin/sh` and click `Connect`. Run the following command, replacing the password with the one from your `.env` file:
+2.  Add Git Credentials to Portainer:
+    - In Portainer, navigate to Settings -> Git Credentials.
+    - Click Add credential.
+    - Name: `github-deploy-token`
+    - Username: Your GitHub username.
+    - Personal Access Token / Password: Paste the GitHub PAT you just generated.
+    - Click Create credential.
 
-     ```sh
-     ak create_user --username akadmin --password "${AUTHENTIK_BOOTSTRAP_PASSWORD}" --is-superuser
-     ```
+### Phase 2: Stacks Deployment from GitHub
 
-   - Log into Authentik: Navigate to `https://auth.your-domain.com` and log in as `akadmin`.
-   - Create Traefik Provider:
-     - In the Admin interface, go to `Applications` -> `Providers`.
-     - Create a `Proxy Provider`. Name it `Traefik Provider`. Set Forward auth mode to `forward_auth (single application)`. Save.
-   - Create Application:
-     - Go to `Applications` -> `Applications`. Create an application.
-     - Name it `Traefik Forward Auth`. Link it to the `Traefik Provider`. Save.
-   - Create Outpost:
-     - Go to `Outposts`. Create an `Embedded Outpost`.
-     - Name it `Traefik Embedded Outpost`. Type: `proxy`. Integration: `Traefik`.
-     - Select the `Traefik Forward Auth` application to be exposed. Save.
-   - Retrieve Outpost Token:
-     - Click `Edit` on the outpost you just created.
-     - Under "Integration", you will see the `AUTHENTIK_TOKEN`. Copy this long token string.
-   - Update the IAM Stack:
-     - Go back to Portainer -> `Stacks` -> `iam`.
-     - Click `Editor`. In the `Environment variables` section, add a new variable: `AUTHENTIK_OUTPOST_TOKEN` and paste the token you copied.
-     - Click Update the stack. This will redeploy the `authentik-proxy` container with the correct token.
+Objective: To deploy all service stacks sequentially using the new Git credentials.
 
-9. Verification: Navigate again to `https://traefik.your-domain.com`. You should now be redirected to the Authentik login page. A successful login should then show the `404 page not found` from Traefik. This confirms the forward auth integration is working.
+General Deployment Procedure for Each Stack:
 
-### Phase 3: Deployment of the Observability Layer (Monitoring Stack)
+1.  In Portainer, navigate to Stacks and click Add stack.
+2.  Give the stack its name (e.g., `proxy`).
+3.  Select Git Repository as the build method.
+4.  Repository URL: Enter the HTTPS URL of your forked private GitHub repository (This one being `https://github.com/WyattAu/SimpleInfrastructureStack.git`).
+5.  Repository reference: Leave as `refs/heads/main` to use the main branch.
+6.  Compose path: Enter the path to the compose file _within the repository_ (e.g., `proxy/docker-compose.yml`).
+7.  Authentication: Enable this and select the `github-deploy-token` you created in Phase 1.
+8.  Environment variables: Copy the entire contents of both `/global.env` and the stack-specific `.env` file (e.g., `/proxy/.env`) from your local machine and paste them into the text box.
+9.  Click Deploy the stack.
 
-Deploy this stack now to monitor the health of all subsequent deployments.
+Deployment Order:
 
-1. In Portainer, deploy a new stack named `monitoring` pointing to `monitoring/docker-compose.yml`.
-2. Copy the contents of your `monitoring/.env` file into the environment variables section.
-3. Deploy the stack.
-4. Post-Deployment Configuration:
-   - Navigate to `https://grafana.your-domain.com`. Log in with `admin` and the password you set in the `.env` file. Change the password when prompted.
-   - Go to `Administration` -> `Data Sources`.
-   - Add a Prometheus data source. The URL is `http://prometheus:9090`. Click `Save & Test`.
-   - Add a Loki data source. The URL is `http://loki:3100`. Click `Save & Test`.
-   - You can now import dashboards from the Grafana community to visualize Docker metrics and logs.
-5. Verification: In Grafana's "Explore" tab, you should be able to query metrics from Prometheus and see logs from Loki (e.g., from the Traefik container).
+1.  Deploy `proxy` Stack (Compose path: `proxy/docker-compose.yml`)
+2.  Deploy `iam` Stack (Compose path: `iam/docker-compose.yml`)
 
-### Phase 4: Deployment of the Core DevOps Loop (Dev Stack)
+Verification:
 
-1. Deploy a new stack in Portainer named `dev` pointing to `dev/docker-compose.yml`.
-2. Copy the contents of your `dev/.env` file into the environment variables.
-3. Deploy the stack.
-4. CRITICAL - Post-Deployment Gitea/Woodpecker Integration:
-   - Navigate to `https://gitea.your-domain.com`. Complete the initial setup page, ensuring the database settings match your `.env` file. Create an admin user.
-   - Log in as the Gitea admin. Go to `Settings` -> `Applications`.
-   - Click `Manage OAuth2 Applications` > `Add Application`.
-   - Application Name: `Woodpecker CI`
-   - Redirect URIs: `https://ci.your-domain.com/authorize` (or whatever your Woodpecker subdomain is).
-   - Save the application. Copy the generated Client ID and Client Secret.
-   - Update the Dev Stack: Go back to Portainer -> `Stacks` -> `dev`. Click `Editor`.
-   - Find the `WOODPECKER_GITEA_CLIENT_ID` and `WOODPECKER_GITEA_CLIENT_SECRET` variables and paste the values you just copied.
-   - Click Update the stack.
-5. Verification: Navigate to `https://ci.your-domain.com`. You should be redirected to Authentik for login. After logging in, you should see a "Login with Gitea" button. Clicking this should authorize Woodpecker and log you in successfully.
+- Both stacks deploy without errors.
+- Verify the full authentication loop by navigating to `https://traefik.yourcompany.com`. You should be redirected to `https://auth.yourcompany.com` for login.
 
-### Phase 5: Deployment of Collaboration & Operations Stacks
+### Phase 3: Post-Install Setup - Keycloak and Secrets Update
 
-1. Collaboration Stack (Matrix):
+Objective: To configure Keycloak and then update your Git repository with the generated secrets.
 
-- Deploy a new stack named `collaboration` pointing to `collaboration/docker-compose.yml`.
-- Copy the contents of your `collaboration/.env` file.
-- CRITICAL - Manual `homeserver.yaml` Configuration:
-  1. Deploy the stack. The `synapse` container will start and then exit. This is expected.
-  2. On your TrueNAS server, navigate to the volume path: `/mnt/yourpool/docker/sis/appdata/collaboration/synapse_data`. You will find a generated `homeserver.yaml`.
-  3. Edit this file extensively. You must configure the `database` section to point to the PostgreSQL container, set up the `registration_shared_secret`, and review all other settings.
-  4. Go back to Portainer -> `Stacks` -> `collaboration` and click Update the stack (with the "re-pull image" option disabled). The Synapse container should now start and stay running.
+Procedure:
 
-2. Operations Stack (Homepage & Taiga):
+1.  Configure Keycloak:
 
-- Deploy a new stack named `operations` pointing to `operations/docker-compose.yml`.
-- Copy the contents of your `operations/.env` file.
-- Deploy the stack.
-- CRITICAL - Post-Deployment Taiga/Authentik Integration:
-  1. In the Authentik UI, create a new `OpenID Connect Provider` for Taiga.
-  2. Set the Redirect URIs/Origins to `https://taiga.your-domain.com/*`.
-  3. Assign it to an application and save. Copy the Client ID and Client Secret.
-  4. Go back to Portainer -> `Stacks` -> `operations`. Click `Editor`.
-  5. Update the `TAIGA_OIDC_CLIENT_ID` and `TAIGA_OIDC_CLIENT_SECRET` environment variables.
-  6. Click Update the stack.
+    - Follow the detailed steps from the previous guide to:
+      - Log in to Keycloak with the initial admin user.
+      - Create the `company-realm`.
+      - Create the `admins`, `developers`, `viewers` groups.
+      - Create clients for `traefik-forward-auth`, `gitea`, `grafana`, and `ocis`.
+      - For each client, copy its generated Client Secret.
 
-### Phase 6: Final System Verification
+2.  Update Local `.env` Files:
 
-1. Navigate to `https://dashboard.your-domain.com`. You should be prompted to log in via Authentik. Once logged in, Homepage should display all your running services.
-2. Test the OIDC login for Gitea, Grafana, and Taiga.
-3. Test the full CI/CD loop: Push a commit to a test repository in Gitea and verify that a Woodpecker pipeline is automatically triggered.
-4. Verify that you can register a user on your Matrix server and send messages.
-5. In TrueNAS, navigate to `Datasets` and configure a periodic snapshot task for the parent `yourpool/docker/sis/appdata` dataset to ensure you have regular, consistent backups of all application data.
+    - On your local development machine (not the server), paste the copied secrets into the corresponding `.env` files: `/proxy/.env`, `/operations/.env`, `/monitoring/.env`, and `/storage/.env`.
 
-## Project structure
+3.  Commit and Push Secrets:
 
-```sh
-SimpleInfrastructureStack
-├─ .yamllint.yml
-├─ collaboration
-│  └─ docker-compose.yml
-├─ dev
-│  └─ docker-compose.yml
-├─ iam
-│  └─ docker-compose.yml
-├─ LICENSE
-├─ monitoring
-│  ├─ config
-│  │  ├─ loki-config.yml
-│  │  ├─ prometheus.yml
-│  │  └─ promtail-config.yml
-│  └─ docker-compose.yml
-├─ operations
-│  └─ docker-compose.yml
-├─ proxy
-│  ├─ config
-│  │  ├─ dynamic.yml
-│  │  └─ traefik.yml
-│  └─ docker-compose.yml
-└─ README.md
+    - Commit the changes to your local `.env` files.
+    - Push the changes to your GitHub repository.
 
-```
+4.  Redeploy Stacks with New Secrets:
+
+    - In Portainer, navigate to the `proxy` stack.
+    - Click Pull & redeploy. Portainer will pull the latest commit from GitHub (which now includes the secret) and restart the services.
+    - _(You will repeat this "Pull & redeploy" step for the other stacks after they are deployed.)_
+
+5.  Create Your Admin User:
+    - Follow the security best practice from the previous guide: create a named user for yourself in Keycloak and assign it the `realm-admin` role. Log out as the initial admin and log back in as yourself.
+
+### Phase 4: Core Services Deployment
+
+Objective: To deploy the remaining operational stacks.
+
+Procedure:
+
+1.  Deploy `operations` Stack:
+
+    - Use the general deployment procedure. Compose path: `operations/docker-compose.yml`.
+
+2.  Deploy `collaboration` Stack:
+
+    - One-Time Synapse Setup: SSH into your host and run `docker run --rm -v /mnt/mainpool/sis/appdata/collaboration/synapse:/data -e SYNAPSE_SERVER_NAME=yourcompany.com -e SYNAPSE_REPORT_STATS=no matrixdotorg/synapse:v1.103.0 generate`.
+    - Use the general deployment procedure. Compose path: `collaboration/docker-compose.yml`.
+
+3.  Deploy `storage` Stack:
+    - Use the general deployment procedure. Compose path: `storage/docker-compose.yml`.
+
+Verification & Post-Install:
+
+- Verify Gitea: Access `https://gitea.yourcompany.com`, complete the setup, and configure the Keycloak OIDC authentication source in the admin settings.
+- Verify Matrix & OCIS: Verify that you can access and log in to both services via Keycloak.
+
+### Phase 5: Visibility, Utility, and Backups
+
+Objective: To deploy the final supporting stacks.
+
+Procedure:
+
+1.  Deploy `monitoring` Stack:
+
+    - Use the general deployment procedure. Compose path: `monitoring/docker-compose.yml`.
+
+2.  Deploy `utility` Stack:
+
+    - Use the general deployment procedure. Compose path: `utility/docker-compose.yml`.
+
+3.  Deploy `backup` Stack:
+    - Use the general deployment procedure. Compose path: `backup/docker-compose.yml`.
+
+Verification:
+
+- Verify Grafana, Prometheus, and Homepage as previously described.
+- The `backup-restic-cron` container will run its `init` command and stop, which is correct.
+
+### Phase 6: Final System Hardening (TrueNAS UI)
+
+Objective: To configure the final layer of data protection using native TrueNAS features.
+
+Procedure:
+
+1.  Configure the Backup Cron Job:
+
+    - In the TrueNAS UI, navigate to System Settings -> Cron Jobs.
+    - Click Add.
+    - Description: `Restic Backup Job`.
+    - User: `root`.
+    - Schedule: Set your desired schedule (e.g., daily at 3:00 AM).
+    - Command: Paste the long, single-line `docker run...` command from the previous guide.
+    - Save the cron job.
+
+2.  Configure ZFS Snapshots:
+    - In the TrueNAS UI, navigate to Data Protection -> Periodic Snapshot Tasks.
+    - Create a daily, recursive snapshot of the `/mnt/mainpool/sis/appdata` dataset, scheduled to run _after_ the Restic cron job (e.g., at 4:00 AM).
+
+Verification:
+
+- Manually run the cron job and verify that data appears in your `/mnt/mainpool/sis/backups/restic-repo` directory.
+- Manually run the snapshot task and verify it appears on the Storage -> Snapshots page.
+
+This GitHub-centric procedure provides a secure, auditable, and easily repeatable method for deploying and managing your entire production platform.

@@ -1,55 +1,120 @@
 version: '3.8'
 
 services:
-  database:
-    image: postgres:${VERSION_POSTGRES}
-    container_name: matrix-db
+  postgres-collab:
+    image: postgres:${POSTGRES_VERSION}
+    container_name: collaboration-postgres
     restart: unless-stopped
-    networks:
-      - shared-internal-net
     volumes:
-      - ${APPDATA_PATH}/collaboration/matrix-db:/var/lib/postgresql/data
+      - ${DATA_BASE_PATH}/collaboration/postgres:/var/lib/postgresql/data
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${MATRIX_DB_PASS}
-      - POSTGRES_DB=synapse
-      # Required settings for Synapse database
+      - POSTGRES_DB=${POSTGRES_DB_SYNAPSE}
+      - POSTGRES_USER=${POSTGRES_USER_SYNAPSE}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_SYNAPSE}
       - POSTGRES_INITDB_ARGS=--encoding='UTF8' --lc-collate='C' --lc-ctype='C'
+    networks:
+      - backend_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d synapse -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER_SYNAPSE} -d ${POSTGRES_DB_SYNAPSE}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   synapse:
-    image: matrixdotorg/synapse:${VERSION_MATRIX_SYNAPSE}
-    container_name: matrix-synapse
+    image: matrixdotorg/synapse:${SYNAPSE_VERSION}
+    container_name: collaboration-synapse
     restart: unless-stopped
-    networks:
-      - shared-internal-net
-      - traefik-public
-    volumes:
-      - ${APPDATA_PATH}/collaboration/synapse_data:/data
     depends_on:
-      database:
+      postgres-collab:
         condition: service_healthy
-    # !!! CRITICAL INSTRUCTIONS !!!
-    # 1. First time running, uncomment the 'command' line below to generate a homeserver.yaml.
-    #    docker-compose up -d
-    # 2. Stop the container immediately after it starts.
-    #    docker-compose down
-    # 3. Edit the generated /collaboration/synapse_data/homeserver.yaml.
-    #    - Set up the database connection details.
-    #    - Set 'enable_registration: true' and add the registration_shared_secret.
-    #    - Configure federation and other critical settings.
-    # 4. Comment out the 'command' line again.
-    # 5. Start the stack normally.
-    #    docker-compose up -d
-    #
-    # command: generate -H matrix.${DOMAIN} --report-stats=no
+    volumes:
+      - ${DATA_BASE_PATH}/collaboration/synapse:/data
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - SYNAPSE_SERVER_NAME=${SYNAPSE_SERVER_NAME}
+      - SYNAPSE_REPORT_STATS=${SYNAPSE_REPORT_STATS}
+      - SYNAPSE_CONFIG_PATH=/data/homeserver.yaml
+      - SYNAPSE_DATABASE_TYPE=psycopg2
+      - SYNAPSE_DATABASE_HOST=collaboration-postgres
+      - SYNAPSE_DATABASE_NAME=${POSTGRES_DB_SYNAPSE}
+      - SYNAPSE_DATABASE_USER=${POSTGRES_USER_SYNAPSE}
+      - SYNAPSE_DATABASE_PASSWORD=${POSTGRES_PASSWORD_SYNAPSE}
+      - SYNAPSE_MACAROON_SECRET_KEY=${SYNAPSE_MACAROON_SECRET_KEY}
+    networks:
+      - traefik_net
+      - backend_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.matrix-cs.rule=Host(`${MATRIX_SUBDOMAIN}.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.matrix-cs.entrypoints=websecure"
+      - "traefik.http.services.matrix-cs.loadbalancer.server.port=8008"
+      - "traefik.tcp.routers.matrix-ss.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.matrix-ss.entrypoints=matrix"
+      - "traefik.tcp.routers.matrix-ss.service=matrix-ss-svc"
+      - "traefik.tcp.routers.matrix-ss.tls.passthrough=true"
+      - "traefik.tcp.services.matrix-ss-svc.loadbalancer.server.port=8448"
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  element-web:
+    image: vectorim/element-web:${ELEMENT_VERSION}
+    container_name: collaboration-element
+    restart: unless-stopped
+    volumes:
+      - ./element-config.json:/app/config.json:ro
+    networks:
+      - traefik_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.element.rule=Host(`${ELEMENT_SUBDOMAIN}.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.element.entrypoints=websecure"
+      - "traefik.http.services.element.loadbalancer.server.port=80"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  matrix-hookshot:
+    image: halfshot/matrix-hookshot:${HOOKSHOT_VERSION}
+    container_name: collaboration-hookshot
+    restart: unless-stopped
+    depends_on: [synapse]
+    volumes:
+      - ${DATA_BASE_PATH}/collaboration/hookshot:/data
+    networks:
+      - traefik_net
+      - backend_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.hookshot.rule=Host(`hookshot.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.hookshot.entrypoints=websecure"
+      - "traefik.http.services.hookshot.loadbalancer.server.port=8080"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
-  traefik-public:
+  traefik_net:
     external: true
-  shared-internal-net:
+  backend_net:
     external: true

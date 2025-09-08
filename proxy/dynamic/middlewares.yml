@@ -1,0 +1,18 @@
+http:
+  middlewares:
+    securityHeaders:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        frameDeny: true
+        sslRedirect: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+    keycloak-auth:
+      forwardAuth:
+        address: "http://proxy-forward-auth:4181"
+        authResponseHeaders:
+          - "X-Auth-User"
+          - "X-Auth-Email"
+        trustForwardHeader: true
