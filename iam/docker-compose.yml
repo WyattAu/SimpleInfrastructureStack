@@ -14,7 +14,7 @@ services:
     networks:
       - backend_net
     healthcheck:
-      test: ["CMD-SHELL", "psql -U \"$POSTGRESQL_USERNAME\" -d \"$POSTGRESQL_DATABASE\" -c \"SELECT 1\""]
+      test: ["CMD-SHELL", "PGPASSWORD=\"$POSTGRESQL_PASSWORD\" psql -h localhost -U \"$POSTGRESQL_USERNAME\" -d \"$POSTGRESQL_DATABASE\" -c \"SELECT 1\""]
       interval: 10s
       timeout: 5s
       retries: 5
