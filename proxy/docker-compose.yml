@@ -70,21 +70,30 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  traefik-forward-auth:
-    image: thomseddon/traefik-forward-auth:${FORWARD_AUTH_VERSION}
-    container_name: proxy-forward-auth
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:${OAUTH2_PROXY_VERSION}
+    container_name: proxy-oauth2-proxy
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    command:
+      - --provider=oidc
+      - --email-domain=*
+      - --http-address=0.0.0.0:4180
+      - --upstream=http://127.0.0.1 # This is a dummy upstream, as Traefik handles the routing.
+      - --oidc-issuer-url=https://auth.${DOMAIN_NAME}/realms/company-realm
+      - --redirect-url=https://traefik.${DOMAIN_NAME}/oauth2/callback # The primary callback URL
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - PROVIDERS_OIDC_ISSUER_URL=https://auth.${DOMAIN_NAME}/realms/company-realm
-      - PROVIDERS_OIDC_CLIENT_ID=${FORWARD_AUTH_CLIENT_ID}
-      - PROVIDERS_OIDC_CLIENT_SECRET=${FORWARD_AUTH_CLIENT_SECRET}
-      - SECRET=${FORWARD_AUTH_SECRET}
-      - INSECURE_COOKIE=false
-      - AUTH_HOST=auth.${DOMAIN_NAME}
-      - LOG_LEVEL=info
+      # --- OIDC Credentials ---
+      - OAUTH2_PROXY_CLIENT_ID=${OAUTH2_PROXY_CLIENT_ID}
+      - OAUTH2_PROXY_CLIENT_SECRET=${OAUTH2_PROXY_CLIENT_SECRET}
+      # --- Session Cookie Secret ---
+      - OAUTH2_PROXY_COOKIE_SECRET=${OAUTH2_PROXY_COOKIE_SECRET}
+      - OAUTH2_PROXY_COOKIE_SECURE=true
+      - OAUTH2_PROXY_COOKIE_SAMESITE=strict
     networks:
       - traefik_net
     logging:
