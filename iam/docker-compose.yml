@@ -2,15 +2,15 @@ version: '3.8'
 
 services:
   postgres-iam:
-    image: postgres:${POSTGRES_VERSION}
+    image: bitnami/postgresql:${POSTGRES_VERSION}
     container_name: iam-postgres
     restart: unless-stopped
     volumes:
-      - ${DATA_BASE_PATH}/iam/postgres:/var/lib/postgresql/data
+      - ${DATA_BASE_PATH}/iam/postgres:/bitnami/postgresql/data
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRESQL_DATABASE=${POSTGRES_DB}
+      - POSTGRESQL_USERNAME=${POSTGRES_USER}
+      - POSTGRESQL_PASSWORD=${POSTGRES_PASSWORD}
     networks:
       - backend_net
     healthcheck:
