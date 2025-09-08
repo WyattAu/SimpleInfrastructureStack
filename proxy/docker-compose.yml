@@ -2,81 +2,122 @@ version: '3.8'
 
 services:
   traefik:
-    image: traefik:${VERSION_TRAEFIK}
-    container_name: traefik
+    image: traefik:${TRAEFIK_VERSION}
+    container_name: proxy-traefik
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    networks:
-      - traefik-public
+    command:
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.websecure.http.tls.certresolver=cloudflare"
+      - "--entrypoints.websecure.http.middlewares=securityHeaders@file"
+      - "--entrypoints.matrix.address=:8448"
+      - "--certificatesresolvers.cloudflare.acme.email=${LE_EMAIL}"
+      - "--certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
+      - "--configFile=/etc/traefik/traefik.yml"
     ports:
       - "80:80"
       - "443:443"
       - "8448:8448"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./config:/etc/traefik:ro
-      - ${APPDATA_PATH}/proxy/certs:/letsencrypt
-    # The environment section is used here ONLY for the DNS challenge API key.
+      - ${DATA_BASE_PATH}/proxy/letsencrypt:/letsencrypt
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./dynamic:/etc/traefik/dynamic:ro
     environment:
-      - CLOUDFLARE_DNS_API_TOKEN=${CF_API_TOKEN}
-    # The command section is used to build the dynamic parts of the configuration
-    # using variables from the .env file. This is the correct and robust method.
-    command:
-      # --- Entrypoints ---
-      - "--entrypoints.http.address=:80"
-      - "--entrypoints.https.address=:443"
-      - "--entrypoints.matrix.address=:8448"
-      # --- Providers ---
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.file.directory=/etc/traefik"
-      - "--providers.file.watch=true"
-      # --- API & Logging ---
-      - "--api.dashboard=true"
-      - "--log.level=INFO"
-      - "--ping=true"
-      # --- Certificate Resolver ---
-      - "--certificatesresolvers.cloudflare.acme.email=${ACME_EMAIL}"
-      - "--certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
-      # --- Global HTTP to HTTPS Redirect ---
-      - "--entrypoints.http.http.redirections.entrypoint.to=https"
-      - "--entrypoints.http.http.redirections.entrypoint.scheme=https"
-    healthcheck:
-      test: ["CMD", "traefik", "healthcheck", "--ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - CF_API_TOKEN=${CF_API_TOKEN}
+      - CF_ZONE_ID=${CF_ZONE_ID}
+    networks:
+      - traefik_net
     labels:
       - "traefik.enable=true"
-      # --- Traefik Dashboard ---
-      - "traefik.http.routers.traefik-dashboard.rule=Host(`${SUBDOMAIN_TRAEFIK}.${DOMAIN}`)"
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN_NAME}`)"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      - "traefik.http.routers.traefik-dashboard.tls=true"
-      - "traefik.http.routers.traefik-dashboard.tls.certresolver=cloudflare"
-      - "traefik.http.routers.traefik-dashboard.middlewares=authentik@docker"
-      # --- Authentik Forward Auth Middleware Definition ---
-      - "traefik.http.middlewares.authentik.forwardauth.address=http://authentik-proxy:9000/outpost.goauthentik.io/auth/traefik"
-      - "traefik.http.middlewares.authentik.forwardauth.trustForwardHeader=true"
-      - "traefik.http.middlewares.authentik.forwardauth.authResponseHeaders=X-authentik-username,X-authentik-groups,X-authentik-email,X-authentik-name,X-authentik-uid"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.middlewares=keycloak-auth@file"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   cloudflare-ddns:
-    image: favonia/cloudflare-ddns:${VERSION_CLOUDFLARE_DDNS}
-    container_name: cloudflare-ddns
+    image: favonia/cloudflare-ddns:${CF_DDNS_VERSION}
+    container_name: proxy-cloudflare-ddns
     restart: unless-stopped
-    user: "1000:1000"
-    read_only: true
-    cap_drop: [all]
-    security_opt: ["no-new-privileges:true"]
     environment:
-      - CF_API_TOKEN=${CF_API_TOKEN}
-      - DOMAINS=${SUBDOMAIN_TRAEFIK}.${DOMAIN},${SUBDOMAIN_AUTH}.${DOMAIN},${SUBDOMAIN_GRAFANA}.${DOMAIN},${SUBDOMAIN_STATUS}.${DOMAIN},${SUBDOMAIN_GITEA}.${DOMAIN},${SUBDOMAIN_WOODPECKER}.${DOMAIN},${SUBDOMAIN_TAIGA}.${DOMAIN},${SUBDOMAIN_MATRIX}.${DOMAIN},${SUBDOMAIN_HOMEPAGE}.${DOMAIN}
-      - UPDATE_CRON=*/5 * * * *
-      - PROXIED=true
-      - TTL=1
+      - PUID=${PUID}
+      - PGID=${PGID}
       - TZ=${TZ}
+      - CF_API_TOKEN=${CF_API_TOKEN}
+      - CF_ZONE_ID=${CF_ZONE_ID}
+      - DOMAINS=${DOMAIN_NAME},traefik.${DOMAIN_NAME},auth.${DOMAIN_NAME},gitea.${DOMAIN_NAME},registry.${DOMAIN_NAME},taiga.${DOMAIN_NAME},grafana.${DOMAIN_NAME},prometheus.${DOMAIN_NAME},kuma.${DOMAIN_NAME},homepage.${DOMAIN_NAME},matrix.${DOMAIN_NAME},element.${DOMAIN_NAME},ocis.${DOMAIN_NAME}
+      - IPV4_PROVIDER=all
+      - PROXIED=true
+      - RRTYPE=A
+      - DELETE_ON_STOP=false
+      - "CRON=*/5 * * * *"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  traefik-forward-auth:
+    image: thomseddon/traefik-forward-auth:${FORWARD_AUTH_VERSION}
+    container_name: proxy-forward-auth
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - PROVIDERS_OIDC_ISSUER_URL=https://auth.${DOMAIN_NAME}/realms/company-realm
+      - PROVIDERS_OIDC_CLIENT_ID=${FORWARD_AUTH_CLIENT_ID}
+      - PROVIDERS_OIDC_CLIENT_SECRET=${FORWARD_AUTH_CLIENT_SECRET}
+      - SECRET=${FORWARD_AUTH_SECRET}
+      - INSECURE_COOKIE=false
+      - AUTH_HOST=auth.${DOMAIN_NAME}
+      - LOG_LEVEL=info
+    networks:
+      - traefik_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  well-known-server:
+    image: nginx:${NGINX_VERSION}
+    container_name: proxy-well-known-server
+    restart: unless-stopped
+    volumes:
+      - ./dynamic/matrix-well-known.json:/usr/share/nginx/html/.well-known/matrix/server:ro
+    networks:
+      - traefik_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.matrix-well-known.rule=Host(`${DOMAIN_NAME}`)"
+      - "traefik.http.routers.matrix-well-known.entrypoints=websecure"
+      - "traefik.http.middlewares.matrix-headers.headers.customresponseheaders.Content-Type=application/json; charset=utf-8"
+      - "traefik.http.routers.matrix-well-known.middlewares=matrix-headers"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2m"
+        max-file: "1"
 
 networks:
-  traefik-public:
+  traefik_net:
     external: true

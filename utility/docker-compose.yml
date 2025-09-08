@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:${HOMEPAGE_VERSION}
+    container_name: utility-homepage
+    restart: unless-stopped
+    volumes:
+      - ${DATA_BASE_PATH}/utility/homepage/config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    networks:
+      - traefik_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.homepage.rule=Host(`${HOMEPAGE_SUBDOMAIN}.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.homepage.entrypoints=websecure"
+      - "traefik.http.routers.homepage.middlewares=keycloak-auth@file"
+      - "traefik.http.services.homepage.loadbalancer.server.port=3000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  traefik_net:
+    external: true

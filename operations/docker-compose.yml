@@ -1,149 +1,139 @@
----
 version: '3.8'
 
 services:
-  # --------------------------------------------------------------------
-  # SERVICE: Homepage Dashboard
-  # --------------------------------------------------------------------
-  homepage:
-    image: ghcr.io/gethomepage/homepage:${VERSION_HOMEPAGE}
-    container_name: homepage
-    user: "1000:1000"
+  postgres-gitea:
+    image: postgres:${POSTGRES_GITEA_VERSION}
+    container_name: operations-postgres-gitea
     restart: unless-stopped
-    networks:
-      - traefik-public
     volumes:
-      - ${APPDATA_PATH}/operations/homepage_config:/app/config:rw
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.homepage.rule=Host(`${SUBDOMAIN_HOMEPAGE}.${DOMAIN}`)"
-      - "traefik.http.routers.homepage.tls=true"
-      - "traefik.http.routers.homepage.tls.certresolver=cloudflare"
-      - "traefik.http.services.homepage.loadbalancer.server.port=3000"
-      - "traefik.http.routers.homepage.middlewares=authentik@docker"
-
-  # --------------------------------------------------------------------
-  # STACK: Taiga Project Management
-  # --------------------------------------------------------------------
-  taiga-db:
-    image: postgres:${VERSION_POSTGRES}
-    container_name: taiga-db
-    restart: unless-stopped
-    networks:
-      - shared-internal-net
-    volumes:
-      - ${APPDATA_PATH}/operations/taiga-db:/var/lib/postgresql/data
+      - ${DATA_BASE_PATH}/operations/postgres-gitea:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=taiga
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${TAIGA_DB_PASS}
+      - POSTGRES_DB=${POSTGRES_DB_GITEA}
+      - POSTGRES_USER=${POSTGRES_USER_GITEA}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_GITEA}
+    networks:
+      - backend_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d taiga -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER_GITEA} -d ${POSTGRES_DB_GITEA}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  taiga-rabbitmq:
-    image: rabbitmq:${VERSION_RABBITMQ}
-    container_name: taiga-rabbitmq
+  gitea:
+    image: gitea/gitea:${GITEA_VERSION}
+    container_name: operations-gitea
     restart: unless-stopped
-    networks:
-      - shared-internal-net
-    volumes:
-      - ${APPDATA_PATH}/operations/taiga-rabbitmq:/var/lib/rabbitmq
-    environment:
-      - RABBITMQ_DEFAULT_USER=${TAIGA_RABBITMQ_USER}
-      - RABBITMQ_DEFAULT_PASS=${TAIGA_RABBITMQ_PASSWORD}
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_running", "-q"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  taiga-back:
-    image: taigaio/taiga-back:latest
-    container_name: taiga-back
-    restart: unless-stopped
-    networks:
-      - shared-internal-net
     depends_on:
-      taiga-db:
-        condition: service_healthy
-      taiga-rabbitmq:
+      postgres-gitea:
         condition: service_healthy
     volumes:
-      - ${APPDATA_PATH}/operations/taiga-media:/taiga-back/media
+      - ${DATA_BASE_PATH}/operations/gitea:/data
     environment:
-      - TAIGA_SECRET_KEY=${TAIGA_SECRET_KEY}
-      - TAIGA_SITES_SCHEME=https
-      - TAIGA_SITES_DOMAIN=${SUBDOMAIN_TAIGA}.${DOMAIN}
-      - TAIGA_DB_HOST=taiga-db
-      - TAIGA_DB_NAME=taiga
-      - TAIGA_DB_USER=${POSTGRES_USER}
-      - TAIGA_DB_PASSWORD=${TAIGA_DB_PASS}
-      - TAIGA_RABBITMQ_HOST=taiga-rabbitmq
-      - TAIGA_RABBITMQ_USER=${TAIGA_RABBITMQ_USER}
-      - TAIGA_RABBITMQ_PASS=${TAIGA_RABBITMQ_PASSWORD}
-      - TAIGA_RABBITMQ_VHOST=taiga
-      # OIDC Integration with Authentik (Manual UI setup required in Authentik)
-      - TAIGA_ENABLE_OIDC=True
-      - TAIGA_OIDC_CLIENT_ID=${TAIGA_OIDC_CLIENT_ID}
-      - TAIGA_OIDC_CLIENT_SECRET=${TAIGA_OIDC_CLIENT_SECRET}
-      - TAIGA_OIDC_WELL_KNOWN_URL=https://${SUBDOMAIN_AUTH}.${DOMAIN}/application/o/.well-known/openid-configuration
-
-  taiga-events:
-    image: taigaio/taiga-events:latest
-    container_name: taiga-events
-    restart: unless-stopped
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__database__HOST=operations-postgres-gitea:5432
+      - GITEA__database__NAME=${POSTGRES_DB_GITEA}
+      - GITEA__database__USER=${POSTGRES_USER_GITEA}
+      - GITEA__database__PASSWD=${POSTGRES_PASSWORD_GITEA}
+      - GITEA__server__DOMAIN=${GITEA_SUBDOMAIN}.${DOMAIN_NAME}
+      - GITEA__server__ROOT_URL=https://${GITEA_SUBDOMAIN}.${DOMAIN_NAME}
+      - GITEA__service__DISABLE_REGISTRATION=false
+      - GITEA__container__ENABLE=true
+      - GITEA__container__REGISTRY_HOST=${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}
+      - GITEA__metrics__ENABLED=true
     networks:
-      - shared-internal-net
-    depends_on:
-      taiga-rabbitmq:
-        condition: service_healthy
-    environment:
-      - TAIGA_SECRET_KEY=${TAIGA_SECRET_KEY}
-      - TAIGA_RABBITMQ_HOST=taiga-rabbitmq
-      - TAIGA_RABBITMQ_USER=${TAIGA_RABBITMQ_USER}
-      - TAIGA_RABBITMQ_PASS=${TAIGA_RABBITMQ_PASSWORD}
-      - TAIGA_RABBITMQ_VHOST=taiga
-
-  taiga-front:
-    image: taigaio/taiga-front:latest
-    container_name: taiga-front
-    restart: unless-stopped
-    networks:
-      - shared-internal-net
-    environment:
-      - TAIGA_FRONTS_SITES_SCHEME=https
-      - TAIGA_FRONTS_SITES_DOMAIN=${SUBDOMAIN_TAIGA}.${DOMAIN}
-      - TAIGA_FRONTS_API_HOST=https://${SUBDOMAIN_TAIGA}.${DOMAIN}/api/v1/
-      - TAIGA_FRONTS_EVENTS_URL=wss://${SUBDOMAIN_TAIGA}.${DOMAIN}/events
-
-  taiga-gateway:
-    image: taigaio/taiga-gateway:latest
-    container_name: taiga-gateway
-    restart: unless-stopped
-    networks:
-      - shared-internal-net
-      - traefik-public
-    depends_on:
-      - taiga-back
-      - taiga-front
-      - taiga-events
-    environment:
-      - TAIGA_HOST=${SUBDOMAIN_TAIGA}.${DOMAIN}
-      - TAIGA_SSL=True
+      - traefik_net
+      - backend_net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.taiga.rule=Host(`${SUBDOMAIN_TAIGA}.${DOMAIN}`)"
-      - "traefik.http.routers.taiga.tls=true"
-      - "traefik.http.routers.taiga.tls.certresolver=cloudflare"
-      - "traefik.http.services.taiga.loadbalancer.server.port=80"
-      # Taiga has its own OIDC integration, so it's not protected by forward auth
+      - "traefik.http.routers.gitea-web.rule=Host(`${GITEA_SUBDOMAIN}.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.gitea-web.entrypoints=websecure"
+      - "traefik.http.services.gitea-web.loadbalancer.server.port=3000"
+      - "traefik.http.routers.gitea-registry.rule=Host(`${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.gitea-registry.entrypoints=websecure"
+      - "traefik.http.services.gitea-registry.loadbalancer.server.port=3000"
+    healthcheck:
+      test: ["CMD-SHELL", "/usr/local/bin/gitea", "doctor", "--run", "check-database"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  woodpecker-server:
+    image: woodpeckerci/woodpecker-server:${WOODPECKER_SERVER_VERSION}
+    container_name: operations-woodpecker-server
+    restart: unless-stopped
+    depends_on: [gitea]
+    volumes:
+      - ${DATA_BASE_PATH}/operations/woodpecker:/var/lib/woodpecker/
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - WOODPECKER_HOST=https://${WOODPECKER_SUBDOMAIN}.${DOMAIN_NAME}
+      - WOODPECKER_GITEA=true
+      - WOODPECKER_GITEA_URL=https://${GITEA_SUBDOMAIN}.${DOMAIN_NAME}
+      - WOODPECKER_GITEA_CLIENT=${WOODPECKER_GITEA_CLIENT_ID}
+      - WOODPECKER_GITEA_SECRET=${WOODPECKER_GITEA_CLIENT_SECRET}
+      - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
+      - WOODPECKER_ADMINS=${WOODPECKER_ADMIN}
+    networks:
+      - traefik_net
+      - backend_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.woodpecker.rule=Host(`${WOODPECKER_SUBDOMAIN}.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.woodpecker.entrypoints=websecure"
+      - "traefik.http.services.woodpecker.loadbalancer.server.port=8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  woodpecker-agent:
+    image: woodpeckerci/woodpecker-agent:${WOODPECKER_AGENT_VERSION}
+    container_name: operations-woodpecker-agent
+    restart: unless-stopped
+    depends_on: [woodpecker-server]
+    volumes: []
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - WOODPECKER_SERVER=operations-woodpecker-server:9000
+      - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
+      - WOODPECKER_MAX_WORKFLOWS=2
+      - WOODPECKER_BACKEND_DOCKER_PRIVILEGED_IMAGES=${WOODPECKER_DOCKER_PRIVILEGED_IMAGES}
+    networks:
+      - backend_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
-  traefik-public:
+  traefik_net:
     external: true
-  shared-internal-net:
+  backend_net:
     external: true
