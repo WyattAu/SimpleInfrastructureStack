@@ -1,3 +1,4 @@
+# Path: /proxy/traefik-config/dynamic/middlewares.yml
 http:
   middlewares:
     securityHeaders:
@@ -11,8 +12,9 @@ http:
         stsSeconds: 31536000
     keycloak-auth:
       forwardAuth:
-        address: "http://proxy-forward-auth:4181"
+        # The address now points to the new oauth2-proxy service and its port.
+        address: "http://proxy-oauth2-proxy:4180"
         authResponseHeaders:
-          - "X-Auth-User"
-          - "X-Auth-Email"
+          - "X-Auth-Request-Email"
+          - "X-Auth-Request-User"
         trustForwardHeader: true
