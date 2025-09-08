@@ -2,19 +2,19 @@ version: '3.8'
 
 services:
   postgres-iam:
-    image: bitnami/postgresql:${POSTGRES_VERSION}
+    image: postgres:${POSTGRES_VERSION}
     container_name: iam-postgres
     restart: unless-stopped
     volumes:
-      - ${DATA_BASE_PATH}/iam/postgres:/bitnami/postgresql/data
+      - ${DATA_BASE_PATH}/iam/postgres:/var/lib/postgresql/data
     environment:
-      - POSTGRESQL_DATABASE=${POSTGRES_DB}
-      - POSTGRESQL_USERNAME=${POSTGRES_USER}
-      - POSTGRESQL_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     networks:
       - backend_net
     healthcheck:
-      test: ["CMD-SHELL", "PGPASSWORD=\"$POSTGRESQL_PASSWORD\" psql -h localhost -U \"$POSTGRESQL_USERNAME\" -d \"$POSTGRESQL_DATABASE\" -c \"SELECT 1\""]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
