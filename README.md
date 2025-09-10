@@ -29,6 +29,7 @@ Procedure:
 4.  Create Shared Docker Networks:
     - SSH into your TrueNAS host.
     - Execute:
+
       ```bash
       docker network create traefik_net
       docker network create backend_net
