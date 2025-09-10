@@ -52,6 +52,13 @@ services:
       - traefik_net
       - backend_net
     # Service discovery is handled manually by the file provider in the proxy stack. As docker does not correctly manage multi stack enviroment.
+    healthcheck:
+      test: >
+        [ -f /tmp/HealthCheck.java ] || echo 'public class HealthCheck { public static void main(String[] args) throws java.io.IOException { try { java.net.URI uri = java.net.URI.create(args[0]); java.net.HttpURLConnection con = (java.net.HttpURLConnection) uri.toURL().openConnection(); con.setRequestMethod("GET"); con.setConnectTimeout(1000); con.setReadTimeout(1000); System.exit(con.getResponseCode() == 200 ? 0 : 1); } catch (Exception e) { System.exit(1); } } }' > /tmp/HealthCheck.java;
+        java /tmp/HealthCheck.java http://localhost:8080/health/ready
+      interval: 15s
+      timeout: 5s
+      retries: 10
     deploy:
       resources:
         limits:
