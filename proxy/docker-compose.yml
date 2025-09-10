@@ -8,17 +8,31 @@ services:
     security_opt:
       - no-new-privileges:true
     command:
+      # --- API and Dashboard ---
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+
+      # --- Log Settings ---
+      - "--log.level=INFO"
+
+      # --- Provider Settings ---
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=traefik_net"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+
+      # --- Entrypoints ---
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.websecure.http.tls.certresolver=cloudflare"
-      - "--entrypoints.websecure.http.middlewares=securityHeaders@file"
       - "--entrypoints.matrix.address=:8448"
+
+      # --- Certificate Resolver (Let's Encrypt) ---
       - "--certificatesresolvers.cloudflare.acme.email=${LE_EMAIL}"
       - "--certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
-      - "--configFile=/etc/traefik/traefik.yml"
     ports:
       - "80:80"
       - "443:443"
