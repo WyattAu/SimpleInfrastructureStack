@@ -52,13 +52,7 @@ services:
       - traefik_net
       - backend_net
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.keycloak.rule=Host(`${KEYCLOAK_SUBDOMAIN}.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.keycloak.entrypoints=websecure"
-      - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
-      - "traefik.http.routers.keycloak.tls=true"
-      - "traefik.http.routers.keycloak.tls.certresolver=cloudflare"
+    # Service discovery is handled manually by the file provider in the proxy stack. As docker does not correctly manage multi stack enviroment.
     deploy:
       resources:
         limits:
