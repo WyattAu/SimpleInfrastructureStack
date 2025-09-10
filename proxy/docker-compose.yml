@@ -77,6 +77,12 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    # Restore extra_hosts to solve NAT loopback.
+    extra_hosts:
+      - "auth.${DOMAIN_NAME}:host-gateway"
+    # Mount the letsencrypt volume to access the certificate.
+    volumes:
+      - ${DATA_BASE_PATH}/proxy/letsencrypt:/etc/ssl/certs:ro
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -86,12 +92,9 @@ services:
       - OAUTH2_PROXY_EMAIL_DOMAINS=*
       - OAUTH2_PROXY_HTTP_ADDRESS=0.0.0.0:4180
       - OAUTH2_PROXY_UPSTREAMS=http://127.0.0.1
-      # --- OIDC Issuer URLs ---
-      # This is the PUBLIC URL that is presented to the end-user's browser.
       - OAUTH2_PROXY_OIDC_ISSUER_URL=https://auth.${DOMAIN_NAME}/realms/company-realm
-      # This is the INTERNAL URL used by the proxy to talk directly to Keycloak.
-      # It uses the container name and HTTP, bypassing Traefik and the public internet.
-      - OAUTH2_PROXY_OIDC_JWKS_URL=http://iam-keycloak:8080/realms/company-realm/protocol/openid-connect/certs
+      # --- Tell oauth2-proxy to trust the ACME certificate ---
+      - OAUTH2_PROXY_CA_FILE=/etc/ssl/certs/acme.json
       # --- OIDC Credentials ---
       - OAUTH2_PROXY_CLIENT_ID=${OAUTH2_PROXY_CLIENT_ID}
       - OAUTH2_PROXY_CLIENT_SECRET=${OAUTH2_PROXY_CLIENT_SECRET}
@@ -99,19 +102,14 @@ services:
       - OAUTH2_PROXY_COOKIE_SECRET=${OAUTH2_PROXY_COOKIE_SECRET}
       - OAUTH2_PROXY_COOKIE_SECURE=true
       - OAUTH2_PROXY_COOKIE_SAMESITE=strict
-      # --- This is the primary redirect URL for the proxy itself ---
       - OAUTH2_PROXY_REDIRECT_URL=https://traefik.${DOMAIN_NAME}/oauth2/callback
     networks:
       - traefik_net
-      - backend_net
-    extra_hosts:
-      - "auth.${DOMAIN_NAME}:${DOCKER_HOST_IP}"
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-
   well-known-server:
     image: nginx:${NGINX_VERSION}
     container_name: proxy-well-known-server
