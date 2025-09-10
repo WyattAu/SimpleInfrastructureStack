@@ -29,6 +29,7 @@ services:
       - "--certificatesresolvers.cloudflare.acme.email=${LE_EMAIL}"
       - "--certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
+      - "--providers.docker.network=traefik_net"
     ports:
       - "80:80"
       - "443:443"
