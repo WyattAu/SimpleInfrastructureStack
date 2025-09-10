@@ -40,6 +40,8 @@ services:
       - CF_ZONE_ID=${CF_ZONE_ID}
     networks:
       - traefik_net
+    extra_hosts:
+      - "auth.${DOMAIN_NAME}:proxy-traefik"
 
     # Labels are handled by traefik-config/dynamic/dashboard
     logging:
