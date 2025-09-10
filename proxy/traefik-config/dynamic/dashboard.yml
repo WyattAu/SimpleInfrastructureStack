@@ -12,6 +12,6 @@ http:
       service: "api@internal"
       # This middleware is defined in middlewares.yml and will be loaded by the same file provider.
       middlewares:
-        - keycloak-auth
+        - keycloak-auth@file
       tls:
         certResolver: cloudflare
