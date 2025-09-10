@@ -140,3 +140,5 @@ services:
 networks:
   traefik_net:
     external: true
+  backend_net:
+    external: true
