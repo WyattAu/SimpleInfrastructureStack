@@ -99,7 +99,7 @@ services:
     networks:
       - traefik_net
     extra_hosts:
-      - "auth.${DOMAIN_NAME}:proxy-traefik"
+      - "auth.${DOMAIN_NAME}:${DOCKER_HOST_IP}"
     logging:
       driver: "json-file"
       options:
