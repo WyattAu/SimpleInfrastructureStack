@@ -40,8 +40,7 @@ services:
       - CF_ZONE_ID=${CF_ZONE_ID}
     networks:
       - traefik_net
-    extra_hosts:
-      - "auth.${DOMAIN_NAME}:proxy-traefik"
+
 
     # Labels are handled by traefik-config/dynamic/dashboard
     logging:
@@ -99,6 +98,8 @@ services:
       - OAUTH2_PROXY_REDIRECT_URL=https://traefik.${DOMAIN_NAME}/oauth2/callback
     networks:
       - traefik_net
+    extra_hosts:
+      - "auth.${DOMAIN_NAME}:proxy-traefik"
     logging:
       driver: "json-file"
       options:
