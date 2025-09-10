@@ -1,0 +1,16 @@
+http:
+  routers:
+    keycloak:
+      rule: "Host(`traefik.wyattau.com`)"
+      entryPoints:
+        - websecure
+      service: "keycloak-svc"
+      tls:
+        certResolver: cloudflare
+
+  services:
+    keycloak-svc:
+      loadBalancer:
+        servers:
+          # This uses Docker's internal DNS to resolve the container name.
+          - url: "http://iam-keycloak:8080"
