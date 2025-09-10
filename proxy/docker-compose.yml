@@ -60,8 +60,7 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - CF_API_TOKEN=${CF_API_TOKEN}
-      - CF_ZONE_ID=${CF_ZONE_ID}
+      - CLOUDFLARE_DNS_API_TOKEN=${CF_API_TOKEN}
       - DOMAIN_NAME=${DOMAIN_NAME}
     networks:
       - traefik_net
