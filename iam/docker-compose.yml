@@ -56,6 +56,9 @@ services:
       - "traefik.http.routers.keycloak.rule=Host(`${KEYCLOAK_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.keycloak.entrypoints=websecure"
       - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
+
+      - "traefik.http.routers.keycloak.tls=true"
+      - "traefik.http.routers.keycloak.tls.certresolver=cloudflare"
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
       interval: 30s
