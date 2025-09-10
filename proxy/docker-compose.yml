@@ -1,41 +1,59 @@
 version: '3.8'
 
 services:
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: proxy-socket-proxy
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Mount the real socket read-only
+    environment:
+      - LOG_LEVEL=info
+      - CONTAINERS=1
+      - NETWORKS=1
+      - SERVICES=1
+      - TASKS=1
+      - NODES=1
+      - POST=0
+    networks:
+      # This service is only visible on the backend network for security
+      - backend_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   traefik:
     image: traefik:${TRAEFIK_VERSION}
     container_name: proxy-traefik
     restart: unless-stopped
+    depends_on: [socket-proxy]
     security_opt:
       - no-new-privileges:true
     command:
-      # --- API and Dashboard ---
       - "--api.dashboard=true"
       - "--api.insecure=false"
-      # --- Log Settings ---
       - "--log.level=INFO"
-      # --- Provider Settings ---
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      # This is the ONLY place the Docker provider is defined.
+      - "--providers.docker.endpoint=tcp://socket-proxy:2375"
       - "--providers.file.directory=/etc/traefik/dynamic"
       - "--providers.file.watch=true"
-      # --- Entrypoints ---
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.matrix.address=:8448"
-      # --- Certificate Resolver (Let's Encrypt) ---
       - "--certificatesresolvers.cloudflare.acme.email=${LE_EMAIL}"
       - "--certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
-      - "--providers.docker.network=traefik_net"
     ports:
       - "80:80"
       - "443:443"
       - "8448:8448"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${DATA_BASE_PATH}/proxy/letsencrypt:/letsencrypt
       - ./traefik-config/dynamic:/etc/traefik/dynamic:ro
     environment:
@@ -44,10 +62,17 @@ services:
       - TZ=${TZ}
       - CF_API_TOKEN=${CF_API_TOKEN}
       - CF_ZONE_ID=${CF_ZONE_ID}
-      - DOMAIN_NAME=${DOMAIN_NAME} # Needed for dashboard.yml
+      - DOMAIN_NAME=${DOMAIN_NAME}
     networks:
       - traefik_net
       - backend_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.providers.docker.swarmMode=false"
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.middlewares=keycloak-auth@file"
     logging:
       driver: "json-file"
       options:
