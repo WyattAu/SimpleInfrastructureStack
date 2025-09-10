@@ -8,18 +8,24 @@ services:
     security_opt:
       - no-new-privileges:true
     command:
+      # --- API and Dashboard ---
       - "--api.dashboard=true"
       - "--api.insecure=false"
+      # --- Log Settings ---
       - "--log.level=INFO"
+      # --- Provider Settings ---
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+      # This is the ONLY place the Docker provider is defined.
       - "--providers.file.directory=/etc/traefik/dynamic"
       - "--providers.file.watch=true"
+      # --- Entrypoints ---
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.matrix.address=:8448"
+      # --- Certificate Resolver (Let's Encrypt) ---
       - "--certificatesresolvers.cloudflare.acme.email=${LE_EMAIL}"
       - "--certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
@@ -37,12 +43,10 @@ services:
       - TZ=${TZ}
       - CF_API_TOKEN=${CF_API_TOKEN}
       - CF_ZONE_ID=${CF_ZONE_ID}
-      # This variable is needed for the dashboard.yml file provider
-      - DOMAIN_NAME=${DOMAIN_NAME}
+      - DOMAIN_NAME=${DOMAIN_NAME} # Needed for dashboard.yml
     networks:
       - traefik_net
       - backend_net
-    # The dashboard is now configured via the file provider to avoid race conditions.
     logging:
       driver: "json-file"
       options:
