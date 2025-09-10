@@ -53,6 +53,7 @@ services:
       - backend_net
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.keycloak.rule=Host(`${KEYCLOAK_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.keycloak.entrypoints=websecure"
       - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
