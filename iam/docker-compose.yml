@@ -51,7 +51,6 @@ services:
     networks:
       - traefik_net
       - backend_net
-    labels:
     # Service discovery is handled manually by the file provider in the proxy stack. As docker does not correctly manage multi stack enviroment.
     deploy:
       resources:
