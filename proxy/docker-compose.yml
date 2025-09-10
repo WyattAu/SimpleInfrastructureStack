@@ -25,9 +25,9 @@ services:
       - "--certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
     ports:
-      - "${DOCKER_HOST_IP}:80:80"
-      - "${DOCKER_HOST_IP}:443:443"
-      - "${DOCKER_HOST_IP}:8448:8448"
+      - "80:80"
+      - "443:443"
+      - "8448:8448"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${DATA_BASE_PATH}/proxy/letsencrypt:/letsencrypt
@@ -39,13 +39,20 @@ services:
       - CF_API_TOKEN=${CF_API_TOKEN}
       - CF_ZONE_ID=${CF_ZONE_ID}
     networks:
-      traefik_net:
-        ipv4_address: 172.20.0.254
+      - traefik_net
+      - backend_net # Connect Traefik to the backend network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.middlewares=keycloak-auth@file"
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+
 
   cloudflare-ddns:
     image: favonia/cloudflare-ddns:${CF_DDNS_VERSION}
@@ -75,24 +82,22 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    # Restore extra_hosts to solve NAT loopback.
-    extra_hosts:
-      - "auth.${DOMAIN_NAME}:172.20.0.254"
-    # Mount the letsencrypt volume to access the certificate.
-    volumes:
-      - ${DATA_BASE_PATH}/proxy/letsencrypt:/etc/ssl/certs:ro
+    networks:
+      - traefik_net
+      - backend_net # Connect oauth2-proxy to the backend network
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      # --- Core Configuration ---
       - OAUTH2_PROXY_PROVIDER=oidc
       - OAUTH2_PROXY_EMAIL_DOMAINS=*
       - OAUTH2_PROXY_HTTP_ADDRESS=0.0.0.0:4180
       - OAUTH2_PROXY_UPSTREAMS=http://127.0.0.1
+      # --- OIDC Issuer URLs ---
+      # Public URL for the user's browser
       - OAUTH2_PROXY_OIDC_ISSUER_URL=https://auth.${DOMAIN_NAME}/realms/company-realm
-      # --- Tell oauth2-proxy to trust the ACME certificate ---
-      - OAUTH2_PROXY_CA_FILE=/etc/ssl/certs/acme.json
+      # Internal URL for service-to-service communication
+      - OAUTH2_PROXY_OIDC_JWKS_URL=http://iam-keycloak:8080/realms/company-realm/protocol/openid-connect/certs
       # --- OIDC Credentials ---
       - OAUTH2_PROXY_CLIENT_ID=${OAUTH2_PROXY_CLIENT_ID}
       - OAUTH2_PROXY_CLIENT_SECRET=${OAUTH2_PROXY_CLIENT_SECRET}
@@ -101,8 +106,6 @@ services:
       - OAUTH2_PROXY_COOKIE_SECURE=true
       - OAUTH2_PROXY_COOKIE_SAMESITE=strict
       - OAUTH2_PROXY_REDIRECT_URL=https://traefik.${DOMAIN_NAME}/oauth2/callback
-    networks:
-      - traefik_net
     logging:
       driver: "json-file"
       options:
