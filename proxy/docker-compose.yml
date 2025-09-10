@@ -65,13 +65,7 @@ services:
     networks:
       - traefik_net
       - backend_net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.providers.docker.swarmMode=false"
-      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
-      - "traefik.http.routers.traefik-dashboard.middlewares=keycloak-auth@file"
+    # The dashboard router is defined exclusively in the dynamic http.yml file
     logging:
       driver: "json-file"
       options:
