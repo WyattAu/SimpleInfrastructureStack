@@ -116,6 +116,7 @@ services:
       - traefik_net
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.matrix-well-known.rule=Host(`${DOMAIN_NAME}`)"
       - "traefik.http.routers.matrix-well-known.entrypoints=websecure"
       - "traefik.http.middlewares.matrix-headers.headers.customresponseheaders.Content-Type=application/json; charset=utf-8"
