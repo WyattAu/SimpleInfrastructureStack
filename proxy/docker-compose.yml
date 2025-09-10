@@ -138,10 +138,6 @@ services:
 
 networks:
   traefik_net:
-    external: false
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
+    external: true
   backend_net:
     external: true
