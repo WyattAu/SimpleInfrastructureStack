@@ -47,6 +47,7 @@ services:
       # This tells Keycloak its public-facing URL
       - KC_HOSTNAME=auth.${DOMAIN_NAME}
       - KC_HEALTH_ENABLED=true
+      - KC_CACHE=local
     networks:
       - traefik_net
       - backend_net
