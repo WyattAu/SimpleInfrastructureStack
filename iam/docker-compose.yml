@@ -50,6 +50,7 @@ services:
       - KC_CACHE=local
       - KC_HTTP_ENABLED=true
       - KC_HTTP_PORT=8080
+      - KC_HTTP_RELATIVE_PATH=/
     networks:
       - traefik_net
       - backend_net
