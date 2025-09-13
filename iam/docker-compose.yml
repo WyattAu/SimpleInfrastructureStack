@@ -37,8 +37,8 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN_USER}
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      - KC_BOOTSTRAP_ADMIN_USERNAME=${KEYCLOAK_ADMIN_USER}
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
       # --- Database Connection (Corrected for modern Keycloak) ---
       - KC_DB=postgres
       - KC_DB_URL=jdbc:postgresql://iam-postgres:5432/${KEYCLOAK_DATABASE_NAME}
@@ -48,7 +48,8 @@ services:
       - KC_PROXY=edge
       - KC_HOSTNAME=auth.${DOMAIN_NAME}
       - KC_HOSTNAME_URL=https://auth.${DOMAIN_NAME}
-      - KC_PROXY_ADDRESS_FORWARDING=true
+      - KC_PROXY_HEADERS=xforwarded
+      #- KC_PROXY_ADDRESS_FORWARDING=true
       - KC_HOSTNAME_STRICT=false
       - KC_HTTP_RELATIVE_PATH=/
       - KC_HEALTH_ENABLED=true
