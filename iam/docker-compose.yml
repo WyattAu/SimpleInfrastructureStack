@@ -29,7 +29,7 @@ services:
     image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
     container_name: iam-keycloak
     restart: unless-stopped
-    command: start --optimized --hostname-strict=false
+    command: start
     depends_on:
       postgres-iam:
         condition: service_healthy
