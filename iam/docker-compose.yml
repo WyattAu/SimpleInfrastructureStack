@@ -52,6 +52,7 @@ services:
       - KC_HOSTNAME_STRICT=false
       - KC_HTTP_RELATIVE_PATH=/
       - KC_HEALTH_ENABLED=true
+      - KC_HTTP_ENABLED=true
     networks:
       - traefik_net
       - backend_net
