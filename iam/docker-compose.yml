@@ -45,13 +45,8 @@ services:
       - KC_DB_USERNAME=${KEYCLOAK_DATABASE_USER}
       - KC_DB_PASSWORD=${KEYCLOAK_DATABASE_PASSWORD}
       # --- Proxy and Hostname Configuration ---
-      - KC_PROXY=edge
       - KC_HOSTNAME=auth.${DOMAIN_NAME}
-      - KC_HOSTNAME_URL=https://auth.${DOMAIN_NAME}
       - KC_PROXY_HEADERS=xforwarded
-      #- KC_PROXY_ADDRESS_FORWARDING=true
-      - KC_HOSTNAME_STRICT=false
-      - KC_HTTP_RELATIVE_PATH=/
       - KC_HEALTH_ENABLED=true
       - KC_HTTP_ENABLED=true
     networks:
