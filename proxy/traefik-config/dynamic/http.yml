@@ -49,3 +49,4 @@ http:
       loadBalancer:
         servers:
           - url: "http://iam-keycloak:8080"
+        passHostHeader: true

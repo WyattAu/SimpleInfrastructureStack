@@ -49,6 +49,7 @@ services:
       - KC_PROXY_HEADERS=xforwarded
       - KC_HEALTH_ENABLED=true
       - KC_HTTP_ENABLED=true
+      - KC_CACHE=local
     networks:
       - traefik_net
       - backend_net
