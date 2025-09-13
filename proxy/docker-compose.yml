@@ -100,9 +100,6 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    depends_on:
-      iam-keycloak:
-        condition: service_healthy
     networks:
       - traefik_net
       - backend_net # Connect oauth2-proxy to the backend network
