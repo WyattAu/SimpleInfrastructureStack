@@ -8,7 +8,7 @@ services:
     volumes:
       - ${DATA_BASE_PATH}/iam/postgres:/var/lib/postgresql/data
     environment:
-      # Bitnami Keycloak expects these specific variable names for its database
+      # These variables are used by the postgres image to initialize the database
       - POSTGRES_DB=${KEYCLOAK_DATABASE_NAME}
       - POSTGRES_USER=${KEYCLOAK_DATABASE_USER}
       - POSTGRES_PASSWORD=${KEYCLOAK_DATABASE_PASSWORD}
@@ -39,13 +39,12 @@ services:
       - TZ=${TZ}
       - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN_USER}
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
-      # Database Connection
+      # --- Database Connection (Corrected for modern Keycloak) ---
       - KC_DB=postgres
-      - KC_DB_URL_HOST=iam-postgres
-      - KC_DB_URL_DATABASE=${POSTGRES_DB}
-      - KC_DB_USERNAME=${POSTGRES_USER}
-      - KC_DB_PASSWORD=${POSTGRES_PASSWORD}
-      # Proxy and Hostname Configuration
+      - KC_DB_URL=jdbc:postgresql://iam-postgres:5432/${KEYCLOAK_DATABASE_NAME}
+      - KC_DB_USERNAME=${KEYCLOAK_DATABASE_USER}
+      - KC_DB_PASSWORD=${KEYCLOAK_DATABASE_PASSWORD}
+      # --- Proxy and Hostname Configuration ---
       - KC_PROXY=edge
       - KC_HOSTNAME=auth.${DOMAIN_NAME}
       - KC_HOSTNAME_URL=https://auth.${DOMAIN_NAME}

@@ -124,6 +124,15 @@ services:
       - OAUTH2_PROXY_COOKIE_SECURE=true
       - OAUTH2_PROXY_COOKIE_SAMESITE=strict
       - OAUTH2_PROXY_REDIRECT_URL=https://traefik.${DOMAIN_NAME}/oauth2/callback
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
+      - "traefik.http.routers.oauth2-proxy.rule=Host(`traefik.${DOMAIN_NAME}`) && PathPrefix(`/oauth2`)"
+      - "traefik.http.routers.oauth2-proxy.entrypoints=websecure"
+      - "traefik.http.routers.oauth2-proxy.service=oauth2-proxy-svc"
+      - "traefik.http.services.oauth2-proxy-svc.loadbalancer.server.port=4180"
+      - "traefik.http.routers.oauth2-proxy.tls.certresolver=cloudflare"
+      # This router must NOT have the keycloak-auth middleware
     logging:
       driver: "json-file"
       options:
