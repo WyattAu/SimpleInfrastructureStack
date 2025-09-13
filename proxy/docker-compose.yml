@@ -129,10 +129,9 @@ services:
       - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.oauth2-proxy.rule=Host(`traefik.${DOMAIN_NAME}`) && PathPrefix(`/oauth2`)"
       - "traefik.http.routers.oauth2-proxy.entrypoints=websecure"
-      - "traefik.http.routers.oauth2-proxy.service=oauth2-proxy-svc"
-      - "traefik.http.services.oauth2-proxy-svc.loadbalancer.server.port=4180"
       - "traefik.http.routers.oauth2-proxy.tls.certresolver=cloudflare"
-      # This router must NOT have the keycloak-auth middleware
+      #- "traefik.http.routers.oauth2-proxy.service=oauth2-proxy-svc"
+      - "traefik.http.services.oauth2-proxy-svc.loadbalancer.server.port=4180"
     logging:
       driver: "json-file"
       options:
