@@ -26,7 +26,7 @@ services:
         max-file: "3"
 
   keycloak:
-    image: ghcr.io/wyattau/evergreenimageregistry/keycloak:${KEYCLOAK_VERSION}
+    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
     container_name: iam-keycloak
     restart: unless-stopped
     command: start --optimized --hostname-strict=false
@@ -48,7 +48,9 @@ services:
       # Proxy and Hostname Configuration
       - KC_PROXY=edge
       - KC_HOSTNAME=auth.${DOMAIN_NAME}
-      - KC_HOSTNAME_URL=https://${KEYCLOAK_HOSTNAME}
+      - KC_HOSTNAME_URL=https://auth.${DOMAIN_NAME}
+      - KC_PROXY_ADDRESS_FORWARDING=true
+      - KC_HOSTNAME_STRICT=false
       - KC_HTTP_RELATIVE_PATH=/
       - KC_HEALTH_ENABLED=true
     networks:
