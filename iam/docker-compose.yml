@@ -26,9 +26,10 @@ services:
         max-file: "3"
 
   keycloak:
-    image: bitnami/keycloak:${KEYCLOAK_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/keycloak:${KEYCLOAK_VERSION}
     container_name: iam-keycloak
     restart: unless-stopped
+    command: start --optimized --hostname-strict=false
     depends_on:
       postgres-iam:
         condition: service_healthy
@@ -36,26 +37,25 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - KC_BOOTSTRAP_ADMIN_USERNAME=${KEYCLOAK_ADMIN_USER}
-      - KC_BOOTSTRAP_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
-      - KEYCLOAK_DATABASE_HOST=iam-postgres
-      - KEYCLOAK_DATABASE_NAME=${KEYCLOAK_DATABASE_NAME}
-      - KC_DB_USERNAME=${KEYCLOAK_DATABASE_USER}
-      - KC_DB_PASSWORD=${KEYCLOAK_DATABASE_PASSWORD}
-      # This tells Keycloak it's behind a proxy
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN_USER}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      # Database Connection
+      - KC_DB=postgres
+      - KC_DB_URL_HOST=iam-postgres
+      - KC_DB_URL_DATABASE=${POSTGRES_DB}
+      - KC_DB_USERNAME=${POSTGRES_USER}
+      - KC_DB_PASSWORD=${POSTGRES_PASSWORD}
+      # Proxy and Hostname Configuration
       - KC_PROXY=edge
-      # This tells Keycloak its public-facing URL
       - KC_HOSTNAME=auth.${DOMAIN_NAME}
-      - KC_HEALTH_ENABLED=true
-      - KC_CACHE=local
-      - KC_HTTP_ENABLED=true
-      - KC_HTTP_PORT=8080
+      - KC_HOSTNAME_URL=https://${KEYCLOAK_HOSTNAME}
       - KC_HTTP_RELATIVE_PATH=/
+      - KC_HEALTH_ENABLED=true
     networks:
       - traefik_net
       - backend_net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      test: ['CMD', '/usr/bin/curl', '-f', 'http://localhost:8080/health/ready']
       interval: 15s
       timeout: 5s
       retries: 10
