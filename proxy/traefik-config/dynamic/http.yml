@@ -17,7 +17,7 @@ http:
         stsSeconds: 31536000
     keycloak-auth:
       forwardAuth:
-        address: "http://proxy-oauth2-proxy:4180"
+        address: "http://oauth2-proxy:4180"
         authResponseHeaders:
           - "X-Auth-Request-Email"
           - "X-Auth-Request-User"
