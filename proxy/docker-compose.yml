@@ -38,7 +38,7 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.endpoint=tcp://socket-proxy:2375"
-      - "--providers.file.filename=/etc/traefik/dynamic/http.yml"
+      - "--providers.file.directory=/etc/traefik/dynamic"
       - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
@@ -64,7 +64,7 @@ services:
     volumes:
       # - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${DATA_BASE_PATH}/proxy/letsencrypt:/letsencrypt
-      - ./traefik-config/dynamic:/etc/traefik/dynamic:ro
+      - ${PWD}/traefik-config/dynamic:/etc/traefik/dynamic:ro
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
