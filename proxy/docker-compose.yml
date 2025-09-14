@@ -122,7 +122,7 @@ services:
       - OAUTH2_PROXY_UPSTREAMS=http://127.0.0.1
       # --- OIDC Issuer URLs ---
       # Public URL for the user's browser
-      - OAUTH2_PROXY_OIDC_ISSUER_URL=http://iam-keycloak:8080/realms/company-realm
+      - OAUTH2_PROXY_OIDC_ISSUER_URL=https://auth.${DOMAIN_NAME}/realms/company-realm
       # Internal URL for service-to-service communication
       - OAUTH2_PROXY_OIDC_JWKS_URL=http://iam-keycloak:8080/realms/company-realm/protocol/openid-connect/certs
       # --- OIDC Credentials ---
