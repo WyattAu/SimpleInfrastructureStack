@@ -38,7 +38,7 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.endpoint=tcp://socket-proxy:2375"
-      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.filename=/etc/traefik/dynamic/http.yml"
       - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
