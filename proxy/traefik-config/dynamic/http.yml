@@ -35,18 +35,18 @@ http:
       tls:
         certResolver: cloudflare
 
-    keycloak-router:
-      rule: "Host(`auth.wyattau.com`)"
-      entryPoints:
-        - websecure
-      service: "keycloak-service"
-      tls:
-        certResolver: cloudflare
-
-  # --- SERVICES ---
-  services:
-    keycloak-service:
-      loadBalancer:
-        servers:
-          - url: "http://iam-keycloak:8080"
-        passHostHeader: true
+  #  keycloak-router:
+  #    rule: "Host(`auth.wyattau.com`)"
+  #    entryPoints:
+  #      - websecure
+  #    service: "keycloak-service"
+  #    tls:
+  #      certResolver: cloudflare
+#
+  ## --- SERVICES ---
+  #services:
+  #  keycloak-service:
+  #    loadBalancer:
+  #      servers:
+  #        - url: "http://iam-keycloak:8080"
+  #      passHostHeader: true
