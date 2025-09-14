@@ -113,7 +113,7 @@ services:
       - traefik_net
       - backend_net # Connect oauth2-proxy to the backend network
     extra_hosts:
-      - "auth.${DOMAIN_NAME}:proxy-traefik"
+      - "auth.${DOMAIN_NAME}:host.docker.internal"
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
