@@ -104,7 +104,7 @@ Procedure:
       - Log in to Keycloak with the initial admin user.
       - Create the `company-realm`.
       - Create the `admins`, `developers`, `viewers` groups.
-      - Create clients for `traefik-forward-auth`, `gitea`, `grafana`, and `oauth2-proxy`.
+      - Create clients for `traefik-forward-auth`, `forgejo`, `grafana`, and `oauth2-proxy`.
       - For each client, copy its generated Client Secret.
 
 2.  Update Local `.env` Files:
