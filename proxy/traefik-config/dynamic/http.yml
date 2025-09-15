@@ -4,7 +4,17 @@
 # ===================================================================
 
 http:
-  # --- MIDDLEWARES ---
+  routers:
+    traefik-dashboard:
+      rule: "Host(`traefik.wyattau.com`)"
+      entryPoints:
+        - "websecure"
+      service: "api@internal"
+      tls:
+        certResolver: "cloudflare"
+      middlewares:
+        - "keycloak-auth" # <-- Note: no '@file' suffix needed
+
   middlewares:
     securityHeaders:
       headers:
@@ -22,7 +32,6 @@ http:
           - "X-Auth-Request-Email"
           - "X-Auth-Request-User"
         trustForwardHeader: true
-
   # --- ROUTERS ---
   #routers:
   #  traefik-dashboard:
