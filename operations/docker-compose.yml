@@ -1,20 +1,20 @@
 version: '3.8'
 
 services:
-  postgres-gitea:
-    image: postgres:${POSTGRES_GITEA_VERSION}
-    container_name: operations-postgres-gitea
+  postgres-forgejo:
+    image: postgres:${POSTGRES_FORGEJO_VERSION}
+    container_name: operations-postgres-forgejo
     restart: unless-stopped
     volumes:
-      - ${DATA_BASE_PATH}/operations/postgres-gitea:/var/lib/postgresql/data
+      - ${DATA_BASE_PATH}/operations/postgres-forgejo:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=${POSTGRES_DB_GITEA}
-      - POSTGRES_USER=${POSTGRES_USER_GITEA}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_GITEA}
+      - POSTGRES_DB=${POSTGRES_DB_FORGEJO}
+      - POSTGRES_USER=${POSTGRES_USER_FORGEJO}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_FORGEJO}
     networks:
       - backend_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER_GITEA} -d ${POSTGRES_DB_GITEA}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER_FORGEJO} -d ${POSTGRES_DB_FORGEJO}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,43 +24,44 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  gitea:
-    image: gitea/gitea:${GITEA_VERSION}
-    container_name: operations-gitea
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:${FORGEJO_VERSION}
+    container_name: operations-forgejo
     restart: unless-stopped
     depends_on:
-      postgres-gitea:
+      postgres-forgejo:
         condition: service_healthy
     volumes:
-      - ${DATA_BASE_PATH}/operations/gitea:/data
+      - ${DATA_BASE_PATH}/operations/forgejo:/data
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - GITEA__database__DB_TYPE=postgres
-      - GITEA__database__HOST=operations-postgres-gitea:5432
-      - GITEA__database__NAME=${POSTGRES_DB_GITEA}
-      - GITEA__database__USER=${POSTGRES_USER_GITEA}
-      - GITEA__database__PASSWD=${POSTGRES_PASSWORD_GITEA}
-      - GITEA__server__DOMAIN=${GITEA_SUBDOMAIN}.${DOMAIN_NAME}
-      - GITEA__server__ROOT_URL=https://${GITEA_SUBDOMAIN}.${DOMAIN_NAME}
-      - GITEA__service__DISABLE_REGISTRATION=false
-      - GITEA__container__ENABLE=true
-      - GITEA__container__REGISTRY_HOST=${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}
-      - GITEA__metrics__ENABLED=true
+      - FORGEJO__database__DB_TYPE=postgres
+      - FORGEJO__database__HOST=operations-postgres-forgejo:5432
+      - FORGEJO__database__NAME=${POSTGRES_DB_FORGEJO}
+      - FORGEJO__database__USER=${POSTGRES_USER_FORGEJO}
+      - FORGEJO__database__PASSWD=${POSTGRES_PASSWORD_FORGEJO}
+      - FORGEJO__server__DOMAIN=${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
+      - FORGEJO__server__ROOT_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
+      - FORGEJO__service__DISABLE_REGISTRATION=false
+      - FORGEJO__container__ENABLE=true
+      - FORGEJO__container__REGISTRY_HOST=${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}
+      - FORGEJO__metrics__ENABLED=true
     networks:
       - traefik_net
       - backend_net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.gitea-web.rule=Host(`${GITEA_SUBDOMAIN}.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.gitea-web.entrypoints=websecure"
-      - "traefik.http.services.gitea-web.loadbalancer.server.port=3000"
-      - "traefik.http.routers.gitea-registry.rule=Host(`${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.gitea-registry.entrypoints=websecure"
-      - "traefik.http.services.gitea-registry.loadbalancer.server.port=3000"
+      - "traefik.docker.network=traefik_net"
+      - "traefik.http.routers.forgejo-web.rule=Host(`${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.forgejo-web.entrypoints=websecure"
+      - "traefik.http.services.forgejo-web.loadbalancer.server.port=3000"
+      - "traefik.http.routers.forgejo-registry.rule=Host(`${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.forgejo-registry.entrypoints=websecure"
+      - "traefik.http.services.forgejo-registry.loadbalancer.server.port=3000"
     healthcheck:
-      test: ["CMD-SHELL", "/usr/local/bin/gitea", "doctor", "--run", "check-database"]
+      test: ["CMD-SHELL", "/usr/local/bin/forgejo", "doctor", "--run", "check-database"]
       interval: 60s
       timeout: 30s
       retries: 3
@@ -90,10 +91,10 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
       - WOODPECKER_HOST=https://${WOODPECKER_SUBDOMAIN}.${DOMAIN_NAME}
-      - WOODPECKER_GITEA=true
-      - WOODPECKER_GITEA_URL=https://${GITEA_SUBDOMAIN}.${DOMAIN_NAME}
-      - WOODPECKER_GITEA_CLIENT=${WOODPECKER_GITEA_CLIENT_ID}
-      - WOODPECKER_GITEA_SECRET=${WOODPECKER_GITEA_CLIENT_SECRET}
+      - WOODPECKER_FORGEJO=true
+      - WOODPECKER_FORGEJO_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
+      - WOODPECKER_FORGEJO_CLIENT=${WOODPECKER_FORGEJO_CLIENT_ID}
+      - WOODPECKER_FORGEJO_SECRET=${WOODPECKER_FORGEJO_CLIENT_SECRET}
       - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
       - WOODPECKER_ADMINS=${WOODPECKER_ADMIN}
     networks:
@@ -101,6 +102,7 @@ services:
       - backend_net
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.woodpecker.rule=Host(`${WOODPECKER_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.woodpecker.entrypoints=websecure"
       - "traefik.http.services.woodpecker.loadbalancer.server.port=8000"
