@@ -15,10 +15,10 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets: ['proxy-traefik:8080']
-  - job_name: 'gitea'
+  - job_name: 'forgejo'
     metrics_path: /metrics
     static_configs:
-      - targets: ['operations-gitea:3000']
+      - targets: ['operations-forgejo:3000']
   - job_name: 'keycloak'
     metrics_path: /metrics
     static_configs:

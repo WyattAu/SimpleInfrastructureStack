@@ -27,6 +27,7 @@ Procedure:
     - Edit the permissions on the `/mnt/mainpool/sis` dataset, granting `dapps` full control, and apply them recursively.
 
 4.  Create Shared Docker Networks:
+
     - SSH into your TrueNAS host.
     - Execute:
 
@@ -103,7 +104,7 @@ Procedure:
       - Log in to Keycloak with the initial admin user.
       - Create the `company-realm`.
       - Create the `admins`, `developers`, `viewers` groups.
-      - Create clients for `traefik-forward-auth`, `gitea`, `grafana`, and `ocis`.
+      - Create clients for `traefik-forward-auth`, `gitea`, `grafana`, and `oauth2-proxy`.
       - For each client, copy its generated Client Secret.
 
 2.  Update Local `.env` Files:
