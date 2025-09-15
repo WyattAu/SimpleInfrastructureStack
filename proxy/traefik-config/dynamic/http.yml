@@ -15,6 +15,15 @@ http:
       middlewares:
         - "keycloak-auth" # <-- Note: no '@file' suffix needed
 
+    test-router:
+      rule: "Host(`test.wyattau.com`)"
+      entryPoints:
+        - "websecure"
+      # This points to the service defined in the keycloak container's labels
+      service: "keycloak-svc@docker"
+      tls:
+        certResolver: "cloudflare"
+
   middlewares:
     securityHeaders:
       headers:
