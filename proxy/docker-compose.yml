@@ -107,6 +107,8 @@ services:
     image: quay.io/oauth2-proxy/oauth2-proxy:${OAUTH2_PROXY_VERSION}
     container_name: proxy-oauth2-proxy
     restart: unless-stopped
+    depends_on:
+      - traefik
     security_opt:
       - no-new-privileges:true
     networks:
@@ -133,6 +135,10 @@ services:
       - OAUTH2_PROXY_COOKIE_SECURE=true
       - OAUTH2_PROXY_COOKIE_SAMESITE=strict
       - OAUTH2_PROXY_REDIRECT_URL=https://traefik.${DOMAIN_NAME}/oauth2/callback
+      # This bypasses the public DNS lookup for server-to-server communication.
+      - OAUTH2_PROXY_LOGIN_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/protocol/openid-connect/auth
+      - OAUTH2_PROXY_REDEEM_URL=http://iam-keycloak:8080/realms/company-realm/protocol/openid-connect/token
+      - OAUTH2_PROXY_OIDC_JWKS_URL=http://iam-keycloak:8080/realms/company-realm/protocol/openid-connect/certs
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
