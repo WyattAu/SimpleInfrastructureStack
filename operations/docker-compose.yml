@@ -83,7 +83,7 @@ services:
     image: woodpeckerci/woodpecker-server:${WOODPECKER_SERVER_VERSION}
     container_name: operations-woodpecker-server
     restart: unless-stopped
-    depends_on: [gitea]
+    depends_on: [forgejo]
     volumes:
       - ${DATA_BASE_PATH}/operations/woodpecker:/var/lib/woodpecker/
     environment:
