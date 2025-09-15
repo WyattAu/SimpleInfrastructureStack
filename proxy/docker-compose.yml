@@ -121,7 +121,7 @@ services:
       - OAUTH2_PROXY_PROVIDER=oidc
       - OAUTH2_PROXY_EMAIL_DOMAINS=*
       - OAUTH2_PROXY_HTTP_ADDRESS=0.0.0.0:4180
-      - OAUTH2_PROXY_UPSTREAMS=http://127.0.0.1
+      - OAUTH2_PROXY_UPSTREAMS=static://200
       # --- OIDC Issuer URLs ---
       # Public URL for the user's browser
       - OAUTH2_PROXY_OIDC_ISSUER_URL=https://auth.${DOMAIN_NAME}/realms/company-realm
