@@ -32,7 +32,7 @@ services:
     security_opt:
       - no-new-privileges:true
     command:
-      - "--accesslog=true"
+      # - "--accesslog=true"
       - "--api.dashboard=true"
       - "--api.insecure=false"
       - "--log.level=INFO"
@@ -121,7 +121,7 @@ services:
       - traefik_net
       - backend_net # Connect oauth2-proxy to the backend network
     environment:
-      - OAUTH2_PROXY_LOG_LEVEL=debug
+      # - OAUTH2_PROXY_LOG_LEVEL=debug
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
