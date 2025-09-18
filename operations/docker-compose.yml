@@ -58,11 +58,13 @@ services:
       - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.forgejo-web.rule=Host(`${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.forgejo-web.entrypoints=websecure"
+      - "traefik.http.routers.forgejo-web.service=forgejo-web-svc"
       - "traefik.http.routers.forgejo-web.tls.certresolver=cloudflare"
       - "traefik.http.routers.forgejo-web.middlewares=keycloak-auth"
       - "traefik.http.services.forgejo-web.loadbalancer.server.port=3000"
       - "traefik.http.routers.forgejo-registry.rule=Host(`${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.forgejo-registry.entrypoints=websecure"
+      - "traefik.http.routers.forgejo-registry.service=forgejo-registry-svc"
       - "traefik.http.routers.forgejo-registry.tls.certresolver=cloudflare"
       - "traefik.http.services.forgejo-registry.loadbalancer.server.port=3000"
     healthcheck:
