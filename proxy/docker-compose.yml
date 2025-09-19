@@ -139,7 +139,7 @@ services:
       - OAUTH2_PROXY_COOKIE_SECRET=${OAUTH2_PROXY_COOKIE_SECRET}
       - OAUTH2_PROXY_COOKIE_SECURE=true
       - OAUTH2_PROXY_COOKIE_SAMESITE=strict
-      - OAUTH2_PROXY_REDIRECT_URL=https://traefik.${DOMAIN_NAME}/oauth2/callback
+      #- OAUTH2_PROXY_REDIRECT_URL=https://traefik.${DOMAIN_NAME}/oauth2/callback
       # This bypasses the public DNS lookup for server-to-server communication.
       - OAUTH2_PROXY_LOGIN_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/protocol/openid-connect/auth
       - OAUTH2_PROXY_REDEEM_URL=http://iam-keycloak:8080/realms/company-realm/protocol/openid-connect/token
@@ -147,7 +147,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.oauth2-proxy.rule=Host(`traefik.${DOMAIN_NAME}`) && PathPrefix(`/oauth2`)"
+      #- "traefik.http.routers.oauth2-proxy.rule=Host(`traefik.${DOMAIN_NAME}`) && PathPrefix(`/oauth2`)"
+      - "traefik.http.routers.oauth2-proxy.rule=HostRegexp(`{host:.+}`) && PathPrefix(`/oauth2`)"
       - "traefik.http.routers.oauth2-proxy.entrypoints=websecure"
       - "traefik.http.routers.oauth2-proxy.tls.certresolver=cloudflare"
       - "traefik.http.services.oauth2-proxy.loadbalancer.server.port=4180"
