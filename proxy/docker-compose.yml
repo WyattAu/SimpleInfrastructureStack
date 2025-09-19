@@ -51,7 +51,7 @@ services:
       - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
     labels:
       # --- Middleware: keycloak-auth (Moved from http.yml) ---
-      - "traefik.http.middlewares.keycloak-auth.forwardauth.address=http://oauth2-proxy:4180"
+      - "traefik.http.middlewares.keycloak-auth.forwardauth.address=http://oauth2-proxy:4180/oauth2/auth"
       - "traefik.http.middlewares.keycloak-auth.forwardauth.authResponseHeaders=X-Auth-Request-Email,X-Auth-Request-User"
       - "traefik.http.middlewares.keycloak-auth.forwardauth.trustForwardHeader=true"
 
@@ -139,6 +139,7 @@ services:
       - OAUTH2_PROXY_COOKIE_SECRET=${OAUTH2_PROXY_COOKIE_SECRET}
       - OAUTH2_PROXY_COOKIE_SECURE=true
       - OAUTH2_PROXY_COOKIE_SAMESITE=strict
+      - OAUTH2_PROXY_COOKIE_DOMAIN=.${DOMAIN_NAME}
       #- OAUTH2_PROXY_REDIRECT_URL=https://traefik.${DOMAIN_NAME}/oauth2/callback
       # This bypasses the public DNS lookup for server-to-server communication.
       - OAUTH2_PROXY_LOGIN_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/protocol/openid-connect/auth
