@@ -148,6 +148,7 @@ services:
       - OAUTH2_PROXY_REDEEM_URL=http://iam-keycloak:8080/realms/company-realm/protocol/openid-connect/token
       - OAUTH2_PROXY_OIDC_JWKS_URL=http://iam-keycloak:8080/realms/company-realm/protocol/openid-connect/certs
       - OAUTH2_PROXY_CODE_CHALLENGE_METHOD=S256
+      - OAUTH2_PROXY_SET_XAUTHREQUEST=true
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
