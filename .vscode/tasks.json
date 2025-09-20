@@ -1,0 +1,32 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Lint All Files",
+      "type": "shell",
+      "command": "pre-commit run --all-files",
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "Run all linters (yamllint, markdownlint, hadolint) across the entire project."
+    },
+    {
+      "label": "Format All Files",
+      "type": "shell",
+      "command": "pre-commit run prettier --all-files",
+      "group": "build",
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": [],
+      "detail": "Format all Markdown and YAML files using the project's prettier hook."
+    }
+  ]
+}
