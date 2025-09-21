@@ -166,10 +166,11 @@ Objective: To deploy the primary developer, communication, and storage tools.
 Procedure:
 
 1.  Deploy `operations` Stack: Use the general deployment procedure. Compose path: `operations/docker-compose.yml`.
-2.  Deploy `collaboration` Stack:
+2.  Follow this guide <https://www.domaindrivenarchitecture.org/posts/2025-05-19-sso-forgejo-with-keycoak/> to setup keyclaok and forgejo authentication.
+3.  Deploy `collaboration` Stack:
     - One-Time Synapse Setup: SSH into your host and run `docker run --rm -v /mnt/mainpool/apps/data/collaboration/synapse:/data -e SYNAPSE_SERVER_NAME=yourdomain.com -e SYNAPSE_REPORT_STATS=no matrixdotorg/synapse:v1.103.0 generate`.
     - Use the general deployment procedure. Compose path: `collaboration/docker-compose.yml`.
-3.  Deploy `storage` Stack: Use the general deployment procedure. Compose path: `storage/docker-compose.yml`.
+4.  Deploy `storage` Stack: Use the general deployment procedure. Compose path: `storage/docker-compose.yml`.
 
 Verification & Post-Install:
 
