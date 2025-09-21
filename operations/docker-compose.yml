@@ -57,7 +57,8 @@ services:
       - FORGEJO__service__SHOW_REGISTRATION_BUTTON=false
       - FORGEJO__service__ENABLE_REVERSE_PROXY_AUTHENTICATION=true
       - FORGEJO__service__ENABLE_REVERSE_PROXY_AUTO_REGISTRATION=true
-      - FORGEJO__service__REVERSE_PROXY_AUTHENTICATION_USER=X-Auth-Request-User
+      #- FORGEJO__service__REVERSE_PROXY_AUTHENTICATION_USER=X-Auth-Request-User
+      - FORGEJO__service__REVERSE_PROXY_AUTHENTICATION_USER=X-Auth-Request-Email
       - FORGEJO__service__REVERSE_PROXY_AUTHENTICATION_EMAIL=X-Auth-Request-Email
 
       # --- Other Settings ---

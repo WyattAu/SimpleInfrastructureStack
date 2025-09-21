@@ -145,7 +145,6 @@ services:
       - OAUTH2_PROXY_COOKIE_DOMAIN=.${DOMAIN_NAME}
       #- OAUTH2_PROXY_REDIRECT_URL=https://traefik.${DOMAIN_NAME}/oauth2/callback
       # This bypasses the public DNS lookup for server-to-server communication.
-      #- OAUTH2_PROXY_LOGIN_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/protocol/openid-connect/auth
       - OAUTH2_PROXY_REDEEM_URL=http://iam-keycloak:8080/realms/company-realm/protocol/openid-connect/token
       - OAUTH2_PROXY_OIDC_JWKS_URL=http://iam-keycloak:8080/realms/company-realm/protocol/openid-connect/certs
       - OAUTH2_PROXY_CODE_CHALLENGE_METHOD=S256
@@ -154,7 +153,6 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.oauth2-proxy.rule=(Host(`forgejo.${DOMAIN_NAME}`) || Host(`traefik.${DOMAIN_NAME}`)) && PathPrefix(`/oauth2`)"
-      #- "traefik.http.routers.oauth2-proxy.rule=HostRegexp(`{host:.+}`) && PathPrefix(`/oauth2`)"
       - "traefik.http.routers.oauth2-proxy.entrypoints=websecure"
       - "traefik.http.routers.oauth2-proxy.tls.certresolver=cloudflare"
       - "traefik.http.services.oauth2-proxy.loadbalancer.server.port=4180"
