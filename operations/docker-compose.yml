@@ -37,8 +37,11 @@ services:
     environment:
       # --- System Settings ---
       - USER=git
-      - PUID=${PUID}
-      - PGID=${PGID}
+      # official documentation prefer USER_UID and USER_GID https://forgejo.org/docs/v1.21/admin/installation-docker/
+      - USER_UID=${PUID}
+      - USER_GID=${PGID}
+      #- PUID=${PUID}
+      #- PGID=${PGID}
       - TZ=${TZ}
 
       # --- Database Settings ---
@@ -62,13 +65,13 @@ services:
 
       # --- UI/Service Settings ---
       # Disable local registration, users must come from Keycloak.
-      - FORGEJO__service__DISABLE_REGISTRATION=false
+      #- FORGEJO__service__DISABLE_REGISTRATION=false
       - FORGEJO__service__SHOW_REGISTRATION_BUTTON=false
 
       # --- Other Settings ---
       - FORGEJO__container__ENABLE=true
       - FORGEJO__container__REGISTRY_HOST=${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}
-      - FORGEJO__metrics__ENABLED=true
+      #- FORGEJO__metrics__ENABLED=true
     networks:
       - traefik_net
       - backend_net
