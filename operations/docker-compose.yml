@@ -1,3 +1,4 @@
+---
 version: '3.8'
 
 services:
@@ -64,7 +65,6 @@ services:
       - FORGEJO__oauth2_client__keycloak__AUTO_DISCOVER_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/.well-known/openid-configuration
 
       # --- UI/Service Settings ---
-      # Disable local registration, users must come from Keycloak.
       #- FORGEJO__service__DISABLE_REGISTRATION=false
       - FORGEJO__service__SHOW_REGISTRATION_BUTTON=false
 
@@ -139,7 +139,9 @@ services:
       - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.woodpecker.rule=Host(`${WOODPECKER_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.woodpecker.entrypoints=websecure"
-      - "traefik.http.services.woodpecker.loadbalancer.server.port=8000"
+      - "traefik.http.routers.woodpecker.tls.certresolver=cloudflare"
+      - "traefik.http.services.woodpecker-svc.loadbalancer.server.port=8000"
+      - "traefik.http.routers.woodpecker.service=woodpecker-svc"
     logging:
       driver: "json-file"
       options:
