@@ -117,6 +117,7 @@ services:
   woodpecker-server:
     image: woodpeckerci/woodpecker-server:${WOODPECKER_SERVER_VERSION}
     container_name: operations-woodpecker-server
+    command: ["sh", "-c", "echo '--- Environment Variables ---' && env | grep WOODPECKER_ && echo '--- End of Variables ---' && sleep 30"]
     restart: unless-stopped
     depends_on:
       forgejo:
