@@ -95,7 +95,8 @@ services:
       - "traefik.http.routers.forgejo-registry.tls.certresolver=cloudflare"
       - "traefik.http.routers.forgejo-registry.service=forgejo-svc"
     healthcheck:
-      test: ["CMD-SHELL", "su-exec git /usr/local/bin/forgejo doctor check-database"]
+      #test: ["CMD-SHELL", "su-exec git /usr/local/bin/forgejo doctor check-database"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/v1/healthz || exit 1"]
       interval: 60s
       timeout: 30s
       retries: 3
@@ -117,7 +118,9 @@ services:
     image: woodpeckerci/woodpecker-server:${WOODPECKER_SERVER_VERSION}
     container_name: operations-woodpecker-server
     restart: unless-stopped
-    depends_on: [forgejo]
+    depends_on:
+      forgejo:
+        condition: service_healthy
     volumes:
       - ${DATA_BASE_PATH}/operations/woodpecker:/var/lib/woodpecker/
     environment:
@@ -155,13 +158,15 @@ services:
     container_name: operations-woodpecker-agent
     restart: unless-stopped
     depends_on: [woodpecker-server]
-    volumes: []
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
       - WOODPECKER_SERVER=operations-woodpecker-server:9000
       - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
+      - WOODPECKER_BACKEND=docker
       - WOODPECKER_MAX_WORKFLOWS=2
       - WOODPECKER_BACKEND_DOCKER_PRIVILEGED_IMAGES=${WOODPECKER_DOCKER_PRIVILEGED_IMAGES}
     networks:
