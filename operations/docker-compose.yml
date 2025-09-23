@@ -115,12 +115,39 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  postgres-woodpecker:
+    image: postgres:${POSTGRES_FORGEJO_VERSION} # You can use the same version
+    container_name: operations-postgres-woodpecker
+    restart: unless-stopped
+    volumes:
+      # Use a separate directory for Woodpecker's data
+      - ${DATA_BASE_PATH}/operations/postgres-woodpecker:/var/lib/postgresql/data
+    environment:
+      # Use the new environment variables
+      - POSTGRES_DB=${POSTGRES_DB_WOODPECKER}
+      - POSTGRES_USER=${POSTGRES_USER_WOODPECKER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_WOODPECKER}
+    networks:
+      - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER_WOODPECKER} -d ${POSTGRES_DB_WOODPECKER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   woodpecker-server:
     image: woodpeckerci/woodpecker-server:${WOODPECKER_SERVER_VERSION}
     container_name: operations-woodpecker-server
     restart: unless-stopped
     depends_on:
       forgejo:
+        condition: service_healthy
+      postgres-woodpecker:
         condition: service_healthy
     volumes:
       - ${DATA_BASE_PATH}/operations/woodpecker:/var/lib/woodpecker/
@@ -130,17 +157,17 @@ services:
       - TZ=${TZ}
       - WOODPECKER_HOST=https://${WOODPECKER_SUBDOMAIN}.${DOMAIN_NAME}
       - WOODPECKER_ADMINS=${WOODPECKER_ADMIN}
-      # - WOODPECKER_FORGE_KIND=forgejo
-      - WOODPECKER_LOG_LEVEL=debug
+      - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
       - WOODPECKER_FORGEJO=true
+      # DB
+      - WOODPECKER_DATABASE_DRIVER=postgres
+      - WOODPECKER_DATABASE_DATASOURCE=postgres://${POSTGRES_USER_WOODPECKER}:${POSTGRES_PASSWORD_WOODPECKER}@postgres-woodpecker:5432/${POSTGRES_DB_WOODPECKER}?sslmode=disable
       # Use the internal Docker network address for Forgejo
       #- WOODPECKER_FORGE_URL=http://forgejo:3000
       # Use the full, public-facing URL for Forgejo
       - WOODPECKER_FORGEJO_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
-      #- WOODPECKER_FORGE_SKIP_VERIFY=true
       - WOODPECKER_FORGEJO_CLIENT=${WOODPECKER_FORGEJO_CLIENT}
       - WOODPECKER_FORGEJO_SECRET=${WOODPECKER_FORGEJO_SECRET}
-      - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
       - WOODPECKER_BACKEND_DOCKER_NETWORK=backend
     networks:
       - traefik_net
