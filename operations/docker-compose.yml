@@ -130,7 +130,8 @@ services:
       - TZ=${TZ}
       - WOODPECKER_HOST=https://${WOODPECKER_SUBDOMAIN}.${DOMAIN_NAME}
       - WOODPECKER_ADMINS=${WOODPECKER_ADMIN}
-      - WOODPECKER_FORGE_KIND=forgejo
+      # - WOODPECKER_FORGE_KIND=forgejo
+      - WOODPECKER_FORGE_KIND=gitea
       # Use the internal Docker network address for Forgejo
       #- WOODPECKER_FORGE_URL=http://forgejo:3000
       # Use the full, public-facing URL for Forgejo
