@@ -97,7 +97,7 @@ services:
       - TZ=${TZ}
       - CF_API_TOKEN=${CF_API_TOKEN}
       - CF_ZONE_ID=${CF_ZONE_ID}
-      - DOMAINS=${DOMAIN_NAME},traefik.${DOMAIN_NAME},auth.${DOMAIN_NAME},forgejo.${DOMAIN_NAME},registry-forgejo.${DOMAIN_NAME},taiga.${DOMAIN_NAME},grafana.${DOMAIN_NAME},prometheus.${DOMAIN_NAME},kuma.${DOMAIN_NAME},homepage.${DOMAIN_NAME},matrix.${DOMAIN_NAME},element.${DOMAIN_NAME},ocis.${DOMAIN_NAME},test.${DOMAIN_NAME}
+      - DOMAINS=${DOMAIN_NAME},traefik.${DOMAIN_NAME},auth.${DOMAIN_NAME},forgejo.${DOMAIN_NAME},registry-forgejo.${DOMAIN_NAME},ci.${DOMAIN_NAME},taiga.${DOMAIN_NAME},grafana.${DOMAIN_NAME},prometheus.${DOMAIN_NAME},kuma.${DOMAIN_NAME},homepage.${DOMAIN_NAME},matrix.${DOMAIN_NAME},element.${DOMAIN_NAME},ocis.${DOMAIN_NAME},test.${DOMAIN_NAME}
       - IPV4_PROVIDER=all
       - PROXIED=true
       - RRTYPE=A
