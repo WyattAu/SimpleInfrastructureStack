@@ -6,8 +6,8 @@ services:
     container_name: storage-ocis
     restart: unless-stopped
     volumes:
-      - ocis-config:/etc/ocis
-      - ocis-data:/var/lib/ocis
+      - ${DATA_BASE_PATH}/storage/ocis-config:/etc/ocis
+      - ${DATA_BASE_PATH}/storage/ocis-data:/var/lib/ocis
     command: ["/bin/sh", "-c", "ocis init || true; exec ocis server"]
     environment:
       - PUID=${PUID}
@@ -57,17 +57,6 @@ services:
         max-size: "10m"
         max-file: "3"
 
-volumes:
-  ocis-config:
-    driver_opts:
-      type: none
-      device: ${DATA_BASE_PATH}/storage/ocis-config
-      o: bind
-  ocis-data:
-    driver_opts:
-      type: none
-      device: ${DATA_BASE_PATH}/storage/ocis-data
-      o: bind
 
 networks:
   traefik_net:
