@@ -6,14 +6,14 @@ services:
     # Use a minimal image with the necessary tools
     image: busybox:latest
     container_name: storage-ocis-init
-    # This container's only job is to fix permissions and exit.
-    command: chown -R ${PUID}:${PGID} /etc/ocis
+    # Set the ownership to the hardcoded UID/GID that the OCIS container uses internally.
+    command: chown -R 1000:1000 /etc/ocis
     volumes:
       # Mount the same volume as the main ocis service
       - ${DATA_BASE_PATH}/storage/ocis:/etc/ocis
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
+      - PUID=1000
+      - PGID=1000
     # This init container does not need to be on any network
     networks: []
   ocis:
