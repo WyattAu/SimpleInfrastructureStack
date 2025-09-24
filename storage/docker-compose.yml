@@ -10,6 +10,7 @@ services:
       - ${DATA_BASE_PATH}/storage/ocis:/etc/ocis
     # This command initializes a full config with random secrets on first run,
     # and then starts the server on all subsequent runs.
+    user: "${PUID}:${PGID}"
     entrypoint:
       - /bin/sh
     command: ["-c", "ocis init || true; exec ocis server"]
