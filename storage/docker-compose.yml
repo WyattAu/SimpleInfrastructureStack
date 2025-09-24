@@ -2,23 +2,36 @@
 version: '3.8'
 
 services:
+  ocis-init:
+    # Use a minimal image with the necessary tools
+    image: busybox:latest
+    container_name: storage-ocis-init
+    # This container's only job is to fix permissions and exit.
+    command: chown -R ${PUID}:${PGID} /etc/ocis
+    volumes:
+      # Mount the same volume as the main ocis service
+      - ${DATA_BASE_PATH}/storage/ocis:/etc/ocis
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+    # This init container does not need to be on any network
+    networks: []
   ocis:
     image: owncloud/ocis:${OCIS_VERSION}
     container_name: storage-ocis
     restart: unless-stopped
+    depends_on:
+      ocis-init:
+        condition: service_completed_successfully
     volumes:
       - ${DATA_BASE_PATH}/storage/ocis:/etc/ocis
-    # This command initializes a full config with random secrets on first run,
-    # and then starts the server on all subsequent runs.
     #user: "${PUID}:${PGID}"
     entrypoint:
       - /bin/sh
+    # This command initializes a full config with random secrets on first run,
+    # and then starts the server on all subsequent runs.
     command: ["-c", "ocis init || true; exec ocis server"]
     environment:
-      #- PUID=${PUID}
-      #- PGID=${PGID}
-      - OCIS_UID=${PUID}
-      - OCIS_GID=${PGID}
       - TZ=${TZ}
       # --- General Config ---
       - OCIS_URL=https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
