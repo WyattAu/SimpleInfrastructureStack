@@ -25,7 +25,6 @@ services:
         condition: service_completed_successfully
     volumes:
       - ${DATA_BASE_PATH}/storage/ocis:/etc/ocis
-    #user: "${PUID}:${PGID}"
     entrypoint:
       - /bin/sh
     # This command initializes a full config with random secrets on first run,
