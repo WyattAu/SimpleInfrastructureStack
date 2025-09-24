@@ -34,6 +34,7 @@ services:
       - TZ=${TZ}
       # --- General Config ---
       - OCIS_URL=https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
+      - OCIS_BASE_DATA_PATH=/etc/ocis
       - OCIS_LOG_LEVEL=info
       - OCIS_INSECURE=false
       # --- Admin User ---
@@ -41,7 +42,6 @@ services:
       - OCIS_ADMIN_PASSWORD=${OCIS_ADMIN_PASSWORD}
       # --- Service Management ---
       - OCIS_EXCLUDE_RUN_SERVICES=idp
-      # --- DEFINITIVE FIX: Use OFFICIAL, comprehensive OIDC environment variables ---
       # --- Backend/Proxy OIDC Configuration ---
       - OCIS_OIDC_ISSUER=https://auth.${DOMAIN_NAME}/realms/company-realm
       - OCIS_OIDC_CLIENT_ID=${OCIS_OIDC_CLIENT_ID}
@@ -58,7 +58,6 @@ services:
       - PROXY_USER_CS3_CLAIM=username
       - PROXY_TLS=false
       - PROXY_OIDC_REWRITE_WELLKNOWN=true
-      - OCIS_EXCLUDE_RUN_SERVICES=idp
     networks:
       - traefik_net
       - backend_net
