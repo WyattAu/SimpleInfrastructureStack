@@ -224,6 +224,7 @@ services:
       - WOODPECKER_MAX_WORKFLOWS=2
       - WOODPECKER_BACKEND_DOCKER_PRIVILEGED_IMAGES=${WOODPECKER_DOCKER_PRIVILEGED_IMAGES}
     networks:
+      - traefik_net
       - backend_net
     logging:
       driver: "json-file"
