@@ -213,6 +213,9 @@ services:
       - woodpecker-server
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
