@@ -180,12 +180,13 @@ services:
       - "traefik.http.routers.woodpecker.tls.certresolver=cloudflare"
       - "traefik.http.services.woodpecker-svc.loadbalancer.server.port=8000"
       - "traefik.http.routers.woodpecker.service=woodpecker-svc"
-    healthcheck:
-      test: ["CMD", "woodpecker-cli", "healthz"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+    #healthcheck:
+      #Slim image have no shell
+      #test: ["CMD", "woodpecker-cli", "healthz"]
+    #  interval: 10s
+    #  timeout: 5s
+    #  retries: 5
+    #  start_period: 20s
     logging:
       driver: "json-file"
       options:
@@ -196,9 +197,8 @@ services:
     image: woodpeckerci/woodpecker-agent:${WOODPECKER_AGENT_VERSION}
     container_name: operations-woodpecker-agent
     restart: unless-stopped
-    #depends_on:
-    #  woodpecker-server:
-    #    condition: service_healthy
+    depends_on:
+      - woodpecker-server
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
