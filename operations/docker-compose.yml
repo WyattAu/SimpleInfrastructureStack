@@ -185,7 +185,6 @@ services:
 
       - "traefik.http.services.woodpecker-web.loadbalancer.server.port=8000"
       - "traefik.http.services.woodpecker-grpc.loadbalancer.server.port=9000"
-      # This tells Traefik that the gRPC service uses HTTP/2 Cleartext
       - "traefik.http.services.woodpecker-grpc.loadbalancer.server.scheme=h2c"
 
       # --- 2. CONFIGURE ROUTER for the Web UI ---
@@ -220,14 +219,14 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      #- WOODPECKER_SERVER=woodpecker-server:9000
-      - WOODPECKER_SERVER=${WOODPECKER_GRPC_SUBDOMAIN}.${DOMAIN_NAME}:443
+      - WOODPECKER_SERVER=woodpecker-server:9000
+      #- WOODPECKER_SERVER=${WOODPECKER_GRPC_SUBDOMAIN}.${DOMAIN_NAME}:443
       - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
       - WOODPECKER_BACKEND=docker
       - WOODPECKER_MAX_WORKFLOWS=2
       - WOODPECKER_BACKEND_DOCKER_PRIVILEGED_IMAGES=${WOODPECKER_DOCKER_PRIVILEGED_IMAGES}
     networks:
-      - traefik_net
+      #- traefik_net
       - backend_net
     logging:
       driver: "json-file"
