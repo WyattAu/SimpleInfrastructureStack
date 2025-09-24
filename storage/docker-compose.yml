@@ -24,16 +24,25 @@ services:
       - OCIS_URL=https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
       - OCIS_INSECURE=false
       - OCIS_LOG_LEVEL=info
+
+      # --- Admin User ---
       - OCIS_ADMIN_USERNAME=${OCIS_ADMIN_USERNAME}
       - OCIS_ADMIN_PASSWORD=${OCIS_ADMIN_PASSWORD}
+
+      # --- Secrets ---
       - OCIS_MACHINE_AUTH_API_KEY=${OCIS_MACHINE_AUTH_API_KEY}
       - OCIS_SYSTEM_USER_API_KEY=${OCIS_SYSTEM_USER_API_KEY}
+      - OCIS_JWT_SECRET=${OCIS_JWT_SECRET}
+
+      # --- OIDC Configuration for Keycloak ---
       - OCIS_OIDC_ISSUER=https://auth.${DOMAIN_NAME}/realms/company-realm
       - OCIS_OIDC_CLIENT_ID=${OCIS_OIDC_CLIENT_ID}
       - OCIS_OIDC_CLIENT_SECRET=${OCIS_OIDC_CLIENT_SECRET}
       - PROXY_OIDC_OIDC_ISSUER=https://auth.${DOMAIN_NAME}/realms/company-realm
       - PROXY_OIDC_CLIENT_ID=${OCIS_OIDC_CLIENT_ID}
       - PROXY_OIDC_CLIENT_SECRET=${OCIS_OIDC_CLIENT_SECRET}
+
+      # --- Use in-memory database for accounts (users come from Keycloak) ---
       - ACCOUNTS_STORAGE_TYPE=memory
     networks:
       - traefik_net
