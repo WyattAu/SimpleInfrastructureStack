@@ -15,8 +15,10 @@ services:
       - /bin/sh
     command: ["-c", "ocis init || true; exec ocis server"]
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
+      #- PUID=${PUID}
+      #- PGID=${PGID}
+      - OCIS_UID=${PUID}
+      - OCIS_GID=${PGID}
       - TZ=${TZ}
       # --- General Config ---
       - OCIS_URL=https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
