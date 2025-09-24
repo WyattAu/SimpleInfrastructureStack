@@ -10,6 +10,7 @@ services:
       - ${DATA_BASE_PATH}/storage/ocis-data:/var/lib/ocis
     entrypoint:
       - /bin/sh
+    user: "${PUID}:${PGID}"
     command: ["-c", "ocis init || true; exec ocis server"]
     environment:
       - PUID=${PUID}
