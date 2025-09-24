@@ -156,6 +156,8 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
       - WOODPECKER_HOST=https://${WOODPECKER_SUBDOMAIN}.${DOMAIN_NAME}
+      - WOODPECKER_GRPC_ADDR=:${WOODPECKER_SERVER_GRPC_PORT:-9000} # Listen on all interfaces
+      - WOODPECKER_GRPC_SECRET=${WOODPECKER_AGENT_SECRET}
       - WOODPECKER_ADMINS=${WOODPECKER_ADMIN}
       - WOODPECKER_OPEN=true
       - WOODPECKER_ORGS=${WOODPECKER_ORGS}
@@ -164,8 +166,6 @@ services:
       # DB
       - WOODPECKER_DATABASE_DRIVER=postgres
       - WOODPECKER_DATABASE_DATASOURCE=postgres://${POSTGRES_USER_WOODPECKER}:${POSTGRES_PASSWORD_WOODPECKER}@postgres-woodpecker:5432/${POSTGRES_DB_WOODPECKER}?sslmode=disable
-      # Use the internal Docker network address for Forgejo
-      #- WOODPECKER_FORGE_URL=http://forgejo:3000
       # Use the full, public-facing URL for Forgejo
       - WOODPECKER_FORGEJO_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
       - WOODPECKER_FORGEJO_CLIENT=${WOODPECKER_FORGEJO_CLIENT}
@@ -177,18 +177,28 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.woodpecker.rule=Host(`${WOODPECKER_SUBDOMAIN}.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.woodpecker.entrypoints=websecure"
-      - "traefik.http.routers.woodpecker.tls.certresolver=cloudflare"
-      - "traefik.http.services.woodpecker-svc.loadbalancer.server.port=8000"
-      - "traefik.http.routers.woodpecker.service=woodpecker-svc"
-    #healthcheck:
-      #Slim image have no shell
-      #test: ["CMD", "woodpecker-cli", "healthz"]
-    #  interval: 10s
-    #  timeout: 5s
-    #  retries: 5
-    #  start_period: 20s
+      #- "traefik.http.routers.woodpecker.rule=Host(`${WOODPECKER_SUBDOMAIN}.${DOMAIN_NAME}`)"
+      #- "traefik.http.routers.woodpecker.entrypoints=websecure"
+      #- "traefik.http.routers.woodpecker.tls.certresolver=cloudflare"
+      #- "traefik.http.services.woodpecker-svc.loadbalancer.server.port=8000"
+      #- "traefik.http.routers.woodpecker.service=woodpecker-svc"
+
+      - "traefik.http.services.woodpecker-web.loadbalancer.server.port=8000"
+      - "traefik.http.services.woodpecker-grpc.loadbalancer.server.port=9000"
+      # This tells Traefik that the gRPC service uses HTTP/2 Cleartext
+      - "traefik.http.services.woodpecker-grpc.loadbalancer.server.scheme=h2c"
+
+      # --- 2. CONFIGURE ROUTER for the Web UI ---
+      - "traefik.http.routers.woodpecker-web.rule=Host(`${WOODPECKER_SUBDOMAIN}.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.woodpecker-web.entrypoints=websecure"
+      - "traefik.http.routers.woodpecker-web.tls.certresolver=cloudflare"
+      - "traefik.http.routers.woodpecker-web.service=woodpecker-web"
+
+      # --- 3. CONFIGURE ROUTER for the gRPC endpoint ---
+      - "traefik.http.routers.woodpecker-grpc.rule=Host(`${WOODPECKER_GRPC_SUBDOMAIN}.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.woodpecker-grpc.entrypoints=websecure"
+      - "traefik.http.routers.woodpecker-grpc.tls.certresolver=cloudflare"
+      - "traefik.http.routers.woodpecker-grpc.service=woodpecker-grpc"
     logging:
       driver: "json-file"
       options:
@@ -207,7 +217,8 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - WOODPECKER_SERVER=woodpecker-server:9000
+      #- WOODPECKER_SERVER=woodpecker-server:9000
+      - WOODPECKER_SERVER=${WOODPECKER_GRPC_SUBDOMAIN}.${DOMAIN_NAME}:443
       - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
       - WOODPECKER_BACKEND=docker
       - WOODPECKER_MAX_WORKFLOWS=2
