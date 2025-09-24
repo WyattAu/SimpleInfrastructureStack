@@ -6,17 +6,9 @@ services:
     container_name: storage-ocis
     restart: unless-stopped
     volumes:
-      - ${DATA_BASE_PATH}/storage/ocis:/etc/ocis
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        echo "Waiting for OCIS domain to be resolvable..."
-        until nslookup ${OCIS_SUBDOMAIN}.${DOMAIN_NAME}; do
-          sleep 5
-        done
-        echo "Domain is resolvable, starting OCIS."
-        /usr/bin/ocis server
+      - ocis-config:/etc/ocis
+      - ocis-data:/var/lib/ocis
+    command: ["/bin/sh", "-c", "ocis init || true; exec ocis server"]
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -29,16 +21,14 @@ services:
       - OCIS_ADMIN_USERNAME=${OCIS_ADMIN_USERNAME}
       - OCIS_ADMIN_PASSWORD=${OCIS_ADMIN_PASSWORD}
 
-      # --- Secrets ---
-      - OCIS_MACHINE_AUTH_API_KEY=${OCIS_MACHINE_AUTH_API_KEY}
-      - OCIS_SYSTEM_USER_API_KEY=${OCIS_SYSTEM_USER_API_KEY}
-      - OCIS_JWT_SECRET=${OCIS_JWT_SECRET}
+      # Explicitly disable TLS within the OCIS proxy since Traefik handles it.
+      - PROXY_TLS=false
 
       # --- OIDC Configuration for Keycloak ---
       - OCIS_OIDC_ISSUER=https://auth.${DOMAIN_NAME}/realms/company-realm
       - OCIS_OIDC_CLIENT_ID=${OCIS_OIDC_CLIENT_ID}
       - OCIS_OIDC_CLIENT_SECRET=${OCIS_OIDC_CLIENT_SECRET}
-      - PROXY_OIDC_OIDC_ISSUER=https://auth.${DOMAIN_NAME}/realms/company-realm
+      - PROXY_OIDC_OIDC_ISSUER=https://auth.${DOMAIN_NAME}/realms/company-realm # Redundant but safe
       - PROXY_OIDC_CLIENT_ID=${OCIS_OIDC_CLIENT_ID}
       - PROXY_OIDC_CLIENT_SECRET=${OCIS_OIDC_CLIENT_SECRET}
 
@@ -66,6 +56,18 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  ocis-config:
+    driver_opts:
+      type: none
+      device: ${DATA_BASE_PATH}/storage/ocis-config
+      o: bind
+  ocis-data:
+    driver_opts:
+      type: none
+      device: ${DATA_BASE_PATH}/storage/ocis-data
+      o: bind
 
 networks:
   traefik_net:
