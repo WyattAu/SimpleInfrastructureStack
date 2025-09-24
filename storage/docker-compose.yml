@@ -8,6 +8,8 @@ services:
     volumes:
       - ${DATA_BASE_PATH}/storage/ocis-config:/etc/ocis
       - ${DATA_BASE_PATH}/storage/ocis-data:/var/lib/ocis
+    entrypoint:
+      - /bin/sh
     command: ["-c", "ocis init || true; exec ocis server"]
     environment:
       - PUID=${PUID}
