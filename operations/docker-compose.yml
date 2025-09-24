@@ -163,9 +163,9 @@ services:
       - WOODPECKER_DATABASE_DRIVER=postgres
       - WOODPECKER_DATABASE_DATASOURCE=postgres://${POSTGRES_USER_WOODPECKER}:${POSTGRES_PASSWORD_WOODPECKER}@postgres-woodpecker:5432/${POSTGRES_DB_WOODPECKER}?sslmode=disable
       # Use the internal Docker network address for Forgejo
-      - WOODPECKER_FORGE_URL=http://forgejo:3000
+      #- WOODPECKER_FORGE_URL=http://forgejo:3000
       # Use the full, public-facing URL for Forgejo
-      #- WOODPECKER_FORGEJO_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
+      - WOODPECKER_FORGEJO_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
       - WOODPECKER_FORGEJO_CLIENT=${WOODPECKER_FORGEJO_CLIENT}
       - WOODPECKER_FORGEJO_SECRET=${WOODPECKER_FORGEJO_SECRET}
       - WOODPECKER_BACKEND_DOCKER_NETWORK=backend
