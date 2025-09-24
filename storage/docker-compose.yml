@@ -58,6 +58,8 @@ services:
       - PROXY_USER_CS3_CLAIM=username
       - PROXY_TLS=false
       - PROXY_OIDC_REWRITE_WELLKNOWN=true
+      - GRAPH_ASSIGN_DEFAULT_USER_ROLE=false
+      - GRAPH_USERNAME_MATCH=none
     networks:
       - traefik_net
       - backend_net
