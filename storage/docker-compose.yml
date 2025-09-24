@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  ocis:
+    image: owncloud/ocis:${OCIS_VERSION}
+    container_name: storage-ocis
+    restart: unless-stopped
+    volumes:
+      - ${DATA_BASE_PATH}/storage/ocis:/etc/ocis
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        echo "Waiting for OCIS domain to be resolvable..."
+        until nslookup ${OCIS_SUBDOMAIN}.${DOMAIN_NAME}; do
+          sleep 5
+        done
+        echo "Domain is resolvable, starting OCIS."
+        /usr/bin/ocis server
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - OCIS_URL=https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
+      - OCIS_INSECURE=false
+      - OCIS_LOG_LEVEL=info
+      - OCIS_ADMIN_USERNAME=${OCIS_ADMIN_USERNAME}
+      - OCIS_ADMIN_PASSWORD=${OCIS_ADMIN_PASSWORD}
+      - OCIS_MACHINE_AUTH_API_KEY=${OCIS_MACHINE_AUTH_API_KEY}
+      - OCIS_SYSTEM_USER_API_KEY=${OCIS_SYSTEM_USER_API_KEY}
+      - OCIS_OIDC_ISSUER=https://auth.${DOMAIN_NAME}/realms/company-realm
+      - OCIS_OIDC_CLIENT_ID=${OCIS_OIDC_CLIENT_ID}
+      - OCIS_OIDC_CLIENT_SECRET=${OCIS_OIDC_CLIENT_SECRET}
+      - PROXY_OIDC_OIDC_ISSUER=https://auth.${DOMAIN_NAME}/realms/company-realm
+      - PROXY_OIDC_CLIENT_ID=${OCIS_OIDC_CLIENT_ID}
+      - PROXY_OIDC_CLIENT_SECRET=${OCIS_OIDC_CLIENT_SECRET}
+      - ACCOUNTS_STORAGE_TYPE=memory
+    networks:
+      - traefik_net
+      - backend_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
+      - "traefik.http.routers.ocis.rule=Host(`${OCIS_SUBDOMAIN}.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.ocis.entrypoints=websecure"
+      - "traefik.http.routers.ocis.tls.certresolver=cloudflare"
+      - "traefik.http.services.ocis.loadbalancer.server.port=9200"
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          cpus: '0.5'
+          memory: 2G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  traefik_net:
+    external: true
+  backend_net:
+    external: true
