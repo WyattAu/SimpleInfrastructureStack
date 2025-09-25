@@ -38,8 +38,10 @@ services:
       #- OCIS_LOG_LEVEL=info
       - OCIS_INSECURE=false
       # --- Admin User ---
-      - OCIS_ADMIN_USERNAME=${OCIS_ADMIN_USERNAME}
-      - OCIS_ADMIN_PASSWORD=${OCIS_ADMIN_PASSWORD}
+      #- OCIS_ADMIN_USERNAME=${OCIS_ADMIN_USERNAME}
+      #- OCIS_ADMIN_PASSWORD=${OCIS_ADMIN_PASSWORD}
+      # EXPLICITLY disable the default admin account to rely solely on OIDC
+      - OCIS_ADMIN_USER_ID=""
       # --- Service Management ---
       - OCIS_EXCLUDE_RUN_SERVICES=idp
       # --- Backend/Proxy OIDC Configuration ---
