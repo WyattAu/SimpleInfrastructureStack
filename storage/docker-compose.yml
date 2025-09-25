@@ -49,8 +49,8 @@ services:
       - OCIS_OIDC_CLIENT_SECRET=${OCIS_OIDC_CLIENT_SECRET}
       # --- Frontend/Web OIDC Configuration ---
       - WEB_OIDC_CLIENT_ID=${OCIS_OIDC_CLIENT_ID}
-      - WEB_OIDC_AUTHORITY=https://auth.${DOMAIN_NAME}/realms/company-realm
-      - WEB_OIDC_METADATA_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/.well-known/openid-configuration
+      #- WEB_OIDC_AUTHORITY=https://auth.${DOMAIN_NAME}/realms/company-realm
+      #- WEB_OIDC_METADATA_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/.well-known/openid-configuration
       - WEB_OIDC_SCOPE=openid profile email
       # --- OCIS Proxy Settings for OIDC ---
       - PROXY_AUTOPROVISION_ACCOUNTS=true
