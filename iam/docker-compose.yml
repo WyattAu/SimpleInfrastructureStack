@@ -30,7 +30,7 @@ services:
     container_name: iam-keycloak
     restart: unless-stopped
     command: ["start"] # ocis import is now handled by the script
-    entrypoint: ["/bin/sh", "/opt/keycloak/bin/docker-entrypoint-override.sh"]
+    #entrypoint: ["/bin/sh", "/opt/keycloak/bin/docker-entrypoint-override.sh"]
     depends_on:
       postgres-iam:
         condition: service_healthy
