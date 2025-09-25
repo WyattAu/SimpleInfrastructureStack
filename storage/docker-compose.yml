@@ -29,29 +29,31 @@ services:
       - /bin/sh
     # This command initializes a full config with random secrets on first run,
     # and then starts the server on all subsequent runs.
-    command: ["-c", "touch /etc/ocis/users.json /etc/ocis/groups.json || true; ocis init || true; exec ocis server"]
+    command: ["-c", "ocis init || true; exec ocis server"]
     environment:
       - TZ=${TZ}
       # --- General Config ---
       - OCIS_URL=https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
       - OCIS_BASE_DATA_PATH=/etc/ocis
       - OCIS_LOG_LEVEL=warn
-      - OCIS_INSECURE=false
+      #- OCIS_INSECURE=false
       #- OCIS_IDM_DRIVER=ocis
       # --- Admin User ---
-      - OCIS_ADMIN_USERNAME=${OCIS_ADMIN_USERNAME}
-      - OCIS_ADMIN_PASSWORD=${OCIS_ADMIN_PASSWORD}
+      #- OCIS_ADMIN_USERNAME=${OCIS_ADMIN_USERNAME}
+      #- OCIS_ADMIN_PASSWORD=${OCIS_ADMIN_PASSWORD}
       # EXPLICITLY disable the default admin account to rely solely on OIDC
       #- OCIS_ADMIN_USER_ID=""
       # --- Service Management ---
       - OCIS_EXCLUDE_RUN_SERVICES=idp
+      - OCIS_ADMIN_USER_ID=""
 
-      - USERS_DRIVER=json
-      - USERS_JSON_FILE=/etc/ocis/users.json
-      - GROUPS_DRIVER=json
-      - GROUPS_JSON_FILE=/etc/ocis/groups.json
-      - ACCOUNTS_USER_BACKEND_TYPE=json
-      - GRAPH_IDENTITY_BACKEND=json
+
+      #- USERS_DRIVER=json
+      #- USERS_JSON_FILE=/etc/ocis/users.json
+      #- GROUPS_DRIVER=json
+      #- GROUPS_JSON_FILE=/etc/ocis/groups.json
+      #- ACCOUNTS_USER_BACKEND_TYPE=json
+      #- GRAPH_IDENTITY_BACKEND=json
 
       # --- Backend/Proxy OIDC Configuration ---
       - OCIS_OIDC_ISSUER=https://auth.${DOMAIN_NAME}/realms/company-realm
