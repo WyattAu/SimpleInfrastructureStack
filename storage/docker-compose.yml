@@ -47,6 +47,7 @@ services:
       #- OCIS_OIDC_ISSUER=http://iam-keycloak:8080/realms/company-realm
       - OCIS_OIDC_CLIENT_ID=${OCIS_OIDC_CLIENT_ID}
       - OCIS_OIDC_CLIENT_SECRET=${OCIS_OIDC_CLIENT_SECRET}
+      - PROXY_OIDC_INSECURE_SKIP_VERIFY=true
       # --- Frontend/Web OIDC Configuration ---
       - WEB_OIDC_CLIENT_ID=${OCIS_OIDC_CLIENT_ID}
       #- WEB_OIDC_AUTHORITY=https://auth.${DOMAIN_NAME}/realms/company-realm
