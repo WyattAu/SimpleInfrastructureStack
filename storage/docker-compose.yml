@@ -29,7 +29,7 @@ services:
       - /bin/sh
     # This command initializes a full config with random secrets on first run,
     # and then starts the server on all subsequent runs.
-    command: ["-c", "ocis init || true; exec ocis server"]
+    command: ["-c", "touch /etc/ocis/users.json /etc/ocis/groups.json || true; ocis init || true; exec ocis server"]
     environment:
       - TZ=${TZ}
       # --- General Config ---
