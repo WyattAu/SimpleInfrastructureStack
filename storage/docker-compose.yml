@@ -37,6 +37,7 @@ services:
       - OCIS_BASE_DATA_PATH=/etc/ocis
       - OCIS_LOG_LEVEL=warn
       - OCIS_INSECURE=false
+      - OCIS_IDM_DRIVER=ocis
       # --- Admin User ---
       - OCIS_ADMIN_USERNAME=${OCIS_ADMIN_USERNAME}
       - OCIS_ADMIN_PASSWORD=${OCIS_ADMIN_PASSWORD}
