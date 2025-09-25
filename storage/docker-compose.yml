@@ -45,8 +45,8 @@ services:
       #- OCIS_ADMIN_USER_ID=""
       # --- Service Management ---
       - OCIS_EXCLUDE_RUN_SERVICES=idp
-      - USERS_DRIVER=ocis
-      - GROUPS_DRIVER=ocis
+      - USERS_DRIVER=cs3
+      - GROUPS_DRIVER=cs3
 
       # --- Backend/Proxy OIDC Configuration ---
       - OCIS_OIDC_ISSUER=https://auth.${DOMAIN_NAME}/realms/company-realm
