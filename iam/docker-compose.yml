@@ -1,6 +1,16 @@
 version: '3.8'
 
 services:
+  debug:
+    image: alpine:latest
+    working_dir: /app
+    volumes:
+      - ./:/app
+    entrypoint:
+      - /bin/sh
+    # This command will list the contents of the 'config' folder and then exit
+    command: ["-c", "echo '--- Portainer sees this file structure: ---'; ls -lR config; echo '--- End of report ---'"]
+
   postgres-iam:
     image: postgres:${POSTGRES_VERSION}
     container_name: iam-postgres
