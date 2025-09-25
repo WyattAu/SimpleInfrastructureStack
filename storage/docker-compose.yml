@@ -35,7 +35,7 @@ services:
       # --- General Config ---
       - OCIS_URL=https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
       - OCIS_BASE_DATA_PATH=/etc/ocis
-      - OCIS_LOG_LEVEL=info
+      #- OCIS_LOG_LEVEL=info
       - OCIS_INSECURE=false
       # --- Admin User ---
       - OCIS_ADMIN_USERNAME=${OCIS_ADMIN_USERNAME}
