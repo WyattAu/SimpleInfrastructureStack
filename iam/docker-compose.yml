@@ -29,7 +29,7 @@ services:
     image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
     container_name: iam-keycloak
     restart: unless-stopped
-    command: ["start"] # The import is now handled by the script
+    command: ["start"] # ocis import is now handled by the script
     entrypoint: ["/bin/sh", "/opt/keycloak/bin/docker-entrypoint-override.sh"]
     depends_on:
       postgres-iam:
