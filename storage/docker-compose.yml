@@ -50,10 +50,10 @@ services:
       - OCIS_BASE_DATA_PATH=/var/lib/ocis
       - OCIS_ADMIN_USER_ID=""
       # --- Service Management ---
-      - OCIS_EXCLUDE_RUN_SERVICES=idp,idm
-      - GRAPH_IDENTITY_BACKEND=cs3
-      - USERS_DRIVER=cs3
-      - GROUPS_DRIVER=cs3
+      - OCIS_EXCLUDE_RUN_SERVICES=idp
+      #- GRAPH_IDENTITY_BACKEND=cs3
+      #- USERS_DRIVER=cs3
+      #- GROUPS_DRIVER=cs3
       - OCIS_ADMIN_USER_ID=""
       # --- Backend/Proxy OIDC Configuration ---
       - OCIS_OIDC_ISSUER=https://auth.${DOMAIN_NAME}/realms/company-realm
