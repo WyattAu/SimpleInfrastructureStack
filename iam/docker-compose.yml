@@ -39,14 +39,14 @@ services:
     image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
     container_name: iam-keycloak
     restart: unless-stopped
-    command: ["start"] # ocis import is now handled by the script
-    entrypoint: ["/bin/sh", "/opt/keycloak/bin/docker-entrypoint-override.sh"]
+    command: ["start"]
+    #entrypoint: ["/bin/sh", "/opt/keycloak/bin/docker-entrypoint-override.sh"]
     depends_on:
       postgres-iam:
         condition: service_healthy
     volumes:
-      - ./config/keycloak/docker-entrypoint-override.sh:/opt/keycloak/bin/docker-entrypoint-override.sh
-      - ./config/keycloak/ocis-realm.dist.json:/opt/keycloak/data/import/ocis-realm.json
+    #  - ./config/keycloak/docker-entrypoint-override.sh:/opt/keycloak/bin/docker-entrypoint-override.sh
+    #  - ./config/keycloak/company-realm.dist.json:/opt/keycloak/data/import/company-realm.json
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -64,7 +64,7 @@ services:
       - KC_HEALTH_ENABLED=true
       - KC_HTTP_ENABLED=true
       - KC_CACHE=local
-      - OCIS_URL=https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
+    #  - OCIS_URL=https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
     networks:
       - traefik_net
       - backend_net
