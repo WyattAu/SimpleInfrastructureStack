@@ -63,8 +63,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     strategy:
-      # The matrix now contains a simple list of identifiers for your machines.
-      # These MUST correspond to the suffix of your secret names.
+      # These MUST correspond to the suffix of the secret names.
       matrix:
         machine: ['TRUENAS']
         # To add a new machine, just add its identifier here (e.g., 'MACHINE_D')
