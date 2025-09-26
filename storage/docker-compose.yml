@@ -70,8 +70,10 @@ services:
       - PROXY_CSP_POLICIES="default-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self' https://auth.${DOMAIN_NAME}; connect-src 'self' https://auth.${DOMAIN_NAME}"
       - GRAPH_ASSIGN_DEFAULT_USER_ROLE=false
       - GRAPH_USERNAME_MATCH=none
-      - OCIS_PASSWORD_POLICY_BANNED_PASSWORDS_LIST=/etc/ocis/banned-password-list.txt
-      - PROXY_CSP_CONFIG_FILE_LOCATION=/etc/ocis/csp.yaml
+      - OCIS_MFA_ENABLED=false
+      - KEYCLOAK_DOMAIN=auth.${DOMAIN_NAME}
+      #- OCIS_PASSWORD_POLICY_BANNED_PASSWORDS_LIST=/etc/ocis/banned-password-list.txt
+      #- PROXY_CSP_CONFIG_FILE_LOCATION=/etc/ocis/csp.yaml
     networks:
       - traefik_net
       - backend_net
