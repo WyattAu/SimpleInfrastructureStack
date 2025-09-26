@@ -24,7 +24,10 @@ services:
       ocis-init:
         condition: service_completed_successfully
     volumes:
-      - ${DATA_BASE_PATH}/storage/ocis:/etc/ocis
+      - ./config/ocis/banned-password-list.txt:/etc/ocis/banned-password-list.txt
+      - ./config/ocis/csp.yaml:/etc/ocis/csp.yaml
+      - ${DATA_BASE_PATH}/storage/ocis-config:/etc/ocis
+      - ${DATA_BASE_PATH}/storage/ocis-data:/var/lib/ocis
     entrypoint:
       - /bin/sh
     # This command initializes a full config with random secrets on first run,
@@ -42,19 +45,10 @@ services:
       #- OCIS_ADMIN_USERNAME=${OCIS_ADMIN_USERNAME}
       #- OCIS_ADMIN_PASSWORD=${OCIS_ADMIN_PASSWORD}
       # EXPLICITLY disable the default admin account to rely solely on OIDC
-      #- OCIS_ADMIN_USER_ID=""
+      - OCIS_ADMIN_USER_ID=""
       # --- Service Management ---
       - OCIS_EXCLUDE_RUN_SERVICES=idp
       - OCIS_ADMIN_USER_ID=""
-
-
-      #- USERS_DRIVER=json
-      #- USERS_JSON_FILE=/etc/ocis/users.json
-      #- GROUPS_DRIVER=json
-      #- GROUPS_JSON_FILE=/etc/ocis/groups.json
-      #- ACCOUNTS_USER_BACKEND_TYPE=json
-      #- GRAPH_IDENTITY_BACKEND=json
-
       # --- Backend/Proxy OIDC Configuration ---
       - OCIS_OIDC_ISSUER=https://auth.${DOMAIN_NAME}/realms/company-realm
       #- OCIS_OIDC_ISSUER=http://iam-keycloak:8080/realms/company-realm
@@ -76,6 +70,8 @@ services:
       - PROXY_CSP_POLICIES="default-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self' https://auth.${DOMAIN_NAME}; connect-src 'self' https://auth.${DOMAIN_NAME}"
       - GRAPH_ASSIGN_DEFAULT_USER_ROLE=false
       - GRAPH_USERNAME_MATCH=none
+      - OCIS_PASSWORD_POLICY_BANNED_PASSWORDS_LIST=/etc/ocis/banned-password-list.txt
+      - PROXY_CSP_CONFIG_FILE_LOCATION=/etc/ocis/csp.yaml
     networks:
       - traefik_net
       - backend_net
