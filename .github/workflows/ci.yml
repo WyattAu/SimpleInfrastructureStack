@@ -56,32 +56,32 @@ jobs:
       - name: All Checks Passed
         run: echo "All infrastructure configuration files are valid and correctly formatted."
 
-  deploy-to-machines:
-    name: Deploy to All Machines
-    runs-on: ubuntu-latest
-    needs: validate-and-lint
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    strategy:
-      # These MUST correspond to the suffix of the secret names.
-      matrix:
-        machine: ['TRUENAS']
-        # To add a new machine, just add its identifier here (e.g., 'MACHINE_D')
-        # and create a corresponding secret named 'STACK_WEBHOOK_MACHINE_D'.
-
-    steps:
-      - name: Trigger deployment for ${{ matrix.machine }}
-        # This step dynamically builds the secret name based on the matrix identifier.
-        # For example, when matrix.machine is 'TRUENAS', it looks for secrets.STACK_WEBHOOK_TRUENAS.
-        env:
-          # Create an environment variable that holds the correct secret for this run.
-          PORTAINER_WEBHOOK_URL: ${{ secrets[format('STACK_WEBHOOK_{0}', matrix.machine)] }}
-
-        # We add a condition to ensure the curl command doesn't run with an empty URL
-        # if a secret for a machine is accidentally missing.
-        if: env.PORTAINER_WEBHOOK_URL != ''
-
-        # The curl command now uses the environment variable.
-        run: |
-          echo "Triggering webhook for ${{ matrix.machine }}..."
-          curl -s -X POST "$PORTAINER_WEBHOOK_URL"
+  #deploy-to-machines:
+  #  name: Deploy to All Machines
+  #  runs-on: ubuntu-latest
+  #  needs: validate-and-lint
+  #  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+#
+  #  strategy:
+  #    # These MUST correspond to the suffix of the secret names.
+  #    matrix:
+  #      machine: ['TRUENAS']
+  #      # To add a new machine, just add its identifier here (e.g., 'MACHINE_D')
+  #      # and create a corresponding secret named 'STACK_WEBHOOK_MACHINE_D'.
+#
+  #  steps:
+  #    - name: Trigger deployment for ${{ matrix.machine }}
+  #      # This step dynamically builds the secret name based on the matrix identifier.
+  #      # For example, when matrix.machine is 'TRUENAS', it looks for secrets.STACK_WEBHOOK_TRUENAS.
+  #      env:
+  #        # Create an environment variable that holds the correct secret for this run.
+  #        PORTAINER_WEBHOOK_URL: ${{ secrets[format('STACK_WEBHOOK_{0}', matrix.machine)] }}
+#
+  #      # We add a condition to ensure the curl command doesn't run with an empty URL
+  #      # if a secret for a machine is accidentally missing.
+  #      if: env.PORTAINER_WEBHOOK_URL != ''
+#
+  #      # The curl command now uses the environment variable.
+  #      run: |
+  #        echo "Triggering webhook for ${{ matrix.machine }}..."
+  #        curl -s -X POST "$PORTAINER_WEBHOOK_URL"
