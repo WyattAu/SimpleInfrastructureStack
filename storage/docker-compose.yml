@@ -73,6 +73,7 @@ services:
       - PROXY_USER_CS3_CLAIM=username
       - PROXY_TLS=false
       - PROXY_OIDC_REWRITE_WELLKNOWN=true
+      - PROXY_CSP_POLICIES="default-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self' https://auth.${DOMAIN_NAME}; connect-src 'self' https://auth.${DOMAIN_NAME}"
       - GRAPH_ASSIGN_DEFAULT_USER_ROLE=false
       - GRAPH_USERNAME_MATCH=none
     networks:
