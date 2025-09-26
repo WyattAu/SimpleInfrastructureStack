@@ -7,10 +7,11 @@ services:
     image: busybox:latest
     container_name: storage-ocis-init
     # Set the ownership to the hardcoded UID/GID that the OCIS container uses internally.
-    command: chown -R 1000:1000 /etc/ocis
+    command: chown -R 1000:1000 /etc/ocis /var/lib/ocis
     volumes:
       # Mount the same volume as the main ocis service
-      - ${DATA_BASE_PATH}/storage/ocis:/etc/ocis
+      - ${DATA_BASE_PATH}/storage/ocis-config:/etc/ocis
+      - ${DATA_BASE_PATH}/storage/ocis-data:/var/lib/ocis
     environment:
       - PUID=1000
       - PGID=1000
