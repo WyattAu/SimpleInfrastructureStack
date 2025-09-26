@@ -37,7 +37,7 @@ services:
       - TZ=${TZ}
       # --- General Config ---
       - OCIS_URL=https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
-      - OCIS_BASE_DATA_PATH=/etc/ocis
+      #- OCIS_BASE_DATA_PATH=/var/lib/ocis
       - OCIS_LOG_LEVEL=warn
       - OCIS_INSECURE=true
       #- OCIS_IDM_DRIVER=ocis
