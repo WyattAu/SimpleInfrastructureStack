@@ -46,6 +46,8 @@ services:
       #- OCIS_ADMIN_USERNAME=${OCIS_ADMIN_USERNAME}
       #- OCIS_ADMIN_PASSWORD=${OCIS_ADMIN_PASSWORD}
       # EXPLICITLY disable the default admin account to rely solely on OIDC
+      - OCIS_CONFIG_DIR=/etc/ocis
+      - OCIS_BASE_DATA_PATH=/var/lib/ocis
       - OCIS_ADMIN_USER_ID=""
       # --- Service Management ---
       - OCIS_EXCLUDE_RUN_SERVICES=idp
