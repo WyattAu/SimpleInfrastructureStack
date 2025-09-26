@@ -36,46 +36,71 @@ services:
     # command: ["-c", "ocis init || true; exec ocis server"]
     command: ["-c", "if [ ! -f /etc/ocis/ocis.yaml ]; then ocis init; fi; exec ocis server"]
     environment:
-      - TZ=${TZ}
+      #- TZ=${TZ}
+      # Keycloak IDP specific configuration
+      PROXY_AUTOPROVISION_ACCOUNTS: "true"
+      PROXY_ROLE_ASSIGNMENT_DRIVER: "oidc"
+      OCIS_OIDC_ISSUER: https://${KEYCLOAK_DOMAIN:-keycloak.owncloud.test}/realms/${KEYCLOAK_REALM:-oCIS}
+      PROXY_OIDC_REWRITE_WELLKNOWN: "true"
+      WEB_OIDC_CLIENT_ID: ${OCIS_OIDC_CLIENT_ID:-web}
+      # general config
+      OCIS_URL: https://${OCIS_DOMAIN:-ocis.owncloud.test}
+      OCIS_LOG_LEVEL: ${OCIS_LOG_LEVEL:-info}
+      OCIS_LOG_COLOR: "${OCIS_LOG_COLOR:-false}"
+      PROXY_TLS: "false" # do not use SSL between Traefik and oCIS
+      PROXY_USER_OIDC_CLAIM: "preferred_username"
+      PROXY_USER_CS3_CLAIM: "username"
+      # INSECURE: needed if oCIS / Traefik is using self generated certificates
+      OCIS_INSECURE: "${INSECURE:-false}"
+      OCIS_ADMIN_USER_ID: ""
+      OCIS_EXCLUDE_RUN_SERVICES: "idp"
+      GRAPH_ASSIGN_DEFAULT_USER_ROLE: "false"
+      GRAPH_USERNAME_MATCH: "none"
+      # password policies
+      OCIS_PASSWORD_POLICY_BANNED_PASSWORDS_LIST: "banned-password-list.txt"
+      PROXY_CSP_CONFIG_FILE_LOCATION: /etc/ocis/csp.yaml
+      KEYCLOAK_DOMAIN: ${KEYCLOAK_DOMAIN:-keycloak.owncloud.test}
+      OCIS_MFA_ENABLED: ${OCIS_MFA_ENABLED:-false}
+      WEB_OIDC_SCOPE: "openid profile email acr"
       # --- General Config ---
-      - OCIS_URL=https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
+      #- OCIS_URL=https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
+      ##- OCIS_BASE_DATA_PATH=/var/lib/ocis
+      #- OCIS_LOG_LEVEL=warn
+      #- OCIS_INSECURE=true
+      #- OCIS_IDM_DRIVER=ocis
+      ## --- Admin User ---
+      ##- OCIS_ADMIN_USERNAME=${OCIS_ADMIN_USERNAME}
+      ##- OCIS_ADMIN_PASSWORD=${OCIS_ADMIN_PASSWORD}
+      ## EXPLICITLY disable the default admin account to rely solely on OIDC
+      #- OCIS_CONFIG_DIR=/etc/ocis
       #- OCIS_BASE_DATA_PATH=/var/lib/ocis
-      - OCIS_LOG_LEVEL=warn
-      - OCIS_INSECURE=true
-      - OCIS_IDM_DRIVER=ocis
-      # --- Admin User ---
-      #- OCIS_ADMIN_USERNAME=${OCIS_ADMIN_USERNAME}
-      #- OCIS_ADMIN_PASSWORD=${OCIS_ADMIN_PASSWORD}
-      # EXPLICITLY disable the default admin account to rely solely on OIDC
-      - OCIS_CONFIG_DIR=/etc/ocis
-      - OCIS_BASE_DATA_PATH=/var/lib/ocis
-      - OCIS_ADMIN_USER_ID=""
-      # --- Service Management ---
-      - OCIS_EXCLUDE_RUN_SERVICES=idp
-      - GRAPH_IDENTITY_BACKEND=ocis
-      # --- Backend/Proxy OIDC Configuration ---
-      - OCIS_OIDC_ISSUER=https://auth.${DOMAIN_NAME}/realms/company-realm
-      #- OCIS_OIDC_ISSUER=http://iam-keycloak:8080/realms/company-realm
-      - OCIS_OIDC_CLIENT_ID=${OCIS_OIDC_CLIENT_ID}
-      - OCIS_OIDC_CLIENT_SECRET=${OCIS_OIDC_CLIENT_SECRET}
-      - PROXY_OIDC_INSECURE_SKIP_VERIFY=true
-      # --- Frontend/Web OIDC Configuration ---
-      - WEB_OIDC_CLIENT_ID=${OCIS_OIDC_CLIENT_ID}
-      #- WEB_OIDC_AUTHORITY=https://auth.${DOMAIN_NAME}/realms/company-realm
-      #- WEB_OIDC_METADATA_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/.well-known/openid-configuration
-      - WEB_OIDC_SCOPE=openid profile email
-      # --- OCIS Proxy Settings for OIDC ---
-      - PROXY_AUTOPROVISION_ACCOUNTS=true
-      - PROXY_ROLE_ASSIGNMENT_DRIVER=oidc
-      - PROXY_USER_OIDC_CLAIM=preferred_username
-      - PROXY_USER_CS3_CLAIM=username
-      - PROXY_TLS=false
-      - PROXY_OIDC_REWRITE_WELLKNOWN=true
-      - PROXY_CSP_POLICIES="default-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self' https://auth.${DOMAIN_NAME}; connect-src 'self' https://auth.${DOMAIN_NAME}"
-      - GRAPH_ASSIGN_DEFAULT_USER_ROLE=false
-      - GRAPH_USERNAME_MATCH=none
-      - OCIS_MFA_ENABLED=false
-      - KEYCLOAK_DOMAIN=auth.${DOMAIN_NAME}
+      #- OCIS_ADMIN_USER_ID=""
+      ## --- Service Management ---
+      #- OCIS_EXCLUDE_RUN_SERVICES=idp
+      #- GRAPH_IDENTITY_BACKEND=ocis
+      ## --- Backend/Proxy OIDC Configuration ---
+      #- OCIS_OIDC_ISSUER=https://auth.${DOMAIN_NAME}/realms/company-realm
+      ##- OCIS_OIDC_ISSUER=http://iam-keycloak:8080/realms/company-realm
+      #- OCIS_OIDC_CLIENT_ID=${OCIS_OIDC_CLIENT_ID}
+      #- OCIS_OIDC_CLIENT_SECRET=${OCIS_OIDC_CLIENT_SECRET}
+      #- PROXY_OIDC_INSECURE_SKIP_VERIFY=true
+      ## --- Frontend/Web OIDC Configuration ---
+      #- WEB_OIDC_CLIENT_ID=${OCIS_OIDC_CLIENT_ID}
+      ##- WEB_OIDC_AUTHORITY=https://auth.${DOMAIN_NAME}/realms/company-realm
+      ##- WEB_OIDC_METADATA_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/.well-known/openid-configuration
+      #- WEB_OIDC_SCOPE=openid profile email
+      ## --- OCIS Proxy Settings for OIDC ---
+      #- PROXY_AUTOPROVISION_ACCOUNTS=true
+      #- PROXY_ROLE_ASSIGNMENT_DRIVER=oidc
+      #- PROXY_USER_OIDC_CLAIM=preferred_username
+      #- PROXY_USER_CS3_CLAIM=username
+      #- PROXY_TLS=false
+      #- PROXY_OIDC_REWRITE_WELLKNOWN=true
+      #- PROXY_CSP_POLICIES="default-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self' https://auth.${DOMAIN_NAME}; connect-src 'self' https://auth.${DOMAIN_NAME}"
+      #- GRAPH_ASSIGN_DEFAULT_USER_ROLE=false
+      #- GRAPH_USERNAME_MATCH=none
+      #- OCIS_MFA_ENABLED=false
+      #- KEYCLOAK_DOMAIN=auth.${DOMAIN_NAME}
       #- OCIS_PASSWORD_POLICY_BANNED_PASSWORDS_LIST=/etc/ocis/banned-password-list.txt
       #- PROXY_CSP_CONFIG_FILE_LOCATION=/etc/ocis/csp.yaml
     networks:
