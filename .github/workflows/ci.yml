@@ -55,3 +55,30 @@ jobs:
 
       - name: All Checks Passed
         run: echo "All infrastructure configuration files are valid and correctly formatted."
+
+  deploy-to-machines:
+    name: Deploy to All Machines
+    runs-on: ubuntu-latest
+    # This ensures deployment only happens after all validation checks pass.
+    needs: validate-and-lint
+    # This is CRITICAL: it ensures this job only runs on a direct push to 'main', not on pull requests.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    strategy:
+      # The matrix strategy runs a copy of this job for each item listed below.
+      # This is the perfect way to manage multiple machines.
+      matrix:
+        machine:
+          # Define each of your machines here with a friendly name and its secret webhook URL.
+          - name: 'TrueNAS Server'
+            url: ${{ secrets.TRUENAS_STACK_WEBHOOK }}
+          #- name: 'Machine B'
+          #  url: ${{ secrets.MACHINE_B_STACK_WEBHOOK }}
+          #- name: 'Machine C'
+          #  url: ${{ secrets.MACHINE_C_STACK_WEBHOOK }}
+          # To add a new machine, just add another entry here and create the corresponding secret.
+
+    steps:
+      - name: Call Portainer Webhook for ${{ matrix.machine.name }}
+        # This simple step sends an HTTP POST request to the webhook, telling Portainer to re-pull and redeploy.
+        run: curl -s -X POST "${{ matrix.machine.url }}"
