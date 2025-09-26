@@ -51,6 +51,11 @@ services:
       - OCIS_ADMIN_USER_ID=""
       # --- Service Management ---
       - OCIS_EXCLUDE_RUN_SERVICES=idp
+      - GRAPH_IDENTITY_BACKEND=ocis
+      - USERS_USER_BACKEND_TYPE=ocis
+      - GROUPS_GROUP_BACKEND_TYPE=ocis
+      - AUTH_BASIC_BACKEND=ocis
+      - ACCOUNTS_USER_BACKEND_TYPE=ocis
       #- GRAPH_IDENTITY_BACKEND=cs3
       #- USERS_DRIVER=cs3
       #- GROUPS_DRIVER=cs3
