@@ -40,11 +40,11 @@ services:
       # Keycloak IDP specific configuration
       PROXY_AUTOPROVISION_ACCOUNTS: "true"
       PROXY_ROLE_ASSIGNMENT_DRIVER: "oidc"
-      OCIS_OIDC_ISSUER: https://${KEYCLOAK_DOMAIN:-keycloak.owncloud.test}/realms/${KEYCLOAK_REALM:-oCIS}
+      OCIS_OIDC_ISSUER: https://auth.${DOMAIN_NAME}/realms/company-realm
       PROXY_OIDC_REWRITE_WELLKNOWN: "true"
       WEB_OIDC_CLIENT_ID: ${OCIS_OIDC_CLIENT_ID:-web}
       # general config
-      OCIS_URL: https://${OCIS_DOMAIN:-ocis.owncloud.test}
+      OCIS_URL: https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
       OCIS_LOG_LEVEL: ${OCIS_LOG_LEVEL:-info}
       OCIS_LOG_COLOR: "${OCIS_LOG_COLOR:-false}"
       PROXY_TLS: "false" # do not use SSL between Traefik and oCIS
@@ -59,7 +59,7 @@ services:
       # password policies
       OCIS_PASSWORD_POLICY_BANNED_PASSWORDS_LIST: "banned-password-list.txt"
       PROXY_CSP_CONFIG_FILE_LOCATION: /etc/ocis/csp.yaml
-      KEYCLOAK_DOMAIN: ${KEYCLOAK_DOMAIN:-keycloak.owncloud.test}
+      KEYCLOAK_DOMAIN: auth.${DOMAIN_NAME}
       OCIS_MFA_ENABLED: ${OCIS_MFA_ENABLED:-false}
       WEB_OIDC_SCOPE: "openid profile email acr"
       # --- General Config ---
