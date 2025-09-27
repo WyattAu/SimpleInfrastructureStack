@@ -54,7 +54,7 @@ services:
       PROXY_USER_OIDC_CLAIM: "preferred_username"
       PROXY_USER_CS3_CLAIM: "username"
       # INSECURE: needed if oCIS / Traefik is using self generated certificates
-      OCIS_INSECURE: "${INSECURE:-false}"
+      OCIS_INSECURE: "${INSECURE:-true}"
       OCIS_ADMIN_USER_ID: ""
       OCIS_EXCLUDE_RUN_SERVICES: "idp"
       GRAPH_ASSIGN_DEFAULT_USER_ROLE: "false"
