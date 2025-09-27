@@ -41,6 +41,8 @@ services:
       PROXY_AUTOPROVISION_ACCOUNTS: "true"
       PROXY_ROLE_ASSIGNMENT_DRIVER: "oidc"
       OCIS_OIDC_ISSUER: https://auth.${DOMAIN_NAME}/realms/company-realm
+      WEB_OIDC_AUTHORITY: https://auth.${DOMAIN_NAME}/realms/company-realm
+      WEB_OIDC_METADATA_URL: https://auth.${DOMAIN_NAME}/realms/company-realm/.well-known/openid-configuration
       PROXY_OIDC_REWRITE_WELLKNOWN: "true"
       OCIS_OIDC_CLIENT_ID: ${OCIS_OIDC_CLIENT_ID}
       WEB_OIDC_CLIENT_ID: ${OCIS_OIDC_CLIENT_ID:-web}
