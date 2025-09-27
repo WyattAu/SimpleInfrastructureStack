@@ -66,7 +66,7 @@ services:
       PROXY_CSP_CONFIG_FILE_LOCATION: /etc/ocis/csp.yaml
       KEYCLOAK_DOMAIN: auth.${DOMAIN_NAME}
       OCIS_MFA_ENABLED: ${OCIS_MFA_ENABLED:-false}
-      WEB_OIDC_SCOPE: "openid profile email acr"
+      WEB_OIDC_SCOPE: "openid profile email roles groups"
       # --- General Config ---
       #- OCIS_URL=https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
       ##- OCIS_BASE_DATA_PATH=/var/lib/ocis
