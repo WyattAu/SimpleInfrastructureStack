@@ -38,19 +38,18 @@ services:
     environment:
       #- TZ=${TZ}
       # Keycloak IDP specific configuration
+      FRONTEND_APP_HANDLER_SECURE_VIEW_APP_ADDR: "com.owncloud.api.collaboration.CollaboraOnline"
+      COLLABORA_DOMAIN: "collabora.${DOMAIN_NAME}"
       PROXY_AUTOPROVISION_ACCOUNTS: "true"
       PROXY_ROLE_ASSIGNMENT_DRIVER: "oidc"
       OCIS_OIDC_ISSUER: https://auth.${DOMAIN_NAME}/realms/company-realm
-      #OCIS_OIDC_ISSUER: https://auth.${DOMAIN_NAME}/realms/oCIS
+
       WEB_OIDC_AUTHORITY: https://auth.${DOMAIN_NAME}/realms/company-realm
-      #WEB_OIDC_AUTHORITY: https://auth.${DOMAIN_NAME}/realms/oCIS
+
       WEB_OIDC_METADATA_URL: https://auth.${DOMAIN_NAME}/realms/company-realm/.well-known/openid-configuration
-      #WEB_OIDC_METADATA_URL: https://auth.${DOMAIN_NAME}/realms/oCIS/.well-known/openid-configuration
+
       PROXY_OIDC_REWRITE_WELLKNOWN: "true"
-      #OCIS_OIDC_CLIENT_ID: ${OCIS_OIDC_CLIENT_ID}
       WEB_OIDC_CLIENT_ID: ${OCIS_OIDC_CLIENT_ID:-web}
-      #OCIS_OIDC_CLIENT_SECRET: ${OCIS_OIDC_CLIENT_SECRET}
-      #WEB_OIDC_CLIENT_SECRET: ${OCIS_OIDC_CLIENT_SECRET}
       # general config
       OCIS_URL: https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
       OCIS_LOG_LEVEL: ${OCIS_LOG_LEVEL:-info}
@@ -70,47 +69,6 @@ services:
       KEYCLOAK_DOMAIN: auth.${DOMAIN_NAME}
       OCIS_MFA_ENABLED: ${OCIS_MFA_ENABLED:-false}
       WEB_OIDC_SCOPE: "openid profile email roles groups"
-      # --- General Config ---
-      #- OCIS_URL=https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
-      ##- OCIS_BASE_DATA_PATH=/var/lib/ocis
-      #- OCIS_LOG_LEVEL=warn
-      #- OCIS_INSECURE=true
-      #- OCIS_IDM_DRIVER=ocis
-      ## --- Admin User ---
-      ##- OCIS_ADMIN_USERNAME=${OCIS_ADMIN_USERNAME}
-      ##- OCIS_ADMIN_PASSWORD=${OCIS_ADMIN_PASSWORD}
-      ## EXPLICITLY disable the default admin account to rely solely on OIDC
-      #- OCIS_CONFIG_DIR=/etc/ocis
-      #- OCIS_BASE_DATA_PATH=/var/lib/ocis
-      #- OCIS_ADMIN_USER_ID=""
-      ## --- Service Management ---
-      #- OCIS_EXCLUDE_RUN_SERVICES=idp
-      #- GRAPH_IDENTITY_BACKEND=ocis
-      ## --- Backend/Proxy OIDC Configuration ---
-      #- OCIS_OIDC_ISSUER=https://auth.${DOMAIN_NAME}/realms/company-realm
-      ##- OCIS_OIDC_ISSUER=http://iam-keycloak:8080/realms/company-realm
-      #- OCIS_OIDC_CLIENT_ID=${OCIS_OIDC_CLIENT_ID}
-      #- OCIS_OIDC_CLIENT_SECRET=${OCIS_OIDC_CLIENT_SECRET}
-      #- PROXY_OIDC_INSECURE_SKIP_VERIFY=true
-      ## --- Frontend/Web OIDC Configuration ---
-      #- WEB_OIDC_CLIENT_ID=${OCIS_OIDC_CLIENT_ID}
-      ##- WEB_OIDC_AUTHORITY=https://auth.${DOMAIN_NAME}/realms/company-realm
-      ##- WEB_OIDC_METADATA_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/.well-known/openid-configuration
-      #- WEB_OIDC_SCOPE=openid profile email
-      ## --- OCIS Proxy Settings for OIDC ---
-      #- PROXY_AUTOPROVISION_ACCOUNTS=true
-      #- PROXY_ROLE_ASSIGNMENT_DRIVER=oidc
-      #- PROXY_USER_OIDC_CLAIM=preferred_username
-      #- PROXY_USER_CS3_CLAIM=username
-      #- PROXY_TLS=false
-      #- PROXY_OIDC_REWRITE_WELLKNOWN=true
-      #- PROXY_CSP_POLICIES="default-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self' https://auth.${DOMAIN_NAME}; connect-src 'self' https://auth.${DOMAIN_NAME}"
-      #- GRAPH_ASSIGN_DEFAULT_USER_ROLE=false
-      #- GRAPH_USERNAME_MATCH=none
-      #- OCIS_MFA_ENABLED=false
-      #- KEYCLOAK_DOMAIN=auth.${DOMAIN_NAME}
-      #- OCIS_PASSWORD_POLICY_BANNED_PASSWORDS_LIST=/etc/ocis/banned-password-list.txt
-      #- PROXY_CSP_CONFIG_FILE_LOCATION=/etc/ocis/csp.yaml
     networks:
       - traefik_net
       - backend_net
@@ -134,6 +92,62 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+  collaboration:
+    image: owncloud/ocis:${OCIS_VERSION}
+    container_name: storage-collaboration
+    restart: unless-stopped
+    depends_on:
+      - ocis
+      - collabora
+    command: ["collaboration", "server"]
+    environment:
+      COLLABORATION_WOPI_SRC: http://storage-collaboration:9300
+      COLLABORATION_APP_NAME: "CollaboraOnline"
+      COLLABORATION_APP_ADDR: https://collabora.${DOMAIN_NAME}
+      COLLABORATION_APP_ICON: https://collabora.${DOMAIN_NAME}/favicon.ico
+      COLLABORATION_APP_INSECURE: "${INSECURE:-false}"
+      COLLABORATION_CS3API_DATAGATEWAY_INSECURE: "${INSECURE:-false}"
+      COLLABORATION_LOG_LEVEL: ${OCIS_LOG_LEVEL:-info}
+      OCIS_URL: https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
+      OCIS_JWT_SECRET: "${OCIS_JWT_SECRET}"
+      OCIS_REVA_GATEWAY: storage-ocis:9142
+      MICRO_REGISTRY: nats
+      MICRO_REGISTRY_ADDRESS: storage-ocis:9233
+    networks:
+      - backend_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  collabora:
+    image: collabora/code:latest
+    container_name: storage-collabora
+    restart: unless-stopped
+    cap_add:
+      - MKNOD
+    environment:
+      - "extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:net.frame_ancestors=${OCIS_SUBDOMAIN}.${DOMAIN_NAME}"
+      - "domain=${OCIS_SUBDOMAIN}\\.${DOMAIN_NAME}"
+      - "server_name=collabora.${DOMAIN_NAME}"
+      - "DONT_GEN_SSL_CERT=true"
+    networks:
+      - traefik_net
+      - backend_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
+      - "traefik.http.routers.collabora.rule=Host(`collabora.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.collabora.entrypoints=websecure"
+      - "traefik.http.routers.collabora.tls.certresolver=cloudflare"
+      - "traefik.http.services.collabora.loadbalancer.server.port=9980"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9980"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 
 networks:
   traefik_net:
