@@ -47,14 +47,14 @@ services:
       #WEB_OIDC_METADATA_URL: https://auth.${DOMAIN_NAME}/realms/company-realm/.well-known/openid-configuration
       WEB_OIDC_METADATA_URL: https://auth.${DOMAIN_NAME}/realms/oCIS/.well-known/openid-configuration
       PROXY_OIDC_REWRITE_WELLKNOWN: "true"
-      OCIS_OIDC_CLIENT_ID: ${OCIS_OIDC_CLIENT_ID}
+      #OCIS_OIDC_CLIENT_ID: ${OCIS_OIDC_CLIENT_ID}
       WEB_OIDC_CLIENT_ID: ${OCIS_OIDC_CLIENT_ID:-web}
-      OCIS_OIDC_CLIENT_SECRET: ${OCIS_OIDC_CLIENT_SECRET}
+      #OCIS_OIDC_CLIENT_SECRET: ${OCIS_OIDC_CLIENT_SECRET}
       #WEB_OIDC_CLIENT_SECRET: ${OCIS_OIDC_CLIENT_SECRET}
       # general config
       OCIS_URL: https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
       OCIS_LOG_LEVEL: ${OCIS_LOG_LEVEL:-info}
-      OCIS_LOG_COLOR: "${OCIS_LOG_COLOR:-false}"
+      OCIS_LOG_COLOR: ${OCIS_LOG_COLOR:-true}
       PROXY_TLS: "false" # do not use SSL between Traefik and oCIS
       PROXY_USER_OIDC_CLAIM: "preferred_username"
       PROXY_USER_CS3_CLAIM: "username"
