@@ -20,7 +20,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.homepage.rule=Host(`${HOMEPAGE_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.homepage.entrypoints=websecure"
-      - "traefik.http.routers.homepage.middlewares=keycloak-auth@file"
+      - "traefik.http.routers.homepage.middlewares=keycloak-auth"
       - "traefik.http.services.homepage.loadbalancer.server.port=3000"
     logging:
       driver: "json-file"
