@@ -18,6 +18,7 @@ services:
       - traefik_net
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.homepage.rule=Host(`${HOMEPAGE_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.homepage.entrypoints=websecure"
       - "traefik.http.routers.homepage.middlewares=keycloak-auth"
