@@ -10,7 +10,8 @@ services:
       - ${DATA_BASE_PATH}/utility/homepage/config:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
-      - HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_SUBDOMAIN}.${DOMAIN_NAME}
+      #- HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_SUBDOMAIN}.${DOMAIN_NAME}
+      - HOMEPAGE_ALLOWED_HOSTS=*
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
