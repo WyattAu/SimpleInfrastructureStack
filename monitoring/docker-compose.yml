@@ -41,6 +41,7 @@ services:
     image: grafana/grafana:${GRAFANA_VERSION}
     container_name: monitoring-grafana
     restart: unless-stopped
+    user: "${PUID}:${PGID}"
     volumes:
       - ${DATA_BASE_PATH}/monitoring/grafana:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
