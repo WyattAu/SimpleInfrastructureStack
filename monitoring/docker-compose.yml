@@ -37,17 +37,27 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  grafana-init:
+    image: busybox:latest
+    container_name: monitoring-grafana-init
+    # The Grafana process runs as UID 472 and GID 472.
+    # This command changes the ownership of the mounted volume to match.
+    command: chown -R 472:472 /var/lib/grafana
+    volumes:
+      - ${DATA_BASE_PATH}/monitoring/grafana:/var/lib/grafana
+    networks: []
+
   grafana:
     image: grafana/grafana:${GRAFANA_VERSION}
     container_name: monitoring-grafana
     restart: unless-stopped
-    user: "${PUID}:${PGID}"
+    depends_on:
+      grafana-init:
+        condition: service_completed_successfully
     volumes:
       - ${DATA_BASE_PATH}/monitoring/grafana:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
       - TZ=${TZ}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - GF_SERVER_ROOT_URL=https://${GRAFANA_SUBDOMAIN}.${DOMAIN_NAME}
