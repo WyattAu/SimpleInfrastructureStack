@@ -1,0 +1,28 @@
+- Monitor and admin:
+    - Traefik:
+        icon: traefik-proxy.svg
+        href: https://traefik.wyattau.com/dashboard/#/http/routers
+        description: Reverse Proxy
+        siteMonitor: https://traefik.wyattau.com/dashboard/#/http/routers
+    - Keycloak:
+        icon: keycloak.webp
+        href: https://auth.wyattau.com/admin/master/console/#/company-realm/
+        description: IAM
+        siteMonitor: https://auth.wyattau.com/admin/master/console/#/company-realm/
+- Dev:
+    - Forgejo:
+        icon: forgejo.webp
+        href: https://forgejo.wyattau.com
+        description: Codebase
+        siteMonitor: https://forgejo.wyattau.com
+    - Woodpecker CI:
+        icon: woodpecker-ci.webp
+        href: https://ci.wyattau.com/
+        description: Continuous Integration
+        siteMonitor: https://ci.wyattau.com/
+- Docs:
+    - OCIS:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/owncloud.webp
+        href: https://ocis.wyattau.com/
+        description: Storage Sync
+        siteMonitor: https://ocis.wyattau.com/
