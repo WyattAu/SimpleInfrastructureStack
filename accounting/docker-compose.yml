@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  postgres-akaunting:
+    image: postgres:${POSTGRES_AKAUNTING_VERSION}
+    container_name: accounting-postgres-akaunting
+    restart: unless-stopped
+    volumes:
+      - ${DATA_BASE_PATH}/accounting/postgres-akaunting:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB_AKAUNTING}
+      - POSTGRES_USER=${POSTGRES_USER_AKAUNTING}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_AKAUNTING}
+    networks:
+      - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER_AKAUNTING} -d ${POSTGRES_DB_AKAUNTING}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  akaunting:
+    image: akaunting/akaunting:${AKAUNTING_VERSION}
+    container_name: accounting-akaunting
+    restart: unless-stopped
+    depends_on:
+      postgres-akaunting:
+        condition: service_healthy
+    volumes:
+      - ${DATA_BASE_PATH}/accounting/akaunting:/var/www/html
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - DB_CONNECTION=pgsql
+      - DB_HOST=accounting-postgres-akaunting
+      - DB_PORT=5432
+      - DB_DATABASE=${POSTGRES_DB_AKAUNTING}
+      - DB_USERNAME=${POSTGRES_USER_AKAUNTING}
+      - DB_PASSWORD=${POSTGRES_PASSWORD_AKAUNTING}
+    networks:
+      - traefik_net
+      - backend_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
+      - "traefik.http.routers.akaunting.rule=Host(`${AKAUNTING_SUBDOMAIN}.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.akaunting.entrypoints=websecure"
+      - "traefik.http.routers.akaunting.tls.certresolver=cloudflare"
+      # Secure this service with our existing Keycloak authentication proxy
+      - "traefik.http.routers.akaunting.middlewares=keycloak-auth@docker"
+      - "traefik.http.services.akaunting.loadbalancer.server.port=8080"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  traefik_net:
+    external: true
+  backend_net:
+    external: true

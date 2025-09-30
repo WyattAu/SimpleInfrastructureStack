@@ -97,7 +97,7 @@ services:
       - TZ=${TZ}
       - CLOUDFLARE_API_TOKEN=${CF_API_TOKEN}
       - CLOUDFLARE_ZONE_ID=${CF_ZONE_ID}
-      - DOMAINS=${DOMAIN_NAME},traefik.${DOMAIN_NAME},auth.${DOMAIN_NAME},forgejo.${DOMAIN_NAME},registry-forgejo.${DOMAIN_NAME},ci.${DOMAIN_NAME},ci-grpc.${DOMAIN_NAME},taiga.${DOMAIN_NAME},grafana.${DOMAIN_NAME},prometheus.${DOMAIN_NAME},kuma.${DOMAIN_NAME},homepage.${DOMAIN_NAME},matrix.${DOMAIN_NAME},element.${DOMAIN_NAME},ocis.${DOMAIN_NAME},collabora.${DOMAIN_NAME},test.${DOMAIN_NAME}
+      - DOMAINS=${DOMAIN_NAME},traefik.${DOMAIN_NAME},auth.${DOMAIN_NAME},forgejo.${DOMAIN_NAME},registry-forgejo.${DOMAIN_NAME},ci.${DOMAIN_NAME},ci-grpc.${DOMAIN_NAME},taiga.${DOMAIN_NAME},grafana.${DOMAIN_NAME},prometheus.${DOMAIN_NAME},kuma.${DOMAIN_NAME},homepage.${DOMAIN_NAME},matrix.${DOMAIN_NAME},element.${DOMAIN_NAME},ocis.${DOMAIN_NAME},collabora.${DOMAIN_NAME},akaunting.${DOMAIN_NAME},test.${DOMAIN_NAME}
       - IPV4_PROVIDER=all
       - PROXIED=true
       - RRTYPE=A
@@ -166,7 +166,7 @@ services:
     container_name: proxy-well-known-server
     restart: unless-stopped
     volumes:
-      - ./traefik-config/dynamic/matrix-well-known.json:/usr/share/nginx/html/.well-known/matrix/server:ro
+      - ./config/matrix-well-known.json:/usr/share/nginx/html/.well-known/matrix/server:ro
     networks:
       - traefik_net
     labels:
@@ -176,6 +176,7 @@ services:
       - "traefik.http.routers.matrix-well-known.entrypoints=websecure"
       - "traefik.http.middlewares.matrix-headers.headers.customresponseheaders.Content-Type=application/json; charset=utf-8"
       - "traefik.http.routers.matrix-well-known.middlewares=matrix-headers"
+      - "traefik.http.routers.matrix-well-known.tls.certresolver=cloudflare"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost"]
       interval: 30s
