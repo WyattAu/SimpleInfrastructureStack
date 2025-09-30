@@ -1,0 +1,78 @@
+---
+- Developer:
+    - GitHub:
+        - icon: github.svg
+          href: https://github.com/
+    - GitLab:
+        - icon: gitlab.svg
+          href: https://gitlab.com/
+    - Stack Overflow:
+        - icon: cloudstream.webp
+          href: https://stackoverflow.com/
+    - DevDocs:
+        - icon: cloudstream.webp
+          href: https://devdocs.io/
+    - Cloudflare:
+        - icon: cloudflare.svg
+          href: https://dash.cloudflare.com/
+    - Vercel:
+        - icon: vercel.svg
+          href: https://vercel.com/
+    - AWS:
+        - icon: aws.svg
+          href: https://aws.amazon.com/
+    - Google Cloud:
+        - icon: google-chrome.webp
+          href: https://cloud.google.com/
+
+- Media:
+    - YouTube:
+        - icon: youtube.svg
+          href: https://youtube.com/
+    - Netflix:
+        - icon: netflix.svg
+          href: https://www.netflix.com/
+    - Twitch:
+        - icon: twitch.svg
+          href: https://www.twitch.tv/
+    - Spotify:
+        - icon: spotify.svg
+          href: https://open.spotify.com/
+    - Reddit:
+        - icon: reddit.svg
+          href: https://reddit.com/
+    - Twitter:
+        - icon: twitter.svg
+          href: https://x.com/
+    - Hacker News:
+        - icon: ycombinator.svg
+          href: https://news.ycombinator.com/
+    - webDOOM:
+        - icon: playstation.svg
+          href: https://ustymukhman.github.io/webDOOM/public/
+
+- Services:
+    - Gmail:
+        - icon: gmail.svg
+          href: https://mail.google.com/
+    - Proton Mail:
+        - icon: proton-mail.svg
+          href: https://mail.proton.me/
+    - Outlook:
+        - icon: microsoft-outlook.svg
+          href: https://outlook.live.com/
+    - Notion:
+        - icon: notion.svg
+          href: https://www.notion.so/
+    - Google Drive:
+        - icon: google-drive.svg
+          href: https://drive.google.com/
+    - Trello:
+        - icon: cloudstream.webp
+          href: https://trello.com/
+    - Discord:
+        - icon: discord.svg
+          href: https://discord.com/
+    - Facebook:
+        - icon: facebook.svg
+          href: https://www.facebook.com/

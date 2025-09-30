@@ -1,0 +1,22 @@
+---
+title: Wyatt's Homepage
+description: Launchpad for all my services
+background:
+  image: https://images.pexels.com/photos/1287145/pexels-photo-1287145.jpeg
+  blur: sm
+  opacity: 50
+
+providers:
+  openweathermap: openweathermapapikey
+  weatherapi: weatherapiapikey
+  finnhub: getyourownkey
+
+language: en
+target: _blank
+
+quicklaunch:
+  searchDescriptions: true
+  hideInternetSearch: false
+  showSearchSuggestions: true
+  hideVisitURL: true
+  provider: duckduckgo
