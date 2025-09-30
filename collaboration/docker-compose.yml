@@ -118,28 +118,6 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  well-known-server:
-    image: nginx:${NGINX_VERSION}
-    container_name: collaboration-well-known-server
-    restart: unless-stopped
-    volumes:
-      - ./well-known.json:/usr/share/nginx/html/.well-known/matrix/server:ro
-    networks:
-      - traefik_net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.matrix-well-known.rule=Host(`${DOMAIN_NAME}`)"
-      - "traefik.http.routers.matrix-well-known.entrypoints=websecure"
-      - "traefik.http.middlewares.matrix-headers.headers.customresponseheaders.Content-Type=application/json; charset=utf-8"
-      - "traefik.http.routers.matrix-well-known.middlewares=matrix-headers"
-      - "traefik.http.routers.matrix-well-known.tls.certresolver=cloudflare"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "2m"
-        max-file: "1"
-
 networks:
   traefik_net:
     external: true
