@@ -14,7 +14,6 @@ services:
     image: prom/prometheus:${PROMETHEUS_VERSION}
     container_name: monitoring-prometheus
     restart: unless-stopped
-    # ADD THIS depends_on BLOCK
     depends_on:
       prometheus-init:
         condition: service_completed_successfully
@@ -33,9 +32,11 @@ services:
       - backend_net
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.prometheus.rule=Host(`${PROMETHEUS_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.prometheus.entrypoints=websecure"
-      - "traefik.http.routers.prometheus.middlewares=keycloak-auth@file" # Corrected from your previous snippet
+      - "traefik.http.routers.prometheus.middlewares=keycloak-auth"
+      - "traefik.http.routers.prometheus.tls.certresolver=cloudflare"
       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
     deploy:
       resources:
@@ -87,8 +88,10 @@ services:
       - backend_net
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.grafana.rule=Host(`${GRAFANA_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls.certresolver=cloudflare"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     logging:
       driver: "json-file"
