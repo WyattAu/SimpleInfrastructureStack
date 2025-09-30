@@ -1,10 +1,23 @@
 version: '3.8'
 
 services:
+  prometheus-init:
+    image: busybox:latest
+    container_name: monitoring-prometheus-init
+    # The Prometheus process runs as the 'nobody' user (UID 65534).
+    command: chown -R 65534:65534 /prometheus
+    volumes:
+      - ${DATA_BASE_PATH}/monitoring/prometheus:/prometheus
+    networks: []
+
   prometheus:
     image: prom/prometheus:${PROMETHEUS_VERSION}
     container_name: monitoring-prometheus
     restart: unless-stopped
+    # ADD THIS depends_on BLOCK
+    depends_on:
+      prometheus-init:
+        condition: service_completed_successfully
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ${DATA_BASE_PATH}/monitoring/prometheus:/prometheus
@@ -22,7 +35,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.prometheus.rule=Host(`${PROMETHEUS_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.prometheus.entrypoints=websecure"
-      - "traefik.http.routers.prometheus.middlewares=keycloak-auth@file"
+      - "traefik.http.routers.prometheus.middlewares=keycloak-auth@file" # Corrected from your previous snippet
       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
     deploy:
       resources:
