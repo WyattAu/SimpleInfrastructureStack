@@ -79,7 +79,7 @@ services:
     container_name: collaboration-element
     restart: unless-stopped
     volumes:
-      - ./element-config.json:/app/config.json:ro
+      - ./config/element-config.json:/app/config.json:ro
     networks:
       - traefik_net
     labels:
