@@ -109,10 +109,13 @@ services:
       - backend_net
     labels:
       - "traefik.enable=true"
+      # HTTP for client connection
       - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.matrix-cs.rule=Host(`${MATRIX_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.matrix-cs.entrypoints=websecure"
       - "traefik.http.services.matrix-cs.loadbalancer.server.port=8008"
+      - "traefik.http.services.matrix-cs.loadbalancer.server.scheme=http"
+      # TCP for federation
       - "traefik.tcp.routers.matrix-ss.rule=HostSNI(`*`)"
       - "traefik.tcp.routers.matrix-ss.entrypoints=matrix"
       - "traefik.tcp.routers.matrix-ss.service=matrix-ss-svc"
