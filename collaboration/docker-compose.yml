@@ -25,6 +25,53 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  synapse-init:
+    image: matrixdotorg/synapse:${SYNAPSE_VERSION}
+    container_name: collaboration-synapse-init
+    volumes:
+      - ${DATA_BASE_PATH}/collaboration/synapse:/data
+    environment:
+      - SYNAPSE_SERVER_NAME=${SYNAPSE_SERVER_NAME}
+      - SYNAPSE_REPORT_STATS=${SYNAPSE_REPORT_STATS}
+      - POSTGRES_DB_SYNAPSE=${POSTGRES_DB_SYNAPSE}
+      - POSTGRES_USER_SYNAPSE=${POSTGRES_USER_SYNAPSE}
+      - POSTGRES_PASSWORD_SYNAPSE=${POSTGRES_PASSWORD_SYNAPSE}
+      - PUID=${PUID}
+      - PGID=${PGID}
+    command: >
+      sh -c "
+        if [ ! -f /data/homeserver.yaml ]; then
+          echo 'Config not found. Generating new config...';
+
+          # STEP 1: Actually generate the default config file. This was missing.
+          /start.py generate;
+
+          echo 'Config generated. Modifying for PostgreSQL...';
+
+          # STEP 2: Now that the file exists, modify it with sed.
+          sed -i -e '/^database:/,/\/data\/homeserver.db/c\
+      database:\n\
+        name: psycopg2\n\
+        args:\n\
+          user: ${POSTGRES_USER_SYNAPSE}\n\
+          password: ${POSTGRES_PASSWORD_SYNAPSE}\n\
+          database: ${POSTGRES_DB_SYNAPSE}\n\
+          host: postgres-collab\n\
+          port: 5432\n\
+          cp_min: 5\n\
+          cp_max: 10
+      ' /data/homeserver.yaml;
+
+          echo 'Database configured. Setting file permissions...';
+
+          # STEP 3: Ensure the generated files are owned by the correct user.
+          chown -R ${PUID}:${PGID} /data;
+
+        else
+          echo 'Config already exists. Skipping generation.';
+        fi
+      "
+
   synapse:
     image: matrixdotorg/synapse:${SYNAPSE_VERSION}
     container_name: collaboration-synapse
@@ -32,21 +79,14 @@ services:
     depends_on:
       postgres-collab:
         condition: service_healthy
+      synapse-init:
+        condition: service_completed_successfully
     volumes:
       - ${DATA_BASE_PATH}/collaboration/synapse:/data
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - SYNAPSE_SERVER_NAME=${SYNAPSE_SERVER_NAME}
-      - SYNAPSE_REPORT_STATS=${SYNAPSE_REPORT_STATS}
-      - SYNAPSE_CONFIG_PATH=/data/homeserver.yaml
-      - SYNAPSE_DATABASE_TYPE=psycopg2
-      - SYNAPSE_DATABASE_HOST=collaboration-postgres
-      - SYNAPSE_DATABASE_NAME=${POSTGRES_DB_SYNAPSE}
-      - SYNAPSE_DATABASE_USER=${POSTGRES_USER_SYNAPSE}
-      - SYNAPSE_DATABASE_PASSWORD=${POSTGRES_PASSWORD_SYNAPSE}
-      - SYNAPSE_MACAROON_SECRET_KEY=${SYNAPSE_MACAROON_SECRET_KEY}
     networks:
       - traefik_net
       - backend_net
@@ -73,7 +113,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
   element-web:
     image: vectorim/element-web:${ELEMENT_VERSION}
     container_name: collaboration-element
