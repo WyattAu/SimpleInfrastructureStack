@@ -29,6 +29,9 @@ services:
   synapse-init:
     image: matrixdotorg/synapse:${SYNAPSE_VERSION}
     container_name: collaboration-synapse-init
+    depends_on:
+      postgres-collab:
+        condition: service_healthy
     volumes:
       - ${DATA_BASE_PATH}/collaboration/synapse:/data
     environment:
