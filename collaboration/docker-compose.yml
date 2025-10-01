@@ -39,7 +39,7 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
     entrypoint: ""
-    command::
+    command:
       - "/bin/sh"
       - "-c"
       - |
