@@ -38,6 +38,7 @@ services:
       - POSTGRES_PASSWORD_SYNAPSE=${POSTGRES_PASSWORD_SYNAPSE}
       - PUID=${PUID}
       - PGID=${PGID}
+    entrypoint: /bin/sh
     command: >
       sh -c "
         if [ ! -f /data/homeserver.yaml ]; then
