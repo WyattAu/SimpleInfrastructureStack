@@ -72,6 +72,19 @@ services:
           echo 'Config already exists. Skipping generation.';
         fi
       "
+  synapse-chown:
+    image: busybox:latest
+    container_name: collaboration-synapse-chown
+    depends_on:
+      synapse-init:
+        condition: service_completed_successfully
+    user: root
+    volumes:
+      - ${DATA_BASE_PATH}/collaboration/synapse:/data
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+    command: sh -c "chown -R ${PUID}:${PGID} /data"
 
   synapse:
     image: matrixdotorg/synapse:${SYNAPSE_VERSION}
@@ -81,6 +94,8 @@ services:
       postgres-collab:
         condition: service_healthy
       synapse-init:
+        condition: service_completed_successfully
+      synapse-chown:
         condition: service_completed_successfully
     volumes:
       - ${DATA_BASE_PATH}/collaboration/synapse:/data
