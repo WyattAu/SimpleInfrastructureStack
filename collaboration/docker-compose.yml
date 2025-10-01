@@ -46,27 +46,34 @@ services:
         if [ ! -f /data/homeserver.yaml ]; then
           echo 'Config not found. Generating new config...';
           /start.py generate;
-          echo 'Config generated. Modifying for PostgreSQL...';
-          sed -i -e '/^database:/,/\/data\/homeserver.db/c\
-        database:\n\
-          name: psycopg2\n\
-          args:\n\
-            user: ${POSTGRES_USER_SYNAPSE}\n\
-            password: ${POSTGRES_PASSWORD_SYNAPSE}\n\
-            database: ${POSTGRES_DB_SYNAPSE}\n\
-            host: postgres-collab\n\
-            port: 5432\n\
-            cp_min: 5\n\
-            cp_max: 10
-        ' /data/homeserver.yaml;
-          echo 'Adding CORS configuration for Element Web...';
+
+          echo 'Commenting out default database and appending new config...';
+          # This robust sed command finds the database block and comments it out.
+          sed -i -e '/^database:/,/\/data\/homeserver.db/s/^/#/' /data/homeserver.yaml;
+
+          # A single, clean heredoc to append all our custom settings.
           cat << EOF >> /data/homeserver.yaml
-          #
-          # CORS configuration to allow Element Web to connect
-          #
-          enable_cors: true
-          public_cors_origins:
-            - "https://${ELEMENT_SUBDOMAIN}.${DOMAIN_NAME}"
+
+        #
+        # -- Custom Configuration Added by Initializer --
+        #
+
+        # Database configuration for PostgreSQL
+        database:
+          name: psycopg2
+          args:
+            user: ${POSTGRES_USER_SYNAPSE}
+            password: ${POSTGRES_PASSWORD_SYNAPSE}
+            database: ${POSTGRES_DB_SYNAPSE}
+            host: postgres-collab
+            port: 5432
+            cp_min: 5
+            cp_max: 10
+
+        # CORS configuration for Element Web
+        enable_cors: true
+        public_cors_origins:
+          - "https://${ELEMENT_SUBDOMAIN}.${DOMAIN_NAME}"
         EOF
         else
           echo 'Config already exists. Skipping generation.';
