@@ -39,15 +39,17 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
     entrypoint: ""
-    command: >
-      sh -c "
+    command::
+      - "/bin/sh"
+      - "-c"
+      - |
         if [ ! -f /data/homeserver.yaml ]; then
           echo 'Config not found. Generating new config...';
           /start.py generate;
 
           echo 'Config generated. Modifying for PostgreSQL...';
           sed -i -e '/^database:/,/\/data\/homeserver.db/c\
-      database:\n\
+        database:\n\
         name: psycopg2\n\
         args:\n\
           user: ${POSTGRES_USER_SYNAPSE}\n\
@@ -57,22 +59,22 @@ services:
           port: 5432\n\
           cp_min: 5\n\
           cp_max: 10
-      ' /data/homeserver.yaml;
+        ' /data/homeserver.yaml;
+          echo 'Adding CORS configuration for Element Web...';
+          # Use a 'cat' heredoc to safely append multi-line text, avoiding quote issues.
+          cat << EOF >> /data/homeserver.yaml
 
-        echo 'Adding CORS configuration for Element Web...';
-        # The '-e' flag allows for interpretation of backslash escapes like '\n'.
-        echo -e "\n\
-      #\n\
-      # CORS configuration to allow Element Web to connect\n\
-      #\n\
-      enable_cors: true\n\
-      public_cors_origins:\n\
-        - \"https://'${ELEMENT_SUBDOMAIN}.${DOMAIN_NAME}'\"" >> /data/homeserver.yaml;
+          #
+          # CORS configuration to allow Element Web to connect
+          #
+          enable_cors: true
+          public_cors_origins:
+            - "https://${ELEMENT_SUBDOMAIN}.${DOMAIN_NAME}"
+          EOF
 
         else
           echo 'Config already exists. Skipping generation.';
         fi
-      "
   synapse-chown:
     image: busybox:latest
     container_name: collaboration-synapse-chown
