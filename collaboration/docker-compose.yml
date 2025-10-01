@@ -172,7 +172,7 @@ services:
             "disable_custom_urls": true,
             "disable_guests": true,
             "disable_3pid_login": true,
-            "brand": "MyName's Chatroom"
+            "brand": "${ELEMENT_ROOM_NAME}"
         }
         EOF
         else
