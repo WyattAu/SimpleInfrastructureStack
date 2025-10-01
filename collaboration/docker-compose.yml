@@ -150,6 +150,9 @@ services:
     image: busybox:latest
     container_name: collaboration-element-init
     user: "${PUID}:${PGID}"
+    depends_on:
+      synapse-init:
+        condition: service_completed_successfully
     volumes:
       - ${DATA_BASE_PATH}/collaboration/element-config:/config
     environment:
