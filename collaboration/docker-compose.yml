@@ -43,13 +43,9 @@ services:
       sh -c "
         if [ ! -f /data/homeserver.yaml ]; then
           echo 'Config not found. Generating new config...';
-
-          # STEP 1: Actually generate the default config file. This was missing.
           /start.py generate;
 
           echo 'Config generated. Modifying for PostgreSQL...';
-
-          # STEP 2: Now that the file exists, modify it with sed.
           sed -i -e '/^database:/,/\/data\/homeserver.db/c\
       database:\n\
         name: psycopg2\n\
@@ -63,10 +59,15 @@ services:
           cp_max: 10
       ' /data/homeserver.yaml;
 
-          echo 'Database configured. Setting file permissions...';
-
-          # STEP 3: Ensure the generated files are owned by the correct user.
-          chown -R ${PUID}:${PGID} /data;
+        echo 'Adding CORS configuration for Element Web...';
+        # The '-e' flag allows for interpretation of backslash escapes like '\n'.
+        echo -e "\n\
+      #\n\
+      # CORS configuration to allow Element Web to connect\n\
+      #\n\
+      enable_cors: true\n\
+      public_cors_origins:\n\
+        - \"https://'${ELEMENT_SUBDOMAIN}.${DOMAIN_NAME}'\"" >> /data/homeserver.yaml;
 
         else
           echo 'Config already exists. Skipping generation.';
