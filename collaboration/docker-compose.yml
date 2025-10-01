@@ -144,12 +144,49 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  # Workaround for portainer relative path volume mount 255 error
+  element-init:
+    image: busybox:latest
+    container_name: collaboration-element-init
+    user: "${PUID}:${PGID}"
+    volumes:
+      - ${DATA_BASE_PATH}/collaboration/element-config:/config
+    environment:
+      - MATRIX_SUBDOMAIN=${MATRIX_SUBDOMAIN}
+      - DOMAIN_NAME=${DOMAIN_NAME}
+    command:
+      - "/bin/sh"
+      - "-c"
+      - |
+        if [ ! -f /config/config.json ]; then
+          echo "Creating Element config file...";
+          cat << EOF > /config/config.json
+        {
+            "default_server_config": {
+                "m.homeserver": {
+                    "base_url": "https://'${MATRIX_SUBDOMAIN}.${DOMAIN_NAME}'",
+                    "server_name": "'${DOMAIN_NAME}'"
+                }
+            },
+            "disable_custom_urls": true,
+            "disable_guests": true,
+            "disable_3pid_login": true,
+            "brand": "MyName's Chatroom"
+        }
+        EOF
+        else
+          echo "Element config already exists.";
+        fi
+
   element-web:
     image: vectorim/element-web:${ELEMENT_VERSION}
     container_name: collaboration-element
     restart: unless-stopped
+    depends_on:
+      - element-init
     volumes:
-      - ./config/element-config.json:/app/config.json:ro
+      - ${DATA_BASE_PATH}/collaboration/element-config/config.json:/app/config.json:ro
     networks:
       - traefik_net
     labels:
@@ -169,7 +206,9 @@ services:
     image: halfshot/matrix-hookshot:${HOOKSHOT_VERSION}
     container_name: collaboration-hookshot
     restart: unless-stopped
-    depends_on: [synapse]
+    depends_on:
+      synapse:
+        condition: service_started
     volumes:
       - ${DATA_BASE_PATH}/collaboration/hookshot:/data
     networks:
