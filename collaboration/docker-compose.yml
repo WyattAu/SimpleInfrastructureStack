@@ -49,15 +49,15 @@ services:
           echo 'Config generated. Modifying for PostgreSQL...';
           sed -i -e '/^database:/,/\/data\/homeserver.db/c\
         database:\n\
-        name: psycopg2\n\
-        args:\n\
-          user: ${POSTGRES_USER_SYNAPSE}\n\
-          password: ${POSTGRES_PASSWORD_SYNAPSE}\n\
-          database: ${POSTGRES_DB_SYNAPSE}\n\
-          host: postgres-collab\n\
-          port: 5432\n\
-          cp_min: 5\n\
-          cp_max: 10
+          name: psycopg2\n\
+          args:\n\
+            user: ${POSTGRES_USER_SYNAPSE}\n\
+            password: ${POSTGRES_PASSWORD_SYNAPSE}\n\
+            database: ${POSTGRES_DB_SYNAPSE}\n\
+            host: postgres-collab\n\
+            port: 5432\n\
+            cp_min: 5\n\
+            cp_max: 10
         ' /data/homeserver.yaml;
           echo 'Adding CORS configuration for Element Web...';
           cat << EOF >> /data/homeserver.yaml
@@ -67,7 +67,7 @@ services:
           enable_cors: true
           public_cors_origins:
             - "https://${ELEMENT_SUBDOMAIN}.${DOMAIN_NAME}"
-          EOF
+        EOF
         else
           echo 'Config already exists. Skipping generation.';
         fi
