@@ -90,6 +90,7 @@ services:
     image: matrixdotorg/synapse:${SYNAPSE_VERSION}
     container_name: collaboration-synapse
     restart: unless-stopped
+    user: "${PUID}:${PGID}"
     depends_on:
       postgres-collab:
         condition: service_healthy
