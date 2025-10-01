@@ -46,7 +46,6 @@ services:
         if [ ! -f /data/homeserver.yaml ]; then
           echo 'Config not found. Generating new config...';
           /start.py generate;
-
           echo 'Config generated. Modifying for PostgreSQL...';
           sed -i -e '/^database:/,/\/data\/homeserver.db/c\
         database:\n\
@@ -61,9 +60,7 @@ services:
           cp_max: 10
         ' /data/homeserver.yaml;
           echo 'Adding CORS configuration for Element Web...';
-          # Use a 'cat' heredoc to safely append multi-line text, avoiding quote issues.
           cat << EOF >> /data/homeserver.yaml
-
           #
           # CORS configuration to allow Element Web to connect
           #
@@ -71,10 +68,10 @@ services:
           public_cors_origins:
             - "https://${ELEMENT_SUBDOMAIN}.${DOMAIN_NAME}"
           EOF
-
         else
           echo 'Config already exists. Skipping generation.';
         fi
+
   synapse-chown:
     image: busybox:latest
     container_name: collaboration-synapse-chown
