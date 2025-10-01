@@ -6,8 +6,8 @@ services:
     container_name: collaboration-postgres
     restart: unless-stopped
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      #- ${DATA_BASE_PATH}/collaboration/postgres:/var/lib/postgresql/data
+      #- postgres_data:/var/lib/postgresql/data
+      - ${DATA_BASE_PATH}/collaboration/postgres:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=${POSTGRES_DB_SYNAPSE}
       - POSTGRES_USER=${POSTGRES_USER_SYNAPSE}
@@ -191,9 +191,9 @@ networks:
   backend_net:
     external: true
 
-volumes:
-  postgres_data:
-    driver_opts:
-      type: none
-      o: bind
-      device: ${DATA_BASE_PATH}/collaboration/postgres
+#volumes:
+#  postgres_data:
+#    driver_opts:
+#      type: none
+#      o: bind
+#      device: ${DATA_BASE_PATH}/collaboration/postgres
