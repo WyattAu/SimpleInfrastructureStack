@@ -116,35 +116,48 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  forgejo-runner:
-    image: code.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
-    container_name: operations-forgejo-runner
-    restart: unless-stopped
+  forgejo-runner-register:
+    image: code.forgejo.org/forgejo/runner:latest
+    container_name: operations-forgejo-runner-register
     command:
-      - "sh"
-      - "-c"
-      - |
-        # This script will only run the daemon if registration succeeds.
-        # On subsequent starts, register will do nothing and the daemon will start.
-        forgejo-runner register \
-          --no-interactive \
-          --instance "${FORGEJO_INSTANCE_URL}" \
-          --token "${FORGEJO_RUNNER_TOKEN}" \
-          --name "${FORGEJO_RUNNER_NAME}" \
-          --labels "${FORGEJO_RUNNER_LABELS}" && \
-        forgejo-runner daemon
-    depends_on:
-      - forgejo
+      - "forgejo-runner"
+      - "register"
+      - "--no-interactive"
+      - "--instance"
+      - "${FORGEJO_INSTANCE_URL}"
+      - "--token"
+      - "${FORGEJO_RUNNER_TOKEN}"
+      - "--name"
+      - "${FORGEJO_RUNNER_NAME}"
+      - "--labels"
+      - "${FORGEJO_RUNNER_LABELS}"
     volumes:
       - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
-      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - FORGEJO_INSTANCE_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
-      - FORGEJO_RUNNER_REGISTRATION_TOKEN=${FORGEJO_RUNNER_TOKEN}
+      - FORGEJO_RUNNER_TOKEN=${FORGEJO_RUNNER_TOKEN}
       - FORGEJO_RUNNER_NAME=docker-runner
       - FORGEJO_RUNNER_LABELS=docker:docker://node:20-bookworm
     networks:
       - traefik_net
+      - backend_net
+
+  forgejo-runner:
+    image: code.forgejo.org/forgejo/runner:latest
+    container_name: operations-forgejo-runner
+    restart: unless-stopped
+    command:
+      - "forgejo-runner"
+      - "daemon"
+    depends_on:
+      forgejo-runner-register:
+        condition: service_completed_successfully
+      forgejo:
+        condition: service_healthy
+    volumes:
+      - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
       - backend_net
     logging:
       driver: "json-file"
