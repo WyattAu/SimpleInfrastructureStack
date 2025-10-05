@@ -117,7 +117,7 @@ services:
         max-file: "3"
 
   forgejo-runner-register:
-    image: code.forgejo.org/forgejo/runner:latest
+    image: code.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
     container_name: operations-forgejo-runner-register
     command:
       - "forgejo-runner"
@@ -143,7 +143,7 @@ services:
       - backend_net
 
   forgejo-runner:
-    image: code.forgejo.org/forgejo/runner:latest
+    image: code.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
     container_name: operations-forgejo-runner
     restart: unless-stopped
     command:
