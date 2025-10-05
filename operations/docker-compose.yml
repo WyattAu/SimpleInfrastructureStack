@@ -116,6 +116,28 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  forgejo-runner:
+    image: code.forgejo.org/forgejo/runner:latest
+    container_name: operations-forgejo-runner
+    restart: unless-stopped
+    depends_on:
+      - forgejo
+    volumes:
+      - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - FORGEJO_INSTANCE_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
+      - FORGEJO_RUNNER_REGISTRATION_TOKEN=${FORGEJO_RUNNER_TOKEN}
+      - FORGEJO_RUNNER_NAME=docker-runner
+      - FORGEJO_RUNNER_LABELS=docker:docker://node:20-bookworm
+    networks:
+      - backend_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   postgres-woodpecker:
     image: postgres:${POSTGRES_FORGEJO_VERSION} # You can use the same version
     container_name: operations-postgres-woodpecker
