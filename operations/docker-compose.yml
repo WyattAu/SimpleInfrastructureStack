@@ -141,20 +141,33 @@ services:
     user: "${PUID}:${PGID}"
     command: >
       sh -c "
+      # 'set -e' will exit immediately if any command fails.
       set -e
+
+      echo '--- STARTING SETUP SCRIPT ---'
+      echo 'Running as user:'
+      id
+
+      # Check if setup is already complete.
       if [ -f /data/.runner ] && [ -f /data/config.yaml ]; then
-        echo 'Runner is already configured. Exiting setup.'
+        echo 'Runner is already fully configured. Exiting.'
         exit 0
       fi
-      echo 'Running registration and config generation...'
+
+      echo 'Attempting to register runner...'
       forgejo-runner register --no-interactive \
         --instance '${FORGEJO_INSTANCE_URL}' \
         --token '${FORGEJO_RUNNER_TOKEN}' \
         --name '${FORGEJO_RUNNER_NAME}' \
         --labels '${FORGEJO_RUNNER_LABELS}'
+
+      echo 'Registration successful. Generating config...'
       forgejo-runner generate-config > /data/config.yaml
-      echo 'Setup successful. Final files:'
+
+      echo 'Final contents of /data directory:'
       ls -la /data
+
+      echo '--- SETUP SCRIPT FINISHED SUCCESSFULLY ---'
       "
     volumes:
       - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
