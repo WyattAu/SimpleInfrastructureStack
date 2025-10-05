@@ -125,20 +125,34 @@ services:
     user: "${PUID}:${PGID}"
     command: >
       sh -c "
-      # Make this process idempotent: If the config already exists, do nothing.
-      if [ -f /data/.runner ] && [ -f /data/config.yaml ]; then
-        echo 'Runner is fully configured. Skipping setup.'
-        exit 0
-      fi
-      # Step 1: Register by passing all arguments as explicit flags.
+      # 'set -ex' will print every command and exit immediately if one fails.
+      set -ex
+
+      echo '--- STARTING DEBUG SCRIPT ---'
+
+      echo 'STEP 1: Verifying user and permissions...'
+      echo 'Running as user:'
+      id
+      echo 'Initial contents and permissions of /data:'
+      ls -la /data
+
+      echo 'STEP 2: Attempting to register runner...'
       forgejo-runner register --no-interactive \
         --instance '${FORGEJO_INSTANCE_URL}' \
         --token '${FORGEJO_RUNNER_TOKEN}' \
         --name '${FORGEJO_RUNNER_NAME}' \
-        --labels '${FORGEJO_RUNNER_LABELS}' \
-      && \
-      # Step 2: Generate the config.yaml for the daemon to use.
+        --labels '${FORGEJO_RUNNER_LABELS}'
+
+      echo 'STEP 3: Listing contents after registration attempt...'
+      ls -la /data
+
+      echo 'STEP 4: Attempting to generate config...'
       forgejo-runner generate-config > /data/config.yaml
+
+      echo 'STEP 5: Final contents of /data...'
+      ls -la /data
+
+      echo '--- DEBUG SCRIPT FINISHED SUCCESSFULLY ---'
       "
     volumes:
       - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
