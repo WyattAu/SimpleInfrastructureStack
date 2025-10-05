@@ -120,16 +120,19 @@ services:
     image: code.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
     container_name: operations-forgejo-runner
     restart: unless-stopped
-    command: >
-      sh -c "
-      forgejo-runner register
-        --no-interactive
-        --instance ${FORGEJO_INSTANCE_URL}
-        --token ${FORGEJO_RUNNER_TOKEN}
-        --name ${FORGEJO_RUNNER_NAME:-docker-runner}
-        --labels '${FORGEJO_RUNNER_LABELS:-docker:docker://node:20-bookworm}'
-      && forgejo-runner daemon
-      "
+    command:
+      - "sh"
+      - "-c"
+      - |
+        # This script will only run the daemon if registration succeeds.
+        # On subsequent starts, register will do nothing and the daemon will start.
+        forgejo-runner register \
+          --no-interactive \
+          --instance "${FORGEJO_INSTANCE_URL}" \
+          --token "${FORGEJO_RUNNER_TOKEN}" \
+          --name "${FORGEJO_RUNNER_NAME}" \
+          --labels "${FORGEJO_RUNNER_LABELS}" && \
+        forgejo-runner daemon
     depends_on:
       - forgejo
     volumes:
