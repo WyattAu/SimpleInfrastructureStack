@@ -116,51 +116,51 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  forgejo-runner-permissions:
+    image: busybox:latest
+    container_name: operations-forgejo-runner-permissions
+    # This init container runs as root to forcefully set permissions.
+    command: chown -R 1000:1000 /data
+    volumes:
+      - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
+    environment:
+      # These must be set in your Portainer Stack environment variables
+      - PUID=1000 # The UID of your 'apps' user
+      - PGID=1000 # The GID of your 'apps' user
+    # This service runs, fixes permissions, and exits.
+    restart: "no"
+
   forgejo-runner-setup:
     image: code.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
     container_name: operations-forgejo-runner-setup
+    # This service depends on the permissions being fixed first.
     depends_on:
-      forgejo:
-        condition: service_healthy
-    #user: "${PUID}:${PGID}"
+      forgejo-runner-permissions:
+        condition: service_completed_successfully
+    # It runs as the specified low-privilege user.
+    user: "${PUID}:${PGID}"
     command: >
       sh -c "
-      # 'set -ex' will print every command and exit immediately if one fails.
-      set -ex
-
-      echo '--- STARTING DEBUG SCRIPT ---'
-
-      echo 'STEP 1: Verifying user and permissions...'
-      echo 'Running as user:'
-      id
-      echo 'Initial contents and permissions of /data:'
-      ls -la /data
-
-      echo 'STEP 2: Attempting to register runner...'
+      set -e
+      if [ -f /data/.runner ] && [ -f /data/config.yaml ]; then
+        echo 'Runner is already configured. Exiting setup.'
+        exit 0
+      fi
+      echo 'Running registration and config generation...'
       forgejo-runner register --no-interactive \
         --instance '${FORGEJO_INSTANCE_URL}' \
         --token '${FORGEJO_RUNNER_TOKEN}' \
         --name '${FORGEJO_RUNNER_NAME}' \
         --labels '${FORGEJO_RUNNER_LABELS}'
-
-      echo 'STEP 3: Listing contents after registration attempt...'
-      ls -la /data
-
-      echo 'STEP 4: Attempting to generate config...'
       forgejo-runner generate-config > /data/config.yaml
-
-      echo 'STEP 5: Final contents of /data...'
+      echo 'Setup successful. Final files:'
       ls -la /data
-
-      echo '--- DEBUG SCRIPT FINISHED SUCCESSFULLY ---'
       "
     volumes:
       - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - USER_UID=${PUID}
-      - USER_GID=${PGID}
+      - PUID=1000
+      - PGID=1000
       - FORGEJO_INSTANCE_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
       - FORGEJO_RUNNER_TOKEN=${FORGEJO_RUNNER_TOKEN}
       - FORGEJO_RUNNER_NAME=docker-runner
@@ -168,25 +168,23 @@ services:
     networks:
       - traefik_net
       - backend_net
+    restart: "no"
 
   forgejo-runner:
     image: code.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
     container_name: operations-forgejo-runner
     restart: unless-stopped
+    depends_on:
+      forgejo-runner-setup:
+        condition: service_completed_successfully
+      forgejo:
+        condition: service_healthy
     user: "${PUID}:${PGID}"
     command:
       - "forgejo-runner"
       - "--config"
       - "/data/config.yaml"
       - "daemon"
-    depends_on:
-      forgejo-runner-setup:
-        condition: service_completed_successfully
-      forgejo:
-        condition: service_healthy
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
     volumes:
       - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
       - /var/run/docker.sock:/var/run/docker.sock
