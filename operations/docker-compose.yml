@@ -123,6 +123,11 @@ services:
       - "sh"
       - "-c"
       - |
+        # Make the process idempotent: if the config file already exists, do nothing.
+        if [ -f /data/config.yaml ]; then
+          echo "Runner already configured. Skipping setup."
+          exit 0
+        fi
         # Step 1: Register and create the .runner file.
         forgejo-runner register \
           --no-interactive \
@@ -130,8 +135,8 @@ services:
           --token "${FORGEJO_RUNNER_TOKEN}" \
           --name "${FORGEJO_RUNNER_NAME}" \
           --labels "${FORGEJO_RUNNER_LABELS}" && \
-        # Step 2: Generate the config.yml that the daemon will use.
-        forgejo-runner generate-config > /data/config.yml
+        # Step 2: Generate the config.yaml file, as shown in the blog post.
+        forgejo-runner generate-config > /data/config.yaml
     volumes:
       - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
     environment:
@@ -150,7 +155,7 @@ services:
     command:
       - "forgejo-runner"
       - "--config"
-      - "/data/config.yml"
+      - "/data/config.yaml"
       - "daemon"
     depends_on:
       forgejo-runner-setup:
