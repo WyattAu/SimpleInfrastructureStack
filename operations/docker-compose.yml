@@ -125,8 +125,8 @@ services:
     command: >
       sh -c "
       # Make this process idempotent: If the config already exists, do nothing.
-      if [ -f /data/config.yaml ]; then
-        echo 'Runner is already configured. Skipping setup.'
+      if [ -f /data/.runner ] && [ -f /data/config.yaml ]; then
+        echo 'Runner is fully configured. Skipping setup.'
         exit 0
       fi
       # Step 1: Register by passing all arguments as explicit flags.
