@@ -119,89 +119,72 @@ services:
   forgejo-runner-permissions:
     image: busybox:latest
     container_name: operations-forgejo-runner-permissions
-    # This init container runs as root to forcefully set permissions.
-    command: chown -R 1000:1000 /data
+    # This init container runs as root to create the data directory and
+    # set ownership to the specific UID/GID the runner image uses.
+    command: sh -c "mkdir -p /data/.cache && chown -R 1001:1001 /data"
     volumes:
       - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
-    environment:
-      # These must be set in your Portainer Stack environment variables
-      - PUID=1000 # The UID of your 'apps' user
-      - PGID=1000 # The GID of your 'apps' user
-    # This service runs, fixes permissions, and exits.
     restart: "no"
 
+  docker-in-docker:
+    image: docker:dind
+    container_name: operations-forgejo-dind
+    privileged: true
+    # This exposes the Docker daemon on a TCP port inside the backend_net network
+    command: ['dockerd', '-H', 'tcp://0.0.0.0:2375', '--tls=false']
+    restart: 'unless-stopped'
+    networks:
+      - backend_net
+
   forgejo-runner-setup:
-    image: code.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
+    image: data.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION} # Using official image path
     container_name: operations-forgejo-runner-setup
-    # This service depends on the permissions being fixed first.
     depends_on:
       forgejo-runner-permissions:
         condition: service_completed_successfully
-    # It runs as the specified low-privilege user.
-    #user: "${PUID}:${PGID}"
-    command:
-      - "sh"
-      - "-c"
-      - |
-        set -ex
-
-        echo "--- STARTING DEFINITIVE DEBUG SCRIPT ---"
-
-        echo "STEP 1: VERIFYING IDENTITY AND PERMISSIONS"
-        echo "Running as user:"
-        id
-        echo "--------------------"
-        echo "Initial permissions of /data directory from inside container:"
-        ls -la /data
-        echo "--------------------"
-
-        echo "STEP 2: ATTEMPTING TO WRITE A TEST FILE"
-        echo "This is a test file to check write permissions." > /data/test-write-permission.txt
-        echo "Write test successful. Verifying file ownership:"
-        ls -la /data
-        echo "--------------------"
-
-        echo "STEP 3: ATTEMPTING TO REGISTER RUNNER"
-        forgejo-runner register --no-interactive \
-          --instance "${FORGEJO_INSTANCE_URL}" \
-          --token "${FORGEJO_RUNNER_TOKEN}" \
-          --name "${FORGEJO_RUNNER_NAME}" \
-          --labels "${FORGEJO_RUNNER_LABELS}"
-        echo "Registration command finished. Verifying .runner file:"
-        ls -la /data
-        echo "--------------------"
-
-        echo "STEP 4: ATTEMPTING TO GENERATE CONFIG"
-        forgejo-runner generate-config > /data/config.yaml
-        echo "Config generation finished. Verifying config.yaml:"
-        ls -la /data
-        echo "--------------------"
-
-        echo "--- DEBUG SCRIPT COMPLETED SUCCESSFULLY ---"
+    # This runs as the specific user required by the image.
+    user: "1001:1001"
+    command: >
+      sh -c "
+      set -e
+      if [ -f /data/.runner ]; then
+        echo 'Runner already registered. Exiting setup.'
+        exit 0
+      fi
+      echo 'Running registration and config generation...'
+      forgejo-runner register --no-interactive \
+        --instance '${FORGEjo_INSTANCE_URL}' \
+        --token '${FORGEJO_RUNNER_TOKEN}' \
+        --name '${FORGEJO_RUNNER_NAME:-forgejo-runner}' \
+        --labels '${FORGEJO_RUNNER_LABELS:-docker:docker://node:20-bookworm}'
+      forgejo-runner generate-config > /data/config.yaml
+      echo 'Setup successful.'
+      "
     volumes:
       - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
     environment:
-      - PUID=1000
-      - PGID=1000
       - FORGEJO_INSTANCE_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
       - FORGEJO_RUNNER_TOKEN=${FORGEJO_RUNNER_TOKEN}
       - FORGEJO_RUNNER_NAME=docker-runner
       - FORGEJO_RUNNER_LABELS=docker:docker://node:20-bookworm
     networks:
-      - traefik_net
+      - traefik_net # For reaching the Forgejo instance URL
       - backend_net
     restart: "no"
 
   forgejo-runner:
-    image: code.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
+    image: data.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
     container_name: operations-forgejo-runner
     restart: unless-stopped
     depends_on:
       forgejo-runner-setup:
         condition: service_completed_successfully
-      forgejo:
-        condition: service_healthy
-    user: "${PUID}:${PGID}"
+      docker-in-docker:
+        condition: service_started
+    user: "1001:1001"
+    # This environment variable tells the runner to use the dind service as its Docker host.
+    environment:
+      DOCKER_HOST: tcp://docker-in-docker:2375
     command:
       - "forgejo-runner"
       - "--config"
@@ -209,15 +192,8 @@ services:
       - "daemon"
     volumes:
       - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
-      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - backend_net
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
   postgres-woodpecker:
     image: postgres:${POSTGRES_FORGEJO_VERSION} # You can use the same version
     container_name: operations-postgres-woodpecker
