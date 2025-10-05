@@ -122,8 +122,13 @@ services:
     restart: unless-stopped
     command: >
       sh -c "
-      forgejo-runner register --no-interactive &&
-      forgejo-runner daemon
+      forgejo-runner register
+        --no-interactive
+        --instance ${FORGEJO_INSTANCE_URL}
+        --token ${FORGEJO_RUNNER_TOKEN}
+        --name ${FORGEJO_RUNNER_NAME:-docker-runner}
+        --labels '${FORGEJO_RUNNER_LABELS:-docker:docker://node:20-bookworm}'
+      && forgejo-runner daemon
       "
     depends_on:
       - forgejo
