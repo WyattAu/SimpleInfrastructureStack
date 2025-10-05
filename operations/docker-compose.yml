@@ -126,7 +126,7 @@ services:
       - backend_net
 
   forgejo-runner:
-    image: data.forgejo.org/forgejo/runner:latest
+    image: data.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
     container_name: operations-forgejo-runner
     restart: unless-stopped
     depends_on:
