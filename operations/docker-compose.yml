@@ -120,7 +120,7 @@ services:
     image: code.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
     container_name: operations-forgejo-runner
     restart: unless-stopped
-    command: daemon
+    #command: daemon
     depends_on:
       - forgejo
     volumes:
@@ -132,6 +132,7 @@ services:
       - FORGEJO_RUNNER_NAME=docker-runner
       - FORGEJO_RUNNER_LABELS=docker:docker://node:20-bookworm
     networks:
+      - traefik_net
       - backend_net
     logging:
       driver: "json-file"
