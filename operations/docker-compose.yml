@@ -69,6 +69,7 @@ services:
       - FORGEJO__service__SHOW_REGISTRATION_BUTTON=false
 
       # --- Other Settings ---
+      - FORGEJO__actions__ENABLED=true
       - FORGEJO__container__ENABLE=true
       - FORGEJO__container__REGISTRY_HOST=${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}
       #- FORGEJO__metrics__ENABLED=true
