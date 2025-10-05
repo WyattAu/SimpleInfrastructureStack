@@ -116,84 +116,32 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  forgejo-runner-permissions:
-    image: busybox:latest
-    container_name: operations-forgejo-runner-permissions
-    # This init container runs as root to create the data directory and
-    # set ownership to the specific UID/GID the runner image uses.
-    command: sh -c "mkdir -p /data/.cache && chown -R 1001:1001 /data"
-    volumes:
-      - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
-    restart: "no"
-
   docker-in-docker:
     image: docker:dind
     container_name: operations-forgejo-dind
     privileged: true
-    # This exposes the Docker daemon on a TCP port inside the backend_net network
     command: ['dockerd', '-H', 'tcp://0.0.0.0:2375', '--tls=false']
     restart: 'unless-stopped'
     networks:
       - backend_net
 
-  forgejo-runner-setup:
-    image: data.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION} # Using official image path
-    container_name: operations-forgejo-runner-setup
-    depends_on:
-      forgejo-runner-permissions:
-        condition: service_completed_successfully
-    # This runs as the specific user required by the image.
-    user: "1001:1001"
-    command: >
-      sh -c "
-      set -e
-      if [ -f /data/.runner ]; then
-        echo 'Runner already registered. Exiting setup.'
-        exit 0
-      fi
-      echo 'Running registration and config generation...'
-      forgejo-runner register --no-interactive \
-        --instance '${FORGEjo_INSTANCE_URL}' \
-        --token '${FORGEJO_RUNNER_TOKEN}' \
-        --name '${FORGEJO_RUNNER_NAME:-forgejo-runner}' \
-        --labels '${FORGEJO_RUNNER_LABELS:-docker:docker://node:20-bookworm}'
-      forgejo-runner generate-config > /data/config.yaml
-      echo 'Setup successful.'
-      "
-    volumes:
-      - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
-    environment:
-      - FORGEJO_INSTANCE_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
-      - FORGEJO_RUNNER_TOKEN=${FORGEJO_RUNNER_TOKEN}
-      - FORGEJO_RUNNER_NAME=docker-runner
-      - FORGEJO_RUNNER_LABELS=docker:docker://node:20-bookworm
-    networks:
-      - traefik_net # For reaching the Forgejo instance URL
-      - backend_net
-    restart: "no"
-
   forgejo-runner:
-    image: data.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
+    image: data.forgejo.org/forgejo/runner:latest
     container_name: operations-forgejo-runner
     restart: unless-stopped
     depends_on:
-      forgejo-runner-setup:
-        condition: service_completed_successfully
-      docker-in-docker:
-        condition: service_started
+      - docker-in-docker
     user: "1001:1001"
-    # This environment variable tells the runner to use the dind service as its Docker host.
     environment:
       DOCKER_HOST: tcp://docker-in-docker:2375
-    command:
-      - "forgejo-runner"
-      - "--config"
-      - "/data/config.yaml"
-      - "daemon"
     volumes:
       - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
     networks:
+      - traefik_net
       - backend_net
+    # This command is a placeholder to keep the container alive for registration.
+    command: '/bin/sh -c "while : ; do sleep 3600 ; done ;"'
+
   postgres-woodpecker:
     image: postgres:${POSTGRES_FORGEJO_VERSION} # You can use the same version
     container_name: operations-postgres-woodpecker
