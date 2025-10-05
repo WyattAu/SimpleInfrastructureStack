@@ -116,21 +116,22 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  forgejo-runner-register:
+  forgejo-runner-setup:
     image: code.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
-    container_name: operations-forgejo-runner-register
+    container_name: operations-forgejo-runner-setup
     command:
-      - "forgejo-runner"
-      - "register"
-      - "--no-interactive"
-      - "--instance"
-      - "${FORGEJO_INSTANCE_URL}"
-      - "--token"
-      - "${FORGEJO_RUNNER_TOKEN}"
-      - "--name"
-      - "${FORGEJO_RUNNER_NAME}"
-      - "--labels"
-      - "${FORGEJO_RUNNER_LABELS}"
+      - "sh"
+      - "-c"
+      - |
+        # Step 1: Register and create the .runner file.
+        forgejo-runner register \
+          --no-interactive \
+          --instance "${FORGEJO_INSTANCE_URL}" \
+          --token "${FORGEJO_RUNNER_TOKEN}" \
+          --name "${FORGEJO_RUNNER_NAME}" \
+          --labels "${FORGEJO_RUNNER_LABELS}" && \
+        # Step 2: Generate the config.yml that the daemon will use.
+        forgejo-runner generate-config > /data/config.yml
     volumes:
       - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
     environment:
@@ -148,9 +149,11 @@ services:
     restart: unless-stopped
     command:
       - "forgejo-runner"
+      - "--config"
+      - "/data/config.yml"
       - "daemon"
     depends_on:
-      forgejo-runner-register:
+      forgejo-runner-setup:
         condition: service_completed_successfully
       forgejo:
         condition: service_healthy
