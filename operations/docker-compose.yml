@@ -159,6 +159,8 @@ services:
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
+      - USER_UID=${PUID}
+      - USER_GID=${PGID}
       - FORGEJO_INSTANCE_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
       - FORGEJO_RUNNER_TOKEN=${FORGEJO_RUNNER_TOKEN}
       - FORGEJO_RUNNER_NAME=docker-runner
