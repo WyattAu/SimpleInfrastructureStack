@@ -122,7 +122,7 @@ services:
     depends_on:
       forgejo:
         condition: service_healthy
-    user: "${PUID}:${PGID}"
+    #user: "${PUID}:${PGID}"
     command: >
       sh -c "
       # 'set -ex' will print every command and exit immediately if one fails.
