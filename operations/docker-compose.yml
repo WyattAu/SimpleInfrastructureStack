@@ -120,7 +120,7 @@ services:
     image: code.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
     container_name: operations-forgejo-runner
     restart: unless-stopped
-    #command: daemon
+    command: forgejo-runner daemon
     depends_on:
       - forgejo
     volumes:
