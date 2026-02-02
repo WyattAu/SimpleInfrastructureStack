@@ -29,6 +29,8 @@ services:
     image: code.forgejo.org/forgejo/forgejo:${FORGEJO_VERSION}
     container_name: operations-forgejo
     restart: unless-stopped
+    ports:
+      - "2222:22"
     depends_on:
       postgres-forgejo:
         condition: service_healthy
@@ -55,6 +57,11 @@ services:
       # --- Server Settings ---
       - FORGEJO__server__DOMAIN=${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
       - FORGEJO__server__ROOT_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
+
+      # --- SSH ---
+      - FORGEJO__server__SSH_DOMAIN=ssh.wyattau.com
+      - FORGEJO__server__SSH_PORT=2222
+      - FORGEJO__server__START_SSH_SERVER=true
 
       # --- Native OIDC Authentication Settings ---
       - FORGEJO__oauth2_client__ENABLED=true
