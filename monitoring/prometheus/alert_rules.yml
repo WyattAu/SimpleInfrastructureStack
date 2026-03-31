@@ -1,0 +1,116 @@
+groups:
+  - name: container_health
+    rules:
+      - alert: ContainerOOMKilled
+        expr: rate(container_oom_events_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container {{ $labels.name }} OOM killed"
+          description: "Container {{ $labels.name }} in pod {{ $labels.container }} was OOM killed."
+
+      - alert: ContainerHighMemoryUsage
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} using >90% memory"
+          description: "Container {{ $labels.name }} is using {{ $value | humanizePercentage }} of its memory limit."
+
+      - alert: ContainerHighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total[5m]) / container_spec_cpu_quota > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} using >90% CPU"
+          description: "Container {{ $labels.name }} is using {{ $value | humanizePercentage }} of its CPU limit."
+
+      - alert: ContainerRestartLoop
+        expr: increase(container_restarts_total[1h]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} restart loop detected"
+          description: "Container {{ $labels.name }} has restarted {{ $value }} times in the last hour."
+
+      - alert: ContainerDown
+        expr: time() - container_last_seen > 120
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container {{ $labels.name }} is down"
+          description: "Container {{ $labels.name }} has not been seen for over 2 minutes."
+
+  - name: host_health
+    rules:
+      - alert: HostHighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host memory usage above 90%"
+          description: "Host memory usage is at {{ $value | humanizePercentage }}."
+
+      - alert: HostHighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host disk usage above 85%"
+          description: "Host disk {{ $labels.device }} at {{ $labels.mountpoint }} is {{ $value | humanizePercentage }} full."
+
+      - alert: HostDiskInodesExhausted
+        expr: (1 - (node_filesystem_files_free{mountpoint="/"} / node_filesystem_files{mountpoint="/"})) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host disk inodes above 85%"
+          description: "Host inodes at {{ $labels.mountpoint }} are {{ $value | humanizePercentage }} used."
+
+  - name: database_health
+    rules:
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL {{ $labels.instance }} is down"
+          description: "PostgreSQL server {{ $labels.instance }} is not responding."
+
+      - alert: PostgreSQLTooManyConnections
+        expr: (pg_stat_database_numbackends / pg_settings_max_connections) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL {{ $labels.instance }} high connection count"
+          description: "PostgreSQL is using {{ $value | humanizePercentage }} of max connections."
+
+  - name: service_health
+    rules:
+      - alert: TraefikHighErrorRate
+        expr: (sum(rate(traefik_service_requests_total{code=~"5.."}[5m])) by (service) / sum(rate(traefik_service_requests_total[5m])) by (service)) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Traefik high 5xx error rate for {{ $labels.service }}"
+          description: "Service {{ $labels.service }} has a {{ $value | humanizePercentage }} 5xx error rate."
+
+      - alert: PrometheusTSDBCompactionFailure
+        expr: prometheus_tsdb_compactions_failed_total > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus TSDB compaction failures"
+          description: "Prometheus has experienced TSDB compaction failures."

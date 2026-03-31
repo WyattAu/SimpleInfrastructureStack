@@ -1,0 +1,24 @@
+# SimpleInfrastructureStack Docker Compose Lint Configuration
+# Used with docker-compose-lint or similar tools
+
+# All images must be pinned to specific versions (no :latest)
+image-tag-policy: pinned
+
+# All services must have resource limits
+require-resource-limits: true
+
+# All services must have health checks (except init containers)
+require-healthcheck: true
+healthcheck-exceptions:
+  - "*-init"
+  - "*-chown"
+  - "*debug*"
+
+# Security policies
+require-no-new-privileges: true
+disallow-privileged: true
+privileged-exceptions:
+  - "docker-in-docker"
+
+# Logging must be configured on all services
+require-logging: true
