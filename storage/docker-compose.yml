@@ -3,24 +3,30 @@ version: '3.8'
 
 services:
   ocis-init:
-    # Use a minimal image with the necessary tools
-    image: busybox:latest
+    image: busybox:1.36.1
     container_name: storage-ocis-init
-    # Set the ownership to the hardcoded UID/GID that the OCIS container uses internally.
     command: chown -R 1000:1000 /etc/ocis /var/lib/ocis
     volumes:
-      # Mount the same volume as the main ocis service
       - ${DATA_BASE_PATH}/storage/ocis-config:/etc/ocis
       - ${DATA_BASE_PATH}/storage/ocis-data:/var/lib/ocis
     environment:
       - PUID=1000
       - PGID=1000
-    # This init container does not need to be on any network
+    security_opt:
+      - no-new-privileges:true
     networks: []
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 32M
+
   ocis:
     image: owncloud/ocis:${OCIS_VERSION}
     container_name: storage-ocis
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       ocis-init:
         condition: service_completed_successfully
@@ -31,39 +37,28 @@ services:
       - ${DATA_BASE_PATH}/storage/ocis-data:/var/lib/ocis
     entrypoint:
       - /bin/sh
-    # This command initializes a full config with random secrets on first run,
-    # and then starts the server on all subsequent runs.
-    # command: ["-c", "ocis init || true; exec ocis server"]
     command: ["-c", "if [ ! -f /etc/ocis/ocis.yaml ]; then ocis init; fi; exec ocis server"]
     environment:
-      #- TZ=${TZ}
-      # Keycloak IDP specific configuration
       FRONTEND_APP_HANDLER_SECURE_VIEW_APP_ADDR: "com.owncloud.api.collaboration.CollaboraOnline"
       COLLABORA_DOMAIN: "collabora.${DOMAIN_NAME}"
       PROXY_AUTOPROVISION_ACCOUNTS: "true"
       PROXY_ROLE_ASSIGNMENT_DRIVER: "oidc"
       OCIS_OIDC_ISSUER: https://auth.${DOMAIN_NAME}/realms/company-realm
-
       WEB_OIDC_AUTHORITY: https://auth.${DOMAIN_NAME}/realms/company-realm
-
       WEB_OIDC_METADATA_URL: https://auth.${DOMAIN_NAME}/realms/company-realm/.well-known/openid-configuration
-
       PROXY_OIDC_REWRITE_WELLKNOWN: "true"
       WEB_OIDC_CLIENT_ID: ${OCIS_OIDC_CLIENT_ID:-web}
-      # general config
       OCIS_URL: https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
       OCIS_LOG_LEVEL: ${OCIS_LOG_LEVEL:-info}
       OCIS_LOG_COLOR: ${OCIS_LOG_COLOR:-true}
-      PROXY_TLS: "false" # do not use SSL between Traefik and oCIS
+      PROXY_TLS: "false"
       PROXY_USER_OIDC_CLAIM: "preferred_username"
       PROXY_USER_CS3_CLAIM: "username"
-      # INSECURE: needed if oCIS / Traefik is using self generated certificates
       OCIS_INSECURE: "${INSECURE:-false}"
       OCIS_ADMIN_USER_ID: ""
       OCIS_EXCLUDE_RUN_SERVICES: "idp"
       GRAPH_ASSIGN_DEFAULT_USER_ROLE: "false"
       GRAPH_USERNAME_MATCH: "none"
-      # password policies
       OCIS_PASSWORD_POLICY_BANNED_PASSWORDS_LIST: "banned-password-list.txt"
       PROXY_CSP_CONFIG_FILE_LOCATION: /etc/ocis/csp.yaml
       KEYCLOAK_DOMAIN: auth.${DOMAIN_NAME}
@@ -78,8 +73,15 @@ services:
       - "traefik.http.routers.ocis.rule=Host(`${OCIS_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.ocis.entrypoints=websecure"
       - "traefik.http.routers.ocis.tls.certresolver=cloudflare"
+      - "traefik.http.routers.ocis.middlewares=security-headers"
       - "traefik.http.services.ocis.loadbalancer.server.port=9200"
       - "traefik.http.services.ocis.loadbalancer.server.scheme=http"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9200/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     deploy:
       resources:
         limits:
@@ -92,10 +94,13 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
   collaboration:
     image: owncloud/ocis:${OCIS_VERSION}
     container_name: storage-collaboration
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       - ocis
       - collabora
@@ -115,6 +120,18 @@ services:
       MICRO_REGISTRY_ADDRESS: storage-ocis:9233
     networks:
       - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9300/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          memory: 128M
     logging:
       driver: "json-file"
       options:
@@ -122,9 +139,11 @@ services:
         max-file: "3"
 
   collabora:
-    image: collabora/code:latest
+    image: collabora/code:${COLLABORA_VERSION}
     container_name: storage-collabora
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     cap_add:
       - MKNOD
     environment:
@@ -141,13 +160,25 @@ services:
       - "traefik.http.routers.collabora.rule=Host(`collabora.${DOMAIN_NAME}`)"
       - "traefik.http.routers.collabora.entrypoints=websecure"
       - "traefik.http.routers.collabora.tls.certresolver=cloudflare"
+      - "traefik.http.routers.collabora.middlewares=security-headers"
       - "traefik.http.services.collabora.loadbalancer.server.port=9980"
     healthcheck:
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9980"]
       interval: 30s
       timeout: 10s
       retries: 3
-
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   traefik_net:

@@ -2,23 +2,30 @@ version: '3.8'
 
 services:
   prometheus-init:
-    image: busybox:latest
+    image: busybox:1.36.1
     container_name: monitoring-prometheus-init
-    # The Prometheus process runs as the 'nobody' user (UID 65534).
     command: chown -R 65534:65534 /prometheus
     volumes:
       - ${DATA_BASE_PATH}/monitoring/prometheus:/prometheus
     networks: []
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 32M
 
   prometheus:
     image: prom/prometheus:${PROMETHEUS_VERSION}
     container_name: monitoring-prometheus
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       prometheus-init:
         condition: service_completed_successfully
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
       - ${DATA_BASE_PATH}/monitoring/prometheus:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -35,10 +42,15 @@ services:
       - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.prometheus.rule=Host(`${PROMETHEUS_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.prometheus.entrypoints=websecure"
-      - "traefik.http.routers.prometheus.middlewares=keycloak-auth"
+      - "traefik.http.routers.prometheus.middlewares=keycloak-auth,security-headers"
       - "traefik.http.routers.prometheus.tls.certresolver=cloudflare"
       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
       - "traefik.http.services.prometheus.loadbalancer.server.scheme=http"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -53,19 +65,24 @@ services:
         max-file: "3"
 
   grafana-init:
-    image: busybox:latest
+    image: busybox:1.36.1
     container_name: monitoring-grafana-init
-    # The Grafana process runs as UID 472 and GID 472.
-    # This command changes the ownership of the mounted volume to match.
     command: chown -R 472:472 /var/lib/grafana
     volumes:
       - ${DATA_BASE_PATH}/monitoring/grafana:/var/lib/grafana
     networks: []
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 32M
 
   grafana:
     image: grafana/grafana:${GRAFANA_VERSION}
     container_name: monitoring-grafana
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       grafana-init:
         condition: service_completed_successfully
@@ -86,12 +103,10 @@ services:
       - GF_AUTH_GENERIC_OAUTH_AUTH_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/protocol/openid-connect/auth
       - GF_AUTH_GENERIC_OAUTH_TOKEN_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/protocol/openid-connect/token
       - GF_AUTH_GENERIC_OAUTH_API_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/protocol/openid-connect/userinfo
-
       # --- Attribute and Role Mapping ---
       - GF_AUTH_GENERIC_OAUTH_LOGIN_ATTRIBUTE_PATH=preferred_username
       - GF_AUTH_GENERIC_OAUTH_EMAIL_ATTRIBUTE_PATH=email
       - GF_AUTH_GENERIC_OAUTH_NAME_ATTRIBUTE_PATH=name
-
       # --- Grafana-Specific Role Mapping ---
       - GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH=contains(resource_access['${GRAFANA_OIDC_CLIENT_ID}'].roles[*], 'grafana-admin') && 'Admin' || contains(resource_access['${GRAFANA_OIDC_CLIENT_ID}'].roles[*], 'grafana-editor') && 'Editor' || 'Viewer'
     networks:
@@ -103,7 +118,21 @@ services:
       - "traefik.http.routers.grafana.rule=Host(`${GRAFANA_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.grafana.entrypoints=websecure"
       - "traefik.http.routers.grafana.tls.certresolver=cloudflare"
+      - "traefik.http.routers.grafana.middlewares=security-headers"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          memory: 128M
     logging:
       driver: "json-file"
       options:
@@ -114,12 +143,26 @@ services:
     image: grafana/loki:${LOKI_VERSION}
     container_name: monitoring-loki
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - ${DATA_BASE_PATH}/monitoring/loki:/loki
       - ./loki/config.yml:/etc/loki/local-config.yaml:ro
     command: -config.file=/etc/loki/local-config.yaml
     networks:
       - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          memory: 256M
     logging:
       driver: "json-file"
       options:
@@ -130,12 +173,26 @@ services:
     image: grafana/promtail:${PROMTAIL_VERSION}
     container_name: monitoring-promtail
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./promtail/config.yml:/etc/promtail/config.yml:ro
     command: -config.file=/etc/promtail/config.yml
     networks:
       - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9080/metrics || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          memory: 64M
     logging:
       driver: "json-file"
       options:
@@ -146,6 +203,8 @@ services:
     image: louislam/uptime-kuma:${KUMA_VERSION}
     container_name: monitoring-kuma
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - ${DATA_BASE_PATH}/monitoring/kuma:/app/data
     networks:
@@ -156,10 +215,22 @@ services:
       - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.kuma.rule=Host(`${KUMA_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.kuma.entrypoints=websecure"
-      - "traefik.http.routers.kuma.middlewares=keycloak-auth"
+      - "traefik.http.routers.kuma.middlewares=keycloak-auth,security-headers"
       - "traefik.http.routers.kuma.tls.certresolver=cloudflare"
       - "traefik.http.services.kuma.loadbalancer.server.port=3001"
-    # Internal health check
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3001/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          memory: 64M
     logging:
       driver: "json-file"
       options:
@@ -170,14 +241,27 @@ services:
     image: ghcr.io/google/cadvisor:${CADVISOR_VERSION}
     container_name: monitoring-cadvisor
     restart: unless-stopped
-    privileged: true
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - /:/rootfs:ro
-      - /var/run:/var/run:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
     networks:
       - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/metrics || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          memory: 128M
     logging:
       driver: "json-file"
       options:
@@ -188,6 +272,8 @@ services:
     image: prom/node-exporter:${NODE_EXPORTER_VERSION}
     container_name: monitoring-node-exporter
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -198,6 +284,18 @@ services:
       - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
     networks:
       - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9100/metrics || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 64M
+        reservations:
+          memory: 16M
     logging:
       driver: "json-file"
       options:
