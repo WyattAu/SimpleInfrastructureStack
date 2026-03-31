@@ -21,6 +21,9 @@ Thumbs.db
 # --- Docker ---
 .docker/
 
+# --- Rendered Configs (contain secrets) ---
+monitoring/loki/rendered/config.yml
+
 # --- VS Code ---
 .vscode/*
 !.vscode/settings.json

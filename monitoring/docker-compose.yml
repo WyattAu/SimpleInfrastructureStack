@@ -109,6 +109,9 @@ services:
       - GF_AUTH_GENERIC_OAUTH_NAME_ATTRIBUTE_PATH=name
       # --- Grafana-Specific Role Mapping ---
       - GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH=contains(resource_access['${GRAFANA_OIDC_CLIENT_ID}'].roles[*], 'grafana-admin') && 'Admin' || contains(resource_access['${GRAFANA_OIDC_CLIENT_ID}'].roles[*], 'grafana-editor') && 'Editor' || 'Viewer'
+      # --- Loki Basic Auth Credentials ---
+      - LOKI_USERNAME=${LOKI_USERNAME:-loki}
+      - LOKI_PASSWORD=${LOKI_PASSWORD}
     networks:
       - traefik_net
       - backend_net
@@ -139,15 +142,38 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  loki-init:
+    image: alpine:3.19
+    container_name: monitoring-loki-init
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - ./loki/rendered:/etc/loki/rendered
+    environment:
+      - LOKI_USERNAME=${LOKI_USERNAME:-loki}
+      - LOKI_PASSWORD=${LOKI_PASSWORD}
+      - LOKI_HASH=
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - "apk add --no-cache apache2-utils python3 >/dev/null 2>&1 && export LOKI_HASH=$$(htpasswd -nbB \"$$LOKI_USERNAME\" \"$$LOKI_PASSWORD\" | cut -d: -f2) && python3 -c 'import os; u=os.environ[\"LOKI_USERNAME\"]; h=os.environ[\"LOKI_HASH\"]; c=open(\"/etc/loki/config.yml\").read(); open(\"/etc/loki/rendered/config.yml\",\"w\").write(c.replace(\"$${LOKI_USERNAME}: $${LOKI_PASSWORD_HASH}\", u+\": \"+h))'"
+    networks: []
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 64M
+
   loki:
     image: grafana/loki:${LOKI_VERSION}
     container_name: monitoring-loki
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    depends_on:
+      loki-init:
+        condition: service_completed_successfully
     volumes:
       - ${DATA_BASE_PATH}/monitoring/loki:/loki
-      - ./loki/config.yml:/etc/loki/local-config.yaml:ro
+      - ./loki/rendered/config.yml:/etc/loki/local-config.yaml:ro
     command: -config.file=/etc/loki/local-config.yaml
     networks:
       - backend_net
@@ -178,7 +204,12 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./promtail/config.yml:/etc/promtail/config.yml:ro
-    command: -config.file=/etc/promtail/config.yml
+    environment:
+      - LOKI_USERNAME=${LOKI_USERNAME:-loki}
+      - LOKI_PASSWORD=${LOKI_PASSWORD}
+    command:
+      - "-config.file=/etc/promtail/config.yml"
+      - "-client.url=http://${LOKI_USERNAME}:${LOKI_PASSWORD}@monitoring-loki:3100/loki/api/v1/push"
     networks:
       - backend_net
     healthcheck:

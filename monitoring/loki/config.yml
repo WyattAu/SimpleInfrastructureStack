@@ -1,7 +1,9 @@
-auth_enabled: false
+auth_enabled: true
 server:
   http_listen_port: 3100
   grpc_listen_port: 9096
+  basic_auth_users:
+    ${LOKI_USERNAME}: ${LOKI_PASSWORD_HASH}
 common:
   path_prefix: /loki
   storage:
