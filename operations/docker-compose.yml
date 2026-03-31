@@ -6,12 +6,15 @@ services:
     image: postgres:${POSTGRES_FORGEJO_VERSION}
     container_name: operations-postgres-forgejo
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - ${DATA_BASE_PATH}/operations/postgres-forgejo:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=${POSTGRES_DB_FORGEJO}
       - POSTGRES_USER=${POSTGRES_USER_FORGEJO}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_FORGEJO}
+      - POSTGRES_HOST_AUTH_METHOD=scram-sha-256
     networks:
       - backend_net
     healthcheck:
@@ -19,6 +22,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          memory: 128M
     logging:
       driver: "json-file"
       options:
@@ -34,35 +44,28 @@ services:
     depends_on:
       postgres-forgejo:
         condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - ${DATA_BASE_PATH}/operations/forgejo:/data
-    # user: "${PUID}:${PGID}"
     environment:
-      # --- System Settings ---
       - USER=git
-      # official documentation prefer USER_UID and USER_GID https://forgejo.org/docs/v1.21/admin/installation-docker/
       - USER_UID=${PUID}
       - USER_GID=${PGID}
-      #- PUID=${PUID}
-      #- PGID=${PGID}
       - TZ=${TZ}
-
       # --- Database Settings ---
       - FORGEJO__database__DB_TYPE=postgres
       - FORGEJO__database__HOST=operations-postgres-forgejo:5432
       - FORGEJO__database__NAME=${POSTGRES_DB_FORGEJO}
       - FORGEJO__database__USER=${POSTGRES_USER_FORGEJO}
       - FORGEJO__database__PASSWD=${POSTGRES_PASSWORD_FORGEJO}
-
       # --- Server Settings ---
       - FORGEJO__server__DOMAIN=${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
       - FORGEJO__server__ROOT_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
-
       # --- SSH ---
-      - FORGEJO__server__SSH_DOMAIN=ssh.wyattau.com
+      - FORGEJO__server__SSH_DOMAIN=${FORGEJO_SSH_SUBDOMAIN}.${DOMAIN_NAME}
       - FORGEJO__server__SSH_PORT=2222
       - FORGEJO__server__START_SSH_SERVER=true
-
       # --- Native OIDC Authentication Settings ---
       - FORGEJO__oauth2_client__ENABLED=true
       - FORGEJO__oauth2_client__PROVIDERS=keycloak
@@ -70,40 +73,34 @@ services:
       - FORGEJO__oauth2_client__keycloak__CLIENT_ID=forgejo
       - FORGEJO__oauth2_client__keycloak__CLIENT_SECRET=${FORGEJO_OIDC_CLIENT_SECRET}
       - FORGEJO__oauth2_client__keycloak__AUTO_DISCOVER_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/.well-known/openid-configuration
-
       # --- UI/Service Settings ---
-      #- FORGEJO__service__DISABLE_REGISTRATION=false
       - FORGEJO__service__SHOW_REGISTRATION_BUTTON=false
-
       # --- Other Settings ---
       - FORGEJO__actions__ENABLED=true
       - FORGEJO__container__ENABLE=true
       - FORGEJO__container__REGISTRY_HOST=${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}
-    #- FORGEJO__metrics__ENABLED=true
+      - FORGEJO__metrics__ENABLED=true
     networks:
       - traefik_net
       - backend_net
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
-
-      # --- 1. DEFINE A SINGLE SERVICE for the Forgejo container ---
+      # --- Service ---
       - "traefik.http.services.forgejo-svc.loadbalancer.server.port=3000"
-
-      # --- 2. CONFIGURE THE ROUTER for the Forgejo Web UI ---
+      # --- Router: Forgejo Web UI ---
       - "traefik.http.routers.forgejo-web.rule=Host(`${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.forgejo-web.entrypoints=websecure"
       - "traefik.http.routers.forgejo-web.tls.certresolver=cloudflare"
-      #- "traefik.http.routers.forgejo-web.middlewares=keycloak-auth"
+      - "traefik.http.routers.forgejo-web.middlewares=keycloak-auth,security-headers"
       - "traefik.http.routers.forgejo-web.service=forgejo-svc"
-
-      # --- 3. CONFIGURE THE ROUTER for the Forgejo Container Registry ---
+      # --- Router: Forgejo Container Registry ---
       - "traefik.http.routers.forgejo-registry.rule=Host(`${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.forgejo-registry.entrypoints=websecure"
       - "traefik.http.routers.forgejo-registry.tls.certresolver=cloudflare"
+      - "traefik.http.routers.forgejo-registry.middlewares=security-headers"
       - "traefik.http.routers.forgejo-registry.service=forgejo-svc"
     healthcheck:
-      #test: ["CMD-SHELL", "su-exec git /usr/local/bin/forgejo doctor check-database"]
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1"]
       interval: 60s
       timeout: 15s
@@ -124,13 +121,25 @@ services:
         max-file: "3"
 
   docker-in-docker:
-    image: docker:dind
+    image: docker:${FORGEJO_DIND_VERSION}
     container_name: operations-forgejo-dind
     privileged: true
     command: ['dockerd', '-H', 'tcp://0.0.0.0:2375', '--tls=false']
     restart: 'unless-stopped'
     networks:
-      - backend_net
+      - ci_net
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   forgejo-runner:
     image: data.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
@@ -138,29 +147,42 @@ services:
     restart: unless-stopped
     depends_on:
       - docker-in-docker
+    security_opt:
+      - no-new-privileges:true
     user: "1001:1001"
     environment:
       DOCKER_HOST: tcp://docker-in-docker:2375
     volumes:
       - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
     networks:
-      - traefik_net
-      - backend_net
-    # This command is a placeholder to keep the container alive for registration.
+      - ci_net
     command: '/bin/sh -c "sleep 5; forgejo-runner --config /data/config.yaml daemon"'
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   postgres-woodpecker:
     image: postgres:${POSTGRES_FORGEJO_VERSION}
     container_name: operations-postgres-woodpecker
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
-      # Use a separate directory for Woodpecker's data
       - ${DATA_BASE_PATH}/operations/postgres-woodpecker:/var/lib/postgresql/data
     environment:
-      # Use the new environment variables
       - POSTGRES_DB=${POSTGRES_DB_WOODPECKER}
       - POSTGRES_USER=${POSTGRES_USER_WOODPECKER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_WOODPECKER}
+      - POSTGRES_HOST_AUTH_METHOD=scram-sha-256
     networks:
       - backend_net
     healthcheck:
@@ -168,6 +190,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          memory: 128M
     logging:
       driver: "json-file"
       options:
@@ -183,6 +212,8 @@ services:
         condition: service_healthy
       postgres-woodpecker:
         condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - ${DATA_BASE_PATH}/operations/woodpecker:/var/lib/woodpecker/
     environment:
@@ -190,48 +221,55 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
       - WOODPECKER_HOST=https://${WOODPECKER_SUBDOMAIN}.${DOMAIN_NAME}
-      - WOODPECKER_GRPC_ADDR=:${WOODPECKER_SERVER_GRPC_PORT:-9000} # Listen on all interfaces
+      - WOODPECKER_GRPC_ADDR=:${WOODPECKER_SERVER_GRPC_PORT:-9000}
       - WOODPECKER_GRPC_SECRET=${WOODPECKER_AGENT_SECRET}
       - WOODPECKER_ADMINS=${WOODPECKER_ADMIN}
-      - WOODPECKER_OPEN=true
+      - WOODPECKER_OPEN=false
       - WOODPECKER_ORGS=${WOODPECKER_ORGS}
       - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
       - WOODPECKER_FORGEJO=true
       # DB
       - WOODPECKER_DATABASE_DRIVER=postgres
-      - WOODPECKER_DATABASE_DATASOURCE=postgres://${POSTGRES_USER_WOODPECKER}:${POSTGRES_PASSWORD_WOODPECKER}@postgres-woodpecker:5432/${POSTGRES_DB_WOODPECKER}?sslmode=disable
-      # Use the full, public-facing URL for Forgejo
+      - WOODPECKER_DATABASE_DATASOURCE=postgres://${POSTGRES_USER_WOODPECKER}:${POSTGRES_PASSWORD_WOODPECKER}@postgres-woodpecker:5432/${POSTGRES_DB_WOODPECKER}?sslmode=require
+      # Forgejo OAuth
       - WOODPECKER_FORGEJO_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
       - WOODPECKER_FORGEJO_CLIENT=${WOODPECKER_FORGEJO_CLIENT}
       - WOODPECKER_FORGEJO_SECRET=${WOODPECKER_FORGEJO_SECRET}
-      - WOODPECKER_BACKEND_DOCKER_NETWORK=backend
+      - WOODPECKER_BACKEND_DOCKER_NETWORK=ci
     networks:
       - traefik_net
       - backend_net
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
-      #- "traefik.http.routers.woodpecker.rule=Host(`${WOODPECKER_SUBDOMAIN}.${DOMAIN_NAME}`)"
-      #- "traefik.http.routers.woodpecker.entrypoints=websecure"
-      #- "traefik.http.routers.woodpecker.tls.certresolver=cloudflare"
-      #- "traefik.http.services.woodpecker-svc.loadbalancer.server.port=8000"
-      #- "traefik.http.routers.woodpecker.service=woodpecker-svc"
-
       - "traefik.http.services.woodpecker-web.loadbalancer.server.port=8000"
       - "traefik.http.services.woodpecker-grpc.loadbalancer.server.port=9000"
       - "traefik.http.services.woodpecker-grpc.loadbalancer.server.scheme=h2c"
-
-      # --- 2. CONFIGURE ROUTER for the Web UI ---
+      # --- Router: Woodpecker Web UI ---
       - "traefik.http.routers.woodpecker-web.rule=Host(`${WOODPECKER_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.woodpecker-web.entrypoints=websecure"
       - "traefik.http.routers.woodpecker-web.tls.certresolver=cloudflare"
+      - "traefik.http.routers.woodpecker-web.middlewares=security-headers"
       - "traefik.http.routers.woodpecker-web.service=woodpecker-web"
-
-      # --- 3. CONFIGURE ROUTER for the gRPC endpoint ---
+      # --- Router: Woodpecker gRPC ---
       - "traefik.http.routers.woodpecker-grpc.rule=Host(`${WOODPECKER_GRPC_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.woodpecker-grpc.entrypoints=websecure"
       - "traefik.http.routers.woodpecker-grpc.tls.certresolver=cloudflare"
+      - "traefik.http.routers.woodpecker-grpc.middlewares=security-headers"
       - "traefik.http.routers.woodpecker-grpc.service=woodpecker-grpc"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          memory: 128M
     logging:
       driver: "json-file"
       options:
@@ -244,8 +282,8 @@ services:
     restart: unless-stopped
     depends_on:
       - woodpecker-server
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+    security_opt:
+      - no-new-privileges:true
     dns:
       - 1.1.1.1
       - 8.8.8.8
@@ -254,14 +292,21 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
       - WOODPECKER_SERVER=woodpecker-server:9000
-      #- WOODPECKER_SERVER=${WOODPECKER_GRPC_SUBDOMAIN}.${DOMAIN_NAME}:443
       - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
       - WOODPECKER_BACKEND=docker
+      - DOCKER_HOST=tcp://docker-in-docker:2375
       - WOODPECKER_MAX_WORKFLOWS=2
       - WOODPECKER_BACKEND_DOCKER_PRIVILEGED_IMAGES=${WOODPECKER_DOCKER_PRIVILEGED_IMAGES}
     networks:
-      #- traefik_net
       - backend_net
+      - ci_net
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          memory: 512M
     logging:
       driver: "json-file"
       options:
@@ -272,4 +317,6 @@ networks:
   traefik_net:
     external: true
   backend_net:
+    external: true
+  ci_net:
     external: true
