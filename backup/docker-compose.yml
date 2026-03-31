@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  backup-restic:
+    image: restic/restic:0.17.3
+    container_name: backup-restic
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /root/.cache/restic
+    volumes:
+      - ${DATA_BASE_PATH}:/data:ro
+      - ${BACKUP_BASE_PATH}/restic-repo:/restic-repo
+    environment:
+      - RESTIC_REPOSITORY=/restic-repo
+      - RESTIC_PASSWORD=${RESTIC_PASSWORD}
+      # Optional: S3/B2/SFTP remote backup
+      # - AWS_ACCESS_KEY_ID=${BACKUP_S3_KEY}
+      # - AWS_SECRET_ACCESS_KEY=${BACKUP_S3_SECRET}
+      # - RESTIC_REPOSITORY=s3:https://s3.example.com/bucket/repo
+    entrypoint: ["tail", "-f", "/dev/null"]
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backup-cron-trigger:
+    image: ghcr.io/gethomepage/homepage:v1.5
+    container_name: backup-cron-trigger
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - backup-restic
+    volumes:
+      - ./scripts:/scripts:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TZ=${TZ}
+      - CRON_SCHEDULE=0 2 * * *
+      # --- Backup Source ---
+      - BACKUP_DATA_PATH=/data
+      # --- Restic Config ---
+      - RESTIC_REPOSITORY=/restic-repo
+      - RESTIC_PASSWORD=${RESTIC_PASSWORD}
+      # --- Retention Policy ---
+      - RESTIC_KEEP_HOURLY=24
+      - RESTIC_KEEP_DAILY=7
+      - RESTIC_KEEP_WEEKLY=4
+      - RESTIC_KEEP_MONTHLY=6
+      - RESTIC_KEEP_YEARLY=3
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "$$CRON_SCHEDULE /scripts/run-backup.sh" | crond -f -
+    networks: []
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 64M
+        reservations:
+          memory: 16M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks: {}
