@@ -7,6 +7,7 @@ ARG ANSIBLE_VERSION=2.20.4
 
 # Install runtime dependencies
 RUN apk add --no-cache \
+    bash \
     python3 \
     py3-pip \
     git \
