@@ -4,6 +4,7 @@ ARG SOPS_VERSION=3.12.2
 ARG AGE_VERSION=1.2.0
 ARG WEBHOOK_VERSION=2.8.3
 ARG ANSIBLE_VERSION=2.20.4
+ARG COMPOSE_VERSION=v2.32.3
 
 # Install runtime dependencies
 RUN apk add --no-cache \
@@ -20,11 +21,12 @@ RUN apk add --no-cache \
 RUN pip3 install --break-system-packages ansible-core==${ANSIBLE_VERSION} && \
     ansible-galaxy collection install community.docker
 
-# Install Docker CLI + Compose plugin
+# Install Docker CLI + Compose plugin (pinned to v2.32.3 for stability;
+# v5.x has a bug parsing IPv6 address pools with CIDR notation)
 RUN apk add --no-cache docker-cli && \
     mkdir -p /usr/local/lib/docker/cli-plugins && \
     wget -qO /usr/local/lib/docker/cli-plugins/docker-compose \
-        "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" && \
+        "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-$(uname -m)" && \
     chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
 # Install SOPS, age, and webhook binary (single layer to share ARCH)
