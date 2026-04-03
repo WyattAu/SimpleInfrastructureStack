@@ -5,7 +5,8 @@
   loop: "{{ health_check_containers }}"
   register: health_results
   until:
-    - health_results.exists
+    - health_results is defined
+    - health_results.get('exists', false)
     - health_results.container.State.Running
     - health_results.container.State.Health is defined
     - health_results.container.State.Health.Status == "healthy"
