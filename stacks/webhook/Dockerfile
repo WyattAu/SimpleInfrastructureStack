@@ -2,7 +2,7 @@ FROM alpine:3.21
 
 ARG SOPS_VERSION=3.12.2
 ARG AGE_VERSION=1.2.0
-ARG WEBHOOK_VERSION=2.8.0
+ARG WEBHOOK_VERSION=2.8.3
 ARG ANSIBLE_VERSION=2.20.4
 
 # Install runtime dependencies
@@ -31,9 +31,10 @@ RUN ARCH=$(uname -m) && \
         "https://github.com/FiloSottile/age/releases/download/v${AGE_VERSION}/age-v${AGE_VERSION}-linux-${ARCH}.tar.gz" && \
     tar xzf /tmp/age.tar.gz -C /usr/local/bin age && \
     rm /tmp/age.tar.gz && \
-    wget -qO /usr/local/bin/webhook \
-        "https://github.com/adnanh/webhook/releases/download/v${WEBHOOK_VERSION}/webhook-linux-${ARCH}" && \
-    chmod +x /usr/local/bin/webhook
+    wget -qO /tmp/webhook.tar.gz \
+        "https://github.com/adnanh/webhook/releases/download/v${WEBHOOK_VERSION}/webhook-linux-${ARCH}.tar.gz" && \
+    tar xzf /tmp/webhook.tar.gz -C /usr/local/bin webhook && \
+    rm /tmp/webhook.tar.gz
 
 # Create working directories
 RUN mkdir -p /opt/webhook /root/.ssh
