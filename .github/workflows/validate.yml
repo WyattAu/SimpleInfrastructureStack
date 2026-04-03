@@ -107,11 +107,14 @@ jobs:
           ansible-inventory -i ansible/inventory/hosts.yml --list 2>&1 | python3 -c "
           import json, sys
           inv = json.load(sys.stdin)
-          # Extract hosts from all groups
           hosts = set()
           for key, val in inv.items():
             if isinstance(val, dict) and 'hosts' in val:
-              hosts.update(val['hosts'].keys())
+              h = val['hosts']
+              if isinstance(h, dict):
+                hosts.update(h.keys())
+              elif isinstance(h, list):
+                hosts.update(str(x) for x in h)
           assert 'localhost' in hosts, f'Missing localhost host in inventory. Found: {hosts}'
           print(f'✅ Inventory valid: {len(hosts)} host(s)')
           "
