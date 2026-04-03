@@ -7,13 +7,7 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - SETGID
-      - SETUID
+
     volumes:
       - ${DATA_BASE_PATH}/operations/postgres-forgejo:/var/lib/postgresql/data
     environment:
@@ -39,14 +33,7 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - FOWNER
-      - SETGID
-      - SETUID
+
     ports:
       - "2222:22"
     depends_on:
@@ -158,8 +145,7 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+
     depends_on:
       - docker-in-docker
     user: "1001:1001"
@@ -179,13 +165,7 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - SETGID
-      - SETUID
+
     volumes:
       # Use a separate directory for Woodpecker's data
       - ${DATA_BASE_PATH}/operations/postgres-woodpecker:/var/lib/postgresql/data
@@ -213,8 +193,7 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+
     depends_on:
       forgejo:
         condition: service_healthy
@@ -281,8 +260,7 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+
     depends_on:
       - woodpecker-server
     volumes:

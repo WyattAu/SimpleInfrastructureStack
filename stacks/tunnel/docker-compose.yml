@@ -3,6 +3,10 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: infra-tunnel
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     command: tunnel --no-autoupdate run
     environment:
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
