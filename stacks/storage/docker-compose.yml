@@ -39,8 +39,11 @@ services:
     command: ["-c", "if [ ! -f /etc/ocis/ocis.yaml ]; then ocis init; fi; exec ocis server"]
     environment:
       #- TZ=${TZ}
-      # NATS: bind to 0.0.0.0 so external collaboration service can connect
+      # Expose internal services to external collaboration container:
+      # NATS: service registry (default 127.0.0.1, needs 0.0.0.0 for cross-container)
       NATS_NATS_HOST: "0.0.0.0"
+      # REVA Gateway: CS3 API for storage operations (default 127.0.0.1:9142)
+      OCIS_GATEWAY_GRPC_ADDR: "0.0.0.0:9142"
       # Keycloak IDP specific configuration
       FRONTEND_APP_HANDLER_SECURE_VIEW_APP_ADDR: "com.owncloud.api.collaboration.CollaboraOnline"
       COLLABORA_DOMAIN: "collabora.${DOMAIN_NAME}"
@@ -119,9 +122,10 @@ services:
       COLLABORATION_WOPI_SECRET: "${WOPI_SECRET}"
       COLLABORATION_WOPI_SRC: http://storage-collaboration:9300
       COLLABORATION_APP_NAME: "CollaboraOnline"
-      COLLABORATION_APP_ADDR: https://collabora.${DOMAIN_NAME}
+      # Use internal Docker URL for WOPI discovery (avoid Cloudflare round-trip)
+      COLLABORATION_APP_ADDR: "http://storage-collabora:9980"
       COLLABORATION_APP_ICON: https://collabora.${DOMAIN_NAME}/favicon.ico
-      COLLABORATION_APP_INSECURE: "${INSECURE:-false}"
+      COLLABORATION_APP_INSECURE: "true"
       COLLABORATION_CS3API_DATAGATEWAY_INSECURE: "${INSECURE:-false}"
       COLLABORATION_LOG_LEVEL: ${OCIS_LOG_LEVEL:-info}
       OCIS_URL: https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
