@@ -63,6 +63,8 @@ services:
       - |
         echo "$$CRON_SCHEDULE /scripts/run-backup.sh" | crond -f -
     networks: []
+    healthcheck:
+      disable: true
     deploy:
       resources:
         limits:

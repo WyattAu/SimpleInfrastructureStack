@@ -106,6 +106,7 @@ services:
       - collabora
     command: ["collaboration", "server"]
     environment:
+      COLLABORATION_WOPI_SECRET: "${WOPI_SECRET}"
       COLLABORATION_WOPI_SRC: http://storage-collaboration:9300
       COLLABORATION_APP_NAME: "CollaboraOnline"
       COLLABORATION_APP_ADDR: https://collabora.${DOMAIN_NAME}
