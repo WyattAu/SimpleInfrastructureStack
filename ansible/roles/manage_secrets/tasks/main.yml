@@ -1,0 +1,58 @@
+---
+- name: Ensure secrets directory exists
+  ansible.builtin.file:
+    path: "{{ infra_secrets_path }}"
+    state: directory
+    mode: '0700'
+    owner: root
+
+- name: Check if sops is installed on control node
+  delegate_to: localhost
+  run_once: true
+  ansible.builtin.command: which sops
+  register: sops_check
+  changed_when: false
+  failed_when: sops_check.rc != 0
+
+- name: Ensure age key is available on control node
+  delegate_to: localhost
+  run_once: true
+  ansible.builtin.stat:
+    path: "{{ sops_age_key_path }}"
+  register: age_key_stat
+
+- name: Fail if age key not found
+  delegate_to: localhost
+  run_once: true
+  ansible.builtin.fail:
+    msg: "Age key not found at {{ sops_age_key_path }}. Set sops_age_key_path variable."
+  when: not age_key_stat.stat.exists
+
+- name: Decrypt secrets and copy to target
+  delegate_to: localhost
+  run_once: true
+  ansible.builtin.shell: |
+    sops --decrypt --age-recipients {{ sops_age_public_key }} \
+      {{ playbook_dir }}/../../secrets/{{ item }}.env.encrypted \
+      > /tmp/{{ item }}.env.decrypted
+  loop: "{{ stacks }}"
+  changed_when: false
+  no_log: true
+
+- name: Copy decrypted secrets to target
+  ansible.builtin.copy:
+    src: "/tmp/{{ item }}.env.decrypted"
+    dest: "{{ infra_secrets_path }}/{{ item }}.env"
+    mode: '0600'
+    owner: root
+  loop: "{{ stacks }}"
+  no_log: true
+
+- name: Clean up local decrypted files
+  delegate_to: localhost
+  run_once: true
+  ansible.builtin.file:
+    path: "/tmp/{{ item }}.env.decrypted"
+    state: absent
+  loop: "{{ stacks }}"
+  changed_when: false

@@ -1,0 +1,6 @@
+---
+# defaults file for manage_secrets
+stacks: []
+infra_secrets_path: /opt/secrets
+sops_age_key_path: ~/.config/sops/age/keys.txt
+sops_age_public_key: ""

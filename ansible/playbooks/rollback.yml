@@ -1,0 +1,56 @@
+---
+- name: Rollback infrastructure to previous state
+  hosts: truenas
+  become: true
+  tasks:
+    - name: Prompt for rollback commit (use empty for HEAD~1)
+      ansible.builtin.pause:
+        prompt: "Enter git commit hash to rollback to (or press Enter for HEAD~1)"
+      register: rollback_commit
+
+    - name: Set default rollback target
+      ansible.builtin.set_fact:
+        target_commit: "{{ rollback_commit.user_input | default('HEAD~1') }}"
+
+    - name: Display rollback target
+      ansible.builtin.debug:
+        msg: "Rolling back to commit: {{ target_commit }}"
+
+    - name: Validate compose files at rollback target
+      delegate_to: localhost
+      run_once: true
+      ansible.builtin.shell: |
+        cd {{ playbook_dir }}/../..
+        git stash
+        git checkout {{ target_commit }}
+        for stack in {{ stacks | join(' ') }}; do
+          if [ -f "stacks/$stack/docker-compose.yml" ]; then
+            cd "stacks/$stack"
+            docker compose config --quiet
+            if [ $? -ne 0 ]; then
+              echo "FAIL: $stack compose validation failed"
+              exit 1
+            fi
+            cd ../..
+          fi
+        done
+        echo "All compose files valid at {{ target_commit }}"
+      register: validate_result
+      changed_when: false
+
+    - name: Deploy rollback
+      ansible.builtin.include_role:
+        name: deploy_stack
+
+    - name: Run health checks
+      ansible.builtin.include_role:
+        name: health_check
+
+    - name: Restore working branch
+      delegate_to: localhost
+      run_once: true
+      ansible.builtin.shell: |
+        cd {{ playbook_dir }}/../..
+        git checkout feature/ansible-deployment
+        git stash pop || true
+      changed_when: false

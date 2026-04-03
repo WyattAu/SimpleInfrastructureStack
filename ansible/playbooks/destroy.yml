@@ -1,0 +1,22 @@
+---
+- name: Destroy all infrastructure stacks (emergency)
+  hosts: truenas
+  become: true
+  tasks:
+    - name: Confirm destruction
+      ansible.builtin.pause:
+        prompt: "WARNING: This will stop and remove ALL containers. Type 'DESTROY' to confirm"
+      register: confirm_destroy
+
+    - name: Fail if not confirmed
+      ansible.builtin.fail:
+        msg: "Destruction cancelled"
+      when: confirm_destroy.user_input != 'DESTROY'
+
+    - name: Stop and remove all stacks (reverse order)
+      community.docker.docker_compose_v2:
+        project_src: "{{ infra_base_path }}/{{ item }}"
+        state: absent
+        remove_orphans: true
+      loop: "{{ stacks | reverse | list }}"
+      ignore_errors: true
