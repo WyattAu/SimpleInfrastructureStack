@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -euo pipefail
 
 REPO_DIR="${REPO_DIR:-/mnt/pool_HDD_x2/infra/stacks}"
@@ -6,6 +6,9 @@ SECRETS_DIR="${SECRETS_DIR:-/mnt/pool_HDD_x2/infra/secrets}"
 LOG_FILE="/var/log/infra-deploy.log"
 REPO_URL="${REPO_URL:-https://github.com/WyattAu/SimpleInfrastructureStack.git}"
 BRANCH="${BRANCH:-main}"
+
+# Log all output to file and stdout
+exec > >(tee -a "$LOG_FILE") 2>&1
 
 # Git SSH config for deploy key
 export GIT_SSH_COMMAND="ssh -i /root/.ssh/deploy_key -o StrictHostKeyChecking=no -o IdentitiesOnly=yes -o BatchMode=yes"
