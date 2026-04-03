@@ -20,8 +20,12 @@ RUN apk add --no-cache \
 RUN pip3 install --break-system-packages ansible-core==${ANSIBLE_VERSION} && \
     ansible-galaxy collection install community.docker
 
-# Install Docker CLI (compose v2 plugin included)
-RUN apk add --no-cache docker-cli
+# Install Docker CLI + Compose plugin
+RUN apk add --no-cache docker-cli && \
+    mkdir -p /usr/local/lib/docker/cli-plugins && \
+    wget -qO /usr/local/lib/docker/cli-plugins/docker-compose \
+        "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" && \
+    chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
 # Install SOPS, age, and webhook binary (single layer to share ARCH)
 RUN ARCH=$(uname -m) && \
