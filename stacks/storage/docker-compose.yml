@@ -147,12 +147,8 @@ services:
       MICRO_REGISTRY_ADDRESS: "storage-ocis:9233"
     networks:
       - backend_net
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:9300/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+    # No healthcheck: the collaboration service only responds to specific WOPI
+    # paths (not /). It either starts successfully or crash-loops immediately.
     logging:
       driver: "json-file"
       options:
