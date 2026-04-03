@@ -1,18 +1,10 @@
 services:
-  debug:
-    image: alpine:latest
-    working_dir: /app
-    volumes:
-      - ./:/app
-    entrypoint:
-      - /bin/sh
-    # This command will list the contents of the 'config' folder and then exit
-    command: ["-c", "echo '--- Portainer sees this file structure: ---'; ls -lR config; echo '--- End of report ---'"]
-
   postgres-iam:
     image: postgres:${POSTGRES_VERSION}
     container_name: iam-postgres
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - ${DATA_BASE_PATH}/iam/postgres:/var/lib/postgresql/data
     environment:
@@ -37,6 +29,8 @@ services:
     image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
     container_name: iam-keycloak
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     command: ["start"]
     #entrypoint: ["/bin/sh", "/opt/keycloak/bin/docker-entrypoint-override.sh"]
     depends_on:

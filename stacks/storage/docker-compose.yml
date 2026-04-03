@@ -20,6 +20,8 @@ services:
     image: owncloud/ocis:${OCIS_VERSION}
     container_name: storage-ocis
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       ocis-init:
         condition: service_completed_successfully
@@ -95,6 +97,8 @@ services:
     image: owncloud/ocis:${OCIS_VERSION}
     container_name: storage-collaboration
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       - ocis
       - collabora
@@ -124,6 +128,8 @@ services:
     image: collabora/code:latest
     container_name: storage-collabora
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     cap_add:
       - MKNOD
     environment:
