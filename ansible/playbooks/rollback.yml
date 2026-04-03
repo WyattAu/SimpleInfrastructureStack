@@ -51,6 +51,6 @@
       run_once: true
       ansible.builtin.shell: |
         cd {{ playbook_dir }}/../..
-        git checkout feature/ansible-deployment
+        git checkout main
         git stash pop || true
       changed_when: false
