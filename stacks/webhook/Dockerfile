@@ -33,7 +33,7 @@ RUN ARCH=$(uname -m) && \
     rm /tmp/age.tar.gz && \
     wget -qO /tmp/webhook.tar.gz \
         "https://github.com/adnanh/webhook/releases/download/${WEBHOOK_VERSION}/webhook-linux-${ARCH}.tar.gz" && \
-    tar xzf /tmp/webhook.tar.gz -C /usr/local/bin webhook && \
+    tar xzf /tmp/webhook.tar.gz -C /usr/local/bin --strip-components=1 && \
     rm /tmp/webhook.tar.gz
 
 # Create working directories
