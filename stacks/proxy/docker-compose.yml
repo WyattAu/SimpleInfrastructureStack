@@ -3,6 +3,8 @@ services:
     image: tecnativa/docker-socket-proxy:latest
     container_name: proxy-socket-proxy
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro # Mount the real socket read-only
     environment:
@@ -89,6 +91,8 @@ services:
     image: favonia/cloudflare-ddns:${CF_DDNS_VERSION}
     container_name: proxy-cloudflare-ddns
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -163,6 +167,8 @@ services:
     image: nginx:${NGINX_VERSION}
     container_name: proxy-well-known-server
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - ./config/matrix-well-known.json:/usr/share/nginx/html/.well-known/matrix/server:ro
     networks:

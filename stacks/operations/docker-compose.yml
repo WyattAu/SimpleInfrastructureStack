@@ -5,6 +5,8 @@ services:
     image: postgres:${POSTGRES_FORGEJO_VERSION}
     container_name: operations-postgres-forgejo
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - ${DATA_BASE_PATH}/operations/postgres-forgejo:/var/lib/postgresql/data
     environment:
@@ -28,6 +30,8 @@ services:
     image: code.forgejo.org/forgejo/forgejo:${FORGEJO_VERSION}
     container_name: operations-forgejo
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     ports:
       - "2222:22"
     depends_on:
@@ -128,6 +132,8 @@ services:
     privileged: true
     command: ['dockerd', '-H', 'tcp://0.0.0.0:2375', '--tls=false']
     restart: 'unless-stopped'
+    security_opt:
+      - no-new-privileges:true
     networks:
       - backend_net
 
@@ -135,6 +141,8 @@ services:
     image: data.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
     container_name: operations-forgejo-runner
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       - docker-in-docker
     user: "1001:1001"
@@ -152,6 +160,8 @@ services:
     image: postgres:${POSTGRES_FORGEJO_VERSION}
     container_name: operations-postgres-woodpecker
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       # Use a separate directory for Woodpecker's data
       - ${DATA_BASE_PATH}/operations/postgres-woodpecker:/var/lib/postgresql/data
@@ -177,6 +187,8 @@ services:
     image: woodpeckerci/woodpecker-server:${WOODPECKER_SERVER_VERSION}
     container_name: operations-woodpecker-server
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       forgejo:
         condition: service_healthy
@@ -241,6 +253,8 @@ services:
     image: woodpeckerci/woodpecker-agent:${WOODPECKER_AGENT_VERSION}
     container_name: operations-woodpecker-agent
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       - woodpecker-server
     volumes:
