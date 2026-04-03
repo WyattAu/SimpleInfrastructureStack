@@ -12,7 +12,7 @@ export GIT_SSH_COMMAND="ssh -i /root/.ssh/deploy_key -o StrictHostKeyChecking=no
 export ANSIBLE_ROLES_PATH="${REPO_DIR}/ansible/roles"
 export ANSIBLE_CONFIG="${REPO_DIR}/ansible/ansible.cfg"
 
-log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"; }
+log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 
 log "=== DEPLOY STARTED ==="
 
@@ -52,8 +52,8 @@ log "Running Ansible deploy..."
 cd "$REPO_DIR"
 ansible-playbook ansible/playbooks/deploy.yml \
     -i ansible/inventory/hosts.yml \
-    -v 2>&1 | tee -a "$LOG_FILE"
-DEPLOY_EXIT=${PIPESTATUS[0]}
+    -v 2>&1
+DEPLOY_EXIT=$?
 
 # 4. Health check
 HEALTH_EXIT=0
@@ -61,8 +61,8 @@ if [ $DEPLOY_EXIT -eq 0 ]; then
     log "Running health checks..."
     ansible-playbook ansible/playbooks/health_check.yml \
         -i ansible/inventory/hosts.yml \
-        -v 2>&1 | tee -a "$LOG_FILE"
-    HEALTH_EXIT=${PIPESTATUS[0]}
+        -v 2>&1
+    HEALTH_EXIT=$?
 fi
 
 # 5. Cleanup secrets from disk
