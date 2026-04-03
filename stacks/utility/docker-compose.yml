@@ -11,6 +11,7 @@ services:
       - ALL
     cap_add:
       - SETGID
+      - SETUID
     volumes:
       - ${DATA_BASE_PATH}/utility/homepage/config:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro
