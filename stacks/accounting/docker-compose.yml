@@ -5,13 +5,7 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - SETGID
-      - SETUID
+
     volumes:
       - ${DATA_BASE_PATH}/accounting/postgres-akaunting:/var/lib/postgresql/data
     environment:
@@ -37,11 +31,7 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - FOWNER
+
     depends_on:
       postgres-akaunting:
         condition: service_healthy
