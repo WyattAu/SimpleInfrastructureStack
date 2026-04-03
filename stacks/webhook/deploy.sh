@@ -23,6 +23,7 @@ if [ ! -d "$REPO_DIR/.git" ]; then
 else
     log "Pulling latest from $BRANCH..."
     cd "$REPO_DIR"
+    PRE_DEPLOY_SHA=$(git rev-parse HEAD)
     git fetch origin "$BRANCH"
     git reset --hard "origin/$BRANCH"
 fi
@@ -83,5 +84,23 @@ if [ $DEPLOY_EXIT -eq 0 ] && [ $HEALTH_EXIT -eq 0 ]; then
     exit 0
 else
     log "=== DEPLOY FAILED (deploy=$DEPLOY_EXIT, health=$HEALTH_EXIT) ==="
+    # Rollback to previous commit if available
+    if [ -n "${PRE_DEPLOY_SHA:-}" ]; then
+        log "Rolling back to $PRE_DEPLOY_SHA..."
+        cd "$REPO_DIR"
+        git reset --hard "$PRE_DEPLOY_SHA"
+        log "Rollback complete. Re-deploying previous version..."
+        ansible-playbook ansible/playbooks/deploy.yml \
+            -i ansible/inventory/hosts.yml \
+            -v 2>&1
+        ROLLBACK_EXIT=$?
+        if [ $ROLLBACK_EXIT -eq 0 ]; then
+            log "=== ROLLBACK SUCCEEDED ==="
+        else
+            log "=== ROLLBACK ALSO FAILED ==="
+        fi
+    else
+        log "No previous commit to rollback to (first deploy or fresh clone)."
+    fi
     exit 1
 fi
