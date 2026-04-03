@@ -37,16 +37,16 @@
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": true,
   "editUsernameAllowed": true,
-  "bruteForceProtected": true,
+  "bruteForceProtected": false,
   "permanentLockout": false,
-  "maxTemporaryLockouts": 5,
+  "maxTemporaryLockouts": 0,
   "bruteForceStrategy": "MULTIPLE",
   "maxFailureWaitSeconds": 900,
   "minimumQuickLoginWaitSeconds": 60,
-  "waitIncrementSeconds": 120,
+  "waitIncrementSeconds": 60,
   "quickLoginCheckMilliSeconds": 1000,
   "maxDeltaTimeSeconds": 43200,
-  "failureFactor": 5,
+  "failureFactor": 30,
   "roles": {
     "realm": [
       {
