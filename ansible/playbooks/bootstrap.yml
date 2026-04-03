@@ -1,0 +1,30 @@
+---
+- name: Bootstrap TrueNAS server for infrastructure deployment
+  hosts: truenas
+  become: true
+  tasks:
+    - name: Ensure required directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - "{{ infra_base_path }}"
+        - "{{ infra_secrets_path }}"
+        - "{{ infra_data_path }}"
+
+    - name: Ensure external Docker networks exist
+      community.docker.docker_network:
+        name: "{{ item.name }}"
+        driver: "{{ item.driver | default('bridge') }}"
+        state: present
+      loop: "{{ docker_networks }}"
+
+    - name: Verify Docker Compose is available
+      ansible.builtin.command: docker compose version
+      register: compose_version
+      changed_when: false
+
+    - name: Display Docker Compose version
+      ansible.builtin.debug:
+        msg: "{{ compose_version.stdout }}"

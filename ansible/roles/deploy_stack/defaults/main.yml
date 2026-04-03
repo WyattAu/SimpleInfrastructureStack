@@ -1,0 +1,5 @@
+---
+# defaults file for deploy_stack
+stacks: []
+infra_base_path: /opt/stacks
+infra_secrets_path: /opt/secrets

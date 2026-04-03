@@ -1,0 +1,51 @@
+---
+# Infrastructure-wide variables
+infra_domain: wyattau.com
+infra_timezone: UTC
+infra_puid: 1001
+infra_pgid: 1001
+
+# Paths on the TrueNAS server
+infra_base_path: /opt/stacks
+infra_data_path: /mnt/pool_HDD_x2/tank/datasources/sis/appdata
+infra_backup_path: /mnt/pool_HDD_x2/tank/datasources/sis/backups
+infra_secrets_path: /opt/secrets
+
+# Stack deployment order (respecting dependencies)
+stacks:
+  - proxy
+  - iam
+  - monitoring
+  - operations
+  - collaboration
+  - storage
+  - accounting
+  - utility
+  - backup
+
+# Containers with health checks that must pass after deploy
+health_check_containers:
+  - proxy-socket-proxy
+  - proxy-traefik
+  - proxy-well-known-server
+  - iam-postgres
+  - iam-keycloak
+  - operations-postgres-forgejo
+  - operations-forgejo
+  - operations-postgres-woodpecker
+  - operations-woodpecker-server
+  - operations-woodpecker-agent
+  - monitoring-loki
+  - monitoring-prometheus
+  - monitoring-grafana
+  - monitoring-kuma
+  - monitoring-cadvisor
+  - storage-collabora
+  - utility-homepage
+
+# Docker networks
+docker_networks:
+  - name: traefik_net
+    driver: bridge
+  - name: backend_net
+    driver: bridge

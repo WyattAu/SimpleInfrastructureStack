@@ -1,0 +1,6 @@
+---
+- name: Display deploy results
+  ansible.builtin.debug:
+    msg: "Stack {{ item.item }}: changed={{ item.changed }}"
+  loop: "{{ deploy_result.results }}"
+  when: deploy_result is defined
