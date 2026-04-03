@@ -39,6 +39,8 @@ services:
     command: ["-c", "if [ ! -f /etc/ocis/ocis.yaml ]; then ocis init; fi; exec ocis server"]
     environment:
       #- TZ=${TZ}
+      # NATS: bind to 0.0.0.0 so external collaboration service can connect
+      NATS_NATS_HOST: "0.0.0.0"
       # Keycloak IDP specific configuration
       FRONTEND_APP_HANDLER_SECURE_VIEW_APP_ADDR: "com.owncloud.api.collaboration.CollaboraOnline"
       COLLABORA_DOMAIN: "collabora.${DOMAIN_NAME}"
@@ -74,6 +76,12 @@ services:
     networks:
       - traefik_net
       - backend_net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:9200/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
@@ -102,8 +110,10 @@ services:
       - no-new-privileges:true
 
     depends_on:
-      - ocis
-      - collabora
+      ocis:
+        condition: service_healthy
+      collabora:
+        condition: service_healthy
     command: ["collaboration", "server"]
     environment:
       COLLABORATION_WOPI_SECRET: "${WOPI_SECRET}"
