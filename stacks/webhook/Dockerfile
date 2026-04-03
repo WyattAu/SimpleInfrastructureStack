@@ -13,7 +13,8 @@ RUN apk add --no-cache \
     git \
     curl \
     openssh-client \
-    su-exec
+    su-exec \
+    gettext
 
 # Install Ansible
 RUN pip3 install --break-system-packages ansible-core==${ANSIBLE_VERSION} && \
@@ -42,7 +43,9 @@ RUN mkdir -p /opt/webhook /root/.ssh
 
 WORKDIR /opt/webhook
 
+COPY entrypoint.sh /opt/webhook/entrypoint.sh
+
 EXPOSE 9000
 
-ENTRYPOINT ["webhook"]
+ENTRYPOINT ["/opt/webhook/entrypoint.sh"]
 CMD ["-hooks", "/opt/webhook/hooks.yaml", "-verbose", "-http-methods", "POST"]

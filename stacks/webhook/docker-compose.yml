@@ -15,9 +15,9 @@ services:
       - ${SOPS_AGE_KEY_PATH}:/root/.config/sops/age:ro
       # SSH deploy key for private repo git pull
       - ./ssh:/root/.ssh:ro
-      # Deploy script and webhook config
+      # Deploy script and webhook config template
       - ./deploy.sh:/opt/webhook/deploy.sh:ro
-      - ./hooks.yaml:/opt/webhook/hooks.yaml:ro
+      - ./hooks.yaml.tmpl:/opt/webhook/hooks.yaml.tmpl:ro
       # Logs
       - /var/log/infra-deploy.log:/var/log/infra-deploy.log
     env_file:
