@@ -106,17 +106,12 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-  # NOTE: The collaboration service is disabled (profiles: [disabled]) until
-  # OCIS microservice registry properly exposes REVA gateway for external
-  # discovery. Requires: NATS service registration + REVA on 0.0.0.0:9142.
   # Re-enable by removing the profiles line once OCIS internal services are
   # confirmed registered in NATS JetStream KV.
   collaboration:
     image: owncloud/ocis:${OCIS_VERSION}
     container_name: storage-collaboration
-    restart: "no"
-    profiles:
-      - disabled
+    restart: unless-stopped
     security_opt:
       - no-new-privileges:true
 
@@ -136,6 +131,7 @@ services:
       COLLABORATION_APP_INSECURE: "true"
       COLLABORATION_CS3API_DATAGATEWAY_INSECURE: "${INSECURE:-false}"
       COLLABORATION_LOG_LEVEL: ${OCIS_LOG_LEVEL:-info}
+      COLLABORATION_STORE_NODES: "storage-ocis:9233"
       OCIS_URL: https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
       OCIS_JWT_SECRET: "${OCIS_JWT_SECRET}"
       OCIS_REVA_GATEWAY: storage-ocis:9142
