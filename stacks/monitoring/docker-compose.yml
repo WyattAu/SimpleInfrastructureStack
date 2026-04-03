@@ -14,6 +14,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     depends_on:
       prometheus-init:
         condition: service_completed_successfully
@@ -68,6 +70,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     depends_on:
       grafana-init:
         condition: service_completed_successfully
@@ -118,6 +122,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     volumes:
       - ${DATA_BASE_PATH}/monitoring/loki:/loki
       - ./loki/config.yml:/etc/loki/local-config.yaml:ro
@@ -136,6 +142,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./promtail/config.yml:/etc/promtail/config.yml:ro
@@ -154,6 +162,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     volumes:
       - ${DATA_BASE_PATH}/monitoring/kuma:/app/data
     networks:
@@ -200,6 +210,10 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SYS_PTRACE
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
