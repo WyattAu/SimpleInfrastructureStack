@@ -15,7 +15,8 @@ RUN apk add --no-cache \
     curl \
     openssh-client \
     su-exec \
-    gettext
+    gettext \
+    util-linux  # provides flock for deploy locking
 
 # Install Ansible
 RUN pip3 install --break-system-packages ansible-core==${ANSIBLE_VERSION} && \
