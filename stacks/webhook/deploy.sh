@@ -4,10 +4,18 @@ set -euo pipefail
 REPO_DIR="${REPO_DIR:-/mnt/pool_HDD_x2/infra/stacks}"
 SECRETS_DIR="${SECRETS_DIR:-/mnt/pool_HDD_x2/infra/secrets}"
 LOG_FILE="/var/log/infra-deploy.log"
+LOCK_FILE="/var/run/infra-deploy.lock"
 REPO_URL="${REPO_URL:-https://github.com/WyattAu/SimpleInfrastructureStack.git}"
 BRANCH="${BRANCH:-main}"
 
-# Log all output to file and stdout
+# Prevent concurrent deploys — flock exits immediately if another deploy is running
+exec 9>"$LOCK_FILE"
+if ! flock -n 9; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Another deploy is already running, exiting." >&2
+    exit 1
+fi
+
+# Log all output to file and stdout (fd 9 stays open for the lock)
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 # Git SSH config for deploy key
