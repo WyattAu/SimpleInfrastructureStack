@@ -1,6 +1,6 @@
 ---
 # defaults file for manage_secrets
 stacks: []
-infra_repo_path: /opt/stacks
-infra_secrets_path: /opt/secrets
+infra_repo_path: "{{ infra_root }}/stacks"
+infra_secrets_path: "{{ infra_root }}/secrets"
 sops_age_key_path: /root/.config/sops/age/keys.txt

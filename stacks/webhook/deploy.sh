@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-REPO_DIR="/opt/stacks"
-SECRETS_DIR="/opt/secrets"
+REPO_DIR="/mnt/pool_HDD_x2/infra/stacks"
+SECRETS_DIR="/mnt/pool_HDD_x2/infra/secrets"
 LOG_FILE="/var/log/infra-deploy.log"
 REPO_URL="https://github.com/WyattAu/SimpleInfrastructureStack.git"
 BRANCH="main"
@@ -61,7 +61,7 @@ if [ $DEPLOY_EXIT -eq 0 ]; then
     log "Running health checks..."
     ansible-playbook ansible/playbooks/health_check.yml \
         -i ansible/inventory/hosts.yml \
-        -v 2>&1 | tee -a "$LOG_LOG"
+        -v 2>&1 | tee -a "$LOG_FILE"
     HEALTH_EXIT=${PIPESTATUS[0]}
 fi
 

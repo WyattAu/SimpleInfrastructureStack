@@ -8,7 +8,7 @@ services:
       - "127.0.0.1:9001:9000"
     volumes:
       # Repo clone on TrueNAS (git pull target, source of compose files + ansible)
-      - /opt/stacks:/opt/stacks
+      - /mnt/pool_HDD_x2/infra/stacks:/mnt/pool_HDD_x2/infra/stacks
       # Docker socket for compose operations
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # Age key for SOPS decryption (set path in .env)
