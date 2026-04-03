@@ -6,8 +6,8 @@
 *.key
 *.crt
 
-# SOPS
-**/.sops.yaml
+# SOPS metadata (only contains public keys — safe to commit)
+# .sops.yaml is NOT ignored; it contains only age public key references
 
 # Age keys
 *.age
