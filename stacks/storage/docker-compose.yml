@@ -106,8 +106,10 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-  # Re-enable by removing the profiles line once OCIS internal services are
-  # confirmed registered in NATS JetStream KV.
+  # Collaboration service runs as a separate container using go-micro with
+  # NATS JetStream KV for service discovery. The REVA gateway is looked up
+  # by its registered service name "com.owncloud.api.gateway" in NATS KV,
+  # which OCIS's main container populates on startup.
   collaboration:
     image: owncloud/ocis:${OCIS_VERSION}
     container_name: storage-collaboration
@@ -134,9 +136,15 @@ services:
       COLLABORATION_STORE_NODES: "storage-ocis:9233"
       OCIS_URL: https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
       OCIS_JWT_SECRET: "${OCIS_JWT_SECRET}"
-      OCIS_REVA_GATEWAY: storage-ocis:9142
-      MICRO_REGISTRY: nats
-      MICRO_REGISTRY_ADDRESS: storage-ocis:9233
+      # Use the default go-micro service name that OCIS registers in NATS KV.
+      # Setting a direct address like "storage-ocis:9142" causes go-micro to
+      # treat it as a service name and look it up in the registry, which fails
+      # with "service not found" because only "com.owncloud.api.gateway" is
+      # registered. The registry then resolves this to the actual gateway IP:port.
+      # See: https://github.com/cs3org/reva/blob/edge/pkg/rgrpc/todo/pool/selector.go
+      OCIS_REVA_GATEWAY: "com.owncloud.api.gateway"
+      MICRO_REGISTRY: "nats-js-kv"
+      MICRO_REGISTRY_ADDRESS: "storage-ocis:9233"
     networks:
       - backend_net
     logging:
