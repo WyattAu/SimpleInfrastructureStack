@@ -1,0 +1,31 @@
+services:
+  webhook:
+    build: .
+    image: infra-webhook:latest
+    container_name: infra-webhook
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9001:9000"
+    volumes:
+      # Repo clone on TrueNAS (git pull target, source of compose files + ansible)
+      - /mnt/pool_HDD_x2/infra/stacks:/mnt/pool_HDD_x2/infra/stacks
+      # Docker socket for compose operations
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Age key for SOPS decryption (set path in .env)
+      - ${SOPS_AGE_KEY_PATH}:/root/.config/sops/age:ro
+      # SSH deploy key for private repo git pull
+      - ./ssh:/root/.ssh:ro
+      # Deploy script and webhook config
+      - ./deploy.sh:/opt/webhook/deploy.sh:ro
+      - ./hooks.yaml:/opt/webhook/hooks.yaml:ro
+      # Logs
+      - /var/log/infra-deploy.log:/var/log/infra-deploy.log
+    env_file:
+      - .env
+    # No Traefik labels — this container is standalone and independent
+    # If Traefik is broken, the webhook must still work to redeploy it
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

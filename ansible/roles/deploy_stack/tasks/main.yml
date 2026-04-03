@@ -1,0 +1,21 @@
+---
+- name: Validate compose file syntax
+  ansible.builtin.command: docker compose config --quiet
+  args:
+    chdir: "{{ infra_base_path }}/{{ item }}"
+  loop: "{{ stacks }}"
+  changed_when: false
+  register: compose_validate
+  failed_when: compose_validate.rc != 0
+
+- name: Deploy stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ infra_base_path }}/{{ item }}"
+    env_files:
+      - "{{ infra_secrets_path }}/{{ item }}.env"
+    pull: always
+    recreate: always
+    remove_orphans: true
+  loop: "{{ stacks }}"
+  register: deploy_result
+  notify: Display deploy results
