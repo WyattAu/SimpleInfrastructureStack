@@ -14,7 +14,3 @@ datasources:
     access: proxy
     url: http://monitoring-loki:3100
     editable: true
-    basicAuth: true
-    basicAuthUser: "${LOKI_USERNAME}"
-    secureJsonData:
-      basicAuthPassword: "${LOKI_PASSWORD}"

@@ -2,38 +2,28 @@ version: '3.8'
 
 services:
   postgres-init:
-    image: busybox:1.36.1
+    image: busybox:latest
     container_name: collaboration-postgres-init
     user: "${PUID}:${PGID}"
-    security_opt:
-      - no-new-privileges:true
     volumes:
       - ${DATA_BASE_PATH}/collaboration:/data
     command: ["mkdir", "-p", "/data/postgres"]
-    networks: []
-    deploy:
-      resources:
-        limits:
-          cpus: '0.1'
-          memory: 32M
 
   postgres-collab:
     image: postgres:${POSTGRES_VERSION}
     container_name: collaboration-postgres
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
     depends_on:
       postgres-init:
         condition: service_completed_successfully
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      #- ${DATA_BASE_PATH}/collaboration/postgres:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=${POSTGRES_DB_SYNAPSE}
       - POSTGRES_USER=${POSTGRES_USER_SYNAPSE}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_SYNAPSE}
       - POSTGRES_INITDB_ARGS=--encoding='UTF8' --lc-collate='C' --lc-ctype='C'
-      - POSTGRES_HOST_AUTH_METHOD=scram-sha-256
     networks:
       - backend_net
     healthcheck:
@@ -41,13 +31,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          memory: 128M
     logging:
       driver: "json-file"
       options:
@@ -57,8 +40,6 @@ services:
   synapse-init:
     image: matrixdotorg/synapse:${SYNAPSE_VERSION}
     container_name: collaboration-synapse-init
-    security_opt:
-      - no-new-privileges:true
     depends_on:
       postgres-collab:
         condition: service_healthy
@@ -82,8 +63,10 @@ services:
           /start.py generate;
 
           echo 'Commenting out default database and appending new config...';
+          # This robust sed command finds the database block and comments it out.
           sed -i -e '/^database:/,/\/data\/homeserver.db/s/^/#/' /data/homeserver.yaml;
 
+          # A single, clean heredoc to append all our custom settings.
           cat << EOF >> /data/homeserver.yaml
 
         #
@@ -110,18 +93,10 @@ services:
         else
           echo 'Config already exists. Skipping generation.';
         fi
-    networks: []
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 256M
 
   synapse-chown:
-    image: busybox:1.36.1
+    image: busybox:latest
     container_name: collaboration-synapse-chown
-    security_opt:
-      - no-new-privileges:true
     depends_on:
       synapse-init:
         condition: service_completed_successfully
@@ -132,20 +107,12 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
     command: sh -c "chown -R ${PUID}:${PGID} /data"
-    networks: []
-    deploy:
-      resources:
-        limits:
-          cpus: '0.1'
-          memory: 32M
 
   synapse:
     image: matrixdotorg/synapse:${SYNAPSE_VERSION}
     container_name: collaboration-synapse
     restart: unless-stopped
     user: "${PUID}:${PGID}"
-    security_opt:
-      - no-new-privileges:true
     depends_on:
       postgres-collab:
         condition: service_healthy
@@ -168,21 +135,14 @@ services:
       - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.matrix-cs.rule=Host(`${MATRIX_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.matrix-cs.entrypoints=websecure"
-      - "traefik.http.routers.matrix-cs.middlewares=security-headers"
       - "traefik.http.services.matrix-cs.loadbalancer.server.port=8008"
       - "traefik.http.services.matrix-cs.loadbalancer.server.scheme=http"
-      # TCP for federation (specific SNI, not wildcard)
-      - "traefik.tcp.routers.matrix-ss.rule=HostSNI(`${MATRIX_SUBDOMAIN}.${DOMAIN_NAME}`)"
+      # TCP for federation
+      - "traefik.tcp.routers.matrix-ss.rule=HostSNI(`*`)"
       - "traefik.tcp.routers.matrix-ss.entrypoints=matrix"
       - "traefik.tcp.routers.matrix-ss.service=matrix-ss-svc"
       - "traefik.tcp.routers.matrix-ss.tls.passthrough=true"
       - "traefik.tcp.services.matrix-ss-svc.loadbalancer.server.port=8448"
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8008/_synapse/client/versions || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
     deploy:
       resources:
         limits:
@@ -196,12 +156,11 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # Workaround for portainer relative path volume mount 255 error
   element-init:
-    image: busybox:1.36.1
+    image: busybox:latest
     container_name: collaboration-element-init
     user: "${PUID}:${PGID}"
-    security_opt:
-      - no-new-privileges:true
     depends_on:
       synapse-init:
         condition: service_completed_successfully
@@ -233,19 +192,11 @@ services:
         else
           echo "Element config already exists.";
         fi
-    networks: []
-    deploy:
-      resources:
-        limits:
-          cpus: '0.1'
-          memory: 32M
 
   element-web:
     image: vectorim/element-web:${ELEMENT_VERSION}
     container_name: collaboration-element
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
     depends_on:
       - element-init
     volumes:
@@ -258,20 +209,7 @@ services:
       - "traefik.http.routers.element.rule=Host(`${ELEMENT_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.element.entrypoints=websecure"
       - "traefik.http.routers.element.tls.certresolver=cloudflare"
-      - "traefik.http.routers.element.middlewares=security-headers"
       - "traefik.http.services.element.loadbalancer.server.port=80"
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-        reservations:
-          memory: 32M
     logging:
       driver: "json-file"
       options:
@@ -282,8 +220,6 @@ services:
     image: halfshot/matrix-hookshot:${HOOKSHOT_VERSION}
     container_name: collaboration-hookshot
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
     depends_on:
       synapse:
         condition: service_started
@@ -298,20 +234,7 @@ services:
       - "traefik.http.routers.hookshot.rule=Host(`${HOOKSHOT_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.hookshot.entrypoints=websecure"
       - "traefik.http.routers.hookshot.tls.certresolver=cloudflare"
-      - "traefik.http.routers.hookshot.middlewares=security-headers"
       - "traefik.http.services.hookshot.loadbalancer.server.port=8080"
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/healthz || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          memory: 128M
     logging:
       driver: "json-file"
       options:
