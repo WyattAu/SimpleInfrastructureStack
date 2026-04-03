@@ -1,11 +1,11 @@
 #!/bin/sh
 set -euo pipefail
 
-REPO_DIR="/mnt/pool_HDD_x2/infra/stacks"
-SECRETS_DIR="/mnt/pool_HDD_x2/infra/secrets"
+REPO_DIR="${REPO_DIR:-/mnt/pool_HDD_x2/infra/stacks}"
+SECRETS_DIR="${SECRETS_DIR:-/mnt/pool_HDD_x2/infra/secrets}"
 LOG_FILE="/var/log/infra-deploy.log"
-REPO_URL="https://github.com/WyattAu/SimpleInfrastructureStack.git"
-BRANCH="main"
+REPO_URL="${REPO_URL:-https://github.com/WyattAu/SimpleInfrastructureStack.git}"
+BRANCH="${BRANCH:-main}"
 
 # Git SSH config for deploy key
 export GIT_SSH_COMMAND="ssh -i /root/.ssh/deploy_key -o StrictHostKeyChecking=no -o IdentitiesOnly=yes -o BatchMode=yes"
@@ -33,10 +33,18 @@ log "Decrypting secrets..."
 mkdir -p "$SECRETS_DIR"
 chmod 700 "$SECRETS_DIR"
 DECRYPTED=0
+SOPS_CONFIG_FILE="$REPO_DIR/.sops.yaml"
+SOPS_CONFIG_OPT=""
+if [ -f "$SOPS_CONFIG_FILE" ]; then
+    SOPS_CONFIG_OPT="--config $SOPS_CONFIG_FILE"
+    log "Using SOPS config: $SOPS_CONFIG_FILE"
+fi
+
 for encrypted in "$REPO_DIR"/secrets/*.env.encrypted; do
     [ -f "$encrypted" ] || continue
     stack=$(basename "$encrypted" .env.encrypted)
     if sops --decrypt --input-type dotenv --output-type dotenv \
+        $SOPS_CONFIG_OPT \
         "$encrypted" > "$SECRETS_DIR/$stack.env" 2>/dev/null; then
         chmod 600 "$SECRETS_DIR/$stack.env"
         log "  Decrypted: $stack"

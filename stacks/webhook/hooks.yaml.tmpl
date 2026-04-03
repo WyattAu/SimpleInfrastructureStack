@@ -1,14 +1,13 @@
 - id: deploy
+  execute-command: /opt/webhook/deploy.sh
   trigger-rule:
     and:
       - match:
           type: payload-hmac-sha256
-          secret: "{{ env.WEBHOOK_SECRET }}"
+          secret: "${WEBHOOK_SECRET}"
           parameter:
             source: header
             name: X-Hub-Signature-256
-  shell: /opt/webhook/deploy.sh >> /var/log/webhook.log 2>&1
-  capture-command-output: true
   pass-arguments-to-command:
     - source: payload
       name: after
