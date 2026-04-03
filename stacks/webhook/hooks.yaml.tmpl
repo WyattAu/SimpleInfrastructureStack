@@ -8,11 +8,6 @@
           parameter:
             source: header
             name: X-Hub-Signature-256
-  pass-arguments-to-command:
-    - source: payload
-      name: after
-    - source: header
-      name: X-GitHub-Event
   trigger-rule-mismatch-http-response-code: 403
   response-headers:
     - name: Content-Type
