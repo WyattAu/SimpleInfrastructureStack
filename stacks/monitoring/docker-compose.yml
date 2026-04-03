@@ -164,6 +164,8 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    cap_add:
+      - SETGID
     volumes:
       - ${DATA_BASE_PATH}/monitoring/kuma:/app/data
     networks:
