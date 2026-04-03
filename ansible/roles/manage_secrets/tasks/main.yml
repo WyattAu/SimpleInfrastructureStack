@@ -3,56 +3,34 @@
   ansible.builtin.file:
     path: "{{ infra_secrets_path }}"
     state: directory
-    mode: '0700'
-    owner: root
+    mode: "0700"
 
-- name: Check if sops is installed on control node
-  delegate_to: localhost
-  run_once: true
+- name: Check if sops is installed
   ansible.builtin.command: which sops
   register: sops_check
   changed_when: false
-  failed_when: sops_check.rc != 0
+  failed_when: false
 
-- name: Ensure age key is available on control node
-  delegate_to: localhost
-  run_once: true
+- name: Fail if sops not installed
+  ansible.builtin.fail:
+    msg: "sops is not installed. Install it on the TrueNAS host."
+  when: sops_check.rc != 0
+
+- name: Check if age key is available
   ansible.builtin.stat:
     path: "{{ sops_age_key_path }}"
   register: age_key_stat
 
 - name: Fail if age key not found
-  delegate_to: localhost
-  run_once: true
   ansible.builtin.fail:
-    msg: "Age key not found at {{ sops_age_key_path }}. Set sops_age_key_path variable."
+    msg: "Age key not found at {{ sops_age_key_path }}. Mount your age keys."
   when: not age_key_stat.stat.exists
 
-- name: Decrypt secrets and copy to target
-  delegate_to: localhost
-  run_once: true
+- name: Decrypt secrets directly to secrets directory
   ansible.builtin.shell: |
-    sops --decrypt --age-recipients {{ sops_age_public_key }} \
-      {{ playbook_dir }}/../../secrets/{{ item }}.env.encrypted \
-      > /tmp/{{ item }}.env.decrypted
-  loop: "{{ stacks }}"
-  changed_when: false
-  no_log: true
-
-- name: Copy decrypted secrets to target
-  ansible.builtin.copy:
-    src: "/tmp/{{ item }}.env.decrypted"
-    dest: "{{ infra_secrets_path }}/{{ item }}.env"
-    mode: '0600'
-    owner: root
+    sops --decrypt --input-type dotenv --output-type dotenv \
+      "{{ infra_repo_path }}/secrets/{{ item }}.env.encrypted" \
+      > "{{ infra_secrets_path }}/{{ item }}.env"
+    chmod 600 "{{ infra_secrets_path }}/{{ item }}.env"
   loop: "{{ stacks }}"
   no_log: true
-
-- name: Clean up local decrypted files
-  delegate_to: localhost
-  run_once: true
-  ansible.builtin.file:
-    path: "/tmp/{{ item }}.env.decrypted"
-    state: absent
-  loop: "{{ stacks }}"
-  changed_when: false
