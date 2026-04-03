@@ -39,6 +39,8 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    cap_add:
+      - FOWNER
     depends_on:
       postgres-akaunting:
         condition: service_healthy
