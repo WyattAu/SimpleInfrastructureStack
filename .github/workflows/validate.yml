@@ -44,7 +44,7 @@ jobs:
           for v in $vars; do
             # Heuristic: vars ending in _PATH get /tmp, others get "dummy"
             case "$v" in
-              *_PATH|*_TOKEN|*_SECRET|*_PASSWORD|*_KEY|*_ID|*_URL) echo "$v=/tmp/$v" ;;
+              *_PATH|*_DIR|*_TOKEN|*_SECRET|*_PASSWORD|*_KEY|*_ID|*_URL) echo "$v=/tmp/$v" ;;
               *) echo "$v=dummy" ;;
             esac
           done > /tmp/ci-dummy.env

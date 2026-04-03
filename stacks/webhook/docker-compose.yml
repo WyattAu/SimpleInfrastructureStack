@@ -11,8 +11,9 @@ services:
       - /mnt/pool_HDD_x2/infra/stacks:/mnt/pool_HDD_x2/infra/stacks
       # Docker socket for compose operations
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      # Age key for SOPS decryption (set path in .env)
-      - ${SOPS_AGE_KEY_PATH}:/root/.config/sops/age:ro
+      # Age key for SOPS decryption
+      # Mount the parent directory containing keys.txt (not the file itself)
+      - ${SOPS_AGE_KEY_DIR}:/root/.config/sops/age:ro
       # SSH deploy key for private repo git pull
       - ./ssh:/root/.ssh:ro
       # Deploy script and webhook config template
