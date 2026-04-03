@@ -22,8 +22,7 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+
     depends_on:
       ocis-init:
         condition: service_completed_successfully
@@ -101,8 +100,7 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+
     depends_on:
       - ocis
       - collabora
@@ -134,10 +132,7 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - MKNOD
+
     environment:
       - "extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:net.frame_ancestors=${OCIS_SUBDOMAIN}.${DOMAIN_NAME}"
       - "domain=${OCIS_SUBDOMAIN}\\.${DOMAIN_NAME}"
