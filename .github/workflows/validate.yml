@@ -52,12 +52,21 @@ jobs:
           for compose in stacks/*/docker-compose.yml; do
             stack=$(basename $(dirname "$compose"))
             echo "::group::$stack"
+            # Some stacks reference env_file: .env at runtime; create dummy if missing
+            stack_dir=$(dirname "$compose")
+            if [ -f "$stack_dir/.env.example" ] && [ ! -f "$stack_dir/.env" ]; then
+              cp "$stack_dir/.env.example" "$stack_dir/.env"
+              # Replace any ${VAR} references in the example with dummy values
+              sed -i 's/\${[^}]*}/dummy/g' "$stack_dir/.env"
+            fi
             if docker compose --env-file /tmp/ci-dummy.env -f "$compose" config --quiet 2>&1; then
               echo "✅ $stack"
             else
               echo "❌ $stack"
               FAILED=1
             fi
+            # Clean up dummy .env
+            rm -f "$stack_dir/.env"
             echo "::endgroup::"
           done
           exit $FAILED
