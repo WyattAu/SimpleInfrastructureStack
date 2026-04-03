@@ -141,8 +141,10 @@ services:
     image: collabora/code:latest
     container_name: storage-collabora
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
+    # no-new-privileges removed: Collabora requires CLONE_NEWUSER for
+    # document sandboxing (user namespace creation). Without it, child
+    # processes cannot spawn and the WOPI endpoint never responds.
+    # See: https://sdk.collaboraonline.com/docs/installation/CODE_Docker_image.html
 
     environment:
       - "extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:net.frame_ancestors=${OCIS_SUBDOMAIN}.${DOMAIN_NAME}"
