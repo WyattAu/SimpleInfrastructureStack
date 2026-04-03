@@ -21,15 +21,13 @@ RUN pip3 install --break-system-packages ansible-core==${ANSIBLE_VERSION} && \
 # Install Docker CLI (compose v2 plugin included)
 RUN apk add --no-cache docker-cli
 
-# Install SOPS
+# Install SOPS and age (ARCH must be set in each RUN layer)
 RUN ARCH=$(uname -m) && \
     case "$ARCH" in x86_64) ARCH="amd64" ;; aarch64) ARCH="arm64" ;; *) echo "Unsupported: $ARCH" && exit 1 ;; esac && \
     wget -qO /usr/local/bin/sops \
         "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.${ARCH}" && \
-    chmod +x /usr/local/bin/sops
-
-# Install age
-RUN wget -qO /tmp/age.tar.gz \
+    chmod +x /usr/local/bin/sops && \
+    wget -qO /tmp/age.tar.gz \
         "https://github.com/FiloSottile/age/releases/download/v${AGE_VERSION}/age-v${AGE_VERSION}-linux-${ARCH}.tar.gz" && \
     tar xzf /tmp/age.tar.gz -C /usr/local/bin age && \
     rm /tmp/age.tar.gz
