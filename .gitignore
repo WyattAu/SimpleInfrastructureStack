@@ -17,6 +17,9 @@ age-keygen*
 *.retry
 *.log
 
+# Webhook (generated from template at runtime)
+stacks/webhook/hooks.yaml
+
 # OS files
 .DS_Store
 Thumbs.db
