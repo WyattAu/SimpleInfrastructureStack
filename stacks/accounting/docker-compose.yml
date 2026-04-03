@@ -40,6 +40,7 @@ services:
     cap_drop:
       - ALL
     cap_add:
+      - CHOWN
       - FOWNER
     depends_on:
       postgres-akaunting:
