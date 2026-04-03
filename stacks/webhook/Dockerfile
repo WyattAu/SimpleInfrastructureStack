@@ -21,7 +21,7 @@ RUN pip3 install --break-system-packages ansible-core==${ANSIBLE_VERSION} && \
 # Install Docker CLI (compose v2 plugin included)
 RUN apk add --no-cache docker-cli
 
-# Install SOPS and age (ARCH must be set in each RUN layer)
+# Install SOPS, age, and webhook binary (single layer to share ARCH)
 RUN ARCH=$(uname -m) && \
     case "$ARCH" in x86_64) ARCH="amd64" ;; aarch64) ARCH="arm64" ;; *) echo "Unsupported: $ARCH" && exit 1 ;; esac && \
     wget -qO /usr/local/bin/sops \
@@ -30,10 +30,8 @@ RUN ARCH=$(uname -m) && \
     wget -qO /tmp/age.tar.gz \
         "https://github.com/FiloSottile/age/releases/download/v${AGE_VERSION}/age-v${AGE_VERSION}-linux-${ARCH}.tar.gz" && \
     tar xzf /tmp/age.tar.gz -C /usr/local/bin age && \
-    rm /tmp/age.tar.gz
-
-# Install webhook binary
-RUN wget -qO /usr/local/bin/webhook \
+    rm /tmp/age.tar.gz && \
+    wget -qO /usr/local/bin/webhook \
         "https://github.com/adnanh/webhook/releases/download/v${WEBHOOK_VERSION}/webhook-linux-${ARCH}" && \
     chmod +x /usr/local/bin/webhook
 
