@@ -8,7 +8,6 @@
         msg: "Deploying {{ stacks | length }} stacks to {{ inventory_hostname }}"
 
   roles:
-    - role: manage_secrets
     - role: deploy_stack
     - role: health_check
 
