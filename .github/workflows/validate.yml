@@ -37,11 +37,16 @@ jobs:
 
       - name: Validate all compose files
         run: |
+          # Create a dummy .env so docker compose can interpolate all ${VAR} references.
+          # The values don't matter — we just need non-empty strings for syntax validation.
+          vars=$(grep -rhoP '\$\{([A-Z_][A-Z0-9_]*)' stacks/*/docker-compose.yml | sort -u | sed 's/\${//')
+          for v in $vars; do echo "$v=dummy"; done > /tmp/ci-dummy.env
+
           FAILED=0
           for compose in stacks/*/docker-compose.yml; do
             stack=$(basename $(dirname "$compose"))
             echo "::group::$stack"
-            if docker compose -f "$compose" config --quiet 2>&1; then
+            if docker compose --env-file /tmp/ci-dummy.env -f "$compose" config --quiet 2>&1; then
               echo "✅ $stack"
             else
               echo "❌ $stack"
