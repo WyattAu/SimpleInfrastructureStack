@@ -3,6 +3,8 @@ services:
     image: postgres:${POSTGRES_AKAUNTING_VERSION}
     container_name: accounting-postgres-akaunting
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - ${DATA_BASE_PATH}/accounting/postgres-akaunting:/var/lib/postgresql/data
     environment:
@@ -26,6 +28,8 @@ services:
     image: akaunting/akaunting:${AKAUNTING_VERSION}
     container_name: accounting-akaunting
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       postgres-akaunting:
         condition: service_healthy

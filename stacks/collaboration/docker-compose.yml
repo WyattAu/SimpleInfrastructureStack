@@ -11,6 +11,8 @@ services:
     image: postgres:${POSTGRES_VERSION}
     container_name: collaboration-postgres
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       postgres-init:
         condition: service_completed_successfully
@@ -110,6 +112,8 @@ services:
     image: matrixdotorg/synapse:${SYNAPSE_VERSION}
     container_name: collaboration-synapse
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     user: "${PUID}:${PGID}"
     depends_on:
       postgres-collab:
@@ -195,6 +199,8 @@ services:
     image: vectorim/element-web:${ELEMENT_VERSION}
     container_name: collaboration-element
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       - element-init
     volumes:
@@ -218,6 +224,8 @@ services:
     image: halfshot/matrix-hookshot:${HOOKSHOT_VERSION}
     container_name: collaboration-hookshot
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       synapse:
         condition: service_started

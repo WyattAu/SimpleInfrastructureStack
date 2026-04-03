@@ -12,6 +12,8 @@ services:
     image: prom/prometheus:${PROMETHEUS_VERSION}
     container_name: monitoring-prometheus
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       prometheus-init:
         condition: service_completed_successfully
@@ -64,6 +66,8 @@ services:
     image: grafana/grafana:${GRAFANA_VERSION}
     container_name: monitoring-grafana
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       grafana-init:
         condition: service_completed_successfully
@@ -112,6 +116,8 @@ services:
     image: grafana/loki:${LOKI_VERSION}
     container_name: monitoring-loki
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - ${DATA_BASE_PATH}/monitoring/loki:/loki
       - ./loki/config.yml:/etc/loki/local-config.yaml:ro
@@ -128,6 +134,8 @@ services:
     image: grafana/promtail:${PROMTAIL_VERSION}
     container_name: monitoring-promtail
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./promtail/config.yml:/etc/promtail/config.yml:ro
@@ -144,6 +152,8 @@ services:
     image: louislam/uptime-kuma:${KUMA_VERSION}
     container_name: monitoring-kuma
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - ${DATA_BASE_PATH}/monitoring/kuma:/app/data
     networks:
@@ -168,6 +178,8 @@ services:
     image: ghcr.io/google/cadvisor:${CADVISOR_VERSION}
     container_name: monitoring-cadvisor
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     privileged: true
     volumes:
       - /:/rootfs:ro
@@ -186,6 +198,8 @@ services:
     image: prom/node-exporter:${NODE_EXPORTER_VERSION}
     container_name: monitoring-node-exporter
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
