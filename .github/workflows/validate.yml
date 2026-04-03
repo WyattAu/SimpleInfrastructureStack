@@ -100,12 +100,18 @@ jobs:
           done
 
       - name: Inventory validation
+        env:
+          ANSIBLE_ROLES_PATH: ansible/roles
         run: |
           export ANSIBLE_CONFIG=$PWD/ansible/ansible.cfg
-          ansible-inventory -i ansible/inventory/hosts.yml --list --export 2>&1 | python3 -c "
+          ansible-inventory -i ansible/inventory/hosts.yml --list 2>&1 | python3 -c "
           import json, sys
           inv = json.load(sys.stdin)
-          hosts = [h for g in inv.values() if isinstance(g, dict) for h in g.get('hosts', {}).keys()]
-          assert 'localhost' in hosts, 'Missing localhost host in inventory'
+          # Extract hosts from all groups
+          hosts = set()
+          for key, val in inv.items():
+            if isinstance(val, dict) and 'hosts' in val:
+              hosts.update(val['hosts'].keys())
+          assert 'localhost' in hosts, f'Missing localhost host in inventory. Found: {hosts}'
           print(f'✅ Inventory valid: {len(hosts)} host(s)')
           "
