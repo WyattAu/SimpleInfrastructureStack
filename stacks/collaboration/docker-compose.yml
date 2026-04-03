@@ -223,10 +223,15 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # Hookshot is disabled until properly configured (needs config.yml + registration.yml).
+  # To enable: remove the profiles line and create config at
+  # ${DATA_BASE_PATH}/collaboration/hookshot/config.yml, then register with Synapse.
   matrix-hookshot:
     image: halfshot/matrix-hookshot:${HOOKSHOT_VERSION}
     container_name: collaboration-hookshot
-    restart: unless-stopped
+    restart: "no"
+    profiles:
+      - disabled
     security_opt:
       - no-new-privileges:true
 
