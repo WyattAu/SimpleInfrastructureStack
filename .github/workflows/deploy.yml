@@ -5,6 +5,11 @@ on:
   push:
     branches: ["main"]
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to deploy (branch, tag, or SHA)'
+        required: false
+        default: 'main'
 
 concurrency:
   group: deploy
@@ -30,7 +35,7 @@ jobs:
         run: |
           COMMIT="${{ github.sha }}"
           TIMESTAMP=$(date +%s)
-          REF="${{ github.ref }}"
+          REF="${{ inputs.ref || github.ref }}"
           EVENT="${{ github.event_name }}"
 
           # Build JSON payload
