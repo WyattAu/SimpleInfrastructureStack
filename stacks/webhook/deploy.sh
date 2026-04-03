@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -euo pipefail
 
 REPO_DIR="/mnt/pool_HDD_x2/infra/stacks"
