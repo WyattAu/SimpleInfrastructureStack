@@ -85,8 +85,10 @@ jobs:
           ansible-galaxy collection install community.docker
 
       - name: Syntax check all playbooks
+        env:
+          ANSIBLE_ROLES_PATH: ansible/roles
         run: |
-          ANSIBLE_CONFIG=ansible/ansible.cfg
+          export ANSIBLE_CONFIG=$PWD/ansible/ansible.cfg
           for playbook in ansible/playbooks/*.yml; do
             echo -n "$(basename $playbook): "
             if ansible-playbook --syntax-check "$playbook" 2>&1; then
@@ -99,7 +101,7 @@ jobs:
 
       - name: Inventory validation
         run: |
-          ANSIBLE_CONFIG=ansible/ansible.cfg
+          export ANSIBLE_CONFIG=$PWD/ansible/ansible.cfg
           ansible-inventory -i ansible/inventory/hosts.yml --list --export 2>&1 | python3 -c "
           import json, sys
           inv = json.load(sys.stdin)
