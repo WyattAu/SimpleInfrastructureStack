@@ -43,7 +43,9 @@ health_check_containers:
   - monitoring-grafana
   - monitoring-kuma
   - monitoring-cadvisor
+  - storage-ocis
   - storage-collabora
+  - storage-collaboration
   - utility-homepage
 
 # Docker networks
