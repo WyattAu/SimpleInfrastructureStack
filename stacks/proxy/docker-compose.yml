@@ -5,8 +5,7 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro # Mount the real socket read-only
     environment:
@@ -33,8 +32,7 @@ services:
     depends_on: [socket-proxy]
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+
     command:
       # - "--accesslog=true"
       - "--api.dashboard=true"
@@ -97,13 +95,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-      - CLOUDFLARE_API_TOKEN=${CF_API_TOKEN}
       - CLOUDFLARE_ZONE_ID=${CF_ZONE_ID}
       - DOMAINS=${DOMAIN_NAME},traefik.${DOMAIN_NAME},auth.${DOMAIN_NAME},forgejo.${DOMAIN_NAME},registry-forgejo.${DOMAIN_NAME},ci.${DOMAIN_NAME},ci-grpc.${DOMAIN_NAME},taiga.${DOMAIN_NAME},grafana.${DOMAIN_NAME},prometheus.${DOMAIN_NAME},kuma.${DOMAIN_NAME},homepage.${DOMAIN_NAME},matrix.${DOMAIN_NAME},element.${DOMAIN_NAME},ocis.${DOMAIN_NAME},collabora.${DOMAIN_NAME},akaunting.${DOMAIN_NAME},test.${DOMAIN_NAME}
       - IPV4_PROVIDER=all
@@ -125,8 +118,7 @@ services:
       - traefik
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+
     networks:
       - traefik_net
       - backend_net # Connect oauth2-proxy to the backend network
@@ -177,10 +169,7 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
+
     volumes:
       - ./config/matrix-well-known.json:/usr/share/nginx/html/.well-known/matrix/server:ro
     networks:
@@ -194,7 +183,7 @@ services:
       - "traefik.http.routers.matrix-well-known.middlewares=matrix-headers"
       - "traefik.http.routers.matrix-well-known.tls.certresolver=cloudflare"
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1"]
       interval: 30s
       timeout: 5s
       retries: 3

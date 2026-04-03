@@ -4,6 +4,10 @@ services:
     image: infra-webhook:latest
     container_name: infra-webhook
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     ports:
       - "127.0.0.1:9001:9000"
     volumes:
