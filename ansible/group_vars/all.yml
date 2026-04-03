@@ -6,11 +6,12 @@ infra_puid: 1001
 infra_pgid: 1001
 
 # Paths on the TrueNAS server
-infra_repo_path: /opt/stacks
-infra_base_path: /opt/stacks/stacks
+infra_root: /mnt/pool_HDD_x2/infra
+infra_repo_path: "{{ infra_root }}/stacks"
+infra_base_path: "{{ infra_root }}/stacks/stacks"
 infra_data_path: /mnt/pool_HDD_x2/tank/datasources/sis/appdata
 infra_backup_path: /mnt/pool_HDD_x2/tank/datasources/sis/backups
-infra_secrets_path: /opt/secrets
+infra_secrets_path: "{{ infra_root }}/secrets"
 infra_log_path: /var/log
 
 # Stack deployment order (respecting dependencies)

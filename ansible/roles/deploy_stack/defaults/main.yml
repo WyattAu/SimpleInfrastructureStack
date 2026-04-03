@@ -1,5 +1,5 @@
 ---
 # defaults file for deploy_stack
 stacks: []
-infra_base_path: /opt/stacks
-infra_secrets_path: /opt/secrets
+infra_base_path: "{{ infra_root }}/stacks/stacks"
+infra_secrets_path: "{{ infra_root }}/secrets"
