@@ -25,7 +25,7 @@ RUN apk add --no-cache docker-cli
 RUN ARCH=$(uname -m) && \
     case "$ARCH" in x86_64) ARCH="amd64" ;; aarch64) ARCH="arm64" ;; *) echo "Unsupported: $ARCH" && exit 1 ;; esac && \
     wget -qO /usr/local/bin/sops \
-        "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux-${ARCH}" && \
+        "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.${ARCH}" && \
     chmod +x /usr/local/bin/sops
 
 # Install age
@@ -40,7 +40,7 @@ RUN wget -qO /usr/local/bin/webhook \
     chmod +x /usr/local/bin/webhook
 
 # Create working directories
-RUN mkdir -p /opt/webhook /opt/stacks /opt/secrets /var/log /root/.ssh
+RUN mkdir -p /opt/webhook /root/.ssh
 
 WORKDIR /opt/webhook
 
