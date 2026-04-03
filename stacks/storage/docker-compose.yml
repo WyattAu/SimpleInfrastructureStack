@@ -6,7 +6,8 @@ services:
     image: busybox:latest
     container_name: storage-ocis-init
     # Set the ownership to the hardcoded UID/GID that the OCIS container uses internally.
-    command: chown -R 1000:1000 /etc/ocis /var/lib/ocis
+    # Only chown if ownership is incorrect (avoids OOM on 16GB data re-chown every deploy)
+    command: sh -c "if [ \"$(stat -c '%u:%g' /etc/ocis 2>/dev/null || echo wrong)\" != '1000:1000' ]; then chown -R 1000:1000 /etc/ocis /var/lib/ocis; else echo 'Ownership already correct, skipping chown'; fi"
     volumes:
       # Mount the same volume as the main ocis service
       - ${DATA_BASE_PATH}/storage/ocis-config:/etc/ocis
@@ -105,10 +106,17 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+  # NOTE: The collaboration service is disabled (profiles: [disabled]) until
+  # OCIS microservice registry properly exposes REVA gateway for external
+  # discovery. Requires: NATS service registration + REVA on 0.0.0.0:9142.
+  # Re-enable by removing the profiles line once OCIS internal services are
+  # confirmed registered in NATS JetStream KV.
   collaboration:
     image: owncloud/ocis:${OCIS_VERSION}
     container_name: storage-collaboration
-    restart: unless-stopped
+    restart: "no"
+    profiles:
+      - disabled
     security_opt:
       - no-new-privileges:true
 
