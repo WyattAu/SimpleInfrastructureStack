@@ -1,32 +1,12 @@
 ---
 - name: Validate compose file syntax
-  delegate_to: localhost
-  run_once: true
   ansible.builtin.command: docker compose config --quiet
   args:
-    chdir: "{{ playbook_dir }}/../../stacks/{{ item }}"
+    chdir: "{{ infra_base_path }}/{{ item }}"
   loop: "{{ stacks }}"
   changed_when: false
   register: compose_validate
   failed_when: compose_validate.rc != 0
-
-- name: Ensure stack directory exists on target
-  ansible.builtin.file:
-    path: "{{ infra_base_path }}/{{ item }}"
-    state: directory
-    mode: '0755'
-  loop: "{{ stacks }}"
-
-- name: Copy compose files to target
-  ansible.builtin.synchronize:
-    src: "{{ playbook_dir }}/../../stacks/{{ item }}/"
-    dest: "{{ infra_base_path }}/{{ item }}/"
-    delete: true
-    rsync_opts:
-      - "--exclude=.env"
-      - "--exclude=.env.*"
-      - "--exclude=.git"
-  loop: "{{ stacks }}"
 
 - name: Deploy stack
   community.docker.docker_compose_v2:

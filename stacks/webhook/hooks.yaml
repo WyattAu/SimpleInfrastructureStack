@@ -1,0 +1,19 @@
+- id: deploy
+  trigger-rule:
+    and:
+      - match:
+          type: payload-hmac-sha256
+          secret: "{{ env.WEBHOOK_SECRET }}"
+          parameter: header.X-Hub-Signature-256
+  shell: /opt/webhook/deploy.sh >> /var/log/webhook.log 2>&1
+  capture-command-output: true
+  pass-arguments-to-command:
+    - source: payload
+      name: after
+    - source: header
+      name: X-GitHub-Event
+  trigger-rule-mismatch-http-response-code: 403
+  response-headers:
+    - name: Content-Type
+      value: application/json
+  success-message: "Deploy triggered"
