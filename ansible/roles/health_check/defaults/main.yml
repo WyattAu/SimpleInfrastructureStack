@@ -1,0 +1,3 @@
+---
+# defaults file for health_check
+health_check_containers: []

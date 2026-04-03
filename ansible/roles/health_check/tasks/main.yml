@@ -1,0 +1,28 @@
+---
+- name: Wait for container to become healthy
+  community.docker.docker_container_info:
+    name: "{{ item }}"
+  loop: "{{ health_check_containers }}"
+  register: health_results
+  until:
+    - health_results.exists
+    - health_results.container.State.Running
+    - health_results.container.State.Health is defined
+    - health_results.container.State.Health.Status == "healthy"
+  retries: 30
+  delay: 10
+  ignore_errors: true
+
+- name: Report unhealthy containers
+  ansible.builtin.debug:
+    msg: "{{ item.item }} - status: {{ item.container_info.container.State.Health.Status | default('no health check') }}"
+  loop: "{{ health_results.results }}"
+  when:
+    - item is failed
+    - item.container_info is defined
+    - item.container_info.exists | default(false)
+
+- name: Fail if any critical containers are unhealthy
+  ansible.builtin.fail:
+    msg: "Health check failed for one or more containers"
+  when: health_results.results | selectattr('failed', 'equalto', true) | list | length > 0
