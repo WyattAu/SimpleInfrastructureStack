@@ -13,6 +13,13 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
     depends_on:
       postgres-init:
         condition: service_completed_successfully
@@ -114,6 +121,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     user: "${PUID}:${PGID}"
     depends_on:
       postgres-collab:
@@ -201,6 +210,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     depends_on:
       - element-init
     volumes:
@@ -226,6 +237,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     depends_on:
       synapse:
         condition: service_started
