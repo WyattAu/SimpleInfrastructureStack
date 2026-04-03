@@ -44,6 +44,10 @@ RUN ARCH=$(uname -m) && \
     tar xzf /tmp/webhook.tar.gz -C /usr/local/bin --strip-components=1 && \
     rm /tmp/webhook.tar.gz
 
+# Configure git identity for any in-container commits
+RUN git config --global user.email "infra-deploy@wyattau.com" && \
+    git config --global user.name "Infra Deploy"
+
 # Create working directories
 RUN mkdir -p /opt/webhook /root/.ssh
 
