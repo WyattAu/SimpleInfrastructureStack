@@ -28,6 +28,10 @@ services:
       - "traefik.http.services.homepage.loadbalancer.server.port=3000"
       - "traefik.http.routers.homepage.tls.certresolver=cloudflare"
       - "traefik.http.services.homepage.loadbalancer.server.scheme=http"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     logging:
       driver: "json-file"
       options:
