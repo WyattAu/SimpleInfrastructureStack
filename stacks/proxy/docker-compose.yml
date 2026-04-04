@@ -19,6 +19,10 @@ services:
     networks:
       # This service is only visible on the backend network for security
       - backend_net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     logging:
       driver: "json-file"
       options:
@@ -83,6 +87,10 @@ services:
       - traefik_net
       - backend_net
     # The dashboard router is defined exclusively in the dynamic http.yml file
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     logging:
       driver: "json-file"
       options:
@@ -99,12 +107,19 @@ services:
     environment:
       - CLOUDFLARE_API_TOKEN=${CF_API_TOKEN}
       - CLOUDFLARE_ZONE_ID=${CF_ZONE_ID}
-      - DOMAINS=${DOMAIN_NAME},traefik.${DOMAIN_NAME},auth.${DOMAIN_NAME},forgejo.${DOMAIN_NAME},registry-forgejo.${DOMAIN_NAME},ci.${DOMAIN_NAME},ci-grpc.${DOMAIN_NAME},taiga.${DOMAIN_NAME},grafana.${DOMAIN_NAME},prometheus.${DOMAIN_NAME},kuma.${DOMAIN_NAME},homepage.${DOMAIN_NAME},matrix.${DOMAIN_NAME},element.${DOMAIN_NAME},ocis.${DOMAIN_NAME},collabora.${DOMAIN_NAME},akaunting.${DOMAIN_NAME},test.${DOMAIN_NAME}
+      # Note: wyattau.com apex domain excluded — has a pre-existing CNAME
+      # record in Cloudflare that conflicts with DDNS A record creation.
+      # Remove this comment and add ${DOMAIN_NAME} back if you resolve the CNAME.
+      - DOMAINS=traefik.${DOMAIN_NAME},auth.${DOMAIN_NAME},forgejo.${DOMAIN_NAME},registry-forgejo.${DOMAIN_NAME},ci.${DOMAIN_NAME},ci-grpc.${DOMAIN_NAME},grafana.${DOMAIN_NAME},prometheus.${DOMAIN_NAME},kuma.${DOMAIN_NAME},homepage.${DOMAIN_NAME},matrix.${DOMAIN_NAME},element.${DOMAIN_NAME},ocis.${DOMAIN_NAME},collabora.${DOMAIN_NAME},akaunting.${DOMAIN_NAME}
       - IPV4_PROVIDER=all
       - PROXIED=true
       - RRTYPE=A
       - DELETE_ON_STOP=false
       - "CRON=*/5 * * * *"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     logging:
       driver: "json-file"
       options:
@@ -159,6 +174,10 @@ services:
       - "traefik.http.routers.oauth2-proxy.entrypoints=websecure"
       - "traefik.http.routers.oauth2-proxy.tls.certresolver=cloudflare"
       - "traefik.http.services.oauth2-proxy.loadbalancer.server.port=4180"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     logging:
       driver: "json-file"
       options:
@@ -188,6 +207,10 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 64M
     logging:
       driver: "json-file"
       options:

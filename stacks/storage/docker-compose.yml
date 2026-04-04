@@ -149,6 +149,10 @@ services:
       - backend_net
     # No healthcheck: the collaboration service only responds to specific WOPI
     # paths (not /). It either starts successfully or crash-loops immediately.
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     logging:
       driver: "json-file"
       options:
@@ -184,6 +188,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 2G
 
 
 networks:
