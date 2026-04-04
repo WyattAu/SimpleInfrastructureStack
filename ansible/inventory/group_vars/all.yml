@@ -27,9 +27,8 @@ stacks:
   - backup
 
 # Containers with health checks that must pass after deploy
+# Only containers WITH a Docker healthcheck defined in compose should be listed here.
 health_check_containers:
-  - proxy-socket-proxy
-  - proxy-traefik
   - proxy-well-known-server
   - iam-postgres
   - iam-keycloak
@@ -38,9 +37,6 @@ health_check_containers:
   - operations-postgres-woodpecker
   - operations-woodpecker-server
   - operations-woodpecker-agent
-  - monitoring-loki
-  - monitoring-prometheus
-  - monitoring-grafana
   - monitoring-kuma
   - monitoring-cadvisor
   - storage-ocis

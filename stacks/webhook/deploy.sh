@@ -71,8 +71,7 @@ log "Decrypted $DECRYPTED secret files"
 log "Running Ansible deploy..."
 cd "$REPO_DIR"
 ansible-playbook ansible/playbooks/deploy.yml \
-    -i ansible/inventory/hosts.yml \
-    -v 2>&1
+    -i ansible/inventory/hosts.yml 2>&1
 DEPLOY_EXIT=$?
 
 # 4. Health check
@@ -80,8 +79,7 @@ HEALTH_EXIT=0
 if [ $DEPLOY_EXIT -eq 0 ]; then
     log "Running health checks..."
     ansible-playbook ansible/playbooks/health_check.yml \
-        -i ansible/inventory/hosts.yml \
-        -v 2>&1
+        -i ansible/inventory/hosts.yml 2>&1
     HEALTH_EXIT=$?
 fi
 
@@ -102,8 +100,7 @@ else
         git reset --hard "$PRE_DEPLOY_SHA"
         log "Rollback complete. Re-deploying previous version..."
         ansible-playbook ansible/playbooks/deploy.yml \
-            -i ansible/inventory/hosts.yml \
-            -v 2>&1
+            -i ansible/inventory/hosts.yml 2>&1
         ROLLBACK_EXIT=$?
         if [ $ROLLBACK_EXIT -eq 0 ]; then
             log "=== ROLLBACK SUCCEEDED ==="
