@@ -21,6 +21,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     logging:
       driver: "json-file"
       options:
@@ -138,6 +142,11 @@ services:
       - no-new-privileges:true
     networks:
       - backend_net
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
 
   forgejo-runner:
     image: data.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
@@ -158,6 +167,10 @@ services:
       - backend_net
     # This command is a placeholder to keep the container alive for registration.
     command: '/bin/sh -c "sleep 5; forgejo-runner --config /data/config.yaml daemon"'
+    deploy:
+      resources:
+        limits:
+          memory: 1G
 
   postgres-woodpecker:
     image: postgres:${POSTGRES_FORGEJO_VERSION}
@@ -181,6 +194,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     logging:
       driver: "json-file"
       options:
@@ -248,6 +265,10 @@ services:
       - "traefik.http.routers.woodpecker-grpc.entrypoints=websecure"
       - "traefik.http.routers.woodpecker-grpc.tls.certresolver=cloudflare"
       - "traefik.http.routers.woodpecker-grpc.service=woodpecker-grpc"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     logging:
       driver: "json-file"
       options:
@@ -281,6 +302,10 @@ services:
     networks:
       #- traefik_net
       - backend_net
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     logging:
       driver: "json-file"
       options:

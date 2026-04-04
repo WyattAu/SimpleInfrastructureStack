@@ -108,6 +108,10 @@ services:
       - "traefik.http.routers.grafana.entrypoints=websecure"
       - "traefik.http.routers.grafana.tls.certresolver=cloudflare"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     logging:
       driver: "json-file"
       options:
@@ -127,6 +131,10 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     networks:
       - backend_net
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     logging:
       driver: "json-file"
       options:
@@ -146,6 +154,10 @@ services:
     command: -config.file=/etc/promtail/config.yml
     networks:
       - backend_net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     logging:
       driver: "json-file"
       options:
@@ -173,6 +185,10 @@ services:
       - "traefik.http.routers.kuma.tls.certresolver=cloudflare"
       - "traefik.http.services.kuma.loadbalancer.server.port=3001"
     # Internal health check
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     logging:
       driver: "json-file"
       options:
@@ -193,6 +209,10 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
     networks:
       - backend_net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     logging:
       driver: "json-file"
       options:
@@ -216,6 +236,10 @@ services:
       - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
     networks:
       - backend_net
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     logging:
       driver: "json-file"
       options:
