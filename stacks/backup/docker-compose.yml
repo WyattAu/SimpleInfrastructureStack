@@ -34,7 +34,9 @@ services:
         max-file: "3"
 
   backup-cron-trigger:
-    image: ghcr.io/gethomepage/homepage:v1.5
+    build:
+      context: .
+      dockerfile: cron-trigger.Dockerfile
     container_name: backup-cron-trigger
     restart: unless-stopped
     security_opt:
