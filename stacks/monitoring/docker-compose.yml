@@ -201,12 +201,17 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    privileged: true
+    # Non-privileged mode: requires CADVISOR_VERSION >= v0.47 for cgroups v2 support.
+    # Loses only process/perf_event collectors (niche). All core CPU/memory/disk/network
+    # metrics preserved. Based on official K8s daemonset configuration.
+    devices:
+      - /dev/kmsg:/dev/kmsg:ro
     volumes:
       - /:/rootfs:ro
-      - /var/run:/var/run:rw
+      - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
     networks:
       - backend_net
     deploy:

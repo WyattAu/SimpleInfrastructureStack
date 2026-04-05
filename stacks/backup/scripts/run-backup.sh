@@ -15,7 +15,6 @@ docker exec backup-restic restic backup \
   /data \
   --tag auto \
   --tag "$(date +%Y-%m-%d)" \
-  --exclude-caching \
   --exclude-if-present ".nobackup"
 
 # Prune old backups according to retention policy
