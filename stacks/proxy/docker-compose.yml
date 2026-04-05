@@ -203,6 +203,7 @@ services:
       - /var/log/nginx
 
     volumes:
+      - ./config/matrix-well-known.json:/usr/share/nginx/html/.well-known/matrix/server:ro
     networks:
       - traefik_net
     labels:
