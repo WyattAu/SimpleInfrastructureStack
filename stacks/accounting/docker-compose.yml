@@ -54,6 +54,12 @@ services:
     networks:
       - traefik_net
       - backend_net
+    healthcheck:
+      test: ["CMD", "curl", "-fSs", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"

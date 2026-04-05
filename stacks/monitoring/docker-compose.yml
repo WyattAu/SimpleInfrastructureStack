@@ -31,6 +31,12 @@ services:
     networks:
       - traefik_net
       - backend_net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/ready"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
@@ -101,6 +107,12 @@ services:
     networks:
       - traefik_net
       - backend_net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
@@ -131,6 +143,12 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     networks:
       - backend_net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -154,6 +172,12 @@ services:
     command: -config.file=/etc/promtail/config.yml
     networks:
       - backend_net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9080/ready"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -185,6 +209,12 @@ services:
       - "traefik.http.routers.kuma.tls.certresolver=cloudflare"
       - "traefik.http.services.kuma.loadbalancer.server.port=3001"
     # Internal health check
+    healthcheck:
+      test: ["CMD", "curl", "-fSs", "http://localhost:3001/"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -230,9 +260,11 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
 
     volumes:
-      - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
     command:
