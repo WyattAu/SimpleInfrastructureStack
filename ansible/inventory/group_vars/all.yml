@@ -30,6 +30,7 @@ stacks:
 # Only containers WITH a Docker healthcheck defined in compose should be listed here.
 health_check_containers:
   - proxy-well-known-server
+  - proxy-oauth2-proxy
   - iam-postgres
   - iam-keycloak
   - operations-postgres-forgejo
@@ -37,10 +38,18 @@ health_check_containers:
   - operations-postgres-woodpecker
   - operations-woodpecker-server
   - operations-woodpecker-agent
+  - monitoring-prometheus
+  - monitoring-grafana
+  - monitoring-loki
+  - monitoring-promtail
   - monitoring-kuma
   - monitoring-cadvisor
+  - monitoring-node-exporter
   - storage-ocis
   - storage-collabora
+  - collaboration-synapse
+  - collaboration-element
+  - accounting-akaunting
   - utility-homepage
 
 # Docker networks

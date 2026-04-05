@@ -137,6 +137,12 @@ services:
     networks:
       - traefik_net
       - backend_net
+    healthcheck:
+      test: ["CMD", "curl", "-fSs", "http://localhost:8008/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
     labels:
       - "traefik.enable=true"
       # HTTP for client connection
@@ -164,7 +170,6 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Workaround for portainer relative path volume mount 255 error
   element-init:
     image: busybox:latest
     container_name: collaboration-element-init
@@ -207,6 +212,12 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+      - /var/cache/nginx
+      - /var/log/nginx
 
     depends_on:
       - element-init
