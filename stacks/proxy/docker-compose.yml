@@ -138,12 +138,8 @@ services:
     networks:
       - traefik_net
       - backend_net # Connect oauth2-proxy to the backend network
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:4180/ping || exit 1"]
-      interval: 30s
-      timeout: 10s
-      start_period: 10s
-      retries: 3
+    # No Docker healthcheck: distroless image has no shell or wget.
+    # Container is verified via Ansible health check (running status).
     environment:
       # - OAUTH2_PROXY_LOG_LEVEL=debug
       - PUID=${PUID}
