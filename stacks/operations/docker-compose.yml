@@ -21,10 +21,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    deploy:
-      resources:
-        limits:
-          memory: 1G
     logging:
       driver: "json-file"
       options:
@@ -132,45 +128,27 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  docker-in-docker:
-    image: docker:dind
-    container_name: operations-forgejo-dind
-    privileged: true
-    command: ['dockerd', '-H', 'tcp://0.0.0.0:2375', '--tls=false']
-    restart: 'unless-stopped'
-    security_opt:
-      - no-new-privileges:true
-    networks:
-      - backend_net
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-          cpus: '2.0'
-
   forgejo-runner:
     image: data.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
     container_name: operations-forgejo-runner
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-
-    depends_on:
-      - docker-in-docker
     user: "1001:1001"
+    group_add:
+      - "999"  # docker group for host socket access
     environment:
-      DOCKER_HOST: tcp://docker-in-docker:2375
+      # Docker socket mount replaces docker-in-dind service.
+      # The runner auto-discovers the socket; DOCKER_HOST is set explicitly for clarity.
+      DOCKER_HOST: unix:///var/run/docker.sock
     volumes:
       - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - traefik_net
       - backend_net
     # This command is a placeholder to keep the container alive for registration.
     command: '/bin/sh -c "sleep 5; forgejo-runner --config /data/config.yaml daemon"'
-    deploy:
-      resources:
-        limits:
-          memory: 1G
 
   postgres-woodpecker:
     image: postgres:${POSTGRES_FORGEJO_VERSION}
@@ -194,10 +172,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    deploy:
-      resources:
-        limits:
-          memory: 1G
     logging:
       driver: "json-file"
       options:
@@ -265,10 +239,6 @@ services:
       - "traefik.http.routers.woodpecker-grpc.entrypoints=websecure"
       - "traefik.http.routers.woodpecker-grpc.tls.certresolver=cloudflare"
       - "traefik.http.routers.woodpecker-grpc.service=woodpecker-grpc"
-    deploy:
-      resources:
-        limits:
-          memory: 2G
     logging:
       driver: "json-file"
       options:
@@ -302,10 +272,6 @@ services:
     networks:
       #- traefik_net
       - backend_net
-    deploy:
-      resources:
-        limits:
-          memory: 1G
     logging:
       driver: "json-file"
       options:

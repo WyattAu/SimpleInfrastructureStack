@@ -18,9 +18,11 @@ RUN apk add --no-cache \
     gettext \
     util-linux  # provides flock for deploy locking
 
-# Install Ansible
+# Install Ansible + Docker SDK for Python (required by community.docker
+# modules like docker_container_info used in health checks)
 RUN pip3 install --break-system-packages ansible-core==${ANSIBLE_VERSION} && \
-    ansible-galaxy collection install community.docker
+    ansible-galaxy collection install community.docker && \
+    pip3 install --break-system-packages requests
 
 # Install Docker CLI + Compose plugin (pinned to v2.32.3 for stability;
 # v5.x has a bug parsing IPv6 address pools with CIDR notation)
