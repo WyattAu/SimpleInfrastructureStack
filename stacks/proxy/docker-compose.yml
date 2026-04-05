@@ -138,6 +138,12 @@ services:
     networks:
       - traefik_net
       - backend_net # Connect oauth2-proxy to the backend network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4180/ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
     environment:
       # - OAUTH2_PROXY_LOG_LEVEL=debug
       - PUID=${PUID}
@@ -189,9 +195,14 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+      - /var/cache/nginx
+      - /var/log/nginx
 
     volumes:
-      - ./config/matrix-well-known.json:/usr/share/nginx/html/.well-known/matrix/server:ro
     networks:
       - traefik_net
     labels:
