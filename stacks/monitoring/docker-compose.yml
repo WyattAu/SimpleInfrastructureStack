@@ -260,9 +260,6 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    read_only: true
-    tmpfs:
-      - /tmp
 
     volumes:
       - /sys:/host/sys:ro
