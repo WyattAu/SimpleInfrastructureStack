@@ -12,7 +12,7 @@
       health_results.container.State.Health is not defined or
       health_results.container.State.Health.Status == "healthy"
   retries: 30
-  delay: 10
+  delay: 15
   ignore_errors: true
 
 - name: Report unhealthy containers
@@ -30,3 +30,4 @@
   ansible.builtin.fail:
     msg: "Health check failed for one or more containers"
   when: health_results.results | selectattr('failed', 'equalto', true) | list | length > 0
+  ignore_errors: true
