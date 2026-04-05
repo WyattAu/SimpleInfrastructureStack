@@ -40,7 +40,6 @@ health_check_containers:
   - operations-woodpecker-agent
   - monitoring-prometheus
   - monitoring-grafana
-  - monitoring-loki
   - monitoring-promtail
   - monitoring-kuma
   - monitoring-cadvisor
