@@ -258,6 +258,7 @@ services:
       - no-new-privileges:true
 
     volumes:
+      - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
     command:

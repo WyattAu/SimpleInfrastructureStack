@@ -55,7 +55,7 @@ services:
       - traefik_net
       - backend_net
     healthcheck:
-      test: ["CMD", "curl", "-fSs", "http://localhost:8080/"]
+      test: ["CMD", "curl", "-fSs", "http://localhost:80/"]
       interval: 30s
       timeout: 10s
       start_period: 60s
