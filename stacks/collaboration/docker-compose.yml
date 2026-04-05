@@ -212,13 +212,9 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    read_only: true
-    tmpfs:
-      - /tmp
-      - /var/run
-      - /var/cache/nginx
-      - /var/log/nginx
-      - /etc/nginx/conf.d
+    # read_only not feasible: image runs as user nginx (UID 101) and entrypoint
+    # writes to /etc/nginx/conf.d, /var/log/nginx, /var/cache/nginx. tmpfs mounts
+    # default to root ownership, causing permission denied for the nginx user.
 
     depends_on:
       - element-init
