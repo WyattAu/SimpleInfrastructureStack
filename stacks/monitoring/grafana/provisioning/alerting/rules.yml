@@ -17,6 +17,9 @@ groups:
               instant: true
               legendFormat: ""
               range: false
+              relativeTimeRange:
+                from: 300
+                to: 0
               refId: A
             type: promql
           - refId: B
@@ -63,6 +66,9 @@ groups:
               instant: true
               legendFormat: ""
               range: false
+              relativeTimeRange:
+                from: 300
+                to: 0
               refId: A
             type: promql
           - refId: B
@@ -106,6 +112,9 @@ groups:
               instant: true
               legendFormat: ""
               range: false
+              relativeTimeRange:
+                from: 300
+                to: 0
               refId: A
             type: promql
           - refId: B
@@ -148,6 +157,9 @@ groups:
               instant: true
               legendFormat: ""
               range: false
+              relativeTimeRange:
+                from: 300
+                to: 0
               refId: A
             type: promql
           - refId: B
@@ -195,6 +207,9 @@ groups:
               instant: true
               legendFormat: ""
               range: false
+              relativeTimeRange:
+                from: 300
+                to: 0
               refId: A
             type: promql
           - refId: B
@@ -237,6 +252,9 @@ groups:
               instant: true
               legendFormat: ""
               range: false
+              relativeTimeRange:
+                from: 300
+                to: 0
               refId: A
             type: promql
           - refId: B
@@ -284,6 +302,9 @@ groups:
               instant: true
               legendFormat: ""
               range: false
+              relativeTimeRange:
+                from: 300
+                to: 0
               refId: A
             type: promql
           - refId: B
