@@ -4,13 +4,9 @@ contactPoints:
     name: ntfy
     receivers:
       - uid: ntfy-push
-        type: grafana-oncall-app
+        type: webhook
         settings:
           url: https://ntfy.sh
-          # Configure your ntfy topic and auth after deployment:
-          # 1. Create a topic at https://ntfy.sh (e.g., "infra-alerts")
-          # 2. Set GF_ALERTING_CONTACT_POINTS_NTFY_PUSH_URL below to:
-          #    https://ntfy.sh/infra-alerts?auth=<your-ntfy-token>
-          # 3. Or set GF_SECURITY_ADMIN_PASSWORD and use the Grafana UI
-          #    (Alerting → Contact Points → ntfy → Edit → set URL)
-          # The topic URL with optional auth token is all that's needed.
+          # Configure after first deploy via Grafana UI:
+          # Alerting → Contact Points → ntfy → Edit
+          # Set URL to: https://ntfy.sh/<your-topic>?auth=<your-ntfy-token>
