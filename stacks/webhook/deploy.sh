@@ -67,6 +67,30 @@ for encrypted in "$REPO_DIR"/secrets/*.env.encrypted; do
 done
 log "Decrypted $DECRYPTED secret files"
 
+# 2b. Expand template files that reference secret env vars
+# Source decrypted env files to make vars available to envsubst.
+# We only source files that contain NTFY_TOPIC (or other template refs).
+log "Expanding template files..."
+set -a
+for env_file in "$SECRETS_DIR"/*.env; do
+    [ -f "$env_file" ] || continue
+    # Only source if it contains vars referenced by templates
+    if grep -q 'NTFY_' "$env_file" 2>/dev/null; then
+        set -o allexport
+        . "$env_file"
+    fi
+done
+for stack_dir in "$REPO_DIR"/stacks/*/; do
+    [ -d "$stack_dir" ] || continue
+    find "$stack_dir" -name '*.tmpl' -exec sh -c '
+        for tmpl; do
+            target="${tmpl%.tmpl}"
+            envsubst < "$tmpl" > "$target"
+        done
+    ' _ {} +
+done
+set +a
+
 # 3. Deploy stacks
 log "Running Ansible deploy..."
 cd "$REPO_DIR"
