@@ -68,7 +68,8 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        echo "$$CRON_SCHEDULE /scripts/run-backup.sh" | crond -f -
+        echo "$$CRON_SCHEDULE /scripts/run-backup.sh" > /etc/crontabs/root
+        crond -f /etc/crontabs/root
     networks: []
     healthcheck:
       disable: true
