@@ -1,0 +1,9 @@
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: ntfy
+    receivers:
+      - uid: ntfy-push
+        type: webhook
+        settings:
+          url: https://ntfy.sh/${NTFY_TOPIC}
