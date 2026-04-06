@@ -1,0 +1,315 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: container_health.rules
+    folder: Infrastructure
+    interval: 60s
+    rules:
+      - uid: container_oom_killed
+        title: Container OOM Killed
+        condition: B
+        data:
+          - refId: A
+            datasourceUid: __expr__
+            model:
+              editorMode: code
+              expr: rate(container_oom_events_total{image!=""}[5m]) > 0
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            type: promql
+          - refId: B
+            datasourceUid:
+            model:
+              type: threshold
+              configure:
+                conditions:
+                  evaluator:
+                    params:
+                      type: gt
+                    type: evaluator
+                    operator:
+                      type: and
+                  query:
+                    params:
+                      - A
+                    type: query
+                  reducer:
+                    params: []
+                    type: last
+                  type: combinator
+            type: classic_conditions
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container {{ $labels.name }} was OOM killed"
+          description: "Container {{ $labels.name }} (image: {{ $labels.image }}) was OOM killed."
+          runbook_url: "https://github.com/WyattAu/SimpleInfrastructureStack/wiki/Runbooks#container-oom-killed"
+
+      - uid: container_high_memory
+        title: Container High Memory Usage
+        condition: B
+        data:
+          - refId: A
+            datasourceUid: __expr__
+            model:
+              editorMode: code
+              expr: >
+                (container_memory_usage_bytes{image!=""}
+                / container_spec_memory_limit_bytes{image!=""}) > 0.9
+                and container_spec_memory_limit_bytes{image!=""} > 0
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            type: promql
+          - refId: B
+            datasourceUid:
+            model:
+              type: threshold
+              configure:
+                conditions:
+                  evaluator:
+                    params:
+                      type: gt
+                    type: evaluator
+                    operator:
+                      type: and
+                  query:
+                    params:
+                      - A
+                    type: query
+                  reducer:
+                    params: []
+                    type: last
+                  type: combinator
+            type: classic_conditions
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} using >90% memory"
+          description: "Container {{ $labels.name }} is using {{ $value | humanizePercentage }} of its memory limit."
+          runbook_url: "https://github.com/WyattAu/SimpleInfrastructureStack/wiki/Runbooks#container-high-memory"
+
+      - uid: container_restart_loop
+        title: Container Restart Loop
+        condition: B
+        data:
+          - refId: A
+            datasourceUid: __expr__
+            model:
+              editorMode: code
+              expr: increase(container_restarts_total{image!=""}[1h]) > 5
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            type: promql
+          - refId: B
+            datasourceUid:
+            model:
+              type: threshold
+              configure:
+                conditions:
+                  evaluator:
+                    params:
+                      type: gt
+                    type: evaluator
+                    operator:
+                      type: and
+                  query:
+                    params:
+                      - A
+                    type: query
+                  reducer:
+                    params: []
+                    type: last
+                  type: combinator
+            type: classic_conditions
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} restart loop detected"
+          description: "Container {{ $labels.name }} has restarted {{ $value }} times in the last hour."
+
+      - uid: container_down
+        title: Container Down
+        condition: B
+        data:
+          - refId: A
+            datasourceUid: __expr__
+            model:
+              editorMode: code
+              expr: (time() - container_last_seen{image!=""}) > 120
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            type: promql
+          - refId: B
+            datasourceUid:
+            model:
+              type: threshold
+              configure:
+                conditions:
+                  evaluator:
+                    params:
+                      type: gt
+                    type: evaluator
+                    operator:
+                      type: and
+                  query:
+                    params:
+                      - A
+                    type: query
+                  reducer:
+                    params: []
+                    type: last
+                  type: combinator
+            type: classic_conditions
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container {{ $labels.name }} is down"
+          description: "Container {{ $labels.name }} has not been seen for over 2 minutes."
+
+  - orgId: 1
+    name: host_health.rules
+    folder: Infrastructure
+    interval: 60s
+    rules:
+      - uid: host_high_memory
+        title: Host High Memory Usage
+        condition: B
+        data:
+          - refId: A
+            datasourceUid: __expr__
+            model:
+              editorMode: code
+              expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            type: promql
+          - refId: B
+            datasourceUid:
+            model:
+              type: threshold
+              configure:
+                conditions:
+                  evaluator:
+                    params:
+                      type: gt
+                    type: evaluator
+                    operator:
+                      type: and
+                  query:
+                    params:
+                      - A
+                    type: query
+                  reducer:
+                    params: []
+                    type: last
+                  type: combinator
+            type: classic_conditions
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host memory usage above 90%"
+          description: "Host memory usage is at {{ $value | humanizePercentage }}."
+
+      - uid: host_high_disk
+        title: Host High Disk Usage
+        condition: B
+        data:
+          - refId: A
+            datasourceUid: __expr__
+            model:
+              editorMode: code
+              expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) > 0.85
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            type: promql
+          - refId: B
+            datasourceUid:
+            model:
+              type: threshold
+              configure:
+                conditions:
+                  evaluator:
+                    params:
+                      type: gt
+                    type: evaluator
+                    operator:
+                      type: and
+                  query:
+                    params:
+                      - A
+                    type: query
+                  reducer:
+                    params: []
+                    type: last
+                  type: combinator
+            type: classic_conditions
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host disk usage above 85%"
+          description: "Host disk {{ $labels.device }} at {{ $labels.mountpoint }} is {{ $value | humanizePercentage }} full."
+
+  - orgId: 1
+    name: service_health.rules
+    folder: Infrastructure
+    interval: 60s
+    rules:
+      - uid: prometheus_tsdb_compaction
+        title: Prometheus TSDB Compaction Failure
+        condition: B
+        data:
+          - refId: A
+            datasourceUid: __expr__
+            model:
+              editorMode: code
+              expr: prometheus_tsdb_compactions_failed_total > 0
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            type: promql
+          - refId: B
+            datasourceUid:
+            model:
+              type: threshold
+              configure:
+                conditions:
+                  evaluator:
+                    params:
+                      type: gt
+                    type: evaluator
+                    operator:
+                      type: and
+                  query:
+                    params:
+                      - A
+                    type: query
+                  reducer:
+                    params: []
+                    type: last
+                  type: combinator
+            type: classic_conditions
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus TSDB compaction failures"
+          description: "Prometheus has experienced TSDB compaction failures."
