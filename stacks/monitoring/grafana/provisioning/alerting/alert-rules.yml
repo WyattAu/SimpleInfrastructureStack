@@ -9,21 +9,17 @@ groups:
         title: Container Down
         condition: A
         data:
-          refId: container_down_query
-          query:
-            datasourceUid: "${DS_PROMETHEUS}"
+          - refId: A
+            datasourceUid: DS_PROMETHEUS
             model:
-              type: promql
               expr: time() - container_last_seen{container=~".+"} > 120
-            for: 2m
-            editorMode: code
-          hide: false
+              for: 2m
+              type: promql
         noDataState: Alerting
         execErrState: Error
         annotations:
           summary: "Container {{ $labels.container }} is down"
           description: "Container {{ $labels.container }} has not been seen in Prometheus for over 2 minutes."
-          runbook_url: "https://github.com/WyattAu/SimpleInfrastructureStack"
         labels:
           severity: critical
 
@@ -31,15 +27,12 @@ groups:
         title: Container OOM Killed
         condition: A
         data:
-          refId: container_oom_query
-          query:
-            datasourceUid: "${DS_PROMETHEUS}"
+          - refId: A
+            datasourceUid: DS_PROMETHEUS
             model:
-              type: promql
               expr: rate(container_oom_events_total{container=~".+"}[5m]) > 0
-            for: 1m
-            editorMode: code
-          hide: false
+              for: 1m
+              type: promql
         annotations:
           summary: "Container {{ $labels.container }} OOM killed"
           description: "Container {{ $labels.container }} was killed by the OOM killer."
@@ -50,15 +43,12 @@ groups:
         title: Container Restart Loop
         condition: A
         data:
-          refId: restart_loop_query
-          query:
-            datasourceUid: "${DS_PROMETHEUS}"
+          - refId: A
+            datasourceUid: DS_PROMETHEUS
             model:
-              type: promql
               expr: increase(container_restarts_total{container=~".+"}[1h]) > 5
-            for: 5m
-            editorMode: code
-          hide: false
+              for: 5m
+              type: promql
         annotations:
           summary: "Container {{ $labels.container }} restart loop"
           description: "Container {{ $labels.container }} has restarted {{ $value }} times in the last hour."
@@ -69,15 +59,12 @@ groups:
         title: Container High Memory
         condition: A
         data:
-          refId: high_mem_query
-          query:
-            datasourceUid: "${DS_PROMETHEUS}"
+          - refId: A
+            datasourceUid: DS_PROMETHEUS
             model:
-              type: promql
               expr: (container_memory_usage_bytes{container=~".+"} / container_spec_memory_limit_bytes{container=~".+"}) > 0.9
-            for: 5m
-            editorMode: code
-          hide: false
+              for: 5m
+              type: promql
         annotations:
           summary: "Container {{ $labels.container }} high memory"
           description: "Container {{ $labels.container }} is using {{ $value | humanizePercentage }} of its memory limit."
@@ -88,15 +75,12 @@ groups:
         title: Host Memory High
         condition: A
         data:
-          refId: host_mem_query
-          query:
-            datasourceUid: "${DS_PROMETHEUS}"
+          - refId: A
+            datasourceUid: DS_PROMETHEUS
             model:
-              type: promql
               expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9
-            for: 5m
-            editorMode: code
-          hide: false
+              for: 5m
+              type: promql
         annotations:
           summary: "Host memory usage above 90%"
           description: "TrueNAS host memory usage is at {{ $value | humanizePercentage }}."
@@ -107,19 +91,14 @@ groups:
         title: Host Disk Space Low
         condition: A
         data:
-          refId: disk_query
-          query:
-            datasourceUid: "${DS_PROMETHEUS}"
+          - refId: A
+            datasourceUid: DS_PROMETHEUS
             model:
-              type: promql
               expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) > 0.85
-            for: 5m
-            editorMode: code
-          hide: false
+              for: 5m
+              type: promql
         annotations:
           summary: "Host disk {{ $labels.device }} is above 85% full"
           description: "Disk {{ $labels.device }} at {{ $labels.mountpoint }} is {{ $value | humanizePercentage }} full."
         labels:
           severity: warning
-        notifications:
-          - unified_alerting_default
