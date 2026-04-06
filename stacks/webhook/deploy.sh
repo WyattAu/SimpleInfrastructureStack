@@ -41,15 +41,16 @@ else
     log "Pulling latest from $BRANCH..."
     cd "$REPO_DIR"
     PRE_DEPLOY_SHA=$(git rev-parse HEAD)
+    log "Previous HEAD: $PRE_DEPLOY_SHA"
     git fetch origin "$BRANCH"
+    ORIGIN_SHA=$(git rev-parse "origin/$BRANCH")
+    log "Origin $BRANCH: $ORIGIN_SHA"
     # Capture changed files before reset (diff between HEAD and origin)
-    CHANGED_FILES=$(git diff --name-only HEAD "origin/$BRANCH" 2>/dev/null || true)
+    CHANGED_FILES=$(git diff --name-only "$PRE_DEPLOY_SHA" "$ORIGIN_SHA" 2>/dev/null || true)
+    log "Changed files ($([ -n "$CHANGED_FILES" ] && echo "$(echo "$CHANGED_FILES" | wc -l) files" || echo "none")): $(echo "$CHANGED_FILES" | tr '\n' ' ')"
     git reset --hard "origin/$BRANCH"
 fi
 log "Code at: $(cd "$REPO_DIR" && git log --oneline -1)"
-if [ -n "$CHANGED_FILES" ]; then
-    log "Changed files: $(echo "$CHANGED_FILES" | tr '\n' ' ')"
-fi
 
 # 2. Decrypt secrets
 log "Decrypting secrets..."
