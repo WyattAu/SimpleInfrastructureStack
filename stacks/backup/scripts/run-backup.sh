@@ -6,6 +6,9 @@ set -euo pipefail
 
 echo "[$(date -Iseconds)] Starting backup..."
 
+# Clear stale locks from interrupted backups (e.g., container recreation during deploy)
+docker exec backup-restic restic unlock --remove-all 2>/dev/null || true
+
 # Initialize repository if it doesn't exist
 docker exec backup-restic restic snapshots 2>/dev/null || \
   docker exec backup-restic restic init
