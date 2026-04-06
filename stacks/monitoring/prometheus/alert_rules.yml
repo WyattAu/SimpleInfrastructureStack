@@ -1,10 +1,12 @@
 groups:
-  # Filter: image != "" excludes host system cgroups (which lack the image
-  # label) and the root /docker cgroup. Without this filter, alerts fire on
-  # system services like systemd, ssh, cron etc. where cAdvisor reports
-  # container_spec_memory_limit_bytes=0 and container_spec_cpu_quota=0,
-  # causing division-by-zero that produces +Inf, which always satisfies
-  # threshold comparisons.
+  # Filters applied to container alerts:
+  #   image != "" — excludes host system cgroups (systemd, ssh, cron etc.)
+  #     which lack the image label. These cgroups have
+  #     container_spec_memory_limit_bytes=0 and container_spec_cpu_quota=0,
+  #     causing division-by-zero that produces +Inf.
+  #   container_spec_*_bytes/quota > 0 — excludes Docker containers that
+  #     have no memory or CPU limit set in docker-compose. Without a limit,
+  #     cAdvisor reports 0, which also produces +Inf on division.
   - name: container_health
     rules:
       - alert: ContainerOOMKilled
@@ -18,6 +20,7 @@ groups:
 
       - alert: ContainerHighMemoryUsage
         expr: (container_memory_usage_bytes{image!=""} / container_spec_memory_limit_bytes{image!=""}) > 0.9
+          and container_spec_memory_limit_bytes{image!=""} > 0
         for: 5m
         labels:
           severity: warning
@@ -27,6 +30,7 @@ groups:
 
       - alert: ContainerHighCPUUsage
         expr: rate(container_cpu_usage_seconds_total{image!=""}[5m]) / container_spec_cpu_quota{image!=""} > 0.9
+          and container_spec_cpu_quota{image!=""} > 0
         for: 5m
         labels:
           severity: warning
