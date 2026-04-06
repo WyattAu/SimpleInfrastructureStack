@@ -1,17 +1,23 @@
 groups:
+  # Filter: image != "" excludes host system cgroups (which lack the image
+  # label) and the root /docker cgroup. Without this filter, alerts fire on
+  # system services like systemd, ssh, cron etc. where cAdvisor reports
+  # container_spec_memory_limit_bytes=0 and container_spec_cpu_quota=0,
+  # causing division-by-zero that produces +Inf, which always satisfies
+  # threshold comparisons.
   - name: container_health
     rules:
       - alert: ContainerOOMKilled
-        expr: rate(container_oom_events_total[5m]) > 0
+        expr: rate(container_oom_events_total{image!=""}[5m]) > 0
         for: 1m
         labels:
           severity: critical
         annotations:
           summary: "Container {{ $labels.name }} OOM killed"
-          description: "Container {{ $labels.name }} in pod {{ $labels.container }} was OOM killed."
+          description: "Container {{ $labels.name }} was OOM killed."
 
       - alert: ContainerHighMemoryUsage
-        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.9
+        expr: (container_memory_usage_bytes{image!=""} / container_spec_memory_limit_bytes{image!=""}) > 0.9
         for: 5m
         labels:
           severity: warning
@@ -20,7 +26,7 @@ groups:
           description: "Container {{ $labels.name }} is using {{ $value | humanizePercentage }} of its memory limit."
 
       - alert: ContainerHighCPUUsage
-        expr: rate(container_cpu_usage_seconds_total[5m]) / container_spec_cpu_quota > 0.9
+        expr: rate(container_cpu_usage_seconds_total{image!=""}[5m]) / container_spec_cpu_quota{image!=""} > 0.9
         for: 5m
         labels:
           severity: warning
@@ -29,7 +35,7 @@ groups:
           description: "Container {{ $labels.name }} is using {{ $value | humanizePercentage }} of its CPU limit."
 
       - alert: ContainerRestartLoop
-        expr: increase(container_restarts_total[1h]) > 5
+        expr: increase(container_restarts_total{image!=""}[1h]) > 5
         for: 5m
         labels:
           severity: warning
@@ -38,7 +44,7 @@ groups:
           description: "Container {{ $labels.name }} has restarted {{ $value }} times in the last hour."
 
       - alert: ContainerDown
-        expr: time() - container_last_seen > 120
+        expr: (time() - container_last_seen{image!=""}) > 120
         for: 2m
         labels:
           severity: critical
