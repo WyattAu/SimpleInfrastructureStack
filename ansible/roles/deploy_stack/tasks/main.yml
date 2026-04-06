@@ -2,6 +2,12 @@
 # Note: Compose validation is handled by CI (validate.yml workflow).
 # We skip it here because docker compose config requires env vars that
 # are only available via the decrypted secrets, not in the project dir.
+#
+# recreate is intentionally omitted (defaults to "smart"): Docker Compose
+# already recreates containers when their config or image changes. Forcing
+# recreate: always causes race conditions ("removal already in progress")
+# and orphaned container name conflicts when many containers are recreated
+# simultaneously across all 9 stacks.
 
 - name: Deploy stack
   community.docker.docker_compose_v2:
@@ -9,7 +15,6 @@
     env_files:
       - "{{ infra_secrets_path }}/{{ item }}.env"
     pull: always
-    recreate: always
     remove_orphans: true
   loop: "{{ stacks }}"
   register: deploy_result
