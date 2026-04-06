@@ -39,11 +39,15 @@ services:
 
     command:
       # - "--accesslog=true"
-      # --api.insecure=true exposes the API/metrics on :8080 without auth.
-      # This is safe because Traefik is only reachable on backend_net
-      # (not exposed to traefik_net), and Prometheus scrapes from there.
+      # --api.dashboard=true enables the api@internal service so the
+      # Traefik dashboard can be reached via its own routing labels
+      # (e.g. traefik.${DOMAIN_NAME}). No port 8080 binding needed.
       - "--api.dashboard=true"
-      - "--api.insecure=true"
+      # Prometheus metrics in Traefik v3 require an explicit entrypoint
+      # named "traefik" (the default metrics.prometheus.entryPoint).
+      # Port 8080 is only reachable on backend_net (not traefik_net).
+      - "--entrypoints.traefik.address=:8080"
+      - "--metrics.prometheus=true"
       - "--log.level=INFO"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
