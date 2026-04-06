@@ -13,6 +13,12 @@ services:
     # No Traefik labels — the tunnel must be independent
     # If Traefik breaks, the tunnel must still work to deliver deploys
     network_mode: host
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 32M
     logging:
       driver: "json-file"
       options:
