@@ -60,6 +60,11 @@ services:
       - RESTIC_KEEP_WEEKLY=4
       - RESTIC_KEEP_MONTHLY=6
       - RESTIC_KEEP_YEARLY=3
+      # --- Offsite Backup (Backblaze B2) ---
+      # Set these in secrets/backup.env to enable offsite sync after each backup.
+      # OFFSITE_REPO=s3:https://s3.us-west-004.backblazeb2.com/<bucket>/repo
+      # OFFSITE_AWS_KEY=<keyId>
+      # OFFSITE_AWS_SECRET=<applicationKey>
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
