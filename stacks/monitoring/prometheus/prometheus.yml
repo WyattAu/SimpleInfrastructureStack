@@ -24,7 +24,9 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets: ['operations-forgejo:3000']
+  # Keycloak 26.x serves metrics on the management port (9000), not the
+  # main application port (8080). KC_METRICS_ENABLED=true is also required.
   - job_name: 'keycloak'
     metrics_path: /metrics
     static_configs:
-      - targets: ['iam-keycloak:8080']
+      - targets: ['iam-keycloak:9000']
