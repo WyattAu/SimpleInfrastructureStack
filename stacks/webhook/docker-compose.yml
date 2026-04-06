@@ -36,7 +36,11 @@ services:
         reservations:
           memory: 32M
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:9000/hooks/deploy || exit 1"]
+      # webhook binary only accepts POST (-http-methods POST).
+      # Sending POST with empty body triggers HMAC validation which returns
+      # 403 Forbidden — proving the process is alive and routing correctly.
+      # A connection-refused or timeout would mean the process is down.
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --post-data='' --header='Content-Type: application/json' -O /dev/null http://127.0.0.1:9000/hooks/deploy 2>&1 | grep -q '403'"]
       interval: 30s
       timeout: 5s
       retries: 3
