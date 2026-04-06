@@ -39,8 +39,11 @@ services:
 
     command:
       # - "--accesslog=true"
+      # --api.insecure=true exposes the API/metrics on :8080 without auth.
+      # This is safe because Traefik is only reachable on backend_net
+      # (not exposed to traefik_net), and Prometheus scrapes from there.
       - "--api.dashboard=true"
-      - "--api.insecure=false"
+      - "--api.insecure=true"
       - "--log.level=INFO"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
