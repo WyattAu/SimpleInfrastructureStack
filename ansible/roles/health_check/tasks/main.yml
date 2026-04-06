@@ -11,7 +11,7 @@
     - >
       health_results.container.State.Health is not defined or
       health_results.container.State.Health.Status == "healthy"
-  retries: 30
+  retries: 60
   delay: 15
   ignore_errors: true
 
