@@ -72,28 +72,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Host disk inodes above 85%"
-          description: "Host inodes at {{ $labels.mountpoint }} are {{ $value | humanizePercentage }} used."
-
-  - name: database_health
-    rules:
-      - alert: PostgreSQLDown
-        expr: pg_up == 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "PostgreSQL {{ $labels.instance }} is down"
-          description: "PostgreSQL server {{ $labels.instance }} is not responding."
-
-      - alert: PostgreSQLTooManyConnections
-        expr: (pg_stat_database_numbackends / pg_settings_max_connections) > 0.8
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "PostgreSQL {{ $labels.instance }} high connection count"
-          description: "PostgreSQL is using {{ $value | humanizePercentage }} of max connections."
+           summary: "Host disk inodes above 85%"
+           description: "Host inodes at {{ $labels.mountpoint }} are {{ $value | humanizePercentage }} used."
 
   - name: service_health
     rules:
