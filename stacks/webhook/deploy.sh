@@ -28,6 +28,12 @@ log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 log "=== DEPLOY STARTED ==="
 
 # 1. Ensure repo exists and pull latest
+# Track changed files to handle bind-mount inode breakage.
+# git reset --hard replaces files atomically (new inode), but Docker
+# bind mounts in running containers still reference the old inode.
+# After deploy, we must restart containers whose bind-mounted config
+# files changed so they pick up the new file content.
+CHANGED_FILES=""
 if [ ! -d "$REPO_DIR/.git" ]; then
     log "Cloning repository..."
     git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$REPO_DIR"
@@ -36,9 +42,14 @@ else
     cd "$REPO_DIR"
     PRE_DEPLOY_SHA=$(git rev-parse HEAD)
     git fetch origin "$BRANCH"
+    # Capture changed files before reset (diff between HEAD and origin)
+    CHANGED_FILES=$(git diff --name-only HEAD "origin/$BRANCH" 2>/dev/null || true)
     git reset --hard "origin/$BRANCH"
 fi
 log "Code at: $(cd "$REPO_DIR" && git log --oneline -1)"
+if [ -n "$CHANGED_FILES" ]; then
+    log "Changed files: $(echo "$CHANGED_FILES" | tr '\n' ' ')"
+fi
 
 # 2. Decrypt secrets
 log "Decrypting secrets..."
@@ -97,6 +108,59 @@ cd "$REPO_DIR"
 ansible-playbook ansible/playbooks/deploy.yml \
     -i ansible/inventory/hosts.yml 2>&1
 DEPLOY_EXIT=$?
+
+# 3b. Restart containers with changed bind-mounted config files.
+# Docker Compose only recreates containers when the compose file changes,
+# not when bind-mounted config files change. git reset --hard breaks
+# inode linkage, so running containers see stale content until restart.
+if [ $DEPLOY_EXIT -eq 0 ] && [ -n "$CHANGED_FILES" ]; then
+    log "Checking for containers needing restart due to config changes..."
+    RESTARTED=0
+    # Map: repo-relative file path -> container name
+    # Only files under stacks/ that are bind-mounted into containers.
+    for changed_file in $CHANGED_FILES; do
+        case "$changed_file" in
+            stacks/monitoring/prometheus/prometheus.yml|stacks/monitoring/prometheus/alert_rules.yml)
+                RESTART_LIST="${RESTART_LIST:+$RESTART_LIST }monitoring-prometheus"
+                ;;
+            stacks/monitoring/grafana/provisioning/*)
+                RESTART_LIST="${RESTART_LIST:+$RESTART_LIST }monitoring-grafana"
+                ;;
+            stacks/monitoring/promtail/config.yml)
+                RESTART_LIST="${RESTART_LIST:+$RESTART_LIST }monitoring-promtail"
+                ;;
+            stacks/monitoring/loki/config.yml)
+                RESTART_LIST="${RESTART_LIST:+$RESTART_LIST }monitoring-loki"
+                ;;
+            stacks/proxy/config/*)
+                RESTART_LIST="${RESTART_LIST:+$RESTART_LIST }proxy-well-known-server"
+                ;;
+            stacks/storage/config/*)
+                RESTART_LIST="${RESTART_LIST:+$RESTART_LIST }storage-ocis"
+                ;;
+            stacks/backup/scripts/*)
+                RESTART_LIST="${RESTART_LIST:+$RESTART_LIST }backup-cron-trigger"
+                ;;
+            stacks/webhook/deploy.sh|stacks/webhook/hooks.yaml.tmpl)
+                # Skip — webhook is the container running this script.
+                # It will pick up changes on next deploy trigger.
+                log "  Skipping webhook container (self): $changed_file"
+                ;;
+        esac
+    done
+    # Deduplicate and restart
+    if [ -n "${RESTART_LIST:-}" ]; then
+        UNIQUE_RESTART=$(echo "$RESTART_LIST" | tr ' ' '\n' | sort -u)
+        for container in $UNIQUE_RESTART; do
+            log "  Restarting $container (bind-mounted config changed)"
+            docker restart "$container" 2>&1 || log "  WARNING: Failed to restart $container"
+            RESTARTED=$((RESTARTED + 1))
+        done
+        log "Restarted $RESTARTED container(s) for config changes"
+        # Brief pause for containers to become ready before health checks
+        sleep 5
+    fi
+fi
 
 # 4. Health check
 HEALTH_EXIT=0
