@@ -39,11 +39,19 @@
         # template expansion so Jinja2 has access to secret values.
         # No name parameter — vars become top-level so templates can
         # use {{ NTFY_TOPIC }} directly.
+        - name: Find decrypted secret files
+          ansible.builtin.find:
+            paths: "{{ infra_secrets_path }}"
+            patterns: ["*.env"]
+          register: secret_vars_files
+          no_log: true
+
         - name: Load decrypted secret files as variables
           ansible.builtin.include_vars:
-            file: "{{ item }}"
-          loop: "{{ query('ansible.builtin.fileglob', infra_secrets_path ~ '/*.env') }}"
+            file: "{{ item.path }}"
+          loop: "{{ secret_vars_files.files | default([]) }}"
           no_log: true
+          when: secret_vars_files.matched > 0
 
         # Phase 1c: Expand templates (needs vars from 1b)
         - name: Expand templates (Jinja2)
@@ -101,11 +109,18 @@
             msg: "Rollback complete"
 
   post_tasks:
+    - name: Find encrypted secret files for cleanup
+      ansible.builtin.find:
+        paths: "{{ infra_repo_path }}/secrets"
+        patterns: ["*.env.encrypted"]
+      register: cleanup_files
+      no_log: true
+
     - name: Remove decrypted secret files from disk
       ansible.builtin.file:
-        path: "{{ infra_secrets_path }}/{{ item | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
+        path: "{{ infra_secrets_path }}/{{ item.path | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
         state: absent
-      loop: "{{ query('ansible.builtin.fileglob', infra_repo_path ~ '/secrets/*.env.encrypted') }}"
+      loop: "{{ cleanup_files.files | default([]) }}"
       no_log: true
 
     - name: Confirm secrets cleanup
