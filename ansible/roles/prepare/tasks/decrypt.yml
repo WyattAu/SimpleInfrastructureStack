@@ -18,7 +18,7 @@
     "{{ item }}" > "{{ infra_secrets_path }}/{{ item | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
   args:
     chdir: "{{ infra_repo_path }}"
-  loop: "{{ query('ansible.builtin.fileglob', infra_repo_path | path_join('secrets/*.env.encrypted')) }}"
+    loop: "{{ query('ansible.builtin.fileglob', infra_repo_path ~ '/secrets/*.env.encrypted') }}"
   register: sops_decrypt
   failed_when: false
   no_log: true
