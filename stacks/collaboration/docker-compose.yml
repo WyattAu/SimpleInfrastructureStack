@@ -107,17 +107,7 @@ services:
         fi
         if ! grep -q 'port: 19090' /data/homeserver.yaml; then
           echo 'Adding metrics listener on port 19090...';
-          cat >> /data/homeserver.yaml << 'METRICS'
-
-# Metrics listener for Prometheus
-listeners:
-  - port: 19090
-    type: http
-    x_forwarded: false
-    resources:
-      - names: [metrics]
-        compress: false
-METRICS
+          printf '\n# Metrics listener for Prometheus\nlisteners:\n  - port: 19090\n    type: http\n    x_forwarded: false\n    resources:\n      - names: [metrics]\n        compress: false\n' >> /data/homeserver.yaml;
         fi
 
   synapse-chown:
