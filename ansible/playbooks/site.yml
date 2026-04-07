@@ -37,21 +37,65 @@
         # Phase 1b: Load decrypted secret files as Ansible variables.
         # Must happen AFTER prepare decrypts the files but BEFORE
         # template expansion so Jinja2 has access to secret values.
-        # No name parameter — vars become top-level so templates can
-        # use {{ NTFY_TOPIC }} directly.
+        #
+        # IMPORTANT: include_vars only supports YAML/JSON, NOT dotenv format.
+        # The SOPS-decrypted files are in dotenv format (KEY='value'), so we
+        # convert them to YAML via Python, then include_vars loads them.
+        # Each key becomes a top-level play var, accessible by templates as
+        # {{ NTFY_TOPIC }}, {{ GRAFANA_ADMIN_PASSWORD }}, etc.
         - name: Find decrypted secret files
           ansible.builtin.find:
             paths: "{{ infra_secrets_path }}"
             patterns: ["*.env"]
           register: secret_vars_files
+
+        - name: Convert dotenv files to YAML for Ansible consumption
+          ansible.builtin.shell: |
+            SECRETS_PATH="{{ infra_secrets_path }}"
+            VARS_FILE="{{ infra_secrets_path }}/_vars.yml"
+            python3 - "$SECRETS_PATH" "$VARS_FILE" << 'PYEOF'
+            import glob, yaml, sys
+
+            secrets_path = sys.argv[1]
+            vars_file = sys.argv[2]
+
+            result = {}
+            for fpath in sorted(glob.glob(f'{secrets_path}/*.env')):
+                with open(fpath) as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith('#'):
+                            continue
+                        if '=' not in line:
+                            continue
+                        key, _, value = line.partition('=')
+                        key = key.strip()
+                        value = value.strip()
+                        # Strip surrounding quotes (single or double)
+                        if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+                            value = value[1:-1]
+                        result[key] = value
+            with open(vars_file, 'w') as f:
+                yaml.dump(result, f, default_flow_style=False)
+            print(f'Wrote {len(result)} variables')
+            PYEOF
+          args:
+            chdir: "{{ infra_repo_path }}"
+          register: dotenv_convert
+          when: secret_vars_files.matched > 0
+          changed_when: false
+
+        - name: Load dotenv variables into play scope
+          ansible.builtin.include_vars:
+            file: "{{ infra_secrets_path }}/_vars.yml"
+          when: secret_vars_files.matched > 0
           no_log: true
 
-        - name: Load decrypted secret files as variables
-          ansible.builtin.include_vars:
-            file: "{{ item.path }}"
-          loop: "{{ secret_vars_files.files | default([]) }}"
-          no_log: true
-          when: secret_vars_files.matched > 0
+        - name: Report loaded variables
+          ansible.builtin.debug:
+            msg: >-
+              Loaded {{ secret_vars_files.matched | default(0) }} dotenv files
+              ({{ dotenv_convert.stdout_lines | default([]) | last | default('') }})
 
         # Phase 1c: Expand templates (needs vars from 1b)
         - name: Expand templates (Jinja2)
@@ -109,18 +153,8 @@
             msg: "Rollback complete"
 
   post_tasks:
-    - name: Find encrypted secret files for cleanup
-      ansible.builtin.find:
-        paths: "{{ infra_repo_path }}/secrets"
-        patterns: ["*.env.encrypted"]
-      register: cleanup_files
-      no_log: true
-
-    - name: Remove decrypted secret files from disk
-      ansible.builtin.file:
-        path: "{{ infra_secrets_path }}/{{ item.path | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
-        state: absent
-      loop: "{{ cleanup_files.files | default([]) }}"
+    - name: Remove all decrypted secrets (entire .secrets.tmp contents)
+      ansible.builtin.shell: rm -rf "{{ infra_secrets_path }}"/*
       no_log: true
 
     - name: Confirm secrets cleanup
