@@ -1,0 +1,21 @@
+---
+# Prepare role — replaces all bash logic from deploy.sh.
+#
+# This role runs in three phases:
+#   1. git_sync         — Fetch and reset to origin/main, track changed files
+#   2. decrypt          — SOPS decrypt all .env.encrypted files
+#   3. expand_templates — Jinja2 template expansion (called from site.yml AFTER vars are loaded)
+#   4. detect_bind_mount_changes — Identify containers needing restart
+#
+# IMPORTANT: expand_templates.yml must NOT be included in this main.yml.
+# It must be called from site.yml AFTER include_vars loads the decrypted
+# secret files. Otherwise Jinja2 won't have access to the secret values.
+
+- name: Git sync — fetch and reset to origin/main
+  ansible.builtin.include_tasks: git_sync.yml
+
+- name: SOPS decrypt — decrypt secret files
+  ansible.builtin.include_tasks: decrypt.yml
+
+# NOTE: Template expansion and bind-mount detection are included
+# directly from site.yml to control ordering relative to include_vars.

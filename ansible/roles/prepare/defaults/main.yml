@@ -1,0 +1,3 @@
+---
+# Variables for the prepare role
+prepare_sops_config: "{{ infra_repo_path }}/.sops.yaml"

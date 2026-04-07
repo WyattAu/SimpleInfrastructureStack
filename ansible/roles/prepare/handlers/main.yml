@@ -1,0 +1,17 @@
+---
+- name: Restart containers with changed bind-mounted config
+  community.docker.docker_container:
+    name: "{{ item }}"
+    state: started
+    restart: true
+  loop: "{{ containers_to_restart }}"
+  loop_control:
+    label: "{{ item }}"
+  when: containers_to_restart is defined and containers_to_restart | length > 0
+
+- name: Report restart results
+  ansible.builtin.debug:
+    msg: >-
+      Restarted {{ containers_to_restart | length }} container(s)
+      for bind-mount config changes
+  when: containers_to_restart is defined and containers_to_restart | length > 0

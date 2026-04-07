@@ -1,0 +1,34 @@
+---
+# 3. Template expansion — expand all .tmpl files using Jinja2.
+# This replaces the fragile envsubst approach that hardcoded NTFY_ prefix matching.
+# All decrypted .env values are available as Ansible variables because they were
+# loaded via include_vars in site.yml BEFORE this task file is included.
+#
+# NOTE: hooks.yaml.tmpl is intentionally skipped — it uses shell-style
+# ${VAR} syntax (not Jinja2 {{ VAR }}) and is expanded by the webhook
+# container's entrypoint.sh at startup, not at deploy time.
+
+- name: Find all template files
+  ansible.builtin.find:
+    paths: "{{ infra_base_path }}"
+    patterns: ["*.tmpl"]
+    recurse: true
+    depth: 4
+  register: template_files
+
+- name: Expand template files (skip hooks.yaml.tmpl — handled by container entrypoint)
+  ansible.builtin.template:
+    src: "{{ item.path }}"
+    dest: "{{ item.path | regex_replace('\\.tmpl$', '') }}"
+    mode: preserve
+  loop: "{{ template_files.files }}"
+  loop_control:
+    label: "{{ item.path | basename | regex_replace('\\.tmpl$', '') }}"
+  register: template_results
+  when: item.path | regex_search('hooks\\.yaml\\.tmpl$') is not defined
+
+- name: Report template expansion
+  ansible.builtin.debug:
+    msg: >-
+      Expanded {{ template_results.results | selectattr('changed', 'equalto', true) | list | length }}
+      template files
