@@ -53,7 +53,7 @@ groups:
           severity: warning
         annotations:
           summary: "Container {{ $labels.name }} using >90% memory"
-          description: "Container {{ $labels.name }} is using {{ $value | humanizePercentage }} of its memory limit."
+          description: "Container {{ $labels.name }} is using {{ $value }} of its memory limit (threshold: 90%)."
           runbook_url: "https://github.com/WyattAu/SimpleInfrastructureStack/wiki/Runbooks#container-high-memory"
 
       - uid: container_restart_loop
@@ -128,7 +128,7 @@ groups:
           severity: warning
         annotations:
           summary: "Host memory usage above 90%"
-          description: "Host memory usage is at {{ $value | humanizePercentage }}."
+          description: "Host memory usage is at {{ $value }} (threshold: 90%)."
 
       - uid: host_high_disk
         title: Host High Disk Usage
@@ -151,7 +151,7 @@ groups:
           severity: warning
         annotations:
           summary: "Host disk usage above 85%"
-          description: "Host disk {{ $labels.device }} at {{ $labels.mountpoint }} is {{ $value | humanizePercentage }} full."
+          description: "Host disk {{ $labels.device }} at {{ $labels.mountpoint }} is {{ $value }} full (threshold: 85%)."
 
   - orgId: 1
     name: service_health.rules
