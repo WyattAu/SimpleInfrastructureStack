@@ -1,7 +1,7 @@
 ---
 # 2. SOPS decryption — decrypt all .env.encrypted files to plaintext.
 # Files are written to infra_secrets_path with mode 0600.
-# They are cleaned up in the 'always' block of site.yml.
+# They are cleaned up in the post_tasks of site.yml.
 
 - name: Ensure secrets directory exists
   ansible.builtin.file:
@@ -22,21 +22,25 @@
     --input-type dotenv
     --output-type dotenv
     --config {{ prepare_sops_config }}
-    "{{ item.path }}" > "{{ infra_secrets_path }}/{{ item.path | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
+    --output {{ infra_secrets_path }}/{{ item.path | basename | regex_replace('\\.env\\.encrypted$', '.env') }}
+    "{{ item.path }}"
   args:
     chdir: "{{ infra_repo_path }}"
   loop: "{{ encrypted_files.files }}"
   register: sops_decrypt
-  failed_when: false
-  no_log: true
+  loop_control:
+    label: "{{ item.path | basename }}"
   when: encrypted_files.matched > 0
+  no_log: true
 
 - name: Set decrypted file permissions
   ansible.builtin.file:
     path: "{{ infra_secrets_path }}/{{ item.item.path | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
     mode: "0600"
   loop: "{{ sops_decrypt.results | default([]) }}"
-  when: item.rc | default(1) == 0
+  loop_control:
+    label: "{{ item.item.path | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
+  when: sops_decrypt.results is defined and item.rc | default(1) == 0
   no_log: true
 
 - name: Report decryption results
