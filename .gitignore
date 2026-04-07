@@ -6,6 +6,9 @@
 *.key
 *.crt
 
+# Decrypted secrets temp directory (written at deploy time, cleaned up after)
+.secrets.tmp/
+
 # SOPS metadata (only contains public keys — safe to commit)
 # .sops.yaml is NOT ignored; it contains only age public key references
 
