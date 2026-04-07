@@ -50,3 +50,9 @@
       Restarting {{ containers_to_restart | length }} container(s) for bind-mount changes:
       {{ containers_to_restart | join(', ') }}
   when: containers_to_restart | default([]) | length > 0
+
+- name: Notify bind-mount restart handler
+  ansible.builtin.debug:
+    msg: "Scheduling bind-mount container restarts"
+  changed_when: containers_to_restart | default([]) | length > 0
+  notify: Restart containers with changed bind-mounted config
