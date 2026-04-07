@@ -17,13 +17,13 @@
   no_log: true
 
 - name: Decrypt SOPS secret files
-  ansible.builtin.shell: >
-    sops --decrypt
-    --input-type dotenv
-    --output-type dotenv
-    --config {{ prepare_sops_config }}
-    --output {{ infra_secrets_path }}/{{ item.path | basename | regex_replace('\\.env\\.encrypted$', '.env') }}
-    "{{ item.path }}"
+  ansible.builtin.shell: |
+    sops --decrypt \
+      --input-type dotenv \
+      --output-type dotenv \
+      --config {{ prepare_sops_config }} \
+      --output {{ infra_secrets_path }}/{{ item.path | basename | regex_replace('\\.env\\.encrypted$', '.env') }} \
+      "{{ item.path }}"
   args:
     chdir: "{{ infra_repo_path }}"
   loop: "{{ encrypted_files.files }}"
