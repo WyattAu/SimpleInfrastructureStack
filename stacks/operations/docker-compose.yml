@@ -230,6 +230,8 @@ services:
       - WOODPECKER_FORGEJO_CLIENT=${WOODPECKER_FORGEJO_CLIENT}
       - WOODPECKER_FORGEJO_SECRET=${WOODPECKER_FORGEJO_SECRET}
       - WOODPECKER_BACKEND_DOCKER_NETWORK=backend
+      # Prometheus metrics (exposed on :9001, unprotected, for internal scraping)
+      - WOODPECKER_METRICS_SERVER_ADDR=:9001
     networks:
       - traefik_net
       - backend_net

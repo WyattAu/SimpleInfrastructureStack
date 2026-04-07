@@ -59,6 +59,10 @@ services:
       # --- Proxy and Hostname Configuration ---
       - KC_HOSTNAME=auth.${DOMAIN_NAME}
       - KC_PROXY_HEADERS=xforwarded
+      # Explicitly trust the public hostname and loopback.
+      # Prevents KC-SERVICES0101 "Failed to verify remote host" warnings
+      # from Cloudflare proxy IPs hitting the client-registration endpoint.
+      - KC_TRUSTED_HOSTS=auth.${DOMAIN_NAME},localhost,127.0.0.1
       - KC_HEALTH_ENABLED=true
       - KC_METRICS_ENABLED=true
       - KC_HTTP_ENABLED=true
