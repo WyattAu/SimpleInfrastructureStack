@@ -1,0 +1,113 @@
+---
+# site.yml — Single entrypoint for infrastructure deployment.
+# Replaces deploy.sh as the orchestrator. The webhook calls this playbook
+# directly via: ansible-playbook ansible/playbooks/site.yml
+#
+# Flow:
+#   prepare       → git sync, SOPS decrypt
+#   include_vars  → load decrypted secrets as Ansible variables
+#   expand        → Jinja2 template expansion (needs vars loaded first)
+#   detect        → identify bind-mount changes (needs changed_files)
+#   deploy        → docker compose up (9 stacks)
+#   handler       → restart containers with changed bind-mounted configs
+#   health        → poll all containers until healthy
+#   rescue        → rollback to previous commit and redeploy
+#   always        → clean up decrypted secrets from disk
+
+- name: Deploy infrastructure
+  hosts: truenas
+  become: true
+
+  vars:
+    prepare_role_path: "{{ playbook_dir }}/../roles/prepare/tasks"
+
+  pre_tasks:
+    - name: Display deployment info
+      ansible.builtin.debug:
+        msg: "Deploying {{ stacks | length }} stacks to {{ inventory_hostname }}"
+
+  tasks:
+    - name: Run deployment pipeline
+      block:
+        # Phase 1a: Git sync + SOPS decrypt (prepare role)
+        - name: Prepare (git sync, decrypt)
+          ansible.builtin.include_role:
+            name: prepare
+
+        # Phase 1b: Load decrypted secret files as Ansible variables.
+        # Must happen AFTER prepare decrypts the files but BEFORE
+        # template expansion so Jinja2 has access to secret values.
+        # No name parameter — vars become top-level so templates can
+        # use {{ NTFY_TOPIC }} directly.
+        - name: Load decrypted secret files as variables
+          ansible.builtin.include_vars:
+            file: "{{ item }}"
+          loop: "{{ query('ansible.builtin.fileglob', infra_secrets_path ~ '/*.env') }}"
+          no_log: true
+
+        # Phase 1c: Expand templates (needs vars from 1b)
+        - name: Expand templates (Jinja2)
+          ansible.builtin.include_tasks: "{{ prepare_role_path }}/expand_templates.yml"
+
+        # Phase 1d: Detect bind-mount changes (needs changed_files from prepare)
+        - name: Detect bind-mount changes
+          ansible.builtin.include_tasks: "{{ prepare_role_path }}/detect_bind_mount_changes.yml"
+
+        # Phase 2: Deploy stacks via Docker Compose
+        - name: Deploy stacks
+          ansible.builtin.include_role:
+            name: deploy_stack
+
+        # Phase 3: Restart containers with changed bind-mounted config files.
+        - name: Flush bind-mount restart handler
+          ansible.builtin.meta: flush_handlers
+
+        # Brief pause for containers to stabilize
+        - name: Wait for containers to stabilize
+          ansible.builtin.pause:
+            seconds: 5
+
+        # Phase 4: Health check
+        - name: Run health checks
+          ansible.builtin.include_role:
+            name: health_check
+
+        - name: Deployment succeeded
+          ansible.builtin.debug:
+            msg: "=== DEPLOY COMPLETED SUCCESSFULLY ==="
+
+      rescue:
+        - name: Deployment failed
+          ansible.builtin.debug:
+            msg: >-
+              === DEPLOY FAILED ===
+              Rolling back to {{ pre_deploy_sha.stdout | default('unknown') }}...
+
+        - name: Roll back git to previous commit
+          ansible.builtin.shell: git reset --hard {{ pre_deploy_sha.stdout }}
+          args:
+            chdir: "{{ infra_repo_path }}"
+          when: pre_deploy_sha.stdout is defined
+          ignore_errors: true
+
+        - name: Re-deploy from rollback commit
+          ansible.builtin.include_role:
+            name: deploy_stack
+          when: pre_deploy_sha.stdout is defined
+          ignore_errors: true
+
+        - name: Rollback complete
+          ansible.builtin.debug:
+            msg: "Rollback complete"
+
+  post_tasks:
+    - name: Remove decrypted secret files from disk
+      ansible.builtin.file:
+        path: "{{ infra_secrets_path }}/{{ item | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
+        state: absent
+      loop: "{{ query('ansible.builtin.fileglob', infra_repo_path | path_join('secrets/*.env.encrypted')) }}"
+      no_log: true
+
+    - name: Confirm secrets cleanup
+      ansible.builtin.debug:
+        msg: "Cleaned up decrypted secrets from {{ infra_secrets_path }}"
