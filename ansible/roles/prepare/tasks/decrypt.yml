@@ -22,7 +22,7 @@
       --input-type dotenv \
       --output-type dotenv \
       --config {{ prepare_sops_config }} \
-      --output {{ infra_secrets_path }}/{{ item.path | basename | regex_replace('\\.env\\.encrypted$', '.env') }} \
+      --output {{ infra_secrets_path }}/{{ item.path | basename | regex_replace('\.env\.encrypted }} \
       "{{ item.path }}"
   args:
     chdir: "{{ infra_repo_path }}"
@@ -40,6 +40,54 @@
   loop: "{{ sops_decrypt.results | default([]) }}"
   loop_control:
     label: "{{ item.item.path | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
+  when: sops_decrypt.results is defined and item.rc | default(1) == 0
+  no_log: true
+
+- name: Report decryption results
+  ansible.builtin.debug:
+    msg: >-
+      Decrypted {{ sops_decrypt.results | default([]) | selectattr('rc', 'equalto', 0) | list | length }}
+      of {{ sops_decrypt.results | default([]) | length }} secret files
+, '.env') }} \
+      "{{ item.path }}"
+  args:
+    chdir: "{{ infra_repo_path }}"
+  loop: "{{ encrypted_files.files }}"
+  register: sops_decrypt
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when: encrypted_files.matched > 0
+  no_log: true
+
+- name: Set decrypted file permissions
+  ansible.builtin.file:
+    path: "{{ infra_secrets_path }}/{{ item.item.path | basename | regex_replace('\.env\.encrypted }}"
+    mode: "0600"
+  loop: "{{ sops_decrypt.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.path | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
+  when: sops_decrypt.results is defined and item.rc | default(1) == 0
+  no_log: true
+
+- name: Report decryption results
+  ansible.builtin.debug:
+    msg: >-
+      Decrypted {{ sops_decrypt.results | default([]) | selectattr('rc', 'equalto', 0) | list | length }}
+      of {{ sops_decrypt.results | default([]) | length }} secret files
+, '.env') }}"
+    mode: "0600"
+  loop: "{{ sops_decrypt.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.path | basename | regex_replace('\.env\.encrypted }}"
+  when: sops_decrypt.results is defined and item.rc | default(1) == 0
+  no_log: true
+
+- name: Report decryption results
+  ansible.builtin.debug:
+    msg: >-
+      Decrypted {{ sops_decrypt.results | default([]) | selectattr('rc', 'equalto', 0) | list | length }}
+      of {{ sops_decrypt.results | default([]) | length }} secret files
+, '.env') }}"
   when: sops_decrypt.results is defined and item.rc | default(1) == 0
   no_log: true
 
