@@ -9,30 +9,38 @@
     state: directory
     mode: "0700"
 
+- name: Find encrypted secret files
+  ansible.builtin.find:
+    paths: "{{ infra_repo_path }}/secrets"
+    patterns: ["*.env.encrypted"]
+  register: encrypted_files
+  no_log: true
+
 - name: Decrypt SOPS secret files
   ansible.builtin.shell: >
     sops --decrypt
     --input-type dotenv
     --output-type dotenv
     --config {{ prepare_sops_config }}
-    "{{ item }}" > "{{ infra_secrets_path }}/{{ item | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
+    "{{ item.path }}" > "{{ infra_secrets_path }}/{{ item.path | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
   args:
     chdir: "{{ infra_repo_path }}"
-    loop: "{{ query('ansible.builtin.fileglob', infra_repo_path ~ '/secrets/*.env.encrypted') }}"
+  loop: "{{ encrypted_files.files }}"
   register: sops_decrypt
   failed_when: false
   no_log: true
+  when: encrypted_files.matched > 0
 
 - name: Set decrypted file permissions
   ansible.builtin.file:
-    path: "{{ infra_secrets_path }}/{{ item.item | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
+    path: "{{ infra_secrets_path }}/{{ item.item.path | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
     mode: "0600"
-  loop: "{{ sops_decrypt.results }}"
-  when: item.rc == 0
+  loop: "{{ sops_decrypt.results | default([]) }}"
+  when: item.rc | default(1) == 0
   no_log: true
 
 - name: Report decryption results
   ansible.builtin.debug:
     msg: >-
-      Decrypted {{ sops_decrypt.results | selectattr('rc', 'equalto', 0) | list | length }}
-      of {{ sops_decrypt.results | length }} secret files
+      Decrypted {{ sops_decrypt.results | default([]) | selectattr('rc', 'equalto', 0) | list | length }}
+      of {{ sops_decrypt.results | default([]) | length }} secret files
