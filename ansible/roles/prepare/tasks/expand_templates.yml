@@ -13,7 +13,7 @@
     paths: "{{ infra_base_path }}"
     patterns: ["*.tmpl"]
     recurse: true
-    depth: 4
+    depth: 6
   register: template_files
 
 - name: Expand template files (skip hooks.yaml.tmpl — handled by container entrypoint)
