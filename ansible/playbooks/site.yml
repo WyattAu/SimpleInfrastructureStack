@@ -48,6 +48,7 @@
             paths: "{{ infra_secrets_path }}"
             patterns: ["*.env"]
           register: secret_vars_files
+          no_log: true
 
         - name: Convert dotenv files to YAML for Ansible consumption
           ansible.builtin.shell: |
