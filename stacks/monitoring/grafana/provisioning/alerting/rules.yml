@@ -10,18 +10,17 @@ groups:
         condition: A
         data:
           - refId: A
-            datasourceUid: __expr__
+            datasourceUid: PBFA97CFB590B2093
             model:
               editorMode: code
               expr: rate(container_oom_events_total{image!=""}[5m]) > 0
               instant: true
               legendFormat: ""
               range: false
-              relativeTimeRange:
-                from: 300
-                to: 0
               refId: A
-            type: promql
+            relativeTimeRange:
+              from: 300
+              to: 0
         for: 1m
         labels:
           severity: critical
@@ -35,7 +34,7 @@ groups:
         condition: A
         data:
           - refId: A
-            datasourceUid: __expr__
+            datasourceUid: PBFA97CFB590B2093
             model:
               editorMode: code
               expr: >
@@ -45,11 +44,10 @@ groups:
               instant: true
               legendFormat: ""
               range: false
-              relativeTimeRange:
-                from: 300
-                to: 0
               refId: A
-            type: promql
+            relativeTimeRange:
+              from: 300
+              to: 0
         for: 5m
         labels:
           severity: warning
@@ -63,18 +61,17 @@ groups:
         condition: A
         data:
           - refId: A
-            datasourceUid: __expr__
+            datasourceUid: PBFA97CFB590B2093
             model:
               editorMode: code
               expr: increase(container_restarts_total{image!=""}[1h]) > 5
               instant: true
               legendFormat: ""
               range: false
-              relativeTimeRange:
-                from: 300
-                to: 0
               refId: A
-            type: promql
+            relativeTimeRange:
+              from: 300
+              to: 0
         for: 5m
         labels:
           severity: warning
@@ -87,18 +84,17 @@ groups:
         condition: A
         data:
           - refId: A
-            datasourceUid: __expr__
+            datasourceUid: PBFA97CFB590B2093
             model:
               editorMode: code
               expr: (time() - container_last_seen{image!=""}) > 120
               instant: true
               legendFormat: ""
               range: false
-              relativeTimeRange:
-                from: 300
-                to: 0
               refId: A
-            type: promql
+            relativeTimeRange:
+              from: 300
+              to: 0
         for: 2m
         labels:
           severity: critical
@@ -116,18 +112,17 @@ groups:
         condition: A
         data:
           - refId: A
-            datasourceUid: __expr__
+            datasourceUid: PBFA97CFB590B2093
             model:
               editorMode: code
               expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9
               instant: true
               legendFormat: ""
               range: false
-              relativeTimeRange:
-                from: 300
-                to: 0
               refId: A
-            type: promql
+            relativeTimeRange:
+              from: 300
+              to: 0
         for: 5m
         labels:
           severity: warning
@@ -140,18 +135,17 @@ groups:
         condition: A
         data:
           - refId: A
-            datasourceUid: __expr__
+            datasourceUid: PBFA97CFB590B2093
             model:
               editorMode: code
               expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) > 0.85
               instant: true
               legendFormat: ""
               range: false
-              relativeTimeRange:
-                from: 300
-                to: 0
               refId: A
-            type: promql
+            relativeTimeRange:
+              from: 300
+              to: 0
         for: 5m
         labels:
           severity: warning
@@ -169,18 +163,17 @@ groups:
         condition: A
         data:
           - refId: A
-            datasourceUid: __expr__
+            datasourceUid: PBFA97CFB590B2093
             model:
               editorMode: code
               expr: prometheus_tsdb_compactions_failed_total > 0
               instant: true
               legendFormat: ""
               range: false
-              relativeTimeRange:
-                from: 300
-                to: 0
               refId: A
-            type: promql
+            relativeTimeRange:
+              from: 300
+              to: 0
         for: 10m
         labels:
           severity: warning
