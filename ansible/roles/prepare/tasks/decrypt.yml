@@ -25,6 +25,7 @@
     paths: "{{ infra_repo_path }}/secrets"
     patterns: ["*.env.encrypted"]
   register: encrypted_files
+  no_log: true
 
 - name: Decrypt SOPS secret files
   ansible.builtin.shell: |
@@ -41,6 +42,7 @@
   loop_control:
     label: "{{ item.path | basename }}"
   when: encrypted_files.matched > 0
+  no_log: true
 
 - name: Report decryption results
   ansible.builtin.debug:
