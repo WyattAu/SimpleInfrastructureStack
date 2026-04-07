@@ -25,7 +25,7 @@
   loop_control:
     label: "{{ item.path | basename | regex_replace('\\.tmpl$', '') }}"
   register: template_results
-  when: item.path | regex_search('hooks\\.yaml\\.tmpl$') is not defined
+  when: not (item.path | regex_search('hooks\\.yaml\\.tmpl$'))
 
 - name: Report template expansion
   ansible.builtin.debug:
