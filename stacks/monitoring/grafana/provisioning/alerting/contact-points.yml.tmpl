@@ -6,4 +6,4 @@ contactPoints:
       - uid: ntfy-push
         type: webhook
         settings:
-          url: https://ntfy.sh/${NTFY_TOPIC}
+          url: https://ntfy.sh/{{ NTFY_TOPIC | default('') }}

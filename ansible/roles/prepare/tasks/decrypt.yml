@@ -1,0 +1,38 @@
+---
+# 2. SOPS decryption — decrypt all .env.encrypted files to plaintext.
+# Files are written to infra_secrets_path with mode 0600.
+# They are cleaned up in the 'always' block of site.yml.
+
+- name: Ensure secrets directory exists
+  ansible.builtin.file:
+    path: "{{ infra_secrets_path }}"
+    state: directory
+    mode: "0700"
+
+- name: Decrypt SOPS secret files
+  ansible.builtin.shell: >
+    sops --decrypt
+    --input-type dotenv
+    --output-type dotenv
+    --config {{ prepare_sops_config }}
+    "{{ item }}" > "{{ infra_secrets_path }}/{{ item | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
+  args:
+    chdir: "{{ infra_repo_path }}"
+  loop: "{{ query('ansible.builtin.fileglob', infra_repo_path | path_join('secrets/*.env.encrypted')) }}"
+  register: sops_decrypt
+  failed_when: false
+  no_log: true
+
+- name: Set decrypted file permissions
+  ansible.builtin.file:
+    path: "{{ infra_secrets_path }}/{{ item.item | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
+    mode: "0600"
+  loop: "{{ sops_decrypt.results }}"
+  when: item.rc == 0
+  no_log: true
+
+- name: Report decryption results
+  ansible.builtin.debug:
+    msg: >-
+      Decrypted {{ sops_decrypt.results | selectattr('rc', 'equalto', 0) | list | length }}
+      of {{ sops_decrypt.results | length }} secret files
