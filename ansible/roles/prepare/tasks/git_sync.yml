@@ -1,63 +1,17 @@
 ---
-# 1. Git sync — fetch latest and reset to origin/main.
-# We track changed files via git diff to handle bind-mount inode breakage:
-# git reset --hard replaces files atomically (new inode), but Docker bind
-# mounts in running containers still reference the old inode. After deploy,
-# containers whose bind-mounted config files changed must be restarted.
-
-- name: Record current HEAD before update
-  ansible.builtin.shell: git rev-parse HEAD
-  args:
-    chdir: "{{ infra_repo_path }}"
-  register: pre_deploy_sha
-  changed_when: false
-
-- name: Display pre-deploy state
-  ansible.builtin.debug:
-    msg: "Previous HEAD: {{ pre_deploy_sha.stdout }}"
-
-- name: Fetch latest from origin
-  ansible.builtin.shell: git fetch origin {{ deploy_branch | default('main') }}
-  args:
-    chdir: "{{ infra_repo_path }}"
-  register: git_fetch
-  changed_when: "'Fetching' in git_fetch.stderr or git_fetch.rc == 0"
-
-- name: Record target SHA
-  ansible.builtin.shell: git rev-parse "origin/{{ deploy_branch | default('main') }}"
-  args:
-    chdir: "{{ infra_repo_path }}"
-  register: origin_sha
-  changed_when: false
-
-- name: Display target SHA
-  ansible.builtin.debug:
-    msg: "Origin {{ deploy_branch | default('main') }}: {{ origin_sha.stdout }}"
-
-- name: Detect changed files between HEAD and origin
-  ansible.builtin.shell: >
-    git diff --name-only {{ pre_deploy_sha.stdout }} {{ origin_sha.stdout }} 2>/dev/null || true
-  args:
-    chdir: "{{ infra_repo_path }}"
-  register: changed_files_raw
-  changed_when: false
-
-- name: Set changed files fact
-  ansible.builtin.set_fact:
-    changed_files: "{{ changed_files_raw.stdout_lines if changed_files_raw.stdout else [] }}"
-
-- name: Display changed files
-  ansible.builtin.debug:
-    msg: >-
-      Changed files ({{ changed_files | length }}):
-      {{ changed_files | join(', ') if changed_files else 'none' }}
-
-- name: Reset to origin/main
-  ansible.builtin.shell: git reset --hard "origin/{{ deploy_branch | default('main') }}"
-  args:
-    chdir: "{{ infra_repo_path }}"
-  register: git_reset
-  changed_when: "'HEAD is now' in git_reset.stdout"
+# 1. Git state — record current SHA and detect changed files.
+#
+# IMPORTANT: The actual git pull happens in deploy.sh BEFORE ansible-playbook
+# runs, because Ansible parses site.yml before executing any tasks. A git
+# sync inside the playbook cannot update site.yml itself.
+#
+# This task file only:
+#   - Records the current HEAD for rollback (pre_deploy_sha)
+#   - Displays deploy state for logging
+#
+# NOTE: changed_files detection for bind-mount restart is handled by
+# detect_bind_mount_changes.yml using git diff against the previous SHA
+# stored in /var/run/infra-deploy-sha.
 
 - name: Display current commit
   ansible.builtin.shell: git log --oneline -1
@@ -66,6 +20,10 @@
   register: current_commit
   changed_when: false
 
-- name: Show deployed commit
+- name: Record current HEAD for potential rollback
+  ansible.builtin.set_fact:
+    pre_deploy_sha: "{{ current_commit.stdout | regex_search('^[0-9a-f]+') }}"
+
+- name: Display deploy state
   ansible.builtin.debug:
-    msg: "Code at: {{ current_commit.stdout }}"
+    msg: "Deploying from: {{ current_commit.stdout }}"
