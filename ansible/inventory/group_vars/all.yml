@@ -11,7 +11,7 @@ infra_repo_path: "{{ infra_root }}/stacks"
 infra_base_path: "{{ infra_root }}/stacks/stacks"
 infra_data_path: /mnt/pool_HDD_x2/tank/datasources/sis/appdata
 infra_backup_path: /mnt/pool_HDD_x2/tank/datasources/sis/backups
-infra_secrets_path: "{{ infra_root }}/secrets"
+infra_secrets_path: "{{ infra_repo_path }}/.secrets.tmp"
 infra_log_path: /var/log
 
 # Stack deployment order (respecting dependencies)
