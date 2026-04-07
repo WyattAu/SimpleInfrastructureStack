@@ -99,6 +99,27 @@ services:
           echo 'Config already exists. Skipping generation.';
         fi
 
+        # Ensure Prometheus metrics are enabled (for existing installs too).
+        # This runs on every init, but is idempotent.
+        if ! grep -q 'enable_metrics: true' /data/homeserver.yaml; then
+          echo 'Enabling Prometheus metrics...';
+          echo 'enable_metrics: true' >> /data/homeserver.yaml;
+        fi
+        if ! grep -q 'port: 19090' /data/homeserver.yaml; then
+          echo 'Adding metrics listener on port 19090...';
+          cat >> /data/homeserver.yaml << 'METRICS'
+
+# Metrics listener for Prometheus
+listeners:
+  - port: 19090
+    type: http
+    x_forwarded: false
+    resources:
+      - names: [metrics]
+        compress: false
+METRICS
+        fi
+
   synapse-chown:
     image: busybox:latest
     container_name: collaboration-synapse-chown
