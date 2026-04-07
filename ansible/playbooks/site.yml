@@ -105,7 +105,7 @@
       ansible.builtin.file:
         path: "{{ infra_secrets_path }}/{{ item | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
         state: absent
-      loop: "{{ query('ansible.builtin.fileglob', infra_repo_path | path_join('secrets/*.env.encrypted')) }}"
+      loop: "{{ query('ansible.builtin.fileglob', infra_repo_path ~ '/secrets/*.env.encrypted') }}"
       no_log: true
 
     - name: Confirm secrets cleanup
