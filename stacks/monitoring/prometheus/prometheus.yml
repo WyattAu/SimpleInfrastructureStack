@@ -30,3 +30,14 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets: ['iam-keycloak:9000']
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['monitoring-loki:3100']
+  # Synapse metrics listener on port 19090 (enable_metrics: true required)
+  - job_name: 'synapse'
+    static_configs:
+      - targets: ['collaboration-synapse:19090']
+  # Woodpecker CI metrics (WOODPECKER_METRICS_SERVER_ADDR=:9001)
+  - job_name: 'woodpecker'
+    static_configs:
+      - targets: ['operations-woodpecker-server:9001']
