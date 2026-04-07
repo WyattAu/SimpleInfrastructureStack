@@ -7,7 +7,7 @@ groups:
     rules:
       - uid: container_oom_killed
         title: Container OOM Killed
-        condition: B
+        condition: A
         data:
           - refId: A
             datasourceUid: __expr__
@@ -22,27 +22,6 @@ groups:
                 to: 0
               refId: A
             type: promql
-          - refId: B
-            datasourceUid:
-            model:
-              type: threshold
-              configure:
-                conditions:
-                  evaluator:
-                    params:
-                      type: gt
-                    type: evaluator
-                    operator:
-                      type: and
-                  query:
-                    params:
-                      - A
-                    type: query
-                  reducer:
-                    params: []
-                    type: last
-                  type: combinator
-            type: classic_conditions
         for: 1m
         labels:
           severity: critical
@@ -53,7 +32,7 @@ groups:
 
       - uid: container_high_memory
         title: Container High Memory Usage
-        condition: B
+        condition: A
         data:
           - refId: A
             datasourceUid: __expr__
@@ -71,27 +50,6 @@ groups:
                 to: 0
               refId: A
             type: promql
-          - refId: B
-            datasourceUid:
-            model:
-              type: threshold
-              configure:
-                conditions:
-                  evaluator:
-                    params:
-                      type: gt
-                    type: evaluator
-                    operator:
-                      type: and
-                  query:
-                    params:
-                      - A
-                    type: query
-                  reducer:
-                    params: []
-                    type: last
-                  type: combinator
-            type: classic_conditions
         for: 5m
         labels:
           severity: warning
@@ -102,7 +60,7 @@ groups:
 
       - uid: container_restart_loop
         title: Container Restart Loop
-        condition: B
+        condition: A
         data:
           - refId: A
             datasourceUid: __expr__
@@ -117,27 +75,6 @@ groups:
                 to: 0
               refId: A
             type: promql
-          - refId: B
-            datasourceUid:
-            model:
-              type: threshold
-              configure:
-                conditions:
-                  evaluator:
-                    params:
-                      type: gt
-                    type: evaluator
-                    operator:
-                      type: and
-                  query:
-                    params:
-                      - A
-                    type: query
-                  reducer:
-                    params: []
-                    type: last
-                  type: combinator
-            type: classic_conditions
         for: 5m
         labels:
           severity: warning
@@ -147,7 +84,7 @@ groups:
 
       - uid: container_down
         title: Container Down
-        condition: B
+        condition: A
         data:
           - refId: A
             datasourceUid: __expr__
@@ -162,27 +99,6 @@ groups:
                 to: 0
               refId: A
             type: promql
-          - refId: B
-            datasourceUid:
-            model:
-              type: threshold
-              configure:
-                conditions:
-                  evaluator:
-                    params:
-                      type: gt
-                    type: evaluator
-                    operator:
-                      type: and
-                  query:
-                    params:
-                      - A
-                    type: query
-                  reducer:
-                    params: []
-                    type: last
-                  type: combinator
-            type: classic_conditions
         for: 2m
         labels:
           severity: critical
@@ -197,7 +113,7 @@ groups:
     rules:
       - uid: host_high_memory
         title: Host High Memory Usage
-        condition: B
+        condition: A
         data:
           - refId: A
             datasourceUid: __expr__
@@ -212,27 +128,6 @@ groups:
                 to: 0
               refId: A
             type: promql
-          - refId: B
-            datasourceUid:
-            model:
-              type: threshold
-              configure:
-                conditions:
-                  evaluator:
-                    params:
-                      type: gt
-                    type: evaluator
-                    operator:
-                      type: and
-                  query:
-                    params:
-                      - A
-                    type: query
-                  reducer:
-                    params: []
-                    type: last
-                  type: combinator
-            type: classic_conditions
         for: 5m
         labels:
           severity: warning
@@ -242,7 +137,7 @@ groups:
 
       - uid: host_high_disk
         title: Host High Disk Usage
-        condition: B
+        condition: A
         data:
           - refId: A
             datasourceUid: __expr__
@@ -257,27 +152,6 @@ groups:
                 to: 0
               refId: A
             type: promql
-          - refId: B
-            datasourceUid:
-            model:
-              type: threshold
-              configure:
-                conditions:
-                  evaluator:
-                    params:
-                      type: gt
-                    type: evaluator
-                    operator:
-                      type: and
-                  query:
-                    params:
-                      - A
-                    type: query
-                  reducer:
-                    params: []
-                    type: last
-                  type: combinator
-            type: classic_conditions
         for: 5m
         labels:
           severity: warning
@@ -292,7 +166,7 @@ groups:
     rules:
       - uid: prometheus_tsdb_compaction
         title: Prometheus TSDB Compaction Failure
-        condition: B
+        condition: A
         data:
           - refId: A
             datasourceUid: __expr__
@@ -307,27 +181,6 @@ groups:
                 to: 0
               refId: A
             type: promql
-          - refId: B
-            datasourceUid:
-            model:
-              type: threshold
-              configure:
-                conditions:
-                  evaluator:
-                    params:
-                      type: gt
-                    type: evaluator
-                    operator:
-                      type: and
-                  query:
-                    params:
-                      - A
-                    type: query
-                  reducer:
-                    params: []
-                    type: last
-                  type: combinator
-            type: classic_conditions
         for: 10m
         labels:
           severity: warning
