@@ -2,6 +2,12 @@
 # 2. SOPS decryption — decrypt all .env.encrypted files to plaintext.
 # Files are written to infra_secrets_path with mode 0600.
 # They are cleaned up in the post_tasks of site.yml.
+#
+# IMPORTANT: regex_replace escaping rules:
+#   - In YAML | block scalar: use single \ (literal backslash)
+#     Jinja2 sees \.env which passes \. to Python regex = literal dot
+#   - In YAML "..." quoted string: use double \\ (YAML escape)
+#     YAML gives \. to Jinja2 which passes \. to Python regex = literal dot
 
 - name: Ensure secrets directory exists
   ansible.builtin.file:
@@ -22,7 +28,7 @@
       --input-type dotenv \
       --output-type dotenv \
       --config {{ prepare_sops_config }} \
-      --output {{ infra_secrets_path }}/{{ item.path | basename | regex_replace('\.env\.encrypted }} \
+      --output {{ infra_secrets_path }}/{{ item.path | basename | regex_replace('\.env\.encrypted$', '.env') }} \
       "{{ item.path }}"
   args:
     chdir: "{{ infra_repo_path }}"
@@ -40,54 +46,6 @@
   loop: "{{ sops_decrypt.results | default([]) }}"
   loop_control:
     label: "{{ item.item.path | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
-  when: sops_decrypt.results is defined and item.rc | default(1) == 0
-  no_log: true
-
-- name: Report decryption results
-  ansible.builtin.debug:
-    msg: >-
-      Decrypted {{ sops_decrypt.results | default([]) | selectattr('rc', 'equalto', 0) | list | length }}
-      of {{ sops_decrypt.results | default([]) | length }} secret files
-, '.env') }} \
-      "{{ item.path }}"
-  args:
-    chdir: "{{ infra_repo_path }}"
-  loop: "{{ encrypted_files.files }}"
-  register: sops_decrypt
-  loop_control:
-    label: "{{ item.path | basename }}"
-  when: encrypted_files.matched > 0
-  no_log: true
-
-- name: Set decrypted file permissions
-  ansible.builtin.file:
-    path: "{{ infra_secrets_path }}/{{ item.item.path | basename | regex_replace('\.env\.encrypted }}"
-    mode: "0600"
-  loop: "{{ sops_decrypt.results | default([]) }}"
-  loop_control:
-    label: "{{ item.item.path | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
-  when: sops_decrypt.results is defined and item.rc | default(1) == 0
-  no_log: true
-
-- name: Report decryption results
-  ansible.builtin.debug:
-    msg: >-
-      Decrypted {{ sops_decrypt.results | default([]) | selectattr('rc', 'equalto', 0) | list | length }}
-      of {{ sops_decrypt.results | default([]) | length }} secret files
-, '.env') }}"
-    mode: "0600"
-  loop: "{{ sops_decrypt.results | default([]) }}"
-  loop_control:
-    label: "{{ item.item.path | basename | regex_replace('\.env\.encrypted }}"
-  when: sops_decrypt.results is defined and item.rc | default(1) == 0
-  no_log: true
-
-- name: Report decryption results
-  ansible.builtin.debug:
-    msg: >-
-      Decrypted {{ sops_decrypt.results | default([]) | selectattr('rc', 'equalto', 0) | list | length }}
-      of {{ sops_decrypt.results | default([]) | length }} secret files
-, '.env') }}"
   when: sops_decrypt.results is defined and item.rc | default(1) == 0
   no_log: true
 
