@@ -118,7 +118,7 @@
 
     - name: Remove decrypted secret files from disk
       ansible.builtin.file:
-        path: "{{ infra_secrets_path }}/{{ item.path | basename | regex_replace('\.env\.encrypted$', '.env') }}"
+        path: "{{ infra_secrets_path }}/{{ item.path | basename | regex_replace('\\.env\\.encrypted$', '.env') }}"
         state: absent
       loop: "{{ cleanup_files.files | default([]) }}"
       no_log: true
