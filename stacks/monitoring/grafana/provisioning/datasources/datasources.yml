@@ -12,6 +12,7 @@ datasources:
     editable: true
   - name: Loki
     type: loki
+    uid: PBFA97CFB590B2094
     access: proxy
     url: http://monitoring-loki:3100
     editable: true
