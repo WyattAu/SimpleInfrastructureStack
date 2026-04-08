@@ -20,167 +20,110 @@
   "liveNow": false,
   "panels": [
     {
-      "title": "Connected Workers",
+      "title": "Server Up",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "woodpecker_worker_count",
-          "legendFormat": "workers"
+          "expr": "up{job=\"woodpecker\"}",
+          "legendFormat": "status"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "none",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "green", "value": 1 }
-            ]
-          },
-          "noValue": "0"
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [] },
+          "noValue": "N/A"
         },
         "overrides": []
       }
     },
     {
-      "title": "Pending Steps",
+      "title": "Goroutines",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "woodpecker_pending_steps",
-          "legendFormat": "pending"
+          "expr": "go_goroutines{job=\"woodpecker\"}",
+          "legendFormat": "goroutines"
         }
       ],
       "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 5 },
-              { "color": "red", "value": 10 }
-            ]
-          },
-          "noValue": "0"
-        },
+        "defaults": { "unit": "none", "thresholds": { "mode": "absolute", "steps": [] } },
         "overrides": []
       }
     },
     {
-      "title": "Running Steps",
+      "title": "Go Version",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "woodpecker_running_steps",
-          "legendFormat": "running"
+          "expr": "go_info{job=\"woodpecker\"}",
+          "legendFormat": "version",
+          "format": "table"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "none", "thresholds": { "mode": "absolute", "steps": [] }, "noValue": "0" },
+        "defaults": { "unit": "none", "thresholds": { "mode": "absolute", "steps": [] } },
         "overrides": []
       }
     },
     {
-      "title": "Waiting Steps",
+      "title": "Memory (Alloc)",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "woodpecker_waiting_steps",
-          "legendFormat": "waiting"
+          "expr": "go_memstats_alloc_bytes{job=\"woodpecker\"}",
+          "legendFormat": "alloc"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "none", "thresholds": { "mode": "absolute", "steps": [] }, "noValue": "0" },
+        "defaults": { "unit": "bytes", "thresholds": { "mode": "absolute", "steps": [] } },
         "overrides": []
       }
     },
     {
-      "title": "Pipeline Build Time",
+      "title": "Heap Allocation",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "woodpecker_pipeline_time{branch=\"main\"}",
-          "legendFormat": "{{repo}} ({{status}})"
+          "expr": "go_memstats_alloc_bytes{job=\"woodpecker\"}",
+          "legendFormat": "allocated"
+        },
+        {
+          "expr": "go_memstats_heap_inuse_bytes{job=\"woodpecker\"}",
+          "legendFormat": "heap in-use"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "s", "min": 0, "color": { "mode": "palette-classic" } },
+        "defaults": { "unit": "bytes", "min": 0, "color": { "mode": "palette-classic" } },
         "overrides": []
       }
     },
     {
-      "title": "Total Pipelines",
-      "type": "stat",
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 12 },
+      "title": "GC Pause Duration",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "woodpecker_pipeline_total_count",
-          "legendFormat": "total"
+          "expr": "rate(go_gc_duration_seconds_sum{job=\"woodpecker\"}[5m]) / rate(go_gc_duration_seconds_count{job=\"woodpecker\"}[5m])",
+          "legendFormat": "avg GC pause"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "none", "thresholds": { "mode": "absolute", "steps": [] } },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Total Users",
-      "type": "stat",
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "targets": [
-        {
-          "expr": "woodpecker_user_count",
-          "legendFormat": "users"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": { "unit": "none", "thresholds": { "mode": "absolute", "steps": [] } },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Total Repos",
-      "type": "stat",
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "targets": [
-        {
-          "expr": "woodpecker_repo_count",
-          "legendFormat": "repos"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": { "unit": "none", "thresholds": { "mode": "absolute", "steps": [] } },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Server Memory",
-      "type": "stat",
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "targets": [
-        {
-          "expr": "process_resident_memory_bytes{job=\"woodpecker\"}",
-          "legendFormat": "RSS"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": { "unit": "bytes", "thresholds": { "mode": "absolute", "steps": [] } },
+        "defaults": { "unit": "s", "min": 0, "color": { "fixedColor": "orange", "mode": "fixed" } },
         "overrides": []
       }
     }
@@ -200,5 +143,6 @@
   },
   "time": { "from": "now-6h", "to": "now" },
   "title": "Woodpecker CI",
-  "uid": "woodpecker-ci"
+  "uid": "woodpecker-ci",
+  "description": "Woodpecker CI server runtime metrics. Note: Woodpecker v4 does not expose application-level metrics (pipelines, repos, users). The primary value is verifying the server is UP via Prometheus target monitoring."
 }

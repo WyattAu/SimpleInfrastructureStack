@@ -107,51 +107,55 @@ groups:
 
   - name: synapse_health
     rules:
-      - alert: SynapseHighEventProcessingLag
-        expr: synapse_event_processing_lag_seconds > 60
+      # synapse_event_processing_lag_seconds was removed in newer Synapse versions.
+      # Use event fetch backlog as a proxy for processing health.
+      - alert: SynapseHighEventFetchBacklog
+        expr: synapse_event_fetch_ongoing > 10
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "Synapse event processing lag >60s"
-          description: "Synapse event processing is lagging by {{ $value }}s."
+          summary: "Synapse has {{ $value }} ongoing event fetches"
+          description: "Synapse has {{ $value }} concurrent event fetches, which may indicate replication lag or federation issues."
 
-      - alert: SynapseHighRoomCount
-        expr: synapse_rooms_total > 0
-        for: 1m
+      - alert: SynapseDown
+        expr: up{job="synapse"} == 0
+        for: 2m
         labels:
-          severity: info
+          severity: critical
         annotations:
-          summary: "Synapse room count: {{ $value }}"
-          description: "Synapse is managing {{ $value }} rooms."
+          summary: "Synapse is down"
+          description: "The Synapse metrics endpoint is not responding. Matrix may be unavailable."
 
   - name: loki_health
     rules:
       - alert: LokiTooManyFailedRequests
-        expr: sum(rate(loki_request_duration_seconds_count{status_code=~"5.."}[5m])) by (method, path) > 1
+        expr: sum(rate(loki_request_duration_seconds_count{status_code=~"5.."}[5m])) by (method, route) > 1
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "Loki high 5xx rate on {{ $labels.method }} {{ $labels.path }}"
-          description: "Loki is experiencing {{ $value }} 5xx errors/s on {{ $labels.method }} {{ $labels.path }}."
+          summary: "Loki high 5xx rate on {{ $labels.method }} {{ $labels.route }}"
+          description: "Loki is experiencing {{ $value }} 5xx errors/s on {{ $labels.method }} {{ $labels.route }}."
 
-  - name: woodpecker_health
-    rules:
-      - alert: WoodpeckerPendingSteps
-        expr: woodpecker_pending_steps > 10
-        for: 15m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Woodpecker has {{ $value }} pending pipeline steps"
-          description: "Woodpecker has {{ $value }} pending steps. Agents may be overloaded or unavailable."
-
-      - alert: WoodpeckerNoWorkers
-        expr: woodpecker_worker_count == 0
-        for: 5m
+      - alert: LokiDown
+        expr: up{job="loki"} == 0
+        for: 2m
         labels:
           severity: critical
         annotations:
-          summary: "Woodpecker has no connected workers"
-          description: "No Woodpecker agents are connected. Pipelines will not execute."
+          summary: "Loki is down"
+          description: "The Loki metrics endpoint is not responding. Log aggregation may be unavailable."
+
+  - name: woodpecker_health
+    rules:
+      # Woodpecker v4 does not expose application-level metrics (pending_steps,
+      # worker_count, etc.). Only Go runtime metrics are available.
+      - alert: WoodpeckerDown
+        expr: up{job="woodpecker"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Woodpecker server is down"
+          description: "The Woodpecker CI server metrics endpoint is not responding. CI/CD pipelines may be unavailable."

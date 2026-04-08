@@ -186,15 +186,38 @@ groups:
     folder: Infrastructure
     interval: 60s
     rules:
-      - uid: synapse_event_lag
-        title: Synapse High Event Processing Lag
+      - uid: synapse_down
+        title: Synapse Down
         condition: A
         data:
           - refId: A
             datasourceUid: PBFA97CFB590B2093
             model:
               editorMode: code
-              expr: synapse_event_processing_lag_seconds > 60
+              expr: up{job="synapse"} == 0
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Synapse is down"
+          description: "The Synapse metrics endpoint is not responding. Matrix may be unavailable."
+
+      - uid: synapse_event_fetch_backlog
+        title: Synapse High Event Fetch Backlog
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              editorMode: code
+              expr: synapse_event_fetch_ongoing > 10
               instant: true
               legendFormat: ""
               range: false
@@ -206,14 +229,37 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Synapse event processing lag >60s"
-          description: "Synapse event processing is lagging by {{ $value }}s."
+          summary: "Synapse has {{ $value }} ongoing event fetches"
+          description: "Synapse has {{ $value }} concurrent event fetches, which may indicate replication lag."
 
   - orgId: 1
     name: loki_health.rules
     folder: Infrastructure
     interval: 60s
     rules:
+      - uid: loki_down
+        title: Loki Down
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              editorMode: code
+              expr: up{job="loki"} == 0
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Loki is down"
+          description: "The Loki metrics endpoint is not responding. Log aggregation may be unavailable."
+
       - uid: loki_failed_requests
         title: Loki High 5xx Error Rate
         condition: A
@@ -222,7 +268,7 @@ groups:
             datasourceUid: PBFA97CFB590B2093
             model:
               editorMode: code
-              expr: sum(rate(loki_request_duration_seconds_count{status_code=~"5.."}[5m])) by (method, path) > 1
+              expr: sum(rate(loki_request_duration_seconds_count{status_code=~"5.."}[5m])) by (method, route) > 1
               instant: true
               legendFormat: ""
               range: false
@@ -234,23 +280,23 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Loki high 5xx rate on {{ $labels.method }} {{ $labels.path }}"
-          description: "Loki is experiencing {{ $value }} 5xx errors/s on {{ $labels.method }} {{ $labels.path }}."
+          summary: "Loki high 5xx rate on {{ $labels.method }} {{ $labels.route }}"
+          description: "Loki is experiencing {{ $value }} 5xx errors/s on {{ $labels.method }} {{ $labels.route }}."
 
   - orgId: 1
     name: woodpecker_health.rules
     folder: Infrastructure
     interval: 60s
     rules:
-      - uid: woodpecker_no_workers
-        title: Woodpecker No Workers Connected
+      - uid: woodpecker_down
+        title: Woodpecker Server Down
         condition: A
         data:
           - refId: A
             datasourceUid: PBFA97CFB590B2093
             model:
               editorMode: code
-              expr: woodpecker_worker_count == 0
+              expr: up{job="woodpecker"} == 0
               instant: true
               legendFormat: ""
               range: false
@@ -258,32 +304,9 @@ groups:
             relativeTimeRange:
               from: 300
               to: 0
-        for: 5m
+        for: 2m
         labels:
           severity: critical
         annotations:
-          summary: "Woodpecker has no connected workers"
-          description: "No Woodpecker agents are connected. Pipelines will not execute."
-
-      - uid: woodpecker_pending_steps
-        title: Woodpecker Pending Steps Backlog
-        condition: A
-        data:
-          - refId: A
-            datasourceUid: PBFA97CFB590B2093
-            model:
-              editorMode: code
-              expr: woodpecker_pending_steps > 10
-              instant: true
-              legendFormat: ""
-              range: false
-              refId: A
-            relativeTimeRange:
-              from: 300
-              to: 0
-        for: 15m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Woodpecker has {{ $value }} pending pipeline steps"
-          description: "Woodpecker has {{ $value }} pending steps. Agents may be overloaded or unavailable."
+          summary: "Woodpecker server is down"
+          description: "The Woodpecker CI server metrics endpoint is not responding. CI/CD pipelines may be unavailable."

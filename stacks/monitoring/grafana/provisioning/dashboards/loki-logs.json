@@ -26,12 +26,12 @@
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "sum(rate(loki_ingester_lines_received_total[5m]))",
+          "expr": "sum(rate(loki_distributor_lines_received_total[5m]))",
           "legendFormat": "lines/s"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "lines/s", "min": 0, "color": { "fixedColor": "blue", "mode": "fixed" } },
+        "defaults": { "unit": "short", "min": 0, "color": { "fixedColor": "blue", "mode": "fixed" } },
         "overrides": []
       }
     },
@@ -42,7 +42,7 @@
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "sum(rate(loki_query_scheduler_queries_total[5m]))",
+          "expr": "sum(rate(logql_query_duration_seconds_count[5m]))",
           "legendFormat": "queries/s"
         }
       ],
@@ -52,14 +52,14 @@
       }
     },
     {
-      "title": "Request Errors (5xx)",
+      "title": "Request Errors",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "sum(rate(loki_request_duration_seconds_count{status_code=~\"5..\"}[5m])) by (method, path)",
-          "legendFormat": "{{method}} {{path}}"
+          "expr": "sum(rate(loki_request_duration_seconds_count{status_code=~\"5..\"}[5m])) by (method, route)",
+          "legendFormat": "{{method}} {{route}}"
         }
       ],
       "fieldConfig": {
@@ -84,13 +84,13 @@
       }
     },
     {
-      "title": "Chunk Store",
+      "title": "Stored Chunks",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 16 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "loki_storage_chunks_total",
+          "expr": "loki_chunk_store_stored_chunks_total",
           "legendFormat": "chunks"
         }
       ],
@@ -100,18 +100,18 @@
       }
     },
     {
-      "title": "TSDB Rows",
+      "title": "Chunk Store Size",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 16 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "loki_tsdb_index_rows_total",
-          "legendFormat": "rows"
+          "expr": "loki_chunk_store_stored_chunk_bytes_total",
+          "legendFormat": "bytes"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "none", "thresholds": { "mode": "absolute", "steps": [] } },
+        "defaults": { "unit": "bytes", "thresholds": { "mode": "absolute", "steps": [] } },
         "overrides": []
       }
     },
