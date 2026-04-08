@@ -20,30 +20,14 @@
   "liveNow": false,
   "panels": [
     {
-      "title": "Login Attempts",
+      "title": "Token Requests",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "sum(rate(keycloak_logins_total[5m])) by (realm)",
-          "legendFormat": "{{realm}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": { "unit": "ops", "min": 0, "color": { "fixedColor": "blue", "mode": "fixed" } },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Login Errors",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "targets": [
-        {
-          "expr": "sum(rate(keycloak_login_errors_total[5m])) by (realm, error)",
-          "legendFormat": "{{realm}}: {{error}}"
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"keycloak\",uri=~\"/realms/.*/protocol/.*/token\"}[5m])) by (status, outcome)",
+          "legendFormat": "{{status}} {{outcome}}"
         }
       ],
       "fieldConfig": {
@@ -52,13 +36,29 @@
       }
     },
     {
-      "title": "Active Sessions",
+      "title": "User Info Requests",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"keycloak\",uri=~\"/realms/.*/protocol/.*/userinfo\"}[5m])) by (status)",
+          "legendFormat": "status {{status}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops", "min": 0, "color": { "fixedColor": "green", "mode": "fixed" } },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Cache Entries (sessions)",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "keycloak_active_sessions{realm=\"company-realm\"}",
+          "expr": "vendor_statistics_current_number_of_entries_in_memory{job=\"keycloak\",cache=\"sessions\"}",
           "legendFormat": "sessions"
         }
       ],
@@ -68,13 +68,13 @@
       }
     },
     {
-      "title": "Registered Users",
+      "title": "Cache Entries (users)",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "keycloak_users_total{realm=\"company-realm\"}",
+          "expr": "vendor_statistics_current_number_of_entries_in_memory{job=\"keycloak\",cache=\"users\"}",
           "legendFormat": "users"
         }
       ],
@@ -90,8 +90,8 @@
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "process_resident_memory_bytes{job=\"keycloak\"}",
-          "legendFormat": "RSS"
+          "expr": "jvm_memory_used_bytes{job=\"keycloak\",area=\"heap\"}",
+          "legendFormat": "heap used"
         }
       ],
       "fieldConfig": {
@@ -120,34 +120,34 @@
       }
     },
     {
-      "title": "Request Duration (p95)",
+      "title": "Request Latency (avg)",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, rate(keycloak_request_duration_seconds_bucket[5m]))",
-          "legendFormat": "p95"
+          "expr": "sum(rate(http_server_requests_seconds_sum{job=\"keycloak\",uri=~\"/realms/.*\"}[5m])) by (uri) / sum(rate(http_server_requests_seconds_count{job=\"keycloak\",uri=~\"/realms/.*\"}[5m])) by (uri)",
+          "legendFormat": "{{uri}}"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "s", "min": 0, "color": { "fixedColor": "green", "mode": "fixed" } },
+        "defaults": { "unit": "s", "min": 0, "color": { "mode": "palette-classic" } },
         "overrides": []
       }
     },
     {
-      "title": "JWT Tokens Issued",
+      "title": "Cache Hit Ratio",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "sum(rate(vendor_keycloak_client_credentials_grant_request_total[5m]))",
-          "legendFormat": "client credentials/s"
+          "expr": "vendor_statistics_hit_ratio{job=\"keycloak\",cache=~\"sessions|users|realms|offlineSessions|userRevisions\"}",
+          "legendFormat": "{{cache}}"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "ops", "min": 0 },
+        "defaults": { "unit": "percentunit", "min": 0, "max": 1, "color": { "mode": "palette-classic" } },
         "overrides": []
       }
     }
