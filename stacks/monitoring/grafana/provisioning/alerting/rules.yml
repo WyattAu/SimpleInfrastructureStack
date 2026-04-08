@@ -310,3 +310,100 @@ groups:
         annotations:
           summary: "Woodpecker server is down"
           description: "The Woodpecker CI server metrics endpoint is not responding. CI/CD pipelines may be unavailable."
+
+  - orgId: 1
+    name: log_alerts.rules
+    folder: Infrastructure
+    interval: 60s
+    rules:
+      - uid: log_keycloak_errors
+        title: Keycloak Error Logs
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: PBFA97CFB590B2094
+            model:
+              editorMode: code
+              expr: 'count_over_time({job="keycloak"} |~ "(?i)(ERROR|FATAL|exception)" [5m]) > 10'
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Keycloak logging >10 errors in 5m"
+          description: "Keycloak has logged {{ $value }} error-level messages in the last 5 minutes."
+
+      - uid: log_synapse_errors
+        title: Synapse Error Logs
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: PBFA97CFB590B2094
+            model:
+              editorMode: code
+              expr: 'count_over_time({job="synapse"} |~ "(?i)(ERROR|CRITICAL|exception|traceback)" [5m]) > 20'
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Synapse logging >20 errors in 5m"
+          description: "Synapse has logged {{ $value }} error-level messages in the last 5 minutes."
+
+      - uid: log_traefik_errors
+        title: Traefik Error Logs
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: PBFA97CFB590B2094
+            model:
+              editorMode: code
+              expr: 'count_over_time({job="traefik"} |~ "(?i)(error|panic|fatal)" [5m]) > 10'
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Traefik logging >10 errors in 5m"
+          description: "Traefik has logged {{ $value }} error-level messages in the last 5 minutes."
+
+      - uid: log_oom_kill
+        title: OOM Kill Detected in Logs
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: PBFA97CFB590B2094
+            model:
+              editorMode: code
+              expr: 'count_over_time({job=~".+"} |~ "(?i)oom.killed|out of memory|memory exhausted" [10m]) > 0'
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OOM kill detected in container logs"
+          description: "A container has logged an OOM kill event in the last 10 minutes."
