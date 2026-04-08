@@ -20,49 +20,57 @@
   "liveNow": false,
   "panels": [
     {
-      "title": "Event Processing Lag",
+      "title": "HTTP Response Time (p50)",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "synapse_event_processing_lag_seconds",
-          "legendFormat": "lag"
+          "expr": "histogram_quantile(0.50, sum(rate(synapse_http_server_response_time_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(synapse_http_server_response_time_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "s", "min": 0, "color": { "fixedColor": "orange", "mode": "fixed" } },
+        "defaults": { "unit": "s", "min": 0, "color": { "mode": "palette-classic" } },
         "overrides": []
-      },
-      "alert": {
-        "name": "Event Processing Lag Alert",
-        "conditions": [{ "evaluator": { "params": [60], "type": "gt" }, "operator": { "type": "and" }, "query": { "params": ["A", "5m", "now"] }, "reducer": { "params": [], "type": "avg" }, "type": "query" }]
       }
     },
     {
-      "title": "Events Processed",
+      "title": "Requests Received",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "rate(synapse_event_processing_time_sum[5m]) / rate(synapse_event_processing_time_count[5m])",
-          "legendFormat": "avg processing time"
+          "expr": "sum(rate(synapse_http_server_requests_received_total{method=\"GET\"}[5m])) by (servlet)",
+          "legendFormat": "GET {{servlet}}"
+        },
+        {
+          "expr": "sum(rate(synapse_http_server_requests_received_total{method=\"PUT\"}[5m])) by (servlet)",
+          "legendFormat": "PUT {{servlet}}"
+        },
+        {
+          "expr": "sum(rate(synapse_http_server_requests_received_total{method=\"POST\"}[5m])) by (servlet)",
+          "legendFormat": "POST {{servlet}}"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "s", "min": 0, "color": { "fixedColor": "blue", "mode": "fixed" } },
+        "defaults": { "unit": "reqps", "min": 0, "color": { "mode": "palette-classic" } },
         "overrides": []
       }
     },
     {
-      "title": "Active Users (24h)",
+      "title": "Daily Active Users",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "synapse_active_users_total",
+          "expr": "synapse_admin_daily_active_users",
           "legendFormat": "users"
         }
       ],
@@ -72,13 +80,13 @@
       }
     },
     {
-      "title": "Total Rooms",
+      "title": "Notified Rooms",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "synapse_rooms_total",
+          "expr": "synapse_notifier_rooms",
           "legendFormat": "rooms"
         }
       ],
@@ -120,6 +128,42 @@
       ],
       "fieldConfig": {
         "defaults": { "unit": "s", "thresholds": { "mode": "absolute", "steps": [] } },
+        "overrides": []
+      }
+    },
+    {
+      "title": "User Logins",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "sum(rate(synapse_user_logins_total[5m])) by (method, type)",
+          "legendFormat": "{{method}} ({{type}})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops", "min": 0, "color": { "mode": "palette-classic" } },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Event Fetches",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "synapse_event_fetch_ongoing",
+          "legendFormat": "ongoing fetches"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "yellow", "value": 5 },
+          { "color": "red", "value": 10 }
+        ] } },
         "overrides": []
       }
     }
