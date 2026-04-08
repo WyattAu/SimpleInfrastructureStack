@@ -1,17 +1,16 @@
 ---
-# 1. Git state — record current SHA and detect changed files.
+# 1. Git state — detect changed files for bind-mount restart.
 #
 # IMPORTANT: The actual git pull happens in deploy.sh BEFORE ansible-playbook
-# runs, because Ansible parses site.yml before executing any tasks. A git
-# sync inside the playbook cannot update site.yml itself.
+# runs, because Ansible parses site.yml before executing any tasks.
 #
-# This task file only:
+# This task file:
 #   - Records the current HEAD for rollback (pre_deploy_sha)
-#   - Displays deploy state for logging
+#   - Computes changed files between old and new SHA (for bind-mount detection)
+#   - Saves the new SHA for the next deploy
 #
-# NOTE: changed_files detection for bind-mount restart is handled by
-# detect_bind_mount_changes.yml using git diff against the previous SHA
-# stored in /var/run/infra-deploy-sha.
+# deploy.sh sets PRE_DEPLOY_SHA to the SHA before git reset --hard.
+# We diff it against HEAD to get the list of changed files.
 
 - name: Display current commit
   ansible.builtin.shell: git log --oneline -1
@@ -24,6 +23,38 @@
   ansible.builtin.set_fact:
     pre_deploy_sha: "{{ current_commit.stdout | regex_search('^[0-9a-f]+') }}"
 
+- name: Read previous deploy SHA
+  ansible.builtin.stat:
+    path: /var/run/infra-deploy-sha
+  register: sha_file
+
+- name: Compute changed files between previous and current deploy
+  ansible.builtin.shell: >
+    git diff --name-only {{ prev_sha }}..HEAD
+  args:
+    chdir: "{{ infra_repo_path }}"
+  register: diff_result
+  changed_when: false
+  when:
+    - sha_file.stat.exists | default(false)
+    - prev_sha is defined
+    - prev_sha | length > 0
+    - prev_sha != pre_deploy_sha
+  vars:
+    prev_sha: "{{ lookup('file', '/var/run/infra-deploy-sha') | trim }}"
+
+- name: Set changed_files fact
+  ansible.builtin.set_fact:
+    changed_files: "{{ diff_result.stdout_lines if (diff_result.stdout is defined and diff_result.stdout | length > 0) else [] }}"
+
+- name: Save current SHA for next deploy
+  ansible.builtin.copy:
+    content: "{{ pre_deploy_sha }}"
+    dest: /var/run/infra-deploy-sha
+    mode: '0644'
+
 - name: Display deploy state
   ansible.builtin.debug:
-    msg: "Deploying from: {{ current_commit.stdout }}"
+    msg: >-
+      Deploying from: {{ current_commit.stdout }}
+      ({{ changed_files | default([]) | length }} file(s) changed since last deploy)

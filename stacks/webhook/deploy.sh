@@ -40,6 +40,13 @@ export ANSIBLE_CONFIG="${REPO_DIR}/ansible/ansible.cfg"
 # git_sync inside the playbook would update the files mid-execution.
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Pulling latest code..."
 cd "$REPO_DIR"
+
+# Record current SHA for bind-mount change detection.
+# Ansible will diff this against the new SHA to find changed files
+# that need container restarts (bind-mount stale cache fix).
+PRE_DEPLOY_SHA=$(git rev-parse HEAD)
+export PRE_DEPLOY_SHA
+
 git fetch origin main
 git reset --hard origin/main
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Code at: $(git log --oneline -1)"
