@@ -32,6 +32,21 @@ docker exec backup-restic restic forget \
 # Check repository health
 docker exec backup-restic restic check
 
+# Verify restore works by restoring a single known file and checking its content
+echo "[$(date -Iseconds)] Verifying restore..."
+docker exec backup-restic sh -c '
+  rm -rf /tmp/restore-verify 2>/dev/null || true
+  restic restore latest --target /tmp/restore-verify --include "/data/accounting/akaunting/README.md"
+  if [ -f /tmp/restore-verify/data/accounting/akaunting/README.md ]; then
+    echo "  Restore verification PASSED (file exists, $(wc -c < /tmp/restore-verify/data/accounting/akaunting/README.md) bytes)"
+    rm -rf /tmp/restore-verify
+  else
+    echo "  Restore verification FAILED (file not found)"
+    rm -rf /tmp/restore-verify
+    exit 1
+  fi
+'
+
 # --- Offsite sync (if configured) ---
 # Copies all snapshots to a remote repository (e.g., Backblaze B2).
 # Enable by setting OFFSITE_REPO env var in the cron-trigger service.

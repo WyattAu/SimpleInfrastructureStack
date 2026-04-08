@@ -1,9 +1,16 @@
 apiVersion: 1
 contactPoints:
   - orgId: 1
-    name: ntfy
+    name: ntfy-warning
     receivers:
-      - uid: ntfy-push
+      - uid: ntfy-warning-push
         type: webhook
         settings:
           url: https://ntfy.sh/{{ NTFY_TOPIC | default('') }}
+  - orgId: 1
+    name: ntfy-critical
+    receivers:
+      - uid: ntfy-critical-push
+        type: webhook
+        settings:
+          url: https://ntfy.sh/{{ NTFY_TOPIC | default('') }}-critical
