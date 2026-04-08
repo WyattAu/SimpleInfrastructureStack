@@ -2,7 +2,7 @@
 # Prepare role — replaces all bash logic from deploy.sh.
 #
 # This role runs in three phases:
-#   1. git_sync         — Fetch and reset to origin/main, track changed files
+#   1. git_sync         — Record SHA, compute changed files via git diff
 #   2. decrypt          — SOPS decrypt all .env.encrypted files
 #   3. expand_templates — Jinja2 template expansion (called from site.yml AFTER vars are loaded)
 #   4. detect_bind_mount_changes — Identify containers needing restart

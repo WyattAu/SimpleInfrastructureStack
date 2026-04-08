@@ -2,13 +2,12 @@
 # 4. Bind-mount change detection — identify containers that need restart.
 # git reset --hard creates new inodes, but Docker bind mounts still reference
 # old inodes. We dynamically cross-reference changed files with container
-# mount sources using docker inspect, replacing the old hardcoded case statement.
+# mount sources using docker inspect.
 #
-# NOTE: changed_files is set by git_sync.yml. Since git pull now happens in
-# deploy.sh before ansible-playbook runs, changed_files will always be empty
-# (no diff between current HEAD and target). This task will produce an empty
-# containers_to_restart list, which is correct — no restart needed since the
-# files were already updated before the playbook started.
+# changed_files is populated by git_sync.yml using git diff between the
+# previous deploy SHA (stored in /var/run/infra-deploy-sha) and the
+# current HEAD. The PRE_DEPLOY_SHA env var from deploy.sh ensures we
+# have the SHA before git reset --hard.
 
 - name: Get bind-mount info for all running containers
   community.docker.docker_container_info:
