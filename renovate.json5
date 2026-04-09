@@ -1,0 +1,50 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "labels": ["dependencies"],
+  "branchPrefix": "renovate/",
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 3,
+  "rebaseWhen": "behind-base-branch",
+  "schedule": ["every weekend"],
+  "commitMessagePrefix": "deps:",
+  "commitMessageAction": "update",
+  "packageRules": [
+    {
+      "description": "Auto-merge patch updates for Docker images",
+      "matchUpdateTypes": ["patch"],
+      "matchDatasources": ["docker"],
+      "automerge": true,
+      "automergeType": "pr",
+      "requiredStatusChecks": ["validate"]
+    },
+    {
+      "description": "Group major Docker image updates — require manual review",
+      "matchUpdateTypes": ["major"],
+      "matchDatasources": ["docker"],
+      "automerge": false
+    },
+    {
+      "description": "Forgejo runner must be reviewed — version must match server",
+      "matchPackageNames": ["data.forgejo.org/forgejo/runner"],
+      "matchDatasources": ["docker"],
+      "automerge": false
+    }
+  ],
+  "customManagers": [
+    {
+      "description": "Parse Docker image versions from versions.env files",
+      "customType": "regex",
+      "fileMatch": ["stacks/.+/versions\\.env$"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>.+?))?\\n(?<currentValue>.+?)=(?<currentDigest>.*)"
+      ]
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "automerge": true
+  }
+}
