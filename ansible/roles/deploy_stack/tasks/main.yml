@@ -3,11 +3,17 @@
 # We skip it here because docker compose config requires env vars that
 # are only available via the decrypted secrets, not in the project dir.
 #
-# recreate is intentionally omitted (defaults to "smart"): Docker Compose
-# already recreates containers when their config or image changes. Forcing
-# recreate: always causes race conditions ("removal already in progress")
-# and orphaned container name conflicts when many containers are recreated
-# simultaneously across all 9 stacks.
+# recreate: "always" ensures containers are recreated when env_file
+# contents change (e.g., versions.env updated by Renovate). The default
+# "smart" mode does NOT detect env_file changes — only image/config
+# changes. Concurrent deploy race conditions are prevented by flock
+# in deploy.sh.
+#
+# pull: "missing" only pulls images not present locally. This avoids
+# failing the entire deploy when a registry is temporarily unavailable
+# or a tag doesn't exist (e.g., forgejo-runner rolling tags). When
+# Renovate updates a version, the new tag won't be cached, so it
+# will be pulled automatically.
 
 - name: Deploy stack
   community.docker.docker_compose_v2:
@@ -15,7 +21,8 @@
     env_files:
       - "{{ infra_secrets_path }}/{{ item }}.env"
       - "{{ infra_repo_path }}/stacks/{{ item }}/versions.env"
-    pull: always
+    pull: missing
+    recreate: always
     remove_orphans: true
   loop: "{{ stacks }}"
   register: deploy_result
