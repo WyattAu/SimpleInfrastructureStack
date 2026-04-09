@@ -107,7 +107,10 @@ services:
         fi
         if ! grep -q 'port: 19090' /data/homeserver.yaml; then
           echo 'Adding metrics listener on port 19090...';
-          printf '\n# Metrics listener for Prometheus\nlisteners:\n  - port: 19090\n    type: http\n    x_forwarded: false\n    resources:\n      - names: [metrics]\n        compress: false\n' >> /data/homeserver.yaml;
+          # Use printf to append metrics listener. We append it as a second
+          # listeners block which Synapse merges (Synapse supports multiple
+          # listeners blocks natively — it collects all entries).
+          printf '\nlisteners:\n  - port: 19090\n    type: http\n    x_forwarded: false\n    resources:\n      - names: [metrics]\n        compress: false\n' >> /data/homeserver.yaml;
         fi
 
   synapse-chown:
@@ -149,7 +152,7 @@ services:
       - traefik_net
       - backend_net
     healthcheck:
-      test: ["CMD-SHELL", "curl -g -6 -fSs http://[::1]:8008/_matrix/client/versions"]
+      test: ["CMD", "curl", "-fSs", "http://localhost:8008/_matrix/client/versions"]
       interval: 30s
       timeout: 10s
       start_period: 60s
