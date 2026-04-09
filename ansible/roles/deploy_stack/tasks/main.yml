@@ -3,11 +3,13 @@
 # We skip it here because docker compose config requires env vars that
 # are only available via the decrypted secrets, not in the project dir.
 #
-# recreate: "always" ensures containers are recreated when env_file
-# contents change (e.g., versions.env updated by Renovate). The default
-# "smart" mode does NOT detect env_file changes — only image/config
-# changes. Concurrent deploy race conditions are prevented by flock
-# in deploy.sh.
+# Uses the native `docker compose up` command instead of the Ansible
+# docker_compose_v2 module. The Ansible module's "smart" mode has a bug
+# where it does NOT detect env_file content changes (e.g., versions.env
+# updated by Renovate), causing version updates to silently never take
+# effect. The native `docker compose up` correctly compares the full
+# resolved config (including env_files) against running containers and
+# only recreates those with actual changes.
 #
 # pull: "missing" only pulls images not present locally. This avoids
 # failing the entire deploy when a registry is temporarily unavailable
@@ -16,14 +18,16 @@
 # will be pulled automatically.
 
 - name: Deploy stack
-  community.docker.docker_compose_v2:
-    project_src: "{{ infra_base_path }}/{{ item }}"
-    env_files:
-      - "{{ infra_secrets_path }}/{{ item }}.env"
-      - "{{ infra_repo_path }}/stacks/{{ item }}/versions.env"
-    pull: missing
-    recreate: always
-    remove_orphans: true
+  ansible.builtin.shell:
+    cmd: >
+      docker compose
+      --env-file {{ infra_secrets_path }}/{{ item }}.env
+      --env-file {{ infra_repo_path }}/stacks/{{ item }}/versions.env
+      up --detach --pull missing --remove-orphans
+      --ansi never
+    chdir: "{{ infra_base_path }}/{{ item }}"
   loop: "{{ stacks }}"
   register: deploy_result
+  changed_when: "'Recreated\\|Created\\|Started' in (deploy_result.stdout | default(''))"
+  failed_when: deploy_result.rc != 0
   notify: Display deploy results
