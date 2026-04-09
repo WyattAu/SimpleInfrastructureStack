@@ -1,6 +1,6 @@
 services:
   socket-proxy:
-    image: tecnativa/docker-socket-proxy:latest
+    image: tecnativa/docker-socket-proxy:${SOCKET_PROXY_VERSION}
     container_name: proxy-socket-proxy
     restart: unless-stopped
     security_opt:
