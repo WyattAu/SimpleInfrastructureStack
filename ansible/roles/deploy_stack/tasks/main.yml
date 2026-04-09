@@ -24,7 +24,6 @@
       --env-file {{ infra_secrets_path }}/{{ item }}.env
       --env-file {{ infra_repo_path }}/stacks/{{ item }}/versions.env
       up --detach --pull missing --remove-orphans
-      --ansi never
     chdir: "{{ infra_base_path }}/{{ item }}"
   loop: "{{ stacks }}"
   register: deploy_result
