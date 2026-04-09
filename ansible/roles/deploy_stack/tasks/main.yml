@@ -14,6 +14,7 @@
     project_src: "{{ infra_base_path }}/{{ item }}"
     env_files:
       - "{{ infra_secrets_path }}/{{ item }}.env"
+      - "{{ infra_repo_path }}/stacks/{{ item }}/versions.env"
     pull: always
     remove_orphans: true
   loop: "{{ stacks }}"

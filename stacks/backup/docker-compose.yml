@@ -1,6 +1,6 @@
 services:
   backup-restic:
-    image: restic/restic:0.17.3
+    image: restic/restic:${RESTIC_VERSION}
     container_name: backup-restic
     restart: unless-stopped
     security_opt:

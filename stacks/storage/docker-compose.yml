@@ -160,7 +160,7 @@ services:
         max-file: "3"
 
   collabora:
-    image: collabora/code:latest
+    image: collabora/code:${COLLABORA_VERSION}
     container_name: storage-collabora
     restart: unless-stopped
     # no-new-privileges removed: Collabora requires CLONE_NEWUSER for
