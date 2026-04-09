@@ -51,12 +51,27 @@ docker exec backup-restic sh -c '
 # Copies all snapshots to a remote repository (e.g., Backblaze B2).
 # Enable by setting OFFSITE_REPO env var in the cron-trigger service.
 # Example OFFSITE_REPO value: s3:https://s3.us-west-004.backblazeb2.com/bucket-name/repo
-if [ -n "${OFFSITE_REPO:-}" ]; then
+if [ -n "${OFFSITE_REPO:-}" ] && [ -n "${OFFSITE_AWS_KEY:-}" ] && [ -n "${OFFSITE_AWS_SECRET:-}" ]; then
     echo "[$(date -Iseconds)] Syncing to offsite repository: ${OFFSITE_REPO}"
-    docker exec -e AWS_ACCESS_KEY_ID="${OFFSITE_AWS_KEY:-}" \
-                 -e AWS_SECRET_ACCESS_KEY="${OFFSITE_AWS_SECRET:-}" \
+
+    # Initialize offsite repo if it doesn't exist
+    docker exec -e AWS_ACCESS_KEY_ID="${OFFSITE_AWS_KEY}" \
+                 -e AWS_SECRET_ACCESS_KEY="${OFFSITE_AWS_SECRET}" \
+                 backup-restic sh -c "restic -r ${OFFSITE_REPO} snapshots 2>/dev/null || restic -r ${OFFSITE_REPO} init"
+
+    # Copy all local snapshots to offsite
+    docker exec -e AWS_ACCESS_KEY_ID="${OFFSITE_AWS_KEY}" \
+                 -e AWS_SECRET_ACCESS_KEY="${OFFSITE_AWS_SECRET}" \
                  backup-restic restic copy "${RESTIC_REPOSITORY}" "${OFFSITE_REPO}"
+
+    # Check offsite repository health
+    docker exec -e AWS_ACCESS_KEY_ID="${OFFSITE_AWS_KEY}" \
+                 -e AWS_SECRET_ACCESS_KEY="${OFFSITE_AWS_SECRET}" \
+                 backup-restic restic check -r "${OFFSITE_REPO}"
+
     echo "[$(date -Iseconds)] Offsite sync completed."
+elif [ -n "${OFFSITE_REPO:-}" ]; then
+    echo "[$(date -Iseconds)] WARNING: OFFSITE_REPO set but OFFSITE_AWS_KEY or OFFSITE_AWS_SECRET missing — skipping offsite sync."
 else
     echo "[$(date -Iseconds)] No offsite repository configured (set OFFSITE_REPO to enable)."
 fi
