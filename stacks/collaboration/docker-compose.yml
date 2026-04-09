@@ -149,7 +149,7 @@ services:
       - traefik_net
       - backend_net
     healthcheck:
-      test: ["CMD", "curl", "-fSs", "http://localhost:8008/health"]
+      test: ["CMD-SHELL", "curl -g -6 -fSs http://[::1]:8008/_matrix/client/versions"]
       interval: 30s
       timeout: 10s
       start_period: 60s
