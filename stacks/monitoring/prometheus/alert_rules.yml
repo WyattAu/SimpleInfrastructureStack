@@ -76,6 +76,15 @@ groups:
           summary: "Host disk usage above 85%"
           description: "Host disk {{ $labels.device }} at {{ $labels.mountpoint }} is {{ $value | humanizePercentage }} full."
 
+      - alert: DataPoolHighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/mnt/pool_HDD_x2"} / node_filesystem_size_bytes{mountpoint="/mnt/pool_HDD_x2"})) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Data pool disk usage above 85%"
+          description: "Data pool {{ $labels.device }} at {{ $labels.mountpoint }} is {{ $value | humanizePercentage }} full."
+
       - alert: HostDiskInodesExhausted
         expr: (1 - (node_filesystem_files_free{mountpoint="/"} / node_filesystem_files{mountpoint="/"})) > 0.85
         for: 5m

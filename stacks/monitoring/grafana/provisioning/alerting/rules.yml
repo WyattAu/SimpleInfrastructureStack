@@ -153,6 +153,29 @@ groups:
           summary: "Host disk usage above 85%"
           description: "Host disk {{ $labels.device }} at {{ $labels.mountpoint }} is {{ $value }} full (threshold: 85%)."
 
+      - uid: data_pool_high_disk
+        title: Data Pool High Disk Usage
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              editorMode: code
+              expr: (1 - (node_filesystem_avail_bytes{mountpoint="/mnt/pool_HDD_x2"} / node_filesystem_size_bytes{mountpoint="/mnt/pool_HDD_x2"})) > 0.85
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Data pool disk usage above 85%"
+          description: "Data pool {{ $labels.device }} at {{ $labels.mountpoint }} is {{ $value }} full (threshold: 85%)."
+
   - orgId: 1
     name: service_health.rules
     folder: Infrastructure

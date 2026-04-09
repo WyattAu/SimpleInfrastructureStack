@@ -265,7 +265,12 @@ services:
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--path.rootfs=/rootfs'
+      # Exclude virtual/pseudo filesystems and ZFS child datasets.
+      # Without rootfs, node-exporter reported boot-pool mounts as /, /home, etc.
+      # With rootfs, it resolves all ~100 ZFS mounts including data pool children.
+      # We keep only the two pool roots: / (boot-pool) and /mnt/pool_HDD_x2 (data pool).
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|var|tmp|home|root|usr|run|opt|boot|mnt/pool_HDD_x2/(.+)|mnt/.ix-apps|audit|conf|data)($$|/)'
     networks:
       - backend_net
     deploy:
