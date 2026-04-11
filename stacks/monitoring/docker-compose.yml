@@ -1,6 +1,6 @@
 services:
   prometheus-init:
-    image: busybox:latest
+    image: busybox:1.37.0
     container_name: monitoring-prometheus-init
     # The Prometheus process runs as the 'nobody' user (UID 65534).
     command: chown -R 65534:65534 /prometheus
@@ -61,7 +61,7 @@ services:
         max-file: "3"
 
   grafana-init:
-    image: busybox:latest
+    image: busybox:1.37.0
     container_name: monitoring-grafana-init
     # The Grafana process runs as UID 472 and GID 472.
     # This command changes the ownership of the mounted volume to match.

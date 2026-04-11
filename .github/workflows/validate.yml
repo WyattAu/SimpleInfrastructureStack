@@ -13,12 +13,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Lint
+  compose-validate:
+    name: Compose Validation
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install conftest
+        run: |
+          curl -sSL https://github.com/open-policy-agent/conftest/releases/download/v0.57.0/conftest_0.57.0_Linux_x86_64.tar.gz | \
+            sudo tar xz -C /usr/local/bin conftest
 
       - name: Install tools
         run: |
@@ -28,13 +33,6 @@ jobs:
       - name: Lint YAML files
         run: |
           yamllint -c .yamllint.yml stacks/*/docker-compose.yml ansible/ .sops.yaml
-
-  compose-validate:
-    name: Compose Validation
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
       - name: Validate all compose files
         run: |
@@ -72,10 +70,26 @@ jobs:
           done
           exit $FAILED
 
+      - name: OPA policy check (conftest)
+        run: |
+          FAILED=0
+          for compose in stacks/*/docker-compose.yml; do
+            stack=$(basename $(dirname "$compose"))
+            echo "::group::$stack"
+            if conftest test -p policies/ "$compose" --no-color 2>&1; then
+              echo "✅ $stack"
+            else
+              echo "❌ $stack"
+              FAILED=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $FAILED
+
   ansible-check:
     name: Ansible Syntax Check
     runs-on: ubuntu-latest
-    needs: [lint, compose-validate]
+    needs: [compose-validate]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
