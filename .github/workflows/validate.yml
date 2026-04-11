@@ -76,7 +76,7 @@ jobs:
           for compose in stacks/*/docker-compose.yml; do
             stack=$(basename $(dirname "$compose"))
             echo "::group::$stack"
-            if conftest test -p policies/ "$compose" --no-color 2>&1; then
+            if conftest test -p policies/ "$compose" --namespace dockercompose.security --no-color 2>&1; then
               echo "✅ $stack"
             else
               echo "❌ $stack"
