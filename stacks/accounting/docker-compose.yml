@@ -48,6 +48,7 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
       - APP_URL=https://${AKAUNTING_SUBDOMAIN}.${DOMAIN_NAME}
+      - APP_URL_HOST=${AKAUNTING_SUBDOMAIN}.${DOMAIN_NAME}
       - FIREWALL_ENABLED=false
       - DB_CONNECTION=mysql
       - DB_HOST=accounting-mariadb-akaunting
@@ -60,7 +61,7 @@ services:
       - traefik_net
       - backend_net
     healthcheck:
-      test: ["CMD", "curl", "-fSs", "http://localhost:80/install/language"]
+      test: ["CMD-SHELL", "curl -fSs -H \"Host: $$APP_URL_HOST\" http://localhost:80/install/language || exit 1"]
       interval: 30s
       timeout: 10s
       start_period: 60s
