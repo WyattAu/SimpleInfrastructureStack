@@ -105,13 +105,14 @@ services:
       - "traefik.http.routers.forgejo-web.rule=Host(`${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.forgejo-web.entrypoints=websecure"
       - "traefik.http.routers.forgejo-web.tls.certresolver=cloudflare"
-      #- "traefik.http.routers.forgejo-web.middlewares=keycloak-auth"
+      - "traefik.http.routers.forgejo-web.middlewares=keycloak-auth"
       - "traefik.http.routers.forgejo-web.service=forgejo-svc"
 
       # --- 3. CONFIGURE THE ROUTER for the Forgejo Container Registry ---
       - "traefik.http.routers.forgejo-registry.rule=Host(`${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.forgejo-registry.entrypoints=websecure"
       - "traefik.http.routers.forgejo-registry.tls.certresolver=cloudflare"
+      - "traefik.http.routers.forgejo-registry.middlewares=keycloak-auth"
       - "traefik.http.routers.forgejo-registry.service=forgejo-svc"
     healthcheck:
       #test: ["CMD-SHELL", "su-exec git /usr/local/bin/forgejo doctor check-database"]
@@ -161,6 +162,11 @@ services:
           memory: 2G
         reservations:
           memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   postgres-woodpecker:
     image: postgres:${POSTGRES_FORGEJO_VERSION}
@@ -218,7 +224,7 @@ services:
       - WOODPECKER_GRPC_ADDR=:${WOODPECKER_SERVER_GRPC_PORT:-9000} # Listen on all interfaces
       - WOODPECKER_GRPC_SECRET=${WOODPECKER_AGENT_SECRET}
       - WOODPECKER_ADMINS=${WOODPECKER_ADMIN}
-      - WOODPECKER_OPEN=true
+      - WOODPECKER_OPEN=false
       - WOODPECKER_ORGS=${WOODPECKER_ORGS}
       - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
       - WOODPECKER_FORGEJO=true

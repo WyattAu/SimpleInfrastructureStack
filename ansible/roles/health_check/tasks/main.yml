@@ -30,4 +30,3 @@
   ansible.builtin.fail:
     msg: "Health check failed for one or more containers"
   when: health_results.results | selectattr('failed', 'equalto', true) | list | length > 0
-  ignore_errors: true
