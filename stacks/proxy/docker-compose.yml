@@ -181,8 +181,11 @@ services:
       # - API endpoints (used by Woodpecker CI, mobile apps, etc.)
       # - Webhook callbacks (from GitHub/GitLab mirrors)
       # - User avatar/attachment endpoints (publicly accessible)
-      - Forgejo internal API (runner polling)
       # - /.well-known (OIDC discovery)
+      # NOTE: Do NOT add ^/$ here — that would expose the root path of ALL
+      # services behind OAuth2-proxy (homepage, traefik, prometheus, etc.)
+      # without authentication. The Forgejo runner should use the internal
+      # Docker network URL instead of the public URL.
       - OAUTH2_PROXY_SKIP_AUTH_REGEX=^/api/v1/.*|^/user/.*|^/api/oauth.*|\.git/|^/.well-known.*
     labels:
       - "traefik.enable=true"
