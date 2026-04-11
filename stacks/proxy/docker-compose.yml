@@ -176,6 +176,14 @@ services:
       - OAUTH2_PROXY_OIDC_JWKS_URL=http://iam-keycloak:8080/realms/company-realm/protocol/openid-connect/certs
       - OAUTH2_PROXY_CODE_CHALLENGE_METHOD=S256
       - OAUTH2_PROXY_SET_XAUTHREQUEST=true
+      # Skip auth for Forgejo's own authentication endpoints:
+      # - Git smart HTTP (clone/push/pull via HTTPS with tokens)
+      # - API endpoints (used by Woodpecker CI, mobile apps, etc.)
+      # - Webhook callbacks (from GitHub/GitLab mirrors)
+      # - User avatar/attachment endpoints (publicly accessible)
+      - Forgejo internal API (runner polling)
+      # - /.well-known (OIDC discovery)
+      - OAUTH2_PROXY_SKIP_AUTH_REGEX=^/api/v1/.*|^/user/.*|^/api/oauth.*|\.git/|^/.well-known.*
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
