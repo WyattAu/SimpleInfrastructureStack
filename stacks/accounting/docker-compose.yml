@@ -61,7 +61,7 @@ services:
       - traefik_net
       - backend_net
     healthcheck:
-      test: ["CMD-SHELL", "curl -fSs -H 'Host: $$APP_URL_HOST' http://localhost:80/install/language || exit 1"]
+      test: ["CMD-SHELL", "curl -fSs -H \"Host: $$APP_URL_HOST\" http://localhost:80/install/language || exit 1"]
       interval: 30s
       timeout: 10s
       start_period: 60s
