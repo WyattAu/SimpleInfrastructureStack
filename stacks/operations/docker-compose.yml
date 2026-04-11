@@ -41,7 +41,7 @@ services:
       - no-new-privileges:true
 
     ports:
-      - "127.0.0.1:2222:22"
+      - "127.0.0.1:2222:2522"
     depends_on:
       postgres-forgejo:
         condition: service_healthy
