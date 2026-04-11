@@ -62,7 +62,7 @@ if [ -n "${OFFSITE_REPO:-}" ] && [ -n "${OFFSITE_AWS_KEY:-}" ] && [ -n "${OFFSIT
     # Copy all local snapshots to offsite
     docker exec -e AWS_ACCESS_KEY_ID="${OFFSITE_AWS_KEY}" \
                  -e AWS_SECRET_ACCESS_KEY="${OFFSITE_AWS_SECRET}" \
-                 backup-restic restic copy "${RESTIC_REPOSITORY}" "${OFFSITE_REPO}"
+                 backup-restic restic copy --from-repo "${RESTIC_REPOSITORY}" -r "${OFFSITE_REPO}"
 
     # Check offsite repository health
     docker exec -e AWS_ACCESS_KEY_ID="${OFFSITE_AWS_KEY}" \
