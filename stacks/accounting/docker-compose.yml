@@ -55,7 +55,7 @@ services:
       - DB_DATABASE=${MYSQL_DB_AKAUNTING}
       - DB_USERNAME=${MYSQL_USER_AKAUNTING}
       - DB_PASSWORD=${MYSQL_PASSWORD_AKAUNTING}
-    command: ["/bin/bash", "-c", "bash /docker-custom/apache-config.sh && exec /usr/local/bin/akaunting-v.sh --start"]
+    entrypoint: ["/bin/bash", "-c", "bash /docker-custom/apache-config.sh && exec /usr/local/bin/akaunting-v.sh --start"]
     networks:
       - traefik_net
       - backend_net
