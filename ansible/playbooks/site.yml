@@ -129,12 +129,35 @@
           ansible.builtin.debug:
             msg: "=== DEPLOY COMPLETED SUCCESSFULLY ==="
 
+        - name: Notify deploy success
+          ansible.builtin.uri:
+            url: "https://ntfy.sh/{{ NTFY_TOPIC | default('') }}"
+            method: POST
+            body: "✅ Deploy succeeded ({{ pre_deploy_sha.stdout[:7] | default('unknown') }} → {{ deploy_sha.stdout[:7] | default('unknown') }})"
+            status_code: [200, 201]
+          ignore_errors: true
+          when: NTFY_TOPIC is defined
+          vars:
+            deploy_sha: "{{ lookup('pipe', 'git -C ' + infra_repo_path + ' rev-parse HEAD') }}"
+
       rescue:
         - name: Deployment failed
           ansible.builtin.debug:
             msg: >-
               === DEPLOY FAILED ===
               Rolling back to {{ pre_deploy_sha.stdout | default('unknown') }}...
+
+        - name: Notify deploy failure
+          ansible.builtin.uri:
+            url: "https://ntfy.sh/{{ NTFY_TOPIC | default('') }}-critical"
+            method: POST
+            body: "🚨 Deploy FAILED — rolling back to {{ pre_deploy_sha.stdout[:7] | default('unknown') }}"
+            headers:
+              Priority: high
+              Tags: warning
+            status_code: [200, 201]
+          ignore_errors: true
+          when: NTFY_TOPIC is defined
 
         - name: Roll back git to previous commit
           ansible.builtin.shell: git reset --hard {{ pre_deploy_sha.stdout }}

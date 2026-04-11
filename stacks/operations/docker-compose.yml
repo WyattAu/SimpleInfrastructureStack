@@ -105,10 +105,16 @@ services:
       - "traefik.http.routers.forgejo-web.rule=Host(`${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.forgejo-web.entrypoints=websecure"
       - "traefik.http.routers.forgejo-web.tls.certresolver=cloudflare"
-      #- "traefik.http.routers.forgejo-web.middlewares=keycloak-auth"
+      - "traefik.http.routers.forgejo-web.middlewares=keycloak-auth"
       - "traefik.http.routers.forgejo-web.service=forgejo-svc"
 
       # --- 3. CONFIGURE THE ROUTER for the Forgejo Container Registry ---
+      # NOTE: keycloak-auth middleware CANNOT be applied here because Docker's
+      # registry client (docker pull/push) does not follow HTTP redirects.
+      # The OAuth2 forwardAuth middleware returns 302 for unauthenticated requests,
+      # which Docker's registry v2 client interprets as a server error.
+      # Registry auth is handled by Forgejo's built-in token-based authentication
+      # (docker login registry-forgejo.wyattau.com with a Forgejo access token).
       - "traefik.http.routers.forgejo-registry.rule=Host(`${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.forgejo-registry.entrypoints=websecure"
       - "traefik.http.routers.forgejo-registry.tls.certresolver=cloudflare"
@@ -161,6 +167,11 @@ services:
           memory: 2G
         reservations:
           memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   postgres-woodpecker:
     image: postgres:${POSTGRES_FORGEJO_VERSION}
@@ -218,7 +229,7 @@ services:
       - WOODPECKER_GRPC_ADDR=:${WOODPECKER_SERVER_GRPC_PORT:-9000} # Listen on all interfaces
       - WOODPECKER_GRPC_SECRET=${WOODPECKER_AGENT_SECRET}
       - WOODPECKER_ADMINS=${WOODPECKER_ADMIN}
-      - WOODPECKER_OPEN=true
+      - WOODPECKER_OPEN=false
       - WOODPECKER_ORGS=${WOODPECKER_ORGS}
       - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
       - WOODPECKER_FORGEJO=true
