@@ -42,22 +42,25 @@ services:
         condition: service_healthy
     volumes:
       - ${DATA_BASE_PATH}/accounting/akaunting:/var/www/html
+      - ${DATA_BASE_PATH}/accounting/akaunting/apache/akaunting.conf:/etc/apache2/sites-available/akaunting.conf:ro
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
       - APP_URL=https://${AKAUNTING_SUBDOMAIN}.${DOMAIN_NAME}
+      - FIREWALL_ENABLED=false
       - DB_CONNECTION=mysql
       - DB_HOST=accounting-mariadb-akaunting
       - DB_PORT=3306
       - DB_DATABASE=${MYSQL_DB_AKAUNTING}
       - DB_USERNAME=${MYSQL_USER_AKAUNTING}
       - DB_PASSWORD=${MYSQL_PASSWORD_AKAUNTING}
+    command: ["/bin/bash", "-c", "a2dissite 000-default && a2ensite akaunting && exec /usr/local/bin/akaunting-v.sh --start"]
     networks:
       - traefik_net
       - backend_net
     healthcheck:
-      test: ["CMD", "curl", "-fSs", "http://localhost:80/"]
+      test: ["CMD", "curl", "-fSs", "http://localhost:80/install/language"]
       interval: 30s
       timeout: 10s
       start_period: 60s
