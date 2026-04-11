@@ -60,9 +60,10 @@ if [ -n "${OFFSITE_REPO:-}" ] && [ -n "${OFFSITE_AWS_KEY:-}" ] && [ -n "${OFFSIT
                  backup-restic sh -c "restic -r ${OFFSITE_REPO} snapshots 2>/dev/null || restic -r ${OFFSITE_REPO} init"
 
     # Copy all local snapshots to offsite
-    docker exec -e AWS_ACCESS_KEY_ID="${OFFSITE_AWS_KEY}" \
+    # restic copy reads the destination password from stdin, so pipe it.
+    docker exec -i -e AWS_ACCESS_KEY_ID="${OFFSITE_AWS_KEY}" \
                  -e AWS_SECRET_ACCESS_KEY="${OFFSITE_AWS_SECRET}" \
-                 backup-restic restic copy --from-repo "${RESTIC_REPOSITORY}" -r "${OFFSITE_REPO}"
+                 backup-restic sh -c "echo \"\${RESTIC_PASSWORD}\" | restic copy --from-repo ${RESTIC_REPOSITORY} -r ${OFFSITE_REPO}"
 
     # Check offsite repository health
     docker exec -e AWS_ACCESS_KEY_ID="${OFFSITE_AWS_KEY}" \
