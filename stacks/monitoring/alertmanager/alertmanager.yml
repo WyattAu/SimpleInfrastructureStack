@@ -5,36 +5,35 @@
 global:
   resolve_timeout: 5m
 
-# Route all alerts to ntfy with a 4h group wait
-# (deduplicates flapping alerts into a single notification)
+# Root route: all alerts enter here and are grouped by alertname.
+# Child routes below match on severity to pick the right ntfy topic.
 route:
+  receiver: 'ntfy-info'
   group_by: ['alertname']
   group_wait: 30s
   group_interval: 5m
   repeat_interval: 4h
-  receiver: 'ntfy'
+  routes:
+    # Critical alerts → -critical topic
+    - match:
+        severity: critical
+      receiver: 'ntfy'
+      continue: false
+    # Warning alerts → regular topic (also the default)
+    - match:
+        severity: warning
+      receiver: 'ntfy-info'
+      continue: false
 
 receivers:
   - name: 'ntfy'
     webhook_configs:
-      # Critical alerts go to the -critical topic
       - url: 'https://ntfy.sh/wyattau-infra-0e92568ce5d04343c3b796ed558a04b9-critical'
         send_resolved: true
   - name: 'ntfy-info'
     webhook_configs:
-      # Warning alerts go to the regular topic
       - url: 'https://ntfy.sh/wyattau-infra-0e92568ce5d04343c3b796ed558a04b9'
         send_resolved: true
-
-routes:
-  - match:
-      severity: critical
-    receiver: 'ntfy'
-    continue: false
-  - match:
-      severity: warning
-    receiver: 'ntfy-info'
-    continue: false
 
 inhibit_rules:
   # Don't warn about high memory if the container is already down
