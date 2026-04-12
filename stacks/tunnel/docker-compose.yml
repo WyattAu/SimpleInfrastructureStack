@@ -7,9 +7,10 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    command: tunnel --no-autoupdate run
-    environment:
-      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./config.yml:/etc/cloudflared/config.yml:ro
+      - ./credentials.json:/etc/cloudflared/credentials.json:ro
     # No Traefik labels — the tunnel must be independent
     # If Traefik breaks, the tunnel must still work to deliver deploys
     network_mode: host
