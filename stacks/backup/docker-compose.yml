@@ -24,7 +24,7 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 512M
+          memory: 2G
         reservations:
           memory: 128M
     logging:
