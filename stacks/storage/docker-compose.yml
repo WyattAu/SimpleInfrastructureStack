@@ -146,6 +146,7 @@ services:
       MICRO_REGISTRY: "nats-js-kv"
       MICRO_REGISTRY_ADDRESS: "storage-ocis:9233"
     networks:
+      - traefik_net
       - backend_net
     # No healthcheck: the collaboration service only responds to specific WOPI
     # paths (not /). It either starts successfully or crash-loops immediately.

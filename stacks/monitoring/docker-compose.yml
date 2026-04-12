@@ -283,6 +283,39 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  alertmanager:
+    image: prom/alertmanager:${ALERTMANAGER_VERSION}
+    container_name: monitoring-alertmanager
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=https://${PROMETHEUS_SUBDOMAIN}.${DOMAIN_NAME}'
+    networks:
+      - backend_net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 32M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 networks:
   traefik_net:
     external: true
