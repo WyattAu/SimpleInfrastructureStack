@@ -155,11 +155,11 @@ services:
       DOCKER_HOST: unix:///var/run/docker.sock
     volumes:
       - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
+      - ./forgejo-runner/config.yaml:/data/config.yaml:ro
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - traefik_net
       - backend_net
-    # This command is a placeholder to keep the container alive for registration.
     command: '/bin/sh -c "sleep 5; forgejo-runner --config /data/config.yaml daemon"'
     deploy:
       resources:

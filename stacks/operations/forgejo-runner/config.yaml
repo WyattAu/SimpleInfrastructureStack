@@ -1,0 +1,37 @@
+log:
+  level: info
+  job_level: info
+
+runner:
+  file: .runner
+  capacity: 1
+  env_file: .env
+  timeout: 3h
+  shutdown_timeout: 3h
+  insecure: true
+  fetch_timeout: 30s
+  fetch_interval: 2s
+  report_interval: 1s
+  labels:
+    - "docker:docker://node:22-bookworm-slim"
+    - "ubuntu-latest:docker://node:22-bookworm-slim"
+
+cache:
+  enabled: true
+
+container:
+  # Must be a Docker network (not host) so job containers can resolve
+  # Docker service names like operations-forgejo via embedded DNS.
+  # backend_net is where Forgejo, Postgres, and other services live.
+  network: backend_net
+  enable_ipv6: false
+  privileged: false
+  # Allow any volume mount in workflow jobs
+  valid_volumes:
+    - '**'
+  docker_host: "-"
+  force_pull: false
+  force_rebuild: false
+
+host:
+  workdir_parent:
