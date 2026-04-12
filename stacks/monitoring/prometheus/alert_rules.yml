@@ -181,6 +181,49 @@ groups:
           summary: "Backup container {{ $labels.name }} is down"
           description: "Backup container {{ $labels.name }} has not been seen for over 1 hour. Scheduled backups may be failing."
 
+  - name: system_health
+    rules:
+      # Host disk full warning (>85% on any filesystem)
+      - alert: HostDiskFull
+        expr: (1 - (node_filesystem_avail_bytes{fstype=~"ext4|zfs", mountpoint=~"/|/mnt/.*"} / node_filesystem_size_bytes{fstype=~"ext4|zfs", mountpoint=~"/|/mnt/.*"})) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk usage above 85% on {{ $labels.mountpoint }}"
+          description: "Filesystem {{ $labels.mountpoint }} on {{ $labels.device }} is {{ $value | humanizePercentage }} full."
+
+      # Host memory exhaustion warning
+      - alert: HostMemoryExhaustion
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.95
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Host memory usage above 95%"
+          description: "Available memory is below 5%. Risk of OOM kills. Current usage: {{ $value | humanizePercentage }}."
+
+      # Docker image using more than 90% of memory limit
+      - alert: ContainerMemoryPressure
+        expr: (container_memory_usage_bytes{image!=""} / container_spec_memory_limit_bytes{image!=""}) > 0.9
+          and container_spec_memory_limit_bytes{image!=""} > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} using >90% memory"
+          description: "Container {{ $labels.name }} is using {{ $value | humanizePercentage }} of its {{ $labels.container_label_com_docker_compose_service }} memory limit."
+
+      # Docker container restarting excessively
+      - alert: ContainerRestartLoop
+        expr: increase(container_restarts_total{image!=""}[1h]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} restart loop detected"
+          description: "Container {{ $labels.name }} has restarted {{ $value }} times in the last hour."
+
   - name: alertmanager_health
     rules:
       - alert: AlertmanagerDown
