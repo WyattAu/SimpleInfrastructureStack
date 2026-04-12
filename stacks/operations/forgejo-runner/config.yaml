@@ -13,8 +13,8 @@ runner:
   fetch_interval: 2s
   report_interval: 1s
   labels:
-    - "docker:docker://node:22-bookworm-slim"
-    - "ubuntu-latest:docker://node:22-bookworm-slim"
+    - "docker:docker://node:22-bookworm"
+    - "ubuntu-latest:docker://node:22-bookworm"
 
 cache:
   enabled: true
