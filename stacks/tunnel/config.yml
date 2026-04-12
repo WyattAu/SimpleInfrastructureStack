@@ -1,0 +1,9 @@
+tunnel: 156f749a-d7f8-4258-980a-dc3c1aa65402
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  - hostname: ssh.wyattau.com
+    service: ssh://127.0.0.1:2222
+  - hostname: deploy.wyattau.com
+    service: http://127.0.0.1:9001
+  - service: http_status:404
