@@ -180,3 +180,14 @@ groups:
         annotations:
           summary: "Backup container {{ $labels.name }} is down"
           description: "Backup container {{ $labels.name }} has not been seen for over 1 hour. Scheduled backups may be failing."
+
+  - name: alertmanager_health
+    rules:
+      - alert: AlertmanagerDown
+        expr: up{job="alertmanager"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Alertmanager is down"
+          description: "The Alertmanager service is not responding. Alert notifications will not be delivered."

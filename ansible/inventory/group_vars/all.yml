@@ -39,6 +39,7 @@ health_check_containers:
   - operations-woodpecker-server
   - operations-woodpecker-agent
   - monitoring-prometheus
+  - monitoring-alertmanager
   - monitoring-grafana
   - monitoring-promtail
   - monitoring-kuma

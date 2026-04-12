@@ -41,7 +41,7 @@ services:
       # 403 Forbidden — proving the process is alive and routing correctly.
       # A connection-refused or timeout would mean the process is down.
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --post-data='' --header='Content-Type: application/json' -O /dev/null http://127.0.0.1:9000/hooks/deploy 2>&1 | grep -q '403'"]
-      interval: 30s
+      interval: 120s
       timeout: 5s
       retries: 3
     logging:
