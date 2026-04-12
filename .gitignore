@@ -7,6 +7,9 @@
 *.key
 *.crt
 
+# Cloudflare tunnel credentials (contains tunnel secret)
+stacks/tunnel/credentials.json
+
 # Decrypted secrets temp directory (written at deploy time, cleaned up after)
 .secrets.tmp/
 
