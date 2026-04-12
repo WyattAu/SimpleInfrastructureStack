@@ -203,27 +203,6 @@ groups:
           summary: "Host memory usage above 95%"
           description: "Available memory is below 5%. Risk of OOM kills. Current usage: {{ $value | humanizePercentage }}."
 
-      # Docker image using more than 90% of memory limit
-      - alert: ContainerMemoryPressure
-        expr: (container_memory_usage_bytes{image!=""} / container_spec_memory_limit_bytes{image!=""}) > 0.9
-          and container_spec_memory_limit_bytes{image!=""} > 0
-        for: 10m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Container {{ $labels.name }} using >90% memory"
-          description: "Container {{ $labels.name }} is using {{ $value | humanizePercentage }} of its {{ $labels.container_label_com_docker_compose_service }} memory limit."
-
-      # Docker container restarting excessively
-      - alert: ContainerRestartLoop
-        expr: increase(container_restarts_total{image!=""}[1h]) > 5
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Container {{ $labels.name }} restart loop detected"
-          description: "Container {{ $labels.name }} has restarted {{ $value }} times in the last hour."
-
   - name: alertmanager_health
     rules:
       - alert: AlertmanagerDown
