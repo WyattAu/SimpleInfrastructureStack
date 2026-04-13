@@ -13,13 +13,8 @@
     - Forgejo:
         icon: forgejo.webp
         href: https://forgejo.wyattau.com
-        description: Codebase
+        description: Codebase & CI
         siteMonitor: https://forgejo.wyattau.com
-    - Woodpecker CI:
-        icon: woodpecker-ci.webp
-        href: https://ci.wyattau.com/
-        description: Continuous Integration
-        siteMonitor: https://ci.wyattau.com/
 - Docs:
     - OCIS:
         icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/owncloud.webp

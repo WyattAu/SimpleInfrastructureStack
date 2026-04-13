@@ -44,10 +44,6 @@ scrape_configs:
     metrics_path: /_synapse/metrics
     static_configs:
       - targets: ['collaboration-synapse:19090']
-  # Woodpecker CI metrics (WOODPECKER_METRICS_SERVER_ADDR=:9001)
-  - job_name: 'woodpecker'
-    static_configs:
-      - targets: ['operations-woodpecker-server:9001']
   # Alertmanager metrics
   - job_name: 'alertmanager'
     static_configs:
