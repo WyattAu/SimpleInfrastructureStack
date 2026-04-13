@@ -18,6 +18,10 @@
 # will be pulled automatically.
 
 - name: Sync Homepage config from git to data directory
+  when: item == "utility"
+  loop: "{{ stacks }}"
+  loop_control:
+    label: "{{ item }}"
   block:
     - name: Stop Homepage to release file locks
       ansible.builtin.shell: docker stop utility-homepage || true
@@ -37,7 +41,6 @@
     - name: Warn on Homepage config sync failure
       ansible.builtin.debug:
         msg: "Homepage config sync failed — skipping"
-  when: item == "utility"
 
 - name: Deploy stack
   ansible.builtin.shell:
