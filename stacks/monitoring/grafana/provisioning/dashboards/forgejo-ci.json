@@ -1,0 +1,311 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "Forgejo Overview",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "gitea_repositories",
+          "legendFormat": "Repos"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "blue", "mode": "fixed" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          }
+        }
+      }
+    },
+    {
+      "title": "Users",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "gitea_users",
+          "legendFormat": "Users"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "green", "mode": "fixed" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        }
+      }
+    },
+    {
+      "title": "Organizations",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "gitea_organizations",
+          "legendFormat": "Orgs"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "purple", "mode": "fixed" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "purple", "value": null }]
+          }
+        }
+      }
+    },
+    {
+      "title": "Open Issues",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "gitea_issues_open",
+          "legendFormat": "Open"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "orange", "mode": "fixed" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "orange", "value": null }]
+          }
+        }
+      }
+    },
+    {
+      "title": "Public Keys",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "gitea_publickeys",
+          "legendFormat": "Keys"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "yellow", "mode": "fixed" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "yellow", "value": null }]
+          }
+        }
+      }
+    },
+    {
+      "title": "Webhooks",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "gitea_webhooks",
+          "legendFormat": "Hooks"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "super-light-green", "mode": "fixed" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "super-light-green", "value": null }]
+          }
+        }
+      }
+    },
+    {
+      "title": "Goroutines",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "go_goroutines{job=\"forgejo\"}",
+          "legendFormat": "goroutines"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "min": 0 },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Memory Allocation",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "go_memstats_alloc_bytes{job=\"forgejo\"}",
+          "legendFormat": "allocated"
+        },
+        {
+          "expr": "go_memstats_heap_inuse_bytes{job=\"forgejo\"}",
+          "legendFormat": "heap in-use"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "bytes", "min": 0 },
+        "overrides": []
+      }
+    },
+    {
+      "title": "GC Duration",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "rate(go_gc_duration_seconds_sum{job=\"forgejo\"}[5m]) / rate(go_gc_duration_seconds_count{job=\"forgejo\"}[5m])",
+          "legendFormat": "avg gc duration"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "min": 0 },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Forgejo Activity Summary",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "gitea_repositories",
+          "legendFormat": "",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "gitea_users",
+          "legendFormat": "",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "gitea_organizations",
+          "legendFormat": "",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "gitea_issues_open",
+          "legendFormat": "",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "gitea_issues_closed",
+          "legendFormat": "",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "gitea_comments",
+          "legendFormat": "",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "gitea_releases",
+          "legendFormat": "",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "gitea_stars",
+          "legendFormat": "",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "gitea_watches",
+          "legendFormat": "",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "gitea_teams",
+          "legendFormat": "",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "instance": true, "job": true },
+            "indexByName": {},
+            "renameByName": {
+              "Value #A": "Repositories",
+              "Value #B": "Users",
+              "Value #C": "Organizations",
+              "Value #D": "Open Issues",
+              "Value #E": "Closed Issues",
+              "Value #F": "Comments",
+              "Value #G": "Releases",
+              "Value #H": "Stars",
+              "Value #I": "Watches",
+              "Value #J": "Teams"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["infrastructure", "forgejo", "devops"],
+  "templating": {
+    "list": []
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "title": "Forgejo",
+  "uid": "forgejo-ci",
+  "version": 1
+}
