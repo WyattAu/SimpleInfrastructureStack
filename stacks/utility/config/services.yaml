@@ -44,6 +44,7 @@
     - Alertmanager:
         icon: prometheus.webp
         description: Alert Routing
+        container: monitoring-alertmanager
 
 - Collaboration:
     - Element:
@@ -54,6 +55,7 @@
     - Synapse:
         icon: matrix-org.webp
         description: Matrix Server
+        container: collaboration-synapse
 
 - Storage:
     - OCIS:
@@ -64,6 +66,7 @@
     - Collabora:
         icon: collabora-online.webp
         description: Document Editing
+        container: storage-collabora
 
 - Business:
     - Akaunting:
