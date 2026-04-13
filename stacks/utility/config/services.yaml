@@ -1,23 +1,73 @@
-- Monitor and admin:
+---
+# ===================================================================
+# Services — grouped by category, with status monitoring
+# ===================================================================
+# Homepage auto-detects container status via Docker socket.
+# siteMonitor: optional URL to check for HTTP status.
+# Services without public URLs show container status only.
+
+- Infrastructure:
     - Traefik:
         icon: traefik-proxy.svg
         href: https://traefik.wyattau.com/dashboard/#/http/routers
         description: Reverse Proxy
         siteMonitor: https://traefik.wyattau.com/dashboard/#/http/routers
+    - Forgejo:
+        icon: forgejo.webp
+        href: https://forgejo.wyattau.com
+        description: Code & CI
+        siteMonitor: https://forgejo.wyattau.com
+
+- Identity & Security:
     - Keycloak:
         icon: keycloak.webp
         href: https://auth.wyattau.com/admin/master/console/#/company-realm/
         description: IAM
-        siteMonitor: https://auth.wyattau.com/admin/master/console/#/company-realm/
-- Dev:
-    - Forgejo:
-        icon: forgejo.webp
-        href: https://forgejo.wyattau.com
-        description: Codebase & CI
-        siteMonitor: https://forgejo.wyattau.com
-- Docs:
+        siteMonitor: https://auth.wyattau.com/realms/company-realm/
+
+- Monitoring:
+    - Grafana:
+        icon: grafana.webp
+        href: https://grafana.wyattau.com
+        description: Dashboards
+        siteMonitor: https://grafana.wyattau.com
+    - Prometheus:
+        icon: prometheus.webp
+        href: https://prometheus.wyattau.com
+        description: Metrics
+        siteMonitor: https://prometheus.wyattau.com
+    - Uptime Kuma:
+        icon: uptime-kuma.webp
+        href: https://kuma.wyattau.com
+        description: Uptime Monitoring
+        siteMonitor: https://kuma.wyattau.com
+    - Alertmanager:
+        icon: prometheus.webp
+        description: Alert Routing
+
+- Collaboration:
+    - Element:
+        icon: element.svg
+        href: https://element.wyattau.com
+        description: Matrix Client
+        siteMonitor: https://element.wyattau.com
+    - Synapse:
+        icon: matrix-org.webp
+        description: Matrix Server
+
+- Storage:
     - OCIS:
         icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/owncloud.webp
         href: https://ocis.wyattau.com/
-        description: Storage Sync
+        description: File Sync
         siteMonitor: https://ocis.wyattau.com/
+    - Collabora:
+        icon: collabora-online.webp
+        description: Document Editing
+
+- Business:
+    - Akaunting:
+        icon: akaunting.svg
+        href: https://akaunting.wyattau.com
+        description: Accounting
+        siteMonitor: https://akaunting.wyattau.com
