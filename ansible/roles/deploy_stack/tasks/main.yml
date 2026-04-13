@@ -17,6 +17,19 @@
 # Renovate updates a version, the new tag won't be cached, so it
 # will be pulled automatically.
 
+- name: Sync Homepage config from git to data directory
+  ansible.builtin.copy:
+    src: "{{ infra_base_path }}/utility/config/"
+    dest: "{{ infra_data_path }}/utility/homepage/config/"
+    owner: "{{ infra_puid }}"
+    group: "{{ infra_pgid }}"
+    mode: "0755"
+    directory_mode: "0755"
+  when: item == "utility"
+  loop: "{{ stacks }}"
+  loop_control:
+    label: "{{ item }}"
+
 - name: Deploy stack
   ansible.builtin.shell:
     cmd: >
