@@ -35,9 +35,6 @@ health_check_containers:
   - iam-keycloak
   - operations-postgres-forgejo
   - operations-forgejo
-  - operations-postgres-woodpecker
-  - operations-woodpecker-server
-  - operations-woodpecker-agent
   - monitoring-prometheus
   - monitoring-alertmanager
   - monitoring-grafana
