@@ -19,8 +19,7 @@ no_new_privileges_exempt := {"collabora"}
 
 # Approved Docker socket RW exemptions (need full socket for container ops).
 # - forgejo-runner: executes Docker builds and job containers.
-# - woodpecker-agent: executes CI/CD pipeline containers.
-docker_socket_rw_exempt := {"forgejo-runner", "woodpecker-agent"}
+docker_socket_rw_exempt := {"forgejo-runner"}
 
 # --- Helpers ---
 

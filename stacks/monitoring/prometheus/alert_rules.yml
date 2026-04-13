@@ -156,19 +156,6 @@ groups:
           summary: "Loki is down"
           description: "The Loki metrics endpoint is not responding. Log aggregation may be unavailable."
 
-  - name: woodpecker_health
-    rules:
-      # Woodpecker v4 does not expose application-level metrics (pending_steps,
-      # worker_count, etc.). Only Go runtime metrics are available.
-      - alert: WoodpeckerDown
-        expr: up{job="woodpecker"} == 0
-        for: 2m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Woodpecker server is down"
-          description: "The Woodpecker CI server metrics endpoint is not responding. CI/CD pipelines may be unavailable."
-
   - name: backup_health
     rules:
       # Backup container uses cron-trigger; if it's down, backups won't run.
