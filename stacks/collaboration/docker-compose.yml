@@ -163,6 +163,7 @@ services:
       - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.matrix-cs.rule=Host(`${MATRIX_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.matrix-cs.entrypoints=websecure"
+      - "traefik.http.routers.matrix-cs.tls.certresolver=cloudflare"
       - "traefik.http.services.matrix-cs.loadbalancer.server.port=8008"
       - "traefik.http.services.matrix-cs.loadbalancer.server.scheme=http"
       # TCP for federation
