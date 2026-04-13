@@ -24,8 +24,6 @@
       ansible.builtin.shell: >
         cp -a {{ infra_base_path }}/utility/config/
         {{ infra_data_path }}/utility/homepage/config/
-      args:
-        creates: "{{ infra_data_path }}/utility/homepage/config/services.yaml"
   rescue:
     - name: Warn on Homepage config sync failure
       ansible.builtin.debug:
