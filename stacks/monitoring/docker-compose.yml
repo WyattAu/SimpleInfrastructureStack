@@ -28,7 +28,7 @@ services:
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
       - '--web.enable-lifecycle'
-      - '--storage.tsdb.retention.time=90d'
+      - '--storage.tsdb.retention.time=30d'
     networks:
       - traefik_net
       - backend_net
