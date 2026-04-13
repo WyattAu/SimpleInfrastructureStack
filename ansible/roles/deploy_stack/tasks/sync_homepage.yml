@@ -6,6 +6,10 @@
 #   2. Deleting the entire config dir (removes Homepage-owned files)
 #   3. Copying fresh config from git to the data directory
 #
+# Note: owner/group/mode are NOT set because ansible.builtin.copy's
+# chown fails with EPERM on TrueNAS ZFS cross-pool paths. Homepage
+# runs as its own UID and manages permissions internally.
+#
 # Wrapped in block/rescue so a failure here doesn't abort the deploy.
 
 - name: Sync Homepage config from git to data directory
@@ -20,9 +24,7 @@
       ansible.builtin.copy:
         src: "{{ infra_base_path }}/utility/config/"
         dest: "{{ infra_data_path }}/utility/homepage/config/"
-        owner: "{{ infra_puid }}"
-        group: "{{ infra_pgid }}"
-        mode: "0755"
+        mode: "0644"
         directory_mode: "0755"
   rescue:
     - name: Warn on Homepage config sync failure
