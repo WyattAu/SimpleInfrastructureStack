@@ -1,0 +1,30 @@
+---
+# Sync Homepage config from git-tracked source to the data directory.
+# Homepage chowns /app/config to UID 1001 on startup, which breaks
+# git operations on the next deploy. We work around this by:
+#   1. Stopping Homepage to release file locks
+#   2. Deleting the entire config dir (removes Homepage-owned files)
+#   3. Copying fresh config from git to the data directory
+#
+# Wrapped in block/rescue so a failure here doesn't abort the deploy.
+
+- name: Sync Homepage config from git to data directory
+  block:
+    - name: Stop Homepage to release file locks
+      ansible.builtin.shell: docker stop utility-homepage || true
+    - name: Clear Homepage-owned runtime files from data directory
+      ansible.builtin.file:
+        path: "{{ infra_data_path }}/utility/homepage/config/"
+        state: absent
+    - name: Copy git-tracked Homepage config to data directory
+      ansible.builtin.copy:
+        src: "{{ infra_base_path }}/utility/config/"
+        dest: "{{ infra_data_path }}/utility/homepage/config/"
+        owner: "{{ infra_puid }}"
+        group: "{{ infra_pgid }}"
+        mode: "0755"
+        directory_mode: "0755"
+  rescue:
+    - name: Warn on Homepage config sync failure
+      ansible.builtin.debug:
+        msg: "Homepage config sync failed — skipping"
