@@ -135,7 +135,6 @@ Security policies in `policies/docker-compose/security.rego` enforce:
 |-----------|---------|--------|
 | No `no-new-privileges` | `collabora` | Requires `CLONE_NEWUSER` for document sandboxing |
 | Docker socket RW | `forgejo-runner` | Executes Docker builds and job containers |
-| Docker socket RW | `woodpecker-agent` | Executes CI/CD pipeline containers |
 | `:latest` tag | `infra-webhook` | Locally-built image, not pulled from registry |
 | Init containers | `*-init`, `*-chown` | Ephemeral one-shot containers |
 
@@ -145,7 +144,7 @@ Security policies in `policies/docker-compose/security.rego` enforce:
 
 - Container OOM kills, high memory/CPU, restart loops, downed containers
 - Host memory, disk, inode exhaustion
-- Service health: Traefik 5xx rate, Prometheus TSDB, Synapse, Loki, Woodpecker
+- Service health: Traefik 5xx rate, Prometheus TSDB, Synapse, Loki
 - Backup container down detection
 
 ### Grafana Log Alerts (`rules.yml`)
