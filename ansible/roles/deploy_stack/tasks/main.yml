@@ -38,9 +38,6 @@
       ansible.builtin.debug:
         msg: "Homepage config sync failed — skipping"
   when: item == "utility"
-  loop: "{{ stacks }}"
-  loop_control:
-    label: "{{ item }}"
 
 - name: Deploy stack
   ansible.builtin.shell:
