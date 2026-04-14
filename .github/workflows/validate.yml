@@ -133,3 +133,49 @@ jobs:
           assert 'localhost' in hosts, f'Missing localhost host in inventory. Found: {hosts}'
           print(f'✅ Inventory valid: {len(hosts)} host(s)')
           "
+
+  trivy-scan:
+    name: Trivy Security Scan
+    runs-on: ubuntu-latest
+    needs: [compose-validate]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          version: v0.58.2
+
+      # Scan Dockerfiles for misconfigurations and vulnerabilities in base images
+      - name: Scan Dockerfiles
+        run: |
+          FAILED=0
+          for dockerfile in $(find stacks/ -name "*.Dockerfile" -o -name "Dockerfile"); do
+            echo "::group::$dockerfile"
+            if trivy fs --severity HIGH,CRITICAL --exit-code 1 "$dockerfile" 2>&1; then
+              echo "✅ $dockerfile"
+            else
+              FAILED=$?
+              echo "❌ $dockerfile"
+            fi
+            echo "::endgroup::"
+          done
+          exit $FAILED
+
+      # Scan docker-compose files for misconfigurations
+      - name: Scan compose files
+        run: |
+          FAILED=0
+          for compose in stacks/*/docker-compose.yml; do
+            stack=$(basename $(dirname "$compose"))
+            echo "::group::$stack"
+            if trivy config --severity HIGH,CRITICAL --exit-code 1 "$compose" 2>&1; then
+              echo "✅ $stack"
+            else
+              FAILED=$?
+              echo "❌ $stack"
+            fi
+            echo "::endgroup::"
+          done
+          exit $FAILED
