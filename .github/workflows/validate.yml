@@ -144,7 +144,7 @@ jobs:
 
       - name: Install Trivy
         run: |
-          curl -sL https://github.com/aquasecurity/trivy/releases/download/v0.69.3/trivy_0.69.3_Linux-amd64.tar.gz | \
+          curl -sL https://github.com/aquasecurity/trivy/releases/download/v0.69.3/trivy_0.69.3_Linux-64bit.tar.gz | \
             tar -xz -C /usr/local/bin trivy && trivy --version
 
       # Scan Dockerfiles for misconfigurations and vulnerabilities in base images
