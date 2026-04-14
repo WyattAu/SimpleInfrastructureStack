@@ -25,6 +25,7 @@ stacks:
   - operations
   - collaboration
   - storage
+  - vaultwarden
   - accounting
   - utility
   - backup
@@ -49,6 +50,7 @@ health_check_containers:
   - storage-collabora
   - collaboration-synapse
   - collaboration-element
+  - vaultwarden-server
   - accounting-akaunting
   - utility-homepage
 
