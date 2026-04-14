@@ -58,6 +58,11 @@ services:
       - POSTGRES_PASSWORD_SYNAPSE=${POSTGRES_PASSWORD_SYNAPSE}
       - PUID=${PUID}
       - PGID=${PGID}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM}
     entrypoint: ""
     command:
       - "/bin/sh"
@@ -90,10 +95,20 @@ services:
             cp_min: 5
             cp_max: 10
 
-        # CORS configuration for Element Web
-        enable_cors: true
-        public_cors_origins:
-          - "https://${ELEMENT_SUBDOMAIN}.${DOMAIN_NAME}"
+          # CORS configuration for Element Web
+          enable_cors: true
+          public_cors_origins:
+            - "https://${ELEMENT_SUBDOMAIN}.${DOMAIN_NAME}"
+
+        # Email configuration for password resets and notifications
+        email:
+          smtp_host: "${SMTP_HOST}"
+          smtp_port: ${SMTP_PORT}
+          smtp_user: "${SMTP_USERNAME}"
+          smtp_pass: "${SMTP_PASSWORD}"
+          notif_from: "${SMTP_FROM}"
+          app_name: Matrix
+          enable_tls: true
         EOF
         else
           echo 'Config already exists. Skipping generation.';
@@ -111,6 +126,12 @@ services:
           # listeners block which Synapse merges (Synapse supports multiple
           # listeners blocks natively — it collects all entries).
           printf '\nlisteners:\n  - port: 19090\n    type: http\n    x_forwarded: false\n    resources:\n      - names: [metrics]\n        compress: false\n' >> /data/homeserver.yaml;
+        fi
+
+        # Ensure SMTP email is configured (for existing installs too).
+        if ! grep -q 'smtp_host:' /data/homeserver.yaml; then
+          echo 'Adding SMTP email configuration...';
+          printf '\nemail:\n  smtp_host: "%s"\n  smtp_port: %s\n  smtp_user: "%s"\n  smtp_pass: "%s"\n  notif_from: "%s"\n  app_name: Matrix\n  enable_tls: true\n' "${SMTP_HOST}" "${SMTP_PORT}" "${SMTP_USERNAME}" "${SMTP_PASSWORD}" "${SMTP_FROM}" >> /data/homeserver.yaml;
         fi
 
   synapse-chown:

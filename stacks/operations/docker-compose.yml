@@ -86,6 +86,13 @@ services:
       #- FORGEJO__service__DISABLE_REGISTRATION=false
       - FORGEJO__service__SHOW_REGISTRATION_BUTTON=false
 
+      # --- Email Settings ---
+      - FORGEJO__mailer__ENABLED=true
+      - FORGEJO__mailer__SMTP_ADDR=${SMTP_HOST}:${SMTP_PORT}
+      - FORGEJO__mailer__FROM=noreply@${DOMAIN_NAME}
+      - FORGEJO__mailer__USER=${SMTP_USERNAME}
+      - FORGEJO__mailer__PASSWD=${SMTP_PASSWORD}
+
       # --- Other Settings ---
       - FORGEJO__actions__ENABLED=true
       - FORGEJO__container__ENABLE=true
