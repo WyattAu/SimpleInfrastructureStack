@@ -1,0 +1,52 @@
+groups:
+  - name: application_errors
+    rules:
+      # Alert on high rate of 5xx errors in application logs
+      - alert: HighApplicationErrorRate
+        expr: |
+          sum(rate({container=~".+"} |= "error" |~ "5[0-9][0-9]" | logfmt [5m])) by (container)
+            > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate in {{ $labels.container }} logs"
+          description: "{{ $labels.container }} is logging errors at {{ $value }} entries/s."
+
+      # Alert on high rate of 500 Internal Server Error
+      - alert: HighHTTP500Rate
+        expr: |
+          sum(rate({container=~".+"} |~ `"status":\s*500` [5m])) by (container)
+            > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High 500 error rate in {{ $labels.container }}"
+          description: "{{ $labels.container }} returning 500 errors at {{ $value }}/s."
+
+  - name: infrastructure_errors
+    rules:
+      # Alert on OOM kills in container logs
+      - alert: ContainerOOMDetected
+        expr: |
+          sum(rate({container=~".+"} |~ "OOM|out of memory|killed" [5m])) by (container)
+            > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OOM detected in {{ $labels.container }}"
+          description: "{{ $labels.container }} logs show OOM events."
+
+      # Alert on connection refused / refused errors
+      - alert: HighConnectionRefusedRate
+        expr: |
+          sum(rate({container=~".+"} |~ "connection refused|ECONNREFUSED" [5m])) by (container)
+            > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Connection refused errors in {{ $labels.container }}"
+          description: "{{ $labels.container }} experiencing connection refused at {{ $value }}/s."
