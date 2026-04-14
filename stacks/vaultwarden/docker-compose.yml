@@ -44,7 +44,7 @@ services:
       - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
       - "traefik.http.services.vaultwarden.loadbalancer.server.scheme=http"
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1"]
+      test: ["CMD-SHELL", "curl -fsSL http://localhost:80/ || exit 1"]
       interval: 30s
       timeout: 10s
       start_period: 30s
