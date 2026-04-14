@@ -15,7 +15,10 @@ infra_secrets_path: "{{ infra_repo_path }}/.secrets.tmp"
 infra_log_path: /var/log
 
 # Stack deployment order (respecting dependencies)
+# Tunnel must be first — deploy webhook routes through it.
+# If Traefik breaks, the tunnel must still deliver deploys.
 stacks:
+  - tunnel
   - proxy
   - iam
   - monitoring
