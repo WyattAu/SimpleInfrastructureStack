@@ -65,10 +65,16 @@ services:
       - OFFSITE_REPO=${OFFSITE_REPO}
       - OFFSITE_AWS_KEY=${OFFSITE_AWS_KEY}
       - OFFSITE_AWS_SECRET=${OFFSITE_AWS_SECRET}
+      # --- Restore Test ---
+      # Monthly restore test (1st of each month at 03:00 UTC).
+      # Runs a full restore to /tmp, validates data integrity, sends ntfy notification.
+      - RESTORE_TEST_SCHEDULE=${RESTORE_TEST_SCHEDULE:-0 3 1 * *}
+      - NTFY_TOPIC=${NTFY_TOPIC:-}
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
         echo "$$CRON_SCHEDULE /scripts/run-backup.sh" > /etc/crontabs/root
+        echo "$$RESTORE_TEST_SCHEDULE /scripts/run-restore-test.sh" >> /etc/crontabs/root
         crond -f /etc/crontabs/root
     networks: []
     healthcheck:
