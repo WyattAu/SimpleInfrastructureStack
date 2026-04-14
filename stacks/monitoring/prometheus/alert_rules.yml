@@ -265,3 +265,25 @@ groups:
         annotations:
           summary: "Swap usage above 50%"
           description: "System is using {{ $value | humanizePercentage }} of swap ({{ $value }}). May indicate memory pressure."
+
+  - name: uptime_kuma_health
+    rules:
+      - alert: KumaMonitorDown
+        expr: monitor_status == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Uptime Kuma monitor {{ $labels.monitor_name }} is DOWN"
+          description: "Monitor {{ $labels.monitor_name }} ({{ $labels.monitor_url }}) has been down for 5 minutes."
+
+      - alert: KumaMonitorDegraded
+        expr: >-
+          clamp_max(monitor_cert_days_remaining, 1) < 14
+          and monitor_cert_days_remaining > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TLS cert for {{ $labels.monitor_name }} expiring in {{ $value | humanizeDuration }}"
+          description: "Monitor {{ $labels.monitor_name }} uses a cert expiring in {{ $value }} days."
