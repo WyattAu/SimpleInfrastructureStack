@@ -200,3 +200,68 @@ groups:
         annotations:
           summary: "Alertmanager is down"
           description: "The Alertmanager service is not responding. Alert notifications will not be delivered."
+
+  - name: tls_health
+    rules:
+      # Traefik exposes traefik_tls_certs_not_after as a Unix timestamp.
+      # Alert 14 days before expiry (warn) and 7 days (critical).
+      - alert: TLSCertificateExpiringSoon
+        expr: (traefik_tls_certs_not_after - time()) / 86400 < 14
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TLS certificate for {{ $labels.cn }} expires in {{ $value | humanizeDuration }}"
+          description: "Certificate {{ $labels.cn }} (SANs: {{ $labels.sans }}) expires in less than 14 days."
+
+      - alert: TLSCertificateCriticalExpiry
+        expr: (traefik_tls_certs_not_after - time()) / 86400 < 7
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TLS certificate for {{ $labels.cn }} expires in {{ $value | humanizeDuration }}"
+          description: "Certificate {{ $labels.cn }} (SANs: {{ $labels.sans }}) expires in less than 7 days. Immediate renewal required."
+
+  - name: keycloak_health
+    rules:
+      - alert: KeycloakDown
+        expr: up{job="keycloak"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Keycloak is down"
+          description: "Keycloak metrics endpoint is not responding. All OAuth2-authenticated services will fail."
+
+      - alert: KeycloakHighMemoryUsage
+        expr: jvm_memory_used_bytes{job="keycloak"} / jvm_memory_max_bytes{job="keycloak"} > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Keycloak JVM using >90% heap memory"
+          description: "Keycloak JVM heap is at {{ $value | humanizePercentage }} utilization."
+
+  - name: forgejo_health
+    rules:
+      - alert: ForgejoDown
+        expr: up{job="forgejo"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Forgejo is down"
+          description: "Forgejo metrics endpoint is not responding. Git hosting and CI runner registration unavailable."
+
+  - name: swap_health
+    rules:
+      - alert: HighSwapUsage
+        expr: (1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) > 0.5
+          and node_memory_SwapTotal_bytes > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Swap usage above 50%"
+          description: "System is using {{ $value | humanizePercentage }} of swap ({{ $value }}). May indicate memory pressure."
