@@ -34,3 +34,13 @@
   changed_when: "'Recreated\\|Created\\|Started' in (deploy_result.stdout | default(''))"
   failed_when: deploy_result.rc != 0
   notify: Display deploy results
+
+- name: Fix tunnel credentials.json ownership
+  ansible.builtin.file:
+    path: "{{ infra_base_path }}/tunnel/credentials.json"
+    owner: "65532"
+    group: "65532"
+    mode: "0400"
+  when: "'tunnel' in stacks"
+  # Cloudflared 2026.3.0 runs as non-root (UID 65532).
+  # The credentials.json bind-mount must match or the tunnel fails to start.
