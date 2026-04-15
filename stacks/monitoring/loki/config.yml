@@ -28,7 +28,6 @@ limits_config:
 
 ruler:
   enable_api: true
-  enable_alertmanager: true
   alertmanager_url: http://monitoring-alertmanager:9093
   ring:
     kvstore:
