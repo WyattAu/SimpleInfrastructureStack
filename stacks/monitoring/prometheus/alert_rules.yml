@@ -265,3 +265,21 @@ groups:
         annotations:
           summary: "Swap usage above 50%"
           description: "System is using {{ $value | humanizePercentage }} of swap ({{ $value }}). May indicate memory pressure."
+
+  - name: server_health
+    rules:
+      # If ALL critical infrastructure targets are down simultaneously,
+      # the server itself is likely unreachable or Docker has crashed.
+      # This is a composite alert that fires when Prometheus can't reach
+      # Traefik, Keycloak, AND Forgejo — the three most essential services.
+      - alert: ServerWidespreadOutage
+        expr: |
+          (up{job="traefik"} == 0) +
+          (up{job="keycloak"} == 0) +
+          (up{job="forgejo"} == 0) >= 3
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Widespread infrastructure outage detected"
+          description: "All critical services (Traefik, Keycloak, Forgejo) are unreachable. The server may be down or Docker has crashed."
