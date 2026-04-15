@@ -28,6 +28,7 @@ stacks:
   - accounting
   - utility
   - backup
+  - vaultwarden
 
 # Containers with health checks that must pass after deploy
 # Only containers WITH a Docker healthcheck defined in compose should be listed here.
@@ -51,6 +52,7 @@ health_check_containers:
   - collaboration-element
   - accounting-akaunting
   - utility-homepage
+  - vaultwarden-server
 
 # Docker networks
 docker_networks:
