@@ -39,7 +39,8 @@ services:
       - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.vaultwarden.rule=Host(`${VAULTWARDEN_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.vaultwarden.entrypoints=websecure"
-      - "traefik.http.routers.vaultwarden.middlewares=keycloak-auth"
+      # No keycloak-auth middleware: Vaultwarden has its own authentication.
+      # Bitwarden clients (extension, mobile, CLI) cannot handle OAuth2 redirects.
       - "traefik.http.routers.vaultwarden.tls.certresolver=cloudflare"
       - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
       - "traefik.http.services.vaultwarden.loadbalancer.server.scheme=http"
