@@ -141,6 +141,7 @@ services:
     volumes:
       - ${DATA_BASE_PATH}/monitoring/loki:/loki
       - ./loki/config.yml:/etc/loki/local-config.yaml:ro
+      - ./loki/rules:/loki/rules:ro
     command: -config.file=/etc/loki/local-config.yaml
     networks:
       - backend_net
