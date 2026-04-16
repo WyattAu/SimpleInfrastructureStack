@@ -77,6 +77,8 @@ services:
       KEYCLOAK_DOMAIN: auth.${DOMAIN_NAME}
       OCIS_MFA_ENABLED: ${OCIS_MFA_ENABLED:-false}
       WEB_OIDC_SCOPE: "openid profile email roles groups"
+      OCIS_DEBUG_PROFILING: "false"
+      OCIS_HEALTH_CHECK_ENABLED: "true"
     networks:
       - traefik_net
       - backend_net

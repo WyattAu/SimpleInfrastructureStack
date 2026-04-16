@@ -48,6 +48,10 @@ scrape_configs:
   - job_name: 'alertmanager'
     static_configs:
       - targets: ['monitoring-alertmanager:9093']
+  # Promtail metrics (Promtail already listens on 9080)
+  - job_name: 'promtail'
+    static_configs:
+      - targets: ['monitoring-promtail:9080']
   # PostgreSQL exporter (multi-target: all PG instances)
   # Uses __param_target to select which DSN to scrape per target.
   # The target value must match the DATA_SOURCE_NAME env var exactly.
@@ -71,3 +75,40 @@ scrape_configs:
         replacement: '${1}'
       - target_label: __address__
         replacement: monitoring-postgres-exporter:9187
+
+  # Vaultwarden metrics (built-in /metrics on port 80)
+  - job_name: 'vaultwarden'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['vaultwarden-server:80']
+
+  # Immich metrics (port 8081 when IMMICH_METRICS=true)
+  - job_name: 'immich'
+    static_configs:
+      - targets: ['photos-server:8081']
+
+  # Paperless-ngx metrics (/metrics on port 8000 when PAPERLESS_ENABLE_METRICS=true)
+  - job_name: 'paperless'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['documents-webserver:8000']
+
+  # Grafana metrics (built-in /metrics on port 3000)
+  - job_name: 'grafana'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['monitoring-grafana:3000']
+
+  # Redis/Valkey exporter (multi-target: Valkey for Immich, Redis for Paperless)
+  - job_name: 'redis'
+    scrape_interval: 30s
+    static_configs:
+      - targets:
+          - 'photos-valkey:6379'
+          - 'documents-redis:6379'
+
+  # MariaDB exporter for Akaunting
+  - job_name: 'mariadb'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['accounting-mariadb-exporter:9104']
