@@ -29,6 +29,11 @@ stacks:
   - utility
   - backup
   - vaultwarden
+  - rss
+  - photos
+  - documents
+  - vpn
+  - updater
 
 # Containers with health checks that must pass after deploy
 # Only containers WITH a Docker healthcheck defined in compose should be listed here.
@@ -53,6 +58,14 @@ health_check_containers:
   - accounting-akaunting
   - utility-homepage
   - vaultwarden-server
+  - rss-postgres
+  - rss-freshrss
+  - photos-postgres
+  - photos-valkey
+  - photos-server
+  - documents-postgres
+  - documents-redis
+  - documents-webserver
 
 # Docker networks
 docker_networks:

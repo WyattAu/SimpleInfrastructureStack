@@ -1,0 +1,32 @@
+services:
+  wireguard:
+    image: linuxserver/wireguard:${WIREGUARD_VERSION}
+    container_name: vpn-wireguard
+    restart: unless-stopped
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    privileged: true
+    volumes:
+      - ${DATA_BASE_PATH}/vpn/config:/config
+      - /lib/modules:/lib/modules:ro
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - SERVERPORT=51820
+      - SERVERURL=vpn.${DOMAIN_NAME}
+      - INTERNAL_SUBNET=10.13.13.0
+      - ALLOWEDIPS=10.13.13.0/24
+      - PEERS=1
+      - PEERDNS=10.13.13.1
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

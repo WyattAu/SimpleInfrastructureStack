@@ -1,0 +1,29 @@
+services:
+  watchtower:
+    image: containrrr/watchtower:${WATCHTOWER_VERSION}
+    container_name: updater-watchtower
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    command: --interval 86400 --cleanup --label-enable --monitor-only
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - WATCHTOWER_NOTIFICATIONS=ntfy
+      - WATCHTOWER_NOTIFICATION_NTFY_TOPIC=${NTFY_TOPIC}
+      - WATCHTOWER_NOTIFICATION_NTFY_URL=https://ntfy.sh
+      - WATCHTOWER_NOTIFICATION_NTFY_PRIORITY=default
+      - WATCHTOWER_LABEL_ENABLE=true
+      - TZ=${TZ}
+    networks: []
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+        reservations:
+          memory: 16M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
