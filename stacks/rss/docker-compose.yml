@@ -66,7 +66,7 @@ services:
       - traefik_net
       - backend_net
     healthcheck:
-      test: ["CMD", "curl", "-fSs", "http://localhost:80"]
+      test: ["CMD-SHELL", "php -r \"exit(@file_get_contents('http://localhost:80') ? 0 : 1);\""]
       interval: 30s
       timeout: 10s
       start_period: 30s
