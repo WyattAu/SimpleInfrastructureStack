@@ -52,7 +52,10 @@ for db_dir in \
     "${RESTORE_DIR}/data/operations/postgres-forgejo" \
     "${RESTORE_DIR}/data/collaboration/postgres" \
     "${RESTORE_DIR}/data/iam/postgres" \
-    "${RESTORE_DIR}/data/accounting/mariadb-akaunting"; do
+    "${RESTORE_DIR}/data/accounting/mariadb-akaunting" \
+    "${RESTORE_DIR}/data/rss/postgres" \
+    "${RESTORE_DIR}/data/photos/db" \
+    "${RESTORE_DIR}/data/documents/postgres"; do
 
     if [ -d "${db_dir}" ]; then
         file_count=$(docker exec backup-restic find "${db_dir}" -type f | wc -l)
@@ -95,7 +98,35 @@ else
     fail "Forgejo data directory missing"
 fi
 
-# Step 5: Validate Synapse media exists (if any)
+# Step 5: Validate Vaultwarden data exists
+if docker exec backup-restic test -d "${RESTORE_DIR}/data/vaultwarden"; then
+    vault_files=$(docker exec backup-restic find "${RESTORE_DIR}/data/vaultwarden" -type f | wc -l)
+    if [ "$vault_files" -gt 0 ]; then
+        pass "Vaultwarden data: ${vault_files} files"
+    else
+        pass "Vaultwarden data: not yet created (normal before first user)"
+    fi
+else
+    pass "Vaultwarden data directory: not yet created"
+fi
+
+# Step 6: Validate Immich data exists
+if docker exec backup-restic test -d "${RESTORE_DIR}/data/photos/upload"; then
+    immich_files=$(docker exec backup-restic find "${RESTORE_DIR}/data/photos/upload" -type f | wc -l)
+    pass "Immich upload: ${immich_files} files"
+else
+    pass "Immich upload: not yet created (normal before first upload)"
+fi
+
+# Step 7: Validate Paperless data exists
+if docker exec backup-restic test -d "${RESTORE_DIR}/data/documents/media"; then
+    paperless_files=$(docker exec backup-restic find "${RESTORE_DIR}/data/documents/media" -type f | wc -l)
+    pass "Paperless media: ${paperless_files} files"
+else
+    pass "Paperless media: not yet created (normal before first scan)"
+fi
+
+# Step 8: Validate Synapse media exists (if any)
 if docker exec backup-restic test -d "${RESTORE_DIR}/data/collaboration/synapse/media_store"; then
     media_count=$(docker exec backup-restic find "${RESTORE_DIR}/data/collaboration/synapse/media_store" -type f | wc -l)
     pass "Synapse media store: ${media_count} files"
@@ -103,7 +134,7 @@ else
     pass "Synapse media store: not yet created (normal for new installs)"
 fi
 
-# Step 6: Get snapshot info for reporting
+# Step 9: Get snapshot info for reporting
 SNAPSHOT_INFO=$(docker exec backup-restic restic snapshots --latest --json 2>/dev/null | head -1)
 SNAPSHOT_DATE=$(docker exec backup-restic restic snapshots --latest --compact 2>/dev/null)
 

@@ -16,9 +16,11 @@ RETENTION_DAYS="${RETENTION_DAYS:-7}"
 PG_CONTAINERS=(
   "iam-postgres"
   "operations-postgres-forgejo"
-  "operations-postgres-woodpecker"
   "collaboration-postgres"
   "accounting-postgres-akaunting"
+  "rss-postgres"
+  "photos-postgres"
+  "documents-postgres"
 )
 
 mkdir -p "$BACKUP_DIR"

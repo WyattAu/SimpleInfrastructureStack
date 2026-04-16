@@ -15,16 +15,16 @@ Cloudflare Tunnel ──► deploy.wyattau.com ──► infra-webhook:9001
                                                ▼
                                          Ansible (site.yml)
                                                │
-                                    ┌──────────┼──────────┐
-                                    ▼          ▼          ▼
-                                  SOPS      Templates  Compose
-                                  decrypt   expand     up -d
-                                    │          │          │
-                                    ▼          ▼          ▼
-                              .secrets.tmp/   Jinja2   10 stacks
-                              (cleaned up)             │
-                                                       ▼
-                                                  Health checks
+                                     ┌──────────┼──────────┐
+                                     ▼          ▼          ▼
+                                   SOPS      Templates  Compose
+                                   decrypt   expand     up -d
+                                     │          │          │
+                                     ▼          ▼          ▼
+                               .secrets.tmp/   Jinja2   16 stacks
+                               (cleaned up)             │
+                                                        ▼
+                                                   Health checks
                                                        │
                                                   ┌────┴────┐
                                                   ▼         ▼
@@ -40,11 +40,17 @@ Cloudflare Tunnel ──► deploy.wyattau.com ──► infra-webhook:9001
 | iam | keycloak, postgres | backend_net | Identity (Keycloak) |
 | monitoring | prometheus, grafana, loki, promtail, kuma, cadvisor, node-exporter, alertmanager | traefik_net, backend_net | Observability |
 | operations | forgejo, forgejo-runner, postgres | traefik_net, backend_net | Git hosting + CI |
-| collaboration | synapse, element, postgres | traefik_net, backend_net | Matrix chat |
+| collaboration | synapse, element, hookshot, postgres | traefik_net, backend_net | Matrix chat + GitHub bridge |
 | storage | ocis, collabora | traefik_net, backend_net | Files + office |
 | accounting | akaunting, mariadb | backend_net | Accounting |
 | utility | homepage | traefik_net | Dashboard |
 | backup | restic, cron-trigger | none | Backups (local + B2) |
+| vaultwarden | vaultwarden | traefik_net | Password manager |
+| rss | freshrss, postgres | traefik_net, backend_net | RSS feed reader |
+| photos | immich (server + ml), postgres, valkey | traefik_net, backend_net | Photo management |
+| documents | paperless-ngx, postgres, redis | traefik_net, backend_net | Document management |
+| vpn | wireguard | host | VPN access |
+| updater | watchtower | none | Update notifications |
 
 ### DNS Records
 
@@ -62,6 +68,12 @@ Cloudflare Tunnel ──► deploy.wyattau.com ──► infra-webhook:9001
 | matrix.wyattau.com | Synapse (CS API) | Public |
 | ocis.wyattau.com | ownCloud Infinite Scale | Public |
 | akaunting.wyattau.com | Akaunting | Public |
+| vault.wyattau.com | Vaultwarden | Built-in (Bitwarden) |
+| rss.wyattau.com | FreshRSS | Public |
+| photos.wyattau.com | Immich | Public |
+| docs.wyattau.com | Paperless-ngx | Public |
+| hookshot.wyattau.com | Matrix Hookshot | N/A (internal) |
+| collabora.wyattau.com | Collabora Online | Public |
 | ssh.wyattau.com | SSH via tunnel | Key |
 | deploy.wyattau.com | Webhook via tunnel | HMAC |
 
@@ -146,11 +158,17 @@ All secrets are encrypted with [SOPS](https://github.com/getsops/sops) using [ag
 | `secrets/iam.env.encrypted` | Keycloak DB password, admin password, OIDC secrets, SMTP |
 | `secrets/monitoring.env.encrypted` | Grafana admin password, OIDC client, ntfy topic, SMTP |
 | `secrets/operations.env.encrypted` | Forgejo DB password, OIDC client secret, SMTP |
-| `secrets/collaboration.env.encrypted` | Synapse DB password, registration secret, SMTP |
+| `secrets/collaboration.env.encrypted` | Synapse DB password, registration secret, SMTP, GitHub app |
 | `secrets/storage.env.encrypted` | OCIS admin password, JWT secret |
 | `secrets/accounting.env.encrypted` | Akaunting DB password |
 | `secrets/backup.env.encrypted` | Restic password, B2 keys |
 | `secrets/tunnel.env.encrypted` | Empty (no secrets needed) |
+| `secrets/vaultwarden.env.encrypted` | Admin token |
+| `secrets/rss.env.encrypted` | FreshRSS DB password |
+| `secrets/photos.env.encrypted` | Immich DB password |
+| `secrets/documents.env.encrypted` | Paperless DB password, secret key |
+| `secrets/vpn.env.encrypted` | Empty (no secrets needed) |
+| `secrets/updater.env.encrypted` | ntfy URL, topic |
 
 ### Deploy-Time Flow
 
@@ -284,8 +302,8 @@ Runs on push to `main`/`feature/*` and on PRs:
 ### Renovate Bot
 
 - Schedule: Every Sunday 03:00 UTC
-- Auto-merges: Patch updates for Docker images (if CI passes)
-- Manual review: Major updates, Forgejo runner
+- Auto-merges: Disabled (prevents silent breakage from major image changes)
+- Manual review: All Docker image updates
 - Config: `renovate.json5`
 
 ### Nightly Vulnerability Scan
@@ -307,7 +325,7 @@ git push origin main
     → SOPS decrypt all secrets
     → Ansible site.yml
       → git sync, decrypt, expand templates
-      → docker compose up -d (10 stacks)
+      → docker compose up -d (16 stacks)
       → bind-mount container restarts
       → health checks (60s timeout × 60 retries)
     → ntfy notification (success/failure)
@@ -362,7 +380,7 @@ curl -s -o /dev/null -w "%{http_code}" -X POST "https://deploy.wyattau.com/hooks
 
 - Check: `sudo docker inspect <container> | grep OOM`
 - Fix: Increase memory limit in compose file or reduce workload
-- Current swap: 4GB zvol at `/dev/zvol/pool_HDD_x2/swap`
+- Current swap: 4GB zvol on NVMe SSD (`boot-pool/swap`, swappiness=1)
 
 ### High Memory Usage
 
@@ -406,8 +424,8 @@ sudo docker exec infra-webhook bash /opt/webhook/deploy.sh
 | Host | TrueNAS SCALE |
 | OS Drive | boot-pool (ZFS) |
 | Data | pool_HDD_x2 (ZFS, 2× HDD mirror) |
-| RAM | 32GB |
-| Swap | 4GB zvol (`pool_HDD_x2/swap`) |
+| RAM | 16GB (32GB physical, 16GB hardware-reserved by TrueNAS) |
+| Swap | 4GB zvol on NVMe SSD (`boot-pool/swap`, swappiness=1) |
 | CPU | (check `lscpu`) |
 
 ## Calendar
