@@ -328,23 +328,65 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  postgres-exporter-init:
+    image: busybox:1.37.0
+    container_name: monitoring-postgres-exporter-init
+    # Creates .pgpass file from env vars for the postgres-exporter.
+    # Required because several PG passwords contain URL-special characters
+    # (& $ % ! # * / ^) that break DATA_SOURCE_NAME connection strings.
+    # The exporter's lib/pq driver falls back to .pgpass when no password
+    # is provided in the connection URL.
+    # The exporter runs as nobody (UID 65534), so we chown accordingly.
+    # Uses printenv to safely output password values without shell
+    # interpretation of special characters ($, !, `, \, etc).
+    # .pgpass format: hostname:port:database:username:password
+    # Backslash and colon in passwords must be escaped with backslash.
+    command: >
+      sh -c "
+        printf 'operations-postgres-forgejo:5432:forgejo:forgejo:%s\n' \"$$(printenv PG_EXPORTER_FORGEJO_PASSWORD)\" > /pgpass/.pgpass &&
+        printf 'iam-postgres:5432:keycloak:keycloak:%s\n' \"$$(printenv PG_EXPORTER_KEYCLOAK_PASSWORD)\" >> /pgpass/.pgpass &&
+        printf 'collaboration-postgres:5432:synapse:synapse:%s\n' \"$$(printenv PG_EXPORTER_SYNAPSE_PASSWORD)\" >> /pgpass/.pgpass &&
+        printf 'rss-postgres:5432:freshrss:freshrss:%s\n' \"$$(printenv PG_EXPORTER_RSS_PASSWORD)\" >> /pgpass/.pgpass &&
+        printf 'photos-postgres:5432:immich:immich:%s\n' \"$$(printenv PG_EXPORTER_PHOTOS_PASSWORD)\" >> /pgpass/.pgpass &&
+        printf 'documents-postgres:5432:paperless:paperless:%s\n' \"$$(printenv PG_EXPORTER_DOCUMENTS_PASSWORD)\" >> /pgpass/.pgpass &&
+        chmod 600 /pgpass/.pgpass &&
+        chown 65534:65534 /pgpass/.pgpass
+      "
+    environment:
+      - PG_EXPORTER_FORGEJO_PASSWORD=${PG_EXPORTER_FORGEJO_PASSWORD}
+      - PG_EXPORTER_KEYCLOAK_PASSWORD=${PG_EXPORTER_KEYCLOAK_PASSWORD}
+      - PG_EXPORTER_SYNAPSE_PASSWORD=${PG_EXPORTER_SYNAPSE_PASSWORD}
+      - PG_EXPORTER_RSS_PASSWORD=${PG_EXPORTER_RSS_PASSWORD}
+      - PG_EXPORTER_PHOTOS_PASSWORD=${PG_EXPORTER_PHOTOS_PASSWORD}
+      - PG_EXPORTER_DOCUMENTS_PASSWORD=${PG_EXPORTER_DOCUMENTS_PASSWORD}
+    volumes:
+      - ${DATA_BASE_PATH}/monitoring/pgpass:/pgpass
+    networks: []
+
   postgres-exporter:
     image: quay.io/prometheuscommunity/postgres-exporter:${POSTGRES_EXPORTER_VERSION}
     container_name: monitoring-postgres-exporter
     restart: unless-stopped
+    depends_on:
+      postgres-exporter-init:
+        condition: service_completed_successfully
     security_opt:
       - no-new-privileges:true
     # Multi-target mode: each DATA_SOURCE_NAME_N connects to a different PG instance.
-    # Each PG instance needs 'pg_monitor' role granted to the DB user.
-    # Grant: CREATE ROLE pg_monitor; GRANT pg_monitor TO <db_user>;
+    # Passwords are NOT embedded in URLs — they contain special characters that
+    # break URL parsing. Instead, the lib/pq driver reads .pgpass (PGPASSFILE).
+    # Each PG user needs pg_read_all_stats role granted.
     environment:
-      - DATA_SOURCE_NAME=postgresql://forgejo:${PG_EXPORTER_FORGEJO_PASSWORD}@operations-postgres-forgejo:5432/forgejo?sslmode=disable
-      - DATA_SOURCE_NAME_2=postgresql://keycloak:${PG_EXPORTER_KEYCLOAK_PASSWORD}@iam-postgres:5432/keycloak?sslmode=disable
-      - DATA_SOURCE_NAME_3=postgresql://synapse:${PG_EXPORTER_SYNAPSE_PASSWORD}@collaboration-postgres:5432/synapse?sslmode=disable
-      - DATA_SOURCE_NAME_4=postgresql://freshrss:${PG_EXPORTER_RSS_PASSWORD}@rss-postgres:5432/freshrss?sslmode=disable
-      - DATA_SOURCE_NAME_5=postgresql://immich:${PG_EXPORTER_PHOTOS_PASSWORD}@photos-postgres:5432/immich?sslmode=disable
-      - DATA_SOURCE_NAME_6=postgresql://paperless:${PG_EXPORTER_DOCUMENTS_PASSWORD}@documents-postgres:5432/paperless?sslmode=disable
+      - PGPASSFILE=/pgpass/.pgpass
+      - DATA_SOURCE_NAME=postgresql://forgejo@operations-postgres-forgejo:5432/forgejo?sslmode=disable
+      - DATA_SOURCE_NAME_2=postgresql://keycloak@iam-postgres:5432/keycloak?sslmode=disable
+      - DATA_SOURCE_NAME_3=postgresql://synapse@collaboration-postgres:5432/synapse?sslmode=disable
+      - DATA_SOURCE_NAME_4=postgresql://freshrss@rss-postgres:5432/freshrss?sslmode=disable
+      - DATA_SOURCE_NAME_5=postgresql://immich@photos-postgres:5432/immich?sslmode=disable
+      - DATA_SOURCE_NAME_6=postgresql://paperless@documents-postgres:5432/paperless?sslmode=disable
       - PG_EXPORTER_AUTO_DISCOVER_DATABASES=false
+    volumes:
+      - ${DATA_BASE_PATH}/monitoring/pgpass:/pgpass:ro
     networks:
       - backend_net
     healthcheck:
