@@ -17,8 +17,8 @@ Webhook (Cloudflare Tunnel) ──▶ TrueNAS SCALE
                               Ansible (site.yml)
                                   │
                                   ├── SOPS decrypt → template expansion
-                                  ├── docker compose up (9 stacks)
-                                  ├── health check (22 containers)
+                                   ├── docker compose up (16 stacks)
+                                   ├── health check (42 containers)
                                   └── SOPS cleanup
 ```
 
@@ -57,15 +57,21 @@ TrueNAS SCALE Host
 
 | Stack | Services | Purpose |
 |-------|----------|---------|
-| `proxy` | Traefik, OAuth2-Proxy, Cloudflare DDNS, Socket-Proxy | Gateway, TLS, SSO |
+| `proxy` | Traefik, OAuth2-Proxy, Cloudflare DDNS, Socket-Proxy, Well-Known | Gateway, TLS, SSO |
 | `iam` | Keycloak, PostgreSQL | Identity management |
-| `operations` | Forgejo, Forgejo Runner, Woodpecker CI/CD, PostgreSQL | Git hosting, CI/CD |
-| `collaboration` | Synapse, Element Web, PostgreSQL | Matrix chat |
+| `operations` | Forgejo, Forgejo Runner, PostgreSQL | Git hosting, CI/CD |
+| `collaboration` | Synapse, Element Web, Hookshot, PostgreSQL | Matrix chat, GitHub bridge |
 | `storage` | oCIS, Collabora Online | File storage, document editing |
-| `monitoring` | Prometheus, Grafana, Loki, Promtail, Uptime Kuma, cAdvisor, Node Exporter | Metrics, logs, uptime |
+| `monitoring` | Prometheus, Grafana, Loki, Promtail, Uptime Kuma, cAdvisor, Node Exporter, Alertmanager | Metrics, logs, uptime |
 | `utility` | Homepage | Personal dashboard |
-| `accounting` | Akaunting, PostgreSQL | Self-hosted accounting |
+| `accounting` | Akaunting, MariaDB | Self-hosted accounting |
 | `backup` | Restic, Cron Trigger (local + Backblaze B2 offsite) | Automated backups |
+| `vaultwarden` | Vaultwarden | Password manager |
+| `rss` | FreshRSS, PostgreSQL | RSS feed reader |
+| `photos` | Immich (server + ML), PostgreSQL, Valkey | Photo management |
+| `documents` | Paperless-ngx, PostgreSQL, Redis | Document management |
+| `vpn` | WireGuard | VPN access |
+| `updater` | Watchtower (monitor-only) | Update notifications |
 
 ## Deployment
 
@@ -82,7 +88,7 @@ TrueNAS SCALE Host
 3. **On success**: GitHub Actions POSTs to the webhook URL
 4. **Webhook container** on TrueNAS receives the payload, verifies HMAC
 5. **Ansible pipeline** runs: git pull → SOPS decrypt → template expansion → `docker compose up` → health checks → SOPS cleanup
-6. **Health check** verifies all 22 containers are healthy; deploy fails if any are unhealthy
+6. **Health check** verifies all containers are healthy; deploy reports any unhealthy containers
 
 ### Manual Deploy
 
@@ -121,7 +127,7 @@ sudo docker exec infra-webhook sops -d --input-type dotenv --output-type dotenv 
 
 Security policies in `policies/docker-compose/security.rego` enforce:
 
-- No `privileged: true`
+- No `privileged: true` (except WireGuard VPN)
 - `no-new-privileges:true` on all long-running services (except Collabora)
 - No `:latest` image tags on long-running services
 - Resource limits on all long-running services
@@ -133,6 +139,7 @@ Security policies in `policies/docker-compose/security.rego` enforce:
 
 | Exception | Service | Reason |
 |-----------|---------|--------|
+| Privileged mode | `wireguard` | Requires `NET_ADMIN`, `SYS_MODULE` for VPN tunnel |
 | No `no-new-privileges` | `collabora` | Requires `CLONE_NEWUSER` for document sandboxing |
 | Docker socket RW | `forgejo-runner` | Executes Docker builds and job containers |
 | `:latest` tag | `infra-webhook` | Locally-built image, not pulled from registry |
