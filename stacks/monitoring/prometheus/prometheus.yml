@@ -48,3 +48,7 @@ scrape_configs:
   - job_name: 'alertmanager'
     static_configs:
       - targets: ['monitoring-alertmanager:9093']
+  # PostgreSQL exporter (multi-target: all PG instances)
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['monitoring-postgres-exporter:9187']

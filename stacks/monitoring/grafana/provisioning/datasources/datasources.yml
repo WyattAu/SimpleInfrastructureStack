@@ -15,4 +15,8 @@ datasources:
     uid: P8E80F9AEF21F6940
     access: proxy
     url: http://monitoring-loki:3100
+    jsonData:
+      httpHeaderName1: X-Scope-OrgID
+    secureJsonData:
+      httpHeaderValue1: infra
     editable: true

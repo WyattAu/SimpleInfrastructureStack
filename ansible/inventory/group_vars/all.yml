@@ -51,6 +51,7 @@ health_check_containers:
   - monitoring-kuma
   - monitoring-cadvisor
   - monitoring-node-exporter
+  - monitoring-postgres-exporter
   - storage-ocis
   - storage-collabora
   - collaboration-synapse
