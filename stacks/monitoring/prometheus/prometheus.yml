@@ -49,6 +49,25 @@ scrape_configs:
     static_configs:
       - targets: ['monitoring-alertmanager:9093']
   # PostgreSQL exporter (multi-target: all PG instances)
+  # Uses __param_target to select which DSN to scrape per target.
+  # The target value must match the DATA_SOURCE_NAME env var exactly.
+  # Relabeling sets instance label to the PG container hostname for clarity.
   - job_name: 'postgres-exporter'
+    scrape_interval: 30s
     static_configs:
-      - targets: ['monitoring-postgres-exporter:9187']
+      - targets:
+          - 'postgresql://forgejo@operations-postgres-forgejo:5432/forgejo?sslmode=disable'
+          - 'postgresql://keycloak@iam-postgres:5432/keycloak?sslmode=disable'
+          - 'postgresql://synapse@collaboration-postgres:5432/synapse?sslmode=disable'
+          - 'postgresql://freshrss@rss-postgres:5432/freshrss?sslmode=disable'
+          - 'postgresql://immich@photos-postgres:5432/immich?sslmode=disable'
+          - 'postgresql://paperless@documents-postgres:5432/paperless?sslmode=disable'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        regex: 'postgresql://[^@]+@([^:]+).*'
+        target_label: instance
+        replacement: '${1}'
+      - target_label: __address__
+        replacement: monitoring-postgres-exporter:9187
