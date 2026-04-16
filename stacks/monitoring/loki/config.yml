@@ -32,7 +32,7 @@ ruler:
   ring:
     kvstore:
       store: inmemory
-  rule_path: /loki/rules
+  rule_path: /loki/ruler-state
   storage:
     type: local
     local:

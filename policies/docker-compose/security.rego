@@ -15,7 +15,8 @@ ephemeral_names := {"-init", "-chown"}
 
 # Approved no-new-privileges exemptions (require elevated capabilities).
 # - collabora: requires CLONE_NEWUSER for document sandboxing.
-no_new_privileges_exempt := {"collabora"}
+# - wireguard: requires privileged mode for VPN tunnel management.
+no_new_privileges_exempt := {"collabora", "wireguard"}
 
 # Approved privileged mode exemptions (require full host capabilities).
 # - wireguard: requires NET_ADMIN, SYS_MODULE for VPN tunnel management.

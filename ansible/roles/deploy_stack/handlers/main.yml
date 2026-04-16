@@ -4,3 +4,12 @@
     msg: "Stack {{ item.item }}: changed={{ item.changed }}"
   loop: "{{ deploy_result.results }}"
   when: deploy_result is defined
+
+- name: Restart containers with changed bind-mounted config
+  community.docker.docker_container:
+    name: "{{ item }}"
+    state: started
+    restart: true
+  loop: "{{ containers_to_restart | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
