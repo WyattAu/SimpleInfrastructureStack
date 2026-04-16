@@ -41,7 +41,7 @@ services:
       - "traefik.http.services.immich.loadbalancer.server.port=2283"
       - "traefik.http.services.immich.loadbalancer.server.scheme=http"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fSs http://localhost:2283/api/server-info/ping || exit 1"]
+      test: ["CMD-SHELL", "curl -fSs http://localhost:2283/ || exit 1"]
       interval: 30s
       timeout: 10s
       start_period: 60s
