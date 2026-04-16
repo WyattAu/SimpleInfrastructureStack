@@ -9,10 +9,9 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
-      - WATCHTOWER_NOTIFICATIONS=ntfy
-      - WATCHTOWER_NOTIFICATION_NTFY_TOPIC=${NTFY_TOPIC}
-      - WATCHTOWER_NOTIFICATION_NTFY_URL=https://ntfy.sh
-      - WATCHTOWER_NOTIFICATION_NTFY_PRIORITY=default
+      # shoutrrr format: ntfy://ntfy.sh/TOPIC?title=Watchtower
+      - WATCHTOWER_NOTIFICATIONS=shoutrrr
+      - WATCHTOWER_NOTIFICATION_URL=ntfy://${NTFY_URL}/${NTFY_TOPIC}?title=Watchtower+Update+Available
       - WATCHTOWER_LABEL_ENABLE=true
       - TZ=${TZ}
     networks: []
