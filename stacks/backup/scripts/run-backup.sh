@@ -6,14 +6,20 @@ set -euo pipefail
 
 TEXTFILE_DIR="${TEXTFILE_DIR:-/textfile-collector}"
 
-# Signal backup in progress
+BACKUP_START=$(date +%s)
 cat > "${TEXTFILE_DIR}/backup.prom" <<EOF
 # HELP sis_backup_last_success Unix timestamp of last successful backup
 # TYPE sis_backup_last_success gauge
 sis_backup_last_success 0
 # HELP sis_backup_last_run Unix timestamp of last backup attempt
 # TYPE sis_backup_last_run gauge
-sis_backup_last_run $(date +%s)
+sis_backup_last_run ${BACKUP_START}
+# HELP sis_backup_duration_seconds Duration of last backup run in seconds
+# TYPE sis_backup_duration_seconds gauge
+sis_backup_duration_seconds 0
+# HELP sis_backup_offsite_last_success Unix timestamp of last successful offsite sync
+# TYPE sis_backup_offsite_last_success gauge
+sis_backup_offsite_last_success ${SIS_BACKUP_OFFSITE_LAST_SUCCESS:-0}
 EOF
 
 echo "[$(date -Iseconds)] Starting backup..."
@@ -82,7 +88,9 @@ if [ -n "${OFFSITE_REPO:-}" ] && [ -n "${OFFSITE_AWS_KEY:-}" ] && [ -n "${OFFSIT
                  -e AWS_SECRET_ACCESS_KEY="${OFFSITE_AWS_SECRET}" \
                  backup-restic restic check -r "${OFFSITE_REPO}"
 
+    SIS_BACKUP_OFFSITE_LAST_SUCCESS=$(date +%s)
     echo "[$(date -Iseconds)] Offsite sync completed."
+    sed -i "s/sis_backup_offsite_last_success .*/sis_backup_offsite_last_success ${SIS_BACKUP_OFFSITE_LAST_SUCCESS}/" "${TEXTFILE_DIR}/backup.prom"
 elif [ -n "${OFFSITE_REPO:-}" ]; then
     echo "[$(date -Iseconds)] WARNING: OFFSITE_REPO set but OFFSITE_AWS_KEY or OFFSITE_AWS_SECRET missing — skipping offsite sync."
 else
@@ -91,7 +99,8 @@ fi
 
 echo "[$(date -Iseconds)] Backup completed successfully."
 
-# Update success timestamp
+BACKUP_END=$(date +%s)
+BACKUP_DURATION=$((BACKUP_END - BACKUP_START))
 cat > "${TEXTFILE_DIR}/backup.prom" <<EOF
 # HELP sis_backup_last_success Unix timestamp of last successful backup
 # TYPE sis_backup_last_success gauge
@@ -99,4 +108,10 @@ sis_backup_last_success $(date +%s)
 # HELP sis_backup_last_run Unix timestamp of last backup attempt
 # TYPE sis_backup_last_run gauge
 sis_backup_last_run $(date +%s)
+# HELP sis_backup_duration_seconds Duration of last backup run in seconds
+# TYPE sis_backup_duration_seconds gauge
+sis_backup_duration_seconds ${BACKUP_DURATION}
+# HELP sis_backup_offsite_last_success Unix timestamp of last successful offsite sync
+# TYPE sis_backup_offsite_last_success gauge
+sis_backup_offsite_last_success ${SIS_BACKUP_OFFSITE_LAST_SUCCESS:-0}
 EOF

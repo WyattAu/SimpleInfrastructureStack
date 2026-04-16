@@ -83,6 +83,29 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  mariadb-exporter:
+    image: prom/mysqld-exporter:${MYSQLD_EXPORTER_VERSION}
+    container_name: accounting-mariadb-exporter
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      mariadb-akaunting:
+        condition: service_healthy
+    environment:
+      - DATA_SOURCE_NAME=${MYSQL_USER_AKAUNTING}:${MYSQL_PASSWORD_AKAUNTING}@(tcp(accounting-mariadb-akaunting:3306))/${MYSQL_DB_AKAUNTING}
+    networks:
+      - backend_net
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 networks:
   traefik_net:
     external: true
