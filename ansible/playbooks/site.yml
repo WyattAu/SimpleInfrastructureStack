@@ -115,6 +115,12 @@
         - name: Flush bind-mount restart handler
           ansible.builtin.meta: flush_handlers
 
+        # Phase 3b: Configure Keycloak realm SMTP via admin API.
+        # Keycloak 26 ignores KC_SMTP_* env vars for realm smtpServer.
+        # Must be done after Keycloak container is up and healthy.
+        - name: Configure Keycloak realm SMTP
+          ansible.builtin.include_tasks: "{{ role_path }}/../deploy_stack/tasks/configure_keycloak.yml"
+
         # Brief pause for containers to stabilize
         - name: Wait for containers to stabilize
           ansible.builtin.pause:
