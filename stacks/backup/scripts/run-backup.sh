@@ -4,6 +4,18 @@
 
 set -euo pipefail
 
+TEXTFILE_DIR="${TEXTFILE_DIR:-/textfile-collector}"
+
+# Signal backup in progress
+cat > "${TEXTFILE_DIR}/backup.prom" <<EOF
+# HELP sis_backup_last_success Unix timestamp of last successful backup
+# TYPE sis_backup_last_success gauge
+sis_backup_last_success 0
+# HELP sis_backup_last_run Unix timestamp of last backup attempt
+# TYPE sis_backup_last_run gauge
+sis_backup_last_run $(date +%s)
+EOF
+
 echo "[$(date -Iseconds)] Starting backup..."
 
 # Clear stale locks from interrupted backups (e.g., container recreation during deploy)
@@ -78,3 +90,13 @@ else
 fi
 
 echo "[$(date -Iseconds)] Backup completed successfully."
+
+# Update success timestamp
+cat > "${TEXTFILE_DIR}/backup.prom" <<EOF
+# HELP sis_backup_last_success Unix timestamp of last successful backup
+# TYPE sis_backup_last_success gauge
+sis_backup_last_success $(date +%s)
+# HELP sis_backup_last_run Unix timestamp of last backup attempt
+# TYPE sis_backup_last_run gauge
+sis_backup_last_run $(date +%s)
+EOF

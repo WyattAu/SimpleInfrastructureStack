@@ -38,6 +38,7 @@ services:
       # No keycloak-auth middleware: Immich has its own authentication.
       # Mobile apps and CLI tools cannot handle OAuth2 redirects.
       - "traefik.http.routers.immich.tls.certresolver=cloudflare"
+      - "traefik.http.routers.immich.middlewares=global-rate-limit"
       - "traefik.http.services.immich.loadbalancer.server.port=2283"
       - "traefik.http.services.immich.loadbalancer.server.scheme=http"
     healthcheck:

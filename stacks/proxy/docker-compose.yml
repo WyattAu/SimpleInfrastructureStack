@@ -68,6 +68,12 @@ services:
       - "traefik.http.middlewares.keycloak-auth.forwardauth.authResponseHeaders=X-Auth-Request-Email,X-Auth-Request-User"
       - "traefik.http.middlewares.keycloak-auth.forwardauth.trustForwardHeader=true"
 
+      # --- Middleware: global-rate-limit ---
+      # 100 requests per second average, burst of 50 additional.
+      # Protects all public endpoints from brute-force and DDoS.
+      - "traefik.http.middlewares.global-rate-limit.ratelimit.average=100"
+      - "traefik.http.middlewares.global-rate-limit.ratelimit.burst=50"
+
       # --- Router: traefik-dashboard ---
       - "traefik.enable=true"
       - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN_NAME}`)"
