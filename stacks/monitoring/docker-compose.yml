@@ -337,21 +337,32 @@ services:
     # The exporter's lib/pq driver falls back to .pgpass when no password
     # is provided in the connection URL.
     # The exporter runs as nobody (UID 65534), so we chown accordingly.
-    # Uses printenv to safely output password values without shell
-    # interpretation of special characters ($, !, `, \, etc).
+    #
+    # Strategy: write passwords to temp files via printenv (zero shell
+    # expansion), then build .pgpass using printf with $(cat tmp) in double
+    # quotes. The outer $$ escapes Docker Compose variable interpolation.
     # .pgpass format: hostname:port:database:username:password
-    # Backslash and colon in passwords must be escaped with backslash.
-    command: >
-      sh -c "
-        printf 'operations-postgres-forgejo:5432:forgejo:forgejo:%s\n' \"$$(printenv PG_EXPORTER_FORGEJO_PASSWORD)\" > /pgpass/.pgpass &&
-        printf 'iam-postgres:5432:keycloak:keycloak:%s\n' \"$$(printenv PG_EXPORTER_KEYCLOAK_PASSWORD)\" >> /pgpass/.pgpass &&
-        printf 'collaboration-postgres:5432:synapse:synapse:%s\n' \"$$(printenv PG_EXPORTER_SYNAPSE_PASSWORD)\" >> /pgpass/.pgpass &&
-        printf 'rss-postgres:5432:freshrss:freshrss:%s\n' \"$$(printenv PG_EXPORTER_RSS_PASSWORD)\" >> /pgpass/.pgpass &&
-        printf 'photos-postgres:5432:immich:immich:%s\n' \"$$(printenv PG_EXPORTER_PHOTOS_PASSWORD)\" >> /pgpass/.pgpass &&
-        printf 'documents-postgres:5432:paperless:paperless:%s\n' \"$$(printenv PG_EXPORTER_DOCUMENTS_PASSWORD)\" >> /pgpass/.pgpass &&
-        chmod 600 /pgpass/.pgpass &&
+    command:
+      - "/bin/sh"
+      - "-c"
+      - |
+        printenv PG_EXPORTER_FORGEJO_PASSWORD > /tmp/pw1
+        printenv PG_EXPORTER_KEYCLOAK_PASSWORD > /tmp/pw2
+        printenv PG_EXPORTER_SYNAPSE_PASSWORD > /tmp/pw3
+        printenv PG_EXPORTER_RSS_PASSWORD > /tmp/pw4
+        printenv PG_EXPORTER_PHOTOS_PASSWORD > /tmp/pw5
+        printenv PG_EXPORTER_DOCUMENTS_PASSWORD > /tmp/pw6
+        {
+          printf 'operations-postgres-forgejo:5432:forgejo:forgejo:%s\n' "$$(cat /tmp/pw1)"
+          printf 'iam-postgres:5432:keycloak:keycloak:%s\n' "$$(cat /tmp/pw2)"
+          printf 'collaboration-postgres:5432:synapse:synapse:%s\n' "$$(cat /tmp/pw3)"
+          printf 'rss-postgres:5432:freshrss:freshrss:%s\n' "$$(cat /tmp/pw4)"
+          printf 'photos-postgres:5432:immich:immich:%s\n' "$$(cat /tmp/pw5)"
+          printf 'documents-postgres:5432:paperless:paperless:%s\n' "$$(cat /tmp/pw6)"
+        } > /pgpass/.pgpass
+        chmod 600 /pgpass/.pgpass
         chown 65534:65534 /pgpass/.pgpass
-      "
+        rm -f /tmp/pw1 /tmp/pw2 /tmp/pw3 /tmp/pw4 /tmp/pw5 /tmp/pw6
     environment:
       - PG_EXPORTER_FORGEJO_PASSWORD=${PG_EXPORTER_FORGEJO_PASSWORD}
       - PG_EXPORTER_KEYCLOAK_PASSWORD=${PG_EXPORTER_KEYCLOAK_PASSWORD}
