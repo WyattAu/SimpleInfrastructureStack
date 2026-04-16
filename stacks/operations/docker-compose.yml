@@ -168,6 +168,12 @@ services:
       - traefik_net
       - backend_net
     command: '/bin/sh -c "sleep 5; forgejo-runner --config /data/config.yaml daemon"'
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'forgejo-runner' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     deploy:
       resources:
         limits:

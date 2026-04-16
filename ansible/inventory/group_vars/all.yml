@@ -52,11 +52,13 @@ health_check_containers:
   - monitoring-cadvisor
   - monitoring-node-exporter
   - monitoring-postgres-exporter
+  - monitoring-redis-exporter
   - storage-ocis
   - storage-collabora
   - collaboration-synapse
   - collaboration-element
   - accounting-akaunting
+  - accounting-mariadb-exporter
   - utility-homepage
   - vaultwarden-server
   - rss-postgres
@@ -67,6 +69,9 @@ health_check_containers:
   - documents-postgres
   - documents-redis
   - documents-webserver
+  - infra-tunnel
+  - vpn-wireguard
+  - operations-forgejo-runner
 
 # Docker networks
 docker_networks:

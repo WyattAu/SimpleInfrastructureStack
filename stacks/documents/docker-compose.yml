@@ -96,6 +96,7 @@ services:
       - PAPERLESS_TIME_ZONE=${TZ}
       - PAPERLESS_OCR_LANGUAGE=eng
       - PAPERLESS_OCR_MODE=force
+      - PAPERLESS_ENABLE_METRICS=true
     networks:
       - traefik_net
       - backend_net

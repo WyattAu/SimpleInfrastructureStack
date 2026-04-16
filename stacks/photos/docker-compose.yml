@@ -25,6 +25,7 @@ services:
       - DB_DATABASE_NAME=${POSTGRES_DB}
       - REDIS_HOSTNAME=immich-valkey
       - IMMICH_PORT=2283
+      - IMMICH_METRICS=true
       - MACHINE_LEARNING_HOST=http://immich-ml:3003
       - MACHINE_LEARNING_URL=http://immich-ml:3003
     networks:

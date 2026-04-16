@@ -7,13 +7,19 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run --metrics 0.0.0.0:4788
     volumes:
       - ./config.yml:/etc/cloudflared/config.yml:ro
       - ./credentials.json:/etc/cloudflared/credentials.json:ro
     # No Traefik labels — the tunnel must be independent
     # If Traefik breaks, the tunnel must still work to deliver deploys
     network_mode: host
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:4788/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     deploy:
       resources:
         limits:
