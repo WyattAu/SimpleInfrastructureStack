@@ -119,7 +119,7 @@
         # Keycloak 26 ignores KC_SMTP_* env vars for realm smtpServer.
         # Must be done after Keycloak container is up and healthy.
         - name: Configure Keycloak realm SMTP
-          ansible.builtin.include_tasks: "{{ role_path }}/../deploy_stack/tasks/configure_keycloak.yml"
+          ansible.builtin.include_tasks: "{{ playbook_dir }}/../roles/deploy_stack/tasks/configure_keycloak.yml"
 
         # Brief pause for containers to stabilize
         - name: Wait for containers to stabilize
