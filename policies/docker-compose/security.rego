@@ -17,6 +17,10 @@ ephemeral_names := {"-init", "-chown"}
 # - collabora: requires CLONE_NEWUSER for document sandboxing.
 no_new_privileges_exempt := {"collabora"}
 
+# Approved privileged mode exemptions (require full host capabilities).
+# - wireguard: requires NET_ADMIN, SYS_MODULE for VPN tunnel management.
+privileged_exempt := {"wireguard"}
+
 # Approved Docker socket RW exemptions (need full socket for container ops).
 # - forgejo-runner: executes Docker builds and job containers.
 docker_socket_rw_exempt := {"forgejo-runner"}
@@ -46,11 +50,17 @@ has_no_new_privileges(security_opt) {
 # Pattern: `svc := input.services[name]` binds both key and value,
 # making `name` safe for use in negated expressions and sprintf output.
 
-# DENY: No container should use privileged mode
+# DENY: No container should use privileged mode (except approved exemptions)
 deny_privileged[msg] {
     svc := input.services[name]
     svc.privileged == true
+    not is_privileged_exempt(name)
     msg := sprintf("Service '%s' uses privileged mode. This is a security risk.", [name])
+}
+
+is_privileged_exempt(name) {
+    some suffix in privileged_exempt
+    endswith(name, suffix)
 }
 
 # DENY: All long-running containers must have no-new-privileges
