@@ -123,7 +123,7 @@ services:
       # Note: wyattau.com apex domain excluded — has a pre-existing CNAME
       # record in Cloudflare that conflicts with DDNS A record creation.
       # Remove this comment and add ${DOMAIN_NAME} back if you resolve the CNAME.
-      - DOMAINS=traefik.${DOMAIN_NAME},auth.${DOMAIN_NAME},forgejo.${DOMAIN_NAME},registry-forgejo.${DOMAIN_NAME},grafana.${DOMAIN_NAME},prometheus.${DOMAIN_NAME},kuma.${DOMAIN_NAME},homepage.${DOMAIN_NAME},matrix.${DOMAIN_NAME},element.${DOMAIN_NAME},ocis.${DOMAIN_NAME},collabora.${DOMAIN_NAME},akaunting.${DOMAIN_NAME},vault.${DOMAIN_NAME},rss.${DOMAIN_NAME},photos.${DOMAIN_NAME},docs.${DOMAIN_NAME},hookshot.${DOMAIN_NAME}
+      - DOMAINS=traefik.${DOMAIN_NAME},auth.${DOMAIN_NAME},forgejo.${DOMAIN_NAME},registry-forgejo.${DOMAIN_NAME},grafana.${DOMAIN_NAME},prometheus.${DOMAIN_NAME},kuma.${DOMAIN_NAME},homepage.${DOMAIN_NAME},matrix.${DOMAIN_NAME},element.${DOMAIN_NAME},ocis.${DOMAIN_NAME},collabora.${DOMAIN_NAME},akaunting.${DOMAIN_NAME},vault.${DOMAIN_NAME},rss.${DOMAIN_NAME},photos.${DOMAIN_NAME},docs.${DOMAIN_NAME},hookshot.${DOMAIN_NAME},vpn.${DOMAIN_NAME}
       - IPV4_PROVIDER=all
       - PROXIED=true
       - RRTYPE=A
