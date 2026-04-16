@@ -251,10 +251,20 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  textfile-init:
+    image: busybox:1.37.0
+    container_name: monitoring-textfile-init
+    command: sh -c "mkdir -p /textfile-collector && echo '# HELP sis_backup_last_success Unix timestamp of last successful backup\n# TYPE sis_backup_last_success gauge\nsis_backup_last_success 0\n# HELP sis_backup_last_run Unix timestamp of last backup attempt\n# TYPE sis_backup_last_run gauge\nsis_backup_last_run 0' > /textfile-collector/backup.prom"
+    volumes:
+      - ${DATA_BASE_PATH}/monitoring/textfile-collector:/textfile-collector
+
   node-exporter:
     image: prom/node-exporter:${NODE_EXPORTER_VERSION}
     container_name: monitoring-node-exporter
     restart: unless-stopped
+    depends_on:
+      textfile-init:
+        condition: service_completed_successfully
     security_opt:
       - no-new-privileges:true
 
@@ -262,10 +272,12 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
+      - ${DATA_BASE_PATH}/monitoring/textfile-collector:/textfile-collector:ro
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
       - '--path.rootfs=/rootfs'
+      - '--collector.textfile.directory=/textfile-collector'
       # Exclude virtual/pseudo filesystems and ZFS child datasets.
       # Without rootfs, node-exporter reported boot-pool mounts as /, /home, etc.
       # With rootfs, it resolves all ~100 ZFS mounts including data pool children.
@@ -310,6 +322,41 @@ services:
           memory: 256M
         reservations:
           memory: 32M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:${POSTGRES_EXPORTER_VERSION}
+    container_name: monitoring-postgres-exporter
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    # Multi-target mode: each DATA_SOURCE_NAME_N connects to a different PG instance.
+    # Each PG instance needs 'pg_monitor' role granted to the DB user.
+    # Grant: CREATE ROLE pg_monitor; GRANT pg_monitor TO <db_user>;
+    environment:
+      - DATA_SOURCE_NAME=postgresql://forgejo:${PG_EXPORTER_FORGEJO_PASSWORD}@operations-postgres-forgejo:5432/forgejo?sslmode=disable
+      - DATA_SOURCE_NAME_2=postgresql://keycloak:${PG_EXPORTER_KEYCLOAK_PASSWORD}@iam-postgres:5432/keycloak?sslmode=disable
+      - DATA_SOURCE_NAME_3=postgresql://synapse:${PG_EXPORTER_SYNAPSE_PASSWORD}@collaboration-postgres:5432/synapse?sslmode=disable
+      - DATA_SOURCE_NAME_4=postgresql://freshrss:${PG_EXPORTER_RSS_PASSWORD}@rss-postgres:5432/freshrss?sslmode=disable
+      - DATA_SOURCE_NAME_5=postgresql://immich:${PG_EXPORTER_PHOTOS_PASSWORD}@photos-postgres:5432/immich?sslmode=disable
+      - DATA_SOURCE_NAME_6=postgresql://paperless:${PG_EXPORTER_DOCUMENTS_PASSWORD}@documents-postgres:5432/paperless?sslmode=disable
+      - PG_EXPORTER_AUTO_DISCOVER_DATABASES=false
+    networks:
+      - backend_net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9187/metrics"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     logging:
       driver: "json-file"
       options:

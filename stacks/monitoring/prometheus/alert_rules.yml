@@ -168,6 +168,17 @@ groups:
           summary: "Backup container {{ $labels.name }} is down"
           description: "Backup container {{ $labels.name }} has not been seen for over 1 hour. Scheduled backups may be failing."
 
+      # Backup script writes sis_backup_last_success metric via node-exporter textfile collector.
+      # Alert if no successful backup in 26 hours (missed the 02:00 UTC daily window).
+      - alert: BackupStale
+        expr: (time() - sis_backup_last_success) > 93600
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No successful backup in over 26 hours"
+          description: "Last successful backup was {{ $value | humanizeDuration }} ago. The daily 02:00 UTC backup may have failed."
+
   - name: system_health
     rules:
       # Host disk full warning (>85% on any filesystem)

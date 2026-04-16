@@ -30,7 +30,7 @@
       "customType": "regex",
       "fileMatch": ["stacks/.+/versions\\.env$"],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>.+?))?\\n(?<currentValue>.+?)=(?<currentDigest>.*)"
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>.+?))?\\n\\S+=(?<currentValue>.*)"
       ]
     }
   ],

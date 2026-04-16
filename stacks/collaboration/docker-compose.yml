@@ -264,6 +264,7 @@ services:
       - "traefik.http.routers.element.rule=Host(`${ELEMENT_SUBDOMAIN}.${DOMAIN_NAME}`)"
       - "traefik.http.routers.element.entrypoints=websecure"
       - "traefik.http.routers.element.tls.certresolver=cloudflare"
+      - "traefik.http.routers.element.middlewares=global-rate-limit"
       - "traefik.http.services.element.loadbalancer.server.port=80"
     deploy:
       resources:

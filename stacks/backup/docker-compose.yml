@@ -46,6 +46,7 @@ services:
     volumes:
       - ./scripts:/scripts:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${DATA_BASE_PATH}/monitoring/textfile-collector:/textfile-collector
     environment:
       - TZ=${TZ}
       - CRON_SCHEDULE=0 2 * * *
