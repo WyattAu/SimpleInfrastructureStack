@@ -68,7 +68,7 @@ services:
         max-file: "3"
 
   paperless-webserver:
-    image: linuxserver/paperless-ngx:${PAPERLESS_VERSION}
+    image: ghcr.io/paperless-ngx/paperless-ngx:${PAPERLESS_VERSION}
     container_name: documents-webserver
     restart: unless-stopped
     security_opt:
@@ -84,9 +84,8 @@ services:
       - ${DATA_BASE_PATH}/documents/media:/data
       - ${DATA_BASE_PATH}/documents/export:/export
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
+      - USERMAP_UID=${PUID}
+      - USERMAP_GID=${PGID}
       - PAPERLESS_URL=https://${DOCS_SUBDOMAIN}.${DOMAIN_NAME}
       - PAPERLESS_SECRET_KEY=${PAPERLESS_SECRET_KEY}
       - PAPERLESS_DBHOST=paperless-postgres
