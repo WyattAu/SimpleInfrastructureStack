@@ -1,0 +1,95 @@
+services:
+  rss-db-init:
+    image: busybox:1.37.0
+    container_name: rss-db-init
+    user: "${PUID}:${PGID}"
+    volumes:
+      - ${DATA_BASE_PATH}/rss/postgres:/data
+    command: ["mkdir", "-p", "/data"]
+
+  postgres-rss:
+    image: postgres:${POSTGRES_VERSION}
+    container_name: rss-postgres
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+    depends_on:
+      rss-db-init:
+        condition: service_completed_successfully
+    volumes:
+      - ${DATA_BASE_PATH}/rss/postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  freshrss:
+    image: freshrss/freshrss:${FRESHRSS_VERSION}
+    container_name: rss-freshrss
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+    depends_on:
+      postgres-rss:
+        condition: service_healthy
+    volumes:
+      - ${DATA_BASE_PATH}/rss/data:/var/www/FreshRSS/data
+    environment:
+      - TZ=${TZ}
+      - CRON_MIN=3,14,29,44
+      - FRESHRSS_ENV=production
+      - FRESHRSS_DEFAULT_USER=admin
+      - DB_HOST=postgres-rss
+      - DB_TYPE=pgsql
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_BASE=${POSTGRES_DB}
+    networks:
+      - traefik_net
+      - backend_net
+    healthcheck:
+      test: ["CMD", "curl", "-fSs", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
+      - "traefik.http.routers.rss.rule=Host(`${RSS_SUBDOMAIN}.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.rss.entrypoints=websecure"
+      - "traefik.http.routers.rss.tls.certresolver=cloudflare"
+      - "traefik.http.services.rss.loadbalancer.server.port=80"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  traefik_net:
+    external: true
+  backend_net:
+    external: true

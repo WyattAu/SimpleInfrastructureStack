@@ -13,16 +13,7 @@
   "commitMessageAction": "update",
   "packageRules": [
     {
-      "description": "Auto-merge patch updates for Docker images",
-      "matchUpdateTypes": ["patch"],
-      "matchDatasources": ["docker"],
-      "automerge": true,
-      "automergeType": "pr",
-      "requiredStatusChecks": ["validate"]
-    },
-    {
-      "description": "Group major Docker image updates — require manual review",
-      "matchUpdateTypes": ["major"],
+      "description": "All Docker image updates require manual review — no auto-merge",
       "matchDatasources": ["docker"],
       "automerge": false
     },

@@ -67,6 +67,26 @@
         icon: collabora-online.webp
         description: Document Editing
         container: storage-collabora
+    - Immich:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/immich.png
+        href: https://photos.wyattau.com
+        description: Photo Backup
+        siteMonitor: https://photos.wyattau.com
+    - Paperless:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/paperless-ngx.png
+        href: https://docs.wyattau.com
+        description: Document Management
+        siteMonitor: https://docs.wyattau.com
+    - FreshRSS:
+        icon: freshrss.webp
+        href: https://rss.wyattau.com
+        description: RSS Reader
+        siteMonitor: https://rss.wyattau.com
+    - Vaultwarden:
+        icon: vaultwarden.webp
+        href: https://vault.wyattau.com
+        description: Password Manager
+        siteMonitor: https://vault.wyattau.com
 
 - Business:
     - Akaunting:
@@ -74,3 +94,13 @@
         href: https://akaunting.wyattau.com
         description: Accounting
         siteMonitor: https://akaunting.wyattau.com
+
+- Infrastructure:
+    - WireGuard:
+        icon: wireguard.webp
+        description: VPN Server
+        container: vpn-wireguard
+    - Hookshot:
+        icon: matrix-org.webp
+        description: Matrix Bridges
+        container: collaboration-hookshot

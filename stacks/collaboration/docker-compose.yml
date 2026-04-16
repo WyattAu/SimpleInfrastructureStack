@@ -275,15 +275,17 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Hookshot is disabled until properly configured (needs config.yml + registration.yml).
-  # To enable: remove the profiles line and create config at
-  # ${DATA_BASE_PATH}/collaboration/hookshot/config.yml, then register with Synapse.
+  # Hookshot: Matrix bridge for GitHub webhooks, IRC, etc.
+  # Config: stacks/collaboration/config/hookshot/config.yml (git-tracked)
+  # Data: ${DATA_BASE_PATH}/collaboration/hookshot/ (registration.yml generated on first run)
+  # Setup: 1) Set GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET in secrets
+  #         2) Generate registration: docker exec collaboration-hookshot node /app/src/app.js -r -u http://collaboration-hookshot:8080
+  #         3) Add registration.yml to Synapse homeserver.yaml
+  #         4) Restart Synapse
   matrix-hookshot:
     image: halfshot/matrix-hookshot:${HOOKSHOT_VERSION}
     container_name: collaboration-hookshot
-    restart: "no"
-    profiles:
-      - disabled
+    restart: unless-stopped
     security_opt:
       - no-new-privileges:true
 
@@ -292,6 +294,7 @@ services:
         condition: service_started
     volumes:
       - ${DATA_BASE_PATH}/collaboration/hookshot:/data
+      - ./config/hookshot/config.yml:/data/config.yml:ro
     networks:
       - traefik_net
       - backend_net
