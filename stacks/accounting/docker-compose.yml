@@ -92,8 +92,11 @@ services:
     depends_on:
       mariadb-akaunting:
         condition: service_healthy
-    environment:
-      - DATA_SOURCE_NAME=${MYSQL_USER_AKAUNTING}:${MYSQL_PASSWORD_AKAUNTING}@(tcp(accounting-mariadb-akaunting:3306))/${MYSQL_DB_AKAUNTING}
+    # Pass DSN via command-line flag to bypass .my.cnf parsing.
+    # mysqld_exporter v0.16.0 checks .my.cnf first and exits
+    # on parse failure without falling back to DATA_SOURCE_NAME.
+    command:
+      - "--mysqld.address=akaunting:${MYSQL_PASSWORD_AKAUNTING}@(tcp(accounting-mariadb-akaunting:3306))/${MYSQL_DB_AKAUNTING}"
     networks:
       - backend_net
     deploy:
