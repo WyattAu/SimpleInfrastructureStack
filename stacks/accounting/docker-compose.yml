@@ -92,10 +92,15 @@ services:
     depends_on:
       mariadb-akaunting:
         condition: service_healthy
-    # DSN with URL-encoded password (password contains / and + which must be %2F and %2B)
-    # mysqld_exporter v0.16.0 uses Go mysql DSN: user:password@(host:port)/dbname
+    # mysqld_exporter v0.16.0 reads password from MYSQLD_EXPORTER_PASSWORD env var
+    # (expanded via os.ExpandEnv in the built-in [client] section), username from
+    # --mysqld.username flag, and host:port from --mysqld.address flag.
+    # No DATA_SOURCE_NAME or .my.cnf needed.
     environment:
-      - DATA_SOURCE_NAME=akaunting:${MYSQL_PASSWORD_AKAUNTING_ENCODED}@(accounting-mariadb-akaunting:3306)/${MYSQL_DB_AKAUNTING}
+      - MYSQLD_EXPORTER_PASSWORD=${MYSQL_PASSWORD_AKAUNTING}
+    command:
+      - "--mysqld.address=accounting-mariadb-akaunting:3306"
+      - "--mysqld.username=akaunting"
     networks:
       - backend_net
     deploy:
