@@ -5,9 +5,9 @@ bridge:
   domain: wyattau.com
   url: http://collaboration-synapse:8008
   mediaUrl: https://matrix.wyattau.com
-  port: 8080
-  bindAddress: 0.0.0.0
 
+# In v7.3.2, listeners handle ALL HTTP including appservice API.
+# Do NOT set bridge.port — it causes EADDRINUSE conflict with listeners.
 listeners:
   - port: 8080
     bindAddress: 0.0.0.0
