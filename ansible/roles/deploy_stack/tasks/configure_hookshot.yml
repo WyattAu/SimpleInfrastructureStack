@@ -1,0 +1,82 @@
+---
+# Configure Matrix Hookshot GitHub bridge.
+#
+# Steps:
+# 1. Write GitHub App private key to hookshot data directory
+# 2. Generate registration.yml if it doesn't exist
+# 3. Add app_service_config_files to Synapse homeserver.yaml
+# 4. Restart Synapse to pick up the new bridge
+# 5. Restart Hookshot to use the registration
+
+- name: Check if Hookshot private key exists on server
+  ansible.builtin.stat:
+    path: "{{ infra_data_path }}/collaboration/hookshot/github-app-private-key.pem"
+  register: hookshot_key
+  when: "'collaboration' in stacks"
+
+- name: Write GitHub App private key to hookshot data directory
+  ansible.builtin.shell: |
+    echo "{{ HOOKSHOT_GITHUB_PRIVATE_KEY_B64 }}" | base64 -d > {{ infra_data_path }}/collaboration/hookshot/github-app-private-key.pem
+    chmod 400 {{ infra_data_path }}/collaboration/hookshot/github-app-private-key.pem
+  when:
+    - "'collaboration' in stacks"
+    - not hookshot_key.stat.exists
+  no_log: true
+
+- name: Check if Hookshot registration.yml exists
+  ansible.builtin.stat:
+    path: "{{ infra_data_path }}/collaboration/hookshot/registration.yml"
+  register: hookshot_registration
+  when: "'collaboration' in stacks"
+
+- name: Generate Hookshot registration.yml
+  ansible.builtin.shell: |
+    docker exec collaboration-hookshot node /app/src/app.js -r \
+      -u http://collaboration-hookshot:8080 \
+      -c /data/config.yml \
+      -o /data/registration.yml
+  register: hookshot_gen
+  when:
+    - "'collaboration' in stacks"
+    - not hookshot_registration.stat.exists
+  ignore_errors: true
+
+- name: Check if Synapse has Hookshot app_service configured
+  ansible.builtin.shell: |
+    grep -q "hookshot" {{ infra_data_path }}/collaboration/synapse/homeserver.yaml 2>/dev/null || echo "NOT_FOUND"
+  register: synapse_hookshot_check
+  changed_when: false
+  when: "'collaboration' in stacks"
+
+- name: Add Hookshot registration to Synapse app_service_config_files
+  ansible.builtin.shell: |
+    printf '\napp_service_config_files:\n  - "/data/hookshot/registration.yml"\n' >> {{ infra_data_path }}/collaboration/synapse/homeserver.yaml
+  when:
+    - "'collaboration' in stacks"
+    - "'NOT_FOUND' in synapse_hookshot_check.stdout"
+
+- name: Restart Synapse to load Hookshot bridge
+  ansible.builtin.shell: |
+    docker restart collaboration-synapse
+  when:
+    - "'collaboration' in stacks"
+    - "'NOT_FOUND' in synapse_hookshot_check.stdout"
+
+- name: Wait for Synapse to be ready after restart
+  ansible.builtin.shell: |
+    docker exec collaboration-synapse curl -sf http://localhost:8008/_matrix/client/versions > /dev/null 2>&1
+  register: synapse_ready
+  until: synapse_ready.rc == 0
+  retries: 30
+  delay: 5
+  changed_when: false
+  when:
+    - "'collaboration' in stacks"
+    - "'NOT_FOUND' in synapse_hookshot_check.stdout"
+
+- name: Restart Hookshot to use registration
+  ansible.builtin.shell: |
+    docker restart collaboration-hookshot
+  when:
+    - "'collaboration' in stacks"
+    - hookshot_gen is succeeded or not hookshot_registration.stat.exists
