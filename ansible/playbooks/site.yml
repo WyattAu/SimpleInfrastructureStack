@@ -121,6 +121,11 @@
         - name: Configure Keycloak realm SMTP
           ansible.builtin.include_tasks: "{{ playbook_dir }}/../roles/deploy_stack/tasks/configure_keycloak.yml"
 
+        # Phase 3c: Configure Hookshot GitHub bridge.
+        # Writes private key, generates registration.yml, adds to Synapse.
+        - name: Configure Hookshot GitHub bridge
+          ansible.builtin.include_tasks: "{{ playbook_dir }}/../roles/deploy_stack/tasks/configure_hookshot.yml"
+
         # Brief pause for containers to stabilize
         - name: Wait for containers to stabilize
           ansible.builtin.pause:
