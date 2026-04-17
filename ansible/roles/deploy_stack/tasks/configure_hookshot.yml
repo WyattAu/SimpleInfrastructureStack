@@ -24,13 +24,9 @@
 # 9. Restart Hookshot
 
 - name: Ensure Hookshot data directory exists
-  ansible.builtin.file:
-    path: "{{ infra_data_path }}/collaboration/hookshot"
-    state: directory
-    owner: "{{ PUID | default('1000') }}"
-    group: "{{ PGID | default('1000') }}"
-    mode: "0755"
+  ansible.builtin.shell: mkdir -p "{{ infra_data_path }}/collaboration/hookshot"
   when: "'collaboration' in stacks"
+  changed_when: false
 
 - name: Check if Hookshot private key exists
   ansible.builtin.stat:
@@ -95,19 +91,13 @@
     - not _hookshot_registration.stat.exists
 
 - name: Ensure Synapse hookshot directory exists
-  ansible.builtin.file:
-    path: "{{ infra_data_path }}/collaboration/synapse/hookshot"
-    state: directory
-    owner: "{{ PUID | default('1000') }}"
-    group: "{{ PGID | default('1000') }}"
-    mode: "0755"
+  ansible.builtin.shell: mkdir -p "{{ infra_data_path }}/collaboration/synapse/hookshot"
   when: "'collaboration' in stacks"
+  changed_when: false
 
 - name: Copy registration into Synapse data volume
   ansible.builtin.shell: |
     cp "{{ infra_data_path }}/collaboration/hookshot/registration.yml" \
-       "{{ infra_data_path }}/collaboration/synapse/hookshot/registration.yml"
-    chown "{{ PUID | default('1000') }}:{{ PGID | default('1000') }}" \
        "{{ infra_data_path }}/collaboration/synapse/hookshot/registration.yml"
   when: "'collaboration' in stacks"
 
