@@ -8,7 +8,7 @@ output "cloudflare_zone" {
 }
 
 output "active_dns_records" {
-  value       = { for k, v in cloudflare_dns_record.service_v4 : k => v.name }
+  value       = { for k, v in cloudflare_record.service_v4 : k => v.name }
   description = "Active service DNS records managed by Terraform"
 }
 
@@ -18,7 +18,7 @@ output "keycloak_realm" {
 }
 
 output "keycloak_clients" {
-  value       = [for c in [keycloak_oidc_client.oauth2_proxy, keycloak_oidc_client.grafana, keycloak_oidc_client.forgejo] : c.client_id]
+  value       = [for c in [keycloak_openid_client.oauth2_proxy, keycloak_openid_client.grafana, keycloak_openid_client.forgejo] : c.client_id]
   description = "Keycloak OIDC clients managed by Terraform"
 }
 
