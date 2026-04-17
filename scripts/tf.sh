@@ -63,6 +63,13 @@ export TF_VAR_kc_grafana_secret=$(
     "$REPO_DIR/secrets/monitoring.env.encrypted" 2>/dev/null \
     | grep '^GRAFANA_OIDC_CLIENT_SECRET=' | cut -d= -f2 | tr -d "'")
 
+export TF_VAR_kc_forgejo_secret=$(
+  sops -d --input-type dotenv --output-type dotenv \
+    "$REPO_DIR/secrets/iam.env.encrypted" 2>/dev/null \
+    | grep '^FORGEJO_KEYCLOAK_CLIENT_SECRET=' | cut -d= -f2 | tr -d "'")
+
+# Forgejo API token
+
 # Forgejo token (generated via: gitea admin user generate-access-token)
 # NOTE: If this fails, generate a new token:
 #   ssh truenas_admin@192.168.1.3 \

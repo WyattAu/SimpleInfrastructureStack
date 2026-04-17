@@ -39,8 +39,22 @@ resource "keycloak_openid_client" "oauth2_proxy" {
   client_secret         = var.kc_oauth2_proxy_secret
   standard_flow_enabled = true
   access_type           = "CONFIDENTIAL"
-  valid_redirect_uris   = ["https://*.wyattau.com/*", "https://*.wyattau.com/oauth2/callback"]
-  web_origins           = ["https://*.wyattau.com"]
+  valid_redirect_uris   = [
+    "https://akaunting.wyattau.com/*",
+    "https://forgejo.wyattau.com/*",
+    "https://homepage.wyattau.com/*",
+    "https://kuma.wyattau.com/*",
+    "https://prometheus.wyattau.com/*",
+    "https://traefik.wyattau.com/*",
+  ]
+  web_origins           = [
+    "https://akaunting.wyattau.com",
+    "https://forgejo.wyattau.com",
+    "https://homepage.wyattau.com",
+    "https://kuma.wyattau.com",
+    "https://prometheus.wyattau.com",
+    "https://traefik.wyattau.com",
+  ]
   root_url              = "https://auth.wyattau.com"
 }
 
@@ -88,25 +102,27 @@ resource "keycloak_user" "wyatt" {
 }
 
 resource "keycloak_user" "joshkad" {
-  realm_id   = data.keycloak_realm.main.id
-  username   = "joshkad"
-  enabled    = true
-  email      = "jmlkadungure@gmail.com"
-  first_name = "Josh"
-  last_name  = "Kad"
-  email_verified = false
+  realm_id        = data.keycloak_realm.main.id
+  username        = "joshkad"
+  enabled         = true
+  email           = "jmlkadungure@gmail.com"
+  first_name      = "Joshua"
+  last_name       = "Kadungure"
+  email_verified  = true
 }
 
 resource "keycloak_user" "ayo" {
-  realm_id   = data.keycloak_realm.main.id
-  username   = "ayo"
-  enabled    = true
-  email      = "labinjoayomikun@gmail.com"
-  email_verified = false
+  realm_id        = data.keycloak_realm.main.id
+  username        = "ayo"
+  enabled         = true
+  email           = "labinjoayomikun@gmail.com"
+  first_name      = "Ayomikun"
+  last_name       = "Labinjo"
+  email_verified  = true
 }
 
 resource "keycloak_user" "viswa" {
-  realm_id   = data.keycloak_realm.main.id
-  username   = "viswa"
-  enabled    = true
+  realm_id        = data.keycloak_realm.main.id
+  username        = "viswa"
+  enabled         = true
 }

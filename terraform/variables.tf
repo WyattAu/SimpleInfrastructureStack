@@ -100,7 +100,7 @@ variable "kc_grafana_secret" {
 }
 
 variable "kc_forgejo_secret" {
-  description = "Keycloak client secret for Forgejo (generated, stored in SOPS)"
+  description = "Keycloak client secret for Forgejo (from SOPS secrets/iam.env.encrypted: FORGEJO_KEYCLOAK_CLIENT_SECRET)"
   type        = string
   sensitive   = true
 }
