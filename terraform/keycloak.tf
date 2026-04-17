@@ -21,25 +21,16 @@ data "keycloak_realm" "main" {
 # ===================================================================
 # SMTP Configuration
 # ===================================================================
-
-resource "keycloak_realm_smtp" "main" {
-  realm_id       = data.keycloak_realm.main.id
-  host           = var.kc_smtp_host
-  port           = var.kc_smtp_port
-  from           = var.kc_smtp_from
-  from_display_name = "SIS Infrastructure"
-  user           = var.kc_smtp_user
-  password       = var.kc_smtp_password
-  ssl            = true
-  starttls       = true
-  auth           = true
-}
+# NOTE: keycloak provider v4 does not have a realm_smtp resource.
+# SMTP is managed via Ansible (keycloak-smtp role) which calls the
+# Keycloak admin REST API directly. The variables remain defined
+# for documentation/reference purposes.
 
 # ===================================================================
 # OIDC Clients
 # ===================================================================
 
-resource "keycloak_oidc_client" "oauth2_proxy" {
+resource "keycloak_openid_client" "oauth2_proxy" {
   realm_id              = data.keycloak_realm.main.id
   client_id             = "oauth2-proxy"
   name                  = "OAuth2 Proxy"
@@ -53,7 +44,7 @@ resource "keycloak_oidc_client" "oauth2_proxy" {
   root_url              = "https://auth.wyattau.com"
 }
 
-resource "keycloak_oidc_client" "grafana" {
+resource "keycloak_openid_client" "grafana" {
   realm_id              = data.keycloak_realm.main.id
   client_id             = "grafana"
   name                  = "Grafana"
@@ -68,7 +59,7 @@ resource "keycloak_oidc_client" "grafana" {
   root_url              = "https://grafana.wyattau.com"
 }
 
-resource "keycloak_oidc_client" "forgejo" {
+resource "keycloak_openid_client" "forgejo" {
   realm_id              = data.keycloak_realm.main.id
   client_id             = "forgejo"
   name                  = "Forgejo"

@@ -42,7 +42,7 @@ locals {
 }
 
 # A + AAAA records for each active service
-resource "cloudflare_dns_record" "service_v4" {
+resource "cloudflare_record" "service_v4" {
   for_each = local.active_services
 
   zone_id = var.cf_zone_id
@@ -53,7 +53,7 @@ resource "cloudflare_dns_record" "service_v4" {
   ttl     = 1
 }
 
-resource "cloudflare_dns_record" "service_v6" {
+resource "cloudflare_record" "service_v6" {
   for_each = local.active_services
 
   zone_id = var.cf_zone_id
@@ -69,7 +69,7 @@ resource "cloudflare_dns_record" "service_v6" {
 # ===================================================================
 
 # SSH and deploy go through the Cloudflare Tunnel
-resource "cloudflare_dns_record" "ssh" {
+resource "cloudflare_record" "ssh" {
   zone_id = var.cf_zone_id
   name    = "ssh"
   type    = "CNAME"
@@ -78,7 +78,7 @@ resource "cloudflare_dns_record" "ssh" {
   ttl     = 1
 }
 
-resource "cloudflare_dns_record" "deploy" {
+resource "cloudflare_record" "deploy" {
   zone_id = var.cf_zone_id
   name    = "deploy"
   type    = "CNAME"
@@ -92,7 +92,7 @@ resource "cloudflare_dns_record" "deploy" {
 # ===================================================================
 
 # Email routing (Cloudflare email routing)
-resource "cloudflare_dns_record" "mx_primary" {
+resource "cloudflare_record" "mx_primary" {
   zone_id  = var.cf_zone_id
   name     = "wyattau.com"
   type     = "MX"
@@ -102,7 +102,7 @@ resource "cloudflare_dns_record" "mx_primary" {
   ttl      = 3600
 }
 
-resource "cloudflare_dns_record" "mx_secondary" {
+resource "cloudflare_record" "mx_secondary" {
   zone_id  = var.cf_zone_id
   name     = "wyattau.com"
   type     = "MX"
@@ -112,7 +112,7 @@ resource "cloudflare_dns_record" "mx_secondary" {
   ttl      = 3600
 }
 
-resource "cloudflare_dns_record" "mx_tertiary" {
+resource "cloudflare_record" "mx_tertiary" {
   zone_id  = var.cf_zone_id
   name     = "wyattau.com"
   type     = "MX"
@@ -123,7 +123,7 @@ resource "cloudflare_dns_record" "mx_tertiary" {
 }
 
 # SPF record
-resource "cloudflare_dns_record" "spf" {
+resource "cloudflare_record" "spf" {
   zone_id  = var.cf_zone_id
   name     = "wyattau.com"
   type     = "TXT"
@@ -133,7 +133,7 @@ resource "cloudflare_dns_record" "spf" {
 }
 
 # DMARC record
-resource "cloudflare_dns_record" "dmarc" {
+resource "cloudflare_record" "dmarc" {
   zone_id  = var.cf_zone_id
   name     = "_dmarc"
   type     = "TXT"
@@ -143,7 +143,7 @@ resource "cloudflare_dns_record" "dmarc" {
 }
 
 # DKIM (Cloudflare email routing DKIM)
-resource "cloudflare_dns_record" "dkim" {
+resource "cloudflare_record" "dkim" {
   zone_id  = var.cf_zone_id
   name     = "cf2024-1._domainkey"
   type     = "TXT"
@@ -153,7 +153,7 @@ resource "cloudflare_dns_record" "dkim" {
 }
 
 # Google site verification
-resource "cloudflare_dns_record" "google_site_verification" {
+resource "cloudflare_record" "google_site_verification" {
   zone_id  = var.cf_zone_id
   name     = "wyattau.com"
   type     = "TXT"

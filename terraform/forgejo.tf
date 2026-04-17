@@ -55,37 +55,37 @@ resource "gitea_org" "suture" {
 
 resource "gitea_team" "questhive_owners" {
   name         = "Owners"
-  organization = gitea_org.questhive.id
+  organisation = gitea_org.questhive.name
   permission   = "owner"
 }
 
 resource "gitea_team" "blocmarket_owners" {
   name         = "Owners"
-  organization = gitea_org.blocmarket.id
+  organisation = gitea_org.blocmarket.name
   permission   = "owner"
 }
 
 resource "gitea_team" "rankhub_owners" {
   name         = "Owners"
-  organization = gitea_org.rankhub.id
+  organisation = gitea_org.rankhub.name
   permission   = "owner"
 }
 
 resource "gitea_team" "aether_owners" {
   name         = "Owners"
-  organization = gitea_org.aether.id
+  organisation = gitea_org.aether.name
   permission   = "owner"
 }
 
 resource "gitea_team" "deontic_owners" {
   name         = "Owners"
-  organization = gitea_org.deontic.id
+  organisation = gitea_org.deontic.name
   permission   = "owner"
 }
 
 resource "gitea_team" "suture_owners" {
   name         = "Owners"
-  organization = gitea_org.suture.id
+  organisation = gitea_org.suture.name
   permission   = "owner"
 }
 
