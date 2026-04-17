@@ -1,0 +1,12 @@
+# Terraform state files (contain resource IDs, may contain some sensitive data)
+*.tfstate
+*.tfstate.backup
+
+# Terraform variables with secrets (set via TF_VAR_ env vars instead)
+*.tfvars
+*.tfvars.json
+*.auto.tfvars
+
+# Provider binaries
+.terraform/
+.terraform.lock.hcl
