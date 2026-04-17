@@ -8,7 +8,8 @@ services:
     cap_drop:
       - ALL
     # --config must come before 'run' (tunnel subcommand flag, not run action flag)
-    command: tunnel --config /etc/cloudflared/config.yml run --metrics 0.0.0.0:4788
+    # --metrics was removed in a cloudflared image update (use Prometheus scrape instead)
+    command: tunnel --config /etc/cloudflared/config.yml run
     volumes:
       - ./config.yml:/etc/cloudflared/config.yml:ro
       - ./credentials.json:/etc/cloudflared/credentials.json:ro
