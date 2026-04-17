@@ -93,10 +93,9 @@ services:
       mariadb-akaunting:
         condition: service_healthy
     # Pass DSN via command-line flag to bypass .my.cnf parsing.
-    # mysqld_exporter v0.16.0 checks .my.cnf first and exits
-    # on parse failure without falling back to DATA_SOURCE_NAME.
+    # Use [host:port] bracket format (tcp(host:port) causes "too many colons" error
     command:
-      - "--mysqld.address=akaunting:${MYSQL_PASSWORD_AKAUNTING}@(tcp(accounting-mariadb-akaunting:3306))/${MYSQL_DB_AKAUNTING}"
+      - "--mysqld.address=akaunting:${MYSQL_PASSWORD_AKAUNTING}@[accounting-mariadb-akaunting:3306]/${MYSQL_DB_AKAUNTING}"
     networks:
       - backend_net
     deploy:
