@@ -22,6 +22,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 TF_DIR="$REPO_DIR/terraform"
 
+# Terraform binary location (ZFS mount — /home is noexec, /opt is ro)
+TF_BIN="/mnt/pool_HDD_x2/infra/bin/terraform"
+if [ ! -x "$TF_BIN" ]; then
+  echo "ERROR: Terraform not found at $TF_BIN"
+  echo "Install: curl -sLo /tmp/terraform.zip https://releases.hashicorp.com/terraform/1.10.5/terraform_1.10.5_linux_amd64.zip"
+  echo "       sudo unzip -o /tmp/terraform.zip -d /mnt/pool_HDD_x2/infra/bin/"
+  exit 1
+fi
+export PATH="/mnt/pool_HDD_x2/infra/bin:$PATH"
+
 # Source SOPS secrets into environment variables
 echo "Loading SOPS secrets..."
 
