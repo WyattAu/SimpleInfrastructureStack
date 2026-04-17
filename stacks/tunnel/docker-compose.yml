@@ -15,12 +15,9 @@ services:
     # No Traefik labels — the tunnel must be independent
     # If Traefik breaks, the tunnel must still work to deliver deploys
     network_mode: host
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:4788/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
+    # No Docker healthcheck — cloudflared image is distroless/static (no curl/wget/shell).
+    # The tunnel is self-healing via restart: unless-stopped and logs connection status.
+    # Metrics available at http://localhost:4788/metrics for Prometheus scraping.
     deploy:
       resources:
         limits:
