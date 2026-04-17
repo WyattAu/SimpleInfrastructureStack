@@ -1,12 +1,9 @@
 # Matrix Hookshot configuration
-# See: https://matrix-hookshot.readthedocs.io/en/latest/setup.html
+# See: https://matrix-org.github.io/matrix-hookshot/setup/github.html
 
 bridge:
-  # Domain part of the bridge's Matrix user ID
   domain: wyattau.com
-  # Homeserver URL for the bridge bot
   url: http://collaboration-synapse:8008
-  # Media URL (public-facing)
   mediaUrl: https://matrix.wyattau.com
   port: 8080
   bindAddress: 0.0.0.0
@@ -15,27 +12,26 @@ listeners:
   - port: 8080
     bindAddress: 0.0.0.0
     resources:
-      - "webhooks"
+      - webhooks
 
-provisioning:
-  enabled: false
-
-queue:
-  monolithic: true
+permissions:
+  - actor: wyattau.com
+    services:
+      - service: "*"
+        level: admin
 
 github:
-  # GitHub App authentication
   auth:
-    appId: {{ GITHUB_APP_ID }}
-    privateKeyPath: "/data/github-app-private-key.pem"
-  
-  # Allow users to create webhook connections in rooms
+    id: {{ GITHUB_APP_ID }}
+    privateKeyFile: /data/github-app-private-key.pem
+  webhook:
+    secret: {{ GITHUB_WEBHOOK_SECRET }}
   allowWebhooks: true
-  # Allow inviting the bot to rooms without admin
   webhookNotifications:
     enabled: true
 
 passfile: /data/registration.yml
+passkeyPath: /data/passkey.pem
 
 logging:
   level: info
