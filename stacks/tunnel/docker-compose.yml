@@ -7,7 +7,8 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    command: tunnel run --config /etc/cloudflared/config.yml --metrics 0.0.0.0:4788
+    # --config must come before 'run' (tunnel subcommand flag, not run action flag)
+    command: tunnel --config /etc/cloudflared/config.yml run --metrics 0.0.0.0:4788
     volumes:
       - ./config.yml:/etc/cloudflared/config.yml:ro
       - ./credentials.json:/etc/cloudflared/credentials.json:ro
