@@ -276,13 +276,11 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Hookshot: Matrix bridge for GitHub webhooks, IRC, etc.
-  # Config: stacks/collaboration/config/hookshot/config.yml (git-tracked)
-  # Data: ${DATA_BASE_PATH}/collaboration/hookshot/ (registration.yml generated on first run)
-  # Setup: 1) Set GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET in secrets
-  #         2) Generate registration: docker exec collaboration-hookshot node /app/src/app.js -r -u http://collaboration-hookshot:8080
-  #         3) Add registration.yml to Synapse homeserver.yaml
-  #         4) Restart Synapse
+  # Hookshot: Matrix bridge for GitHub webhooks
+  # Config: stacks/collaboration/config/hookshot/config.yml.tmpl (rendered at deploy)
+  # Data: ${DATA_BASE_PATH}/collaboration/hookshot/ (registration.yml, private key)
+  # Auth: GitHub App (App ID + private key via GITHUB_APP_ID, key on server)
+  # Setup: Ansible writes private key + generates registration on first run
   matrix-hookshot:
     image: halfshot/matrix-hookshot:${HOOKSHOT_VERSION}
     container_name: collaboration-hookshot

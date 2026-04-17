@@ -24,11 +24,10 @@ queue:
   monolithic: true
 
 github:
-  # GitHub App or personal access token for webhooks
-  # Create a fine-grained PAT with repo:read permissions
+  # GitHub App authentication
   auth:
-    clientId: "${GITHUB_CLIENT_ID}"
-    clientSecret: "${GITHUB_CLIENT_SECRET}"
+    appId: {{ GITHUB_APP_ID }}
+    privateKeyPath: "/data/github-app-private-key.pem"
   
   # Allow users to create webhook connections in rooms
   allowWebhooks: true
