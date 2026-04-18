@@ -28,15 +28,15 @@ terraform {
   required_providers {
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "~> 4.0"
+      version = "4.52.7"
     }
     keycloak = {
       source  = "keycloak/keycloak"
-      version = "~> 4.0"
+      version = "4.5.0"
     }
     gitea = {
       source  = "go-gitea/gitea"
-      version = "~> 0.7"
+      version = "0.7.0"
     }
   }
 }
