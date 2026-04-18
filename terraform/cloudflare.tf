@@ -92,12 +92,20 @@ resource "cloudflare_record" "deploy" {
 # ===================================================================
 
 # Email routing (managed by Cloudflare Email Routing — NOT in Terraform)
-# MX records (route1/2/3.mx.cloudflare.net), DKIM, and DMARC are
-# auto-managed by Cloudflare Email Routing and cannot be modified via API.
-# These are documented here for reference but NOT imported into state.
+# MX records and DKIM are auto-managed by Cloudflare Email Routing and
+# cannot be modified via API. Documented here for reference only.
 # - MX: route1.mx.cloudflare.net (p=10), route2 (p=20), route3 (p=30)
 # - DKIM: cf2024-1._domainkey TXT
-# - DMARC: _dmarc TXT (v=DMARC1; p=none; ...)
+
+# DMARC record (can be managed via API — not controlled by Email Routing)
+resource "cloudflare_record" "dmarc" {
+  zone_id  = var.cf_zone_id
+  name     = "_dmarc"
+  type     = "TXT"
+  content = "v=DMARC1; p=none; rua=mailto:1aa26a2e9a5c459fb892d8df10af4f3b@dmarc-reports.cloudflare.net"
+  proxied  = false
+  ttl      = 1
+}
 
 # SPF record
 resource "cloudflare_record" "spf" {
