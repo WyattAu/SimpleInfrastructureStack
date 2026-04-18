@@ -98,6 +98,12 @@
               Loaded {{ secret_vars_files.matched | default(0) }} dotenv files
               ({{ dotenv_convert.stdout_lines | default([]) | last | default('') }})
 
+        # Phase 1b.5: Terraform plan + apply (needs secrets from 1b)
+        # Applies infrastructure changes (DNS, identity, orgs) before
+        # deploying containers. Runs init + plan, applies only if changes detected.
+        - name: Terraform infrastructure
+          ansible.builtin.include_tasks: "{{ playbook_dir }}/terraform_deploy.yml"
+
         # Phase 1c: Expand templates (needs vars from 1b)
         - name: Expand templates (Jinja2)
           ansible.builtin.include_tasks: "{{ prepare_role_path }}/expand_templates.yml"
