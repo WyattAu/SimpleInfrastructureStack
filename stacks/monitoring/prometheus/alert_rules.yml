@@ -364,7 +364,7 @@ groups:
     rules:
       # If these exporters/scrapers go down, ALL container/service alerts become blind.
       - alert: MonitoringExporterDown
-        expr: up{job=~"cadvisor|node-exporter|postgres-exporter|promtail|redis|mariadb|tempo"} == 0
+        expr: up{job=~"cadvisor|node-exporter|postgres-exporter|promtail|redis|mariadb|tempo|blackbox-exporter"} == 0
         for: 2m
         labels:
           severity: critical
@@ -557,3 +557,66 @@ groups:
           description: >-
             {{ $labels.job }} 30-day availability is {{ $value | humanizePercentage }},
             below the 99.5% SLO target.
+
+  - name: synthetic_monitoring
+    rules:
+      # Internal HTTP probes failing — service not responding from inside network
+      - alert: SyntheticHTTPInternalFailure
+        expr: probe_success{job="blackbox-http-internal"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Internal HTTP probe failed for {{ $labels.instance }}"
+          description: >-
+            HTTP probe to {{ $labels.target }} ({{ $labels.instance }}) is failing.
+            The service is not responding from inside the network. This may indicate
+            the application is down or returning unexpected status codes.
+
+      # External HTTP probes failing — full chain broken (DNS → Cloudflare → Tunnel → Traefik → Backend)
+      - alert: SyntheticHTTPExternalFailure
+        expr: probe_success{job="blackbox-http-external"} == 0
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "External HTTP probe failed for {{ $labels.instance }}"
+          description: >-
+            HTTPS probe to {{ $labels.target }} ({{ $labels.instance }}) is failing.
+            The full external chain may be broken: DNS, Cloudflare, Tunnel, Traefik, or backend.
+
+      # TCP probes failing — database or cache port not accepting connections
+      - alert: SyntheticTCPFailure
+        expr: probe_success{job="blackbox-tcp"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TCP probe failed for {{ $labels.instance }}:{{ $labels.target }}"
+          description: >-
+            TCP connection to {{ $labels.target }} failed. The service is not accepting
+            connections on the expected port.
+
+      # DNS probes failing — Docker DNS resolution broken
+      - alert: SyntheticDNSFailure
+        expr: probe_success{job="blackbox-dns"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "DNS probe failed for {{ $labels.target }}"
+          description: >-
+            DNS resolution for {{ $labels.target }} failed. Docker internal DNS
+            may be broken or the container is not running.
+
+      # HTTP probe latency warning — service responding but slowly
+      - alert: SyntheticHTTPLatency
+        expr: probe_http_duration_seconds{job=~"blackbox-http-.*"} > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "HTTP probe latency > 5s for {{ $labels.instance }}"
+          description: >-
+            HTTP probe to {{ $labels.target }} ({{ $labels.instance }}) took {{ $value }}s.
+            The service is responding but may be degraded.
