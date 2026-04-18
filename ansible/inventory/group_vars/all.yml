@@ -53,6 +53,7 @@ health_check_containers:
   - monitoring-node-exporter
   - monitoring-postgres-exporter
   - monitoring-redis-exporter
+  - monitoring-tempo
   - storage-ocis
   - storage-collabora
   - collaboration-synapse

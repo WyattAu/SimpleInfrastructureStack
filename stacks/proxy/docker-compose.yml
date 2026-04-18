@@ -62,6 +62,9 @@ services:
       - "--certificatesresolvers.cloudflare.acme.email=${LE_EMAIL}"
       - "--certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
+      # --- OpenTelemetry Tracing (export to Tempo) ---
+      - "--tracing.otlp=true"
+      - "--tracing.otlp.http.endpoint=http://monitoring-tempo:4318"
     labels:
       # --- Middleware: keycloak-auth (Moved from http.yml) ---
       - "traefik.http.middlewares.keycloak-auth.forwardauth.address=http://oauth2-proxy:4180"

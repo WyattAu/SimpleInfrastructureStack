@@ -364,7 +364,7 @@ groups:
     rules:
       # If these exporters/scrapers go down, ALL container/service alerts become blind.
       - alert: MonitoringExporterDown
-        expr: up{job=~"cadvisor|node-exporter|postgres-exporter|promtail|redis|mariadb"} == 0
+        expr: up{job=~"cadvisor|node-exporter|postgres-exporter|promtail|redis|mariadb|tempo"} == 0
         for: 2m
         labels:
           severity: critical
