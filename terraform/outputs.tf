@@ -26,3 +26,8 @@ output "forgejo_orgs" {
   value       = [for o in [gitea_org.questhive, gitea_org.blocmarket, gitea_org.rankhub, gitea_org.aether, gitea_org.deontic, gitea_org.suture] : o.name]
   description = "Forgejo organizations managed by Terraform"
 }
+
+output "geo_blocked_countries" {
+  value       = var.geo_blocked_countries
+  description = "Country codes blocked by Cloudflare WAF geo-blocking rule"
+}
