@@ -11,6 +11,7 @@ services:
       - /root/.cache/restic
     volumes:
       - ${DATA_BASE_PATH}:/data:ro
+      - /mnt/pool_HDD_x2/infra/stacks/terraform:/terraform:ro
       - ${BACKUP_BASE_PATH}/restic-repo:/restic-repo
     environment:
       - RESTIC_REPOSITORY=/restic-repo
