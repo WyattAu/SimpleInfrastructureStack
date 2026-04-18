@@ -91,36 +91,13 @@ resource "cloudflare_record" "deploy" {
 # DNS Records — Static / Third-Party
 # ===================================================================
 
-# Email routing (Cloudflare email routing)
-resource "cloudflare_record" "mx_primary" {
-  zone_id  = var.cf_zone_id
-  name     = "wyattau.com"
-  type     = "MX"
-  content = "route1.mx.cloudflare.net"
-  priority = 10
-  proxied  = false
-  ttl      = 3600
-}
-
-resource "cloudflare_record" "mx_secondary" {
-  zone_id  = var.cf_zone_id
-  name     = "wyattau.com"
-  type     = "MX"
-  content = "route2.mx.cloudflare.net"
-  priority = 20
-  proxied  = false
-  ttl      = 3600
-}
-
-resource "cloudflare_record" "mx_tertiary" {
-  zone_id  = var.cf_zone_id
-  name     = "wyattau.com"
-  type     = "MX"
-  content = "route3.mx.cloudflare.net"
-  priority = 30
-  proxied  = false
-  ttl      = 3600
-}
+# Email routing (managed by Cloudflare Email Routing — NOT in Terraform)
+# MX records (route1/2/3.mx.cloudflare.net), DKIM, and DMARC are
+# auto-managed by Cloudflare Email Routing and cannot be modified via API.
+# These are documented here for reference but NOT imported into state.
+# - MX: route1.mx.cloudflare.net (p=10), route2 (p=20), route3 (p=30)
+# - DKIM: cf2024-1._domainkey TXT
+# - DMARC: _dmarc TXT (v=DMARC1; p=none; ...)
 
 # SPF record
 resource "cloudflare_record" "spf" {
@@ -128,26 +105,6 @@ resource "cloudflare_record" "spf" {
   name     = "wyattau.com"
   type     = "TXT"
   content = "v=spf1 include:_spf.mx.cloudflare.net ~all"
-  proxied  = false
-  ttl      = 1
-}
-
-# DMARC record
-resource "cloudflare_record" "dmarc" {
-  zone_id  = var.cf_zone_id
-  name     = "_dmarc"
-  type     = "TXT"
-  content = "v=DMARC1; p=none; rua=mailto:1aa26a2e9a5c459fb892d8df10af4f3b@dmarc-reports.cloudflare.net"
-  proxied  = false
-  ttl      = 1
-}
-
-# DKIM (Cloudflare email routing DKIM)
-resource "cloudflare_record" "dkim" {
-  zone_id  = var.cf_zone_id
-  name     = "cf2024-1._domainkey"
-  type     = "TXT"
-  content = "v=DKIM1; h=sha256; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiweykoi+o48IOGuP7GR3X0MOExCUDY/BCRHoWBnh3rChl7WhdyCxW3jgq1daEjPPqoi7sJvdg5hEQVsgVRQP4DcnQDVjGMbASQtrY4WmB1VebF+RPJB2ECPsEDTpeiI5ZyUAwJaVX7r6bznU67g7LvFq35yIo4sdlmtZGV+i0H4cpYH9+3JJ78km4KXwaf9xUJCWF6nxeD+qG6Fyruw1Qlbds2r85U9dkNDVAS3gioCvELryh1TxKGiVTkg4wqHTyHfWsp7KD3WQHYJn0RyfJJu6YEmL77zonn7p2SRMvTMP3ZEXibnC9gz3nnhR6wcYL8Q7zXypKTMD58bTixDSJwIDAQAB"
   proxied  = false
   ttl      = 1
 }
