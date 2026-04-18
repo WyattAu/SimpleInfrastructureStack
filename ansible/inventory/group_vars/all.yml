@@ -19,6 +19,7 @@ infra_log_path: /var/log
 # If Traefik breaks, the tunnel must still deliver deploys.
 stacks:
   - tunnel
+  - security
   - proxy
   - iam
   - monitoring
@@ -39,6 +40,7 @@ stacks:
 # Only containers WITH a Docker healthcheck defined in compose should be listed here.
 health_check_containers:
   - proxy-well-known-server
+  - security-crowdsec
   - proxy-oauth2-proxy
   - iam-postgres
   - iam-keycloak
