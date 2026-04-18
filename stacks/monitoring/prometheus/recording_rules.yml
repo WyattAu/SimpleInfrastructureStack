@@ -1,0 +1,163 @@
+---
+# SLO/SLI Recording Rules
+# Pre-computes Service Level Indicators (SLIs) at regular intervals
+# to power SLO dashboards and burn rate alerts.
+#
+# SLO Targets:
+#   Critical services (99.9%): traefik, keycloak
+#   Important services (99.5%): forgejo, grafana, loki, synapse
+#   Standard services (99.0%): all others
+#
+# Error Budget = 1 - SLO target
+#   Critical: 0.1% = 43.2 min/month
+#   Important: 0.5% = 3.6 hours/month
+#   Standard: 1.0% = 7.2 hours/month
+
+groups:
+  - name: slo:availability
+    interval: 1m
+    rules:
+      # Per-service availability ratio over 5m window.
+      # up metric is 1 when scrape succeeds, 0 when it fails.
+      # averaged over 5m gives the fraction of time the service was up.
+      - record: slo:availability_ratio:5m
+        expr: avg_over_time(up[5m])
+        labels:
+          slo_window: 5m
+
+      # 30m window for smoother trending
+      - record: slo:availability_ratio:30m
+        expr: avg_over_time(up[30m])
+        labels:
+          slo_window: 30m
+
+      # 1h window for SLO compliance checking
+      - record: slo:availability_ratio:1h
+        expr: avg_over_time(up[1h])
+        labels:
+          slo_window: 1h
+
+      # 6h window for burn rate calculation
+      - record: slo:availability_ratio:6h
+        expr: avg_over_time(up[6h])
+        labels:
+          slo_window: 6h
+
+      # 1d window for daily SLO reporting
+      - record: slo:availability_ratio:1d
+        expr: avg_over_time(up[1d])
+        labels:
+          slo_window: 1d
+
+      # 3d window for multi-window burn rate alerts
+      - record: slo:availability_ratio:3d
+        expr: avg_over_time(up[3d])
+        labels:
+          slo_window: 3d
+
+      # 30d window for monthly SLO compliance
+      - record: slo:availability_ratio:30d
+        expr: avg_over_time(up[30d])
+        labels:
+          slo_window: 30d
+
+  - name: slo:http_errors
+    interval: 1m
+    rules:
+      # Per-service 5xx error ratio (Traefik)
+      # SLI: fraction of requests that are errors (5xx)
+      - record: slo:http_5xx_ratio:5m
+        expr: |
+          sum(rate(traefik_service_requests_total{code=~"5.."}[5m])) by (service)
+          /
+          sum(rate(traefik_service_requests_total[5m])) by (service)
+        labels:
+          slo_window: 5m
+
+      # 30m window
+      - record: slo:http_5xx_ratio:30m
+        expr: |
+          sum(rate(traefik_service_requests_total{code=~"5.."}[30m])) by (service)
+          /
+          sum(rate(traefik_service_requests_total[30m])) by (service)
+        labels:
+          slo_window: 30m
+
+      # 1h window
+      - record: slo:http_5xx_ratio:1h
+        expr: |
+          sum(rate(traefik_service_requests_total{code=~"5.."}[1h])) by (service)
+          /
+          sum(rate(traefik_service_requests_total[1h])) by (service)
+        labels:
+          slo_window: 1h
+
+      # 6h window
+      - record: slo:http_5xx_ratio:6h
+        expr: |
+          sum(rate(traefik_service_requests_total{code=~"5.."}[6h])) by (service)
+          /
+          sum(rate(traefik_service_requests_total[6h])) by (service)
+        labels:
+          slo_window: 6h
+
+      # 1d window
+      - record: slo:http_5xx_ratio:1d
+        expr: |
+          sum(rate(traefik_service_requests_total{code=~"5.."}[1d])) by (service)
+          /
+          sum(rate(traefik_service_requests_total[1d])) by (service)
+        labels:
+          slo_window: 1d
+
+      # 3d window
+      - record: slo:http_5xx_ratio:3d
+        expr: |
+          sum(rate(traefik_service_requests_total{code=~"5.."}[3d])) by (service)
+          /
+          sum(rate(traefik_service_requests_total[3d])) by (service)
+        labels:
+          slo_window: 3d
+
+      # 30d window
+      - record: slo:http_5xx_ratio:30d
+        expr: |
+          sum(rate(traefik_service_requests_total{code=~"5.."}[30d])) by (service)
+          /
+          sum(rate(traefik_service_requests_total[30d])) by (service)
+        labels:
+          slo_window: 30d
+
+      # Per-service total request rate (for context in dashboards)
+      - record: slo:http_requests_per_second:5m
+        expr: sum(rate(traefik_service_requests_total[5m])) by (service)
+
+  - name: slo:container_health
+    interval: 1m
+    rules:
+      # Aggregate container availability (fraction of containers running)
+      - record: slo:container_up_ratio:5m
+        expr: |
+          sum(avg_over_time(up{job=~"cadvisor",image!=""}[5m])) by (job)
+          / count(count by (name) (up{job=~"cadvisor",image!=""}))
+        labels:
+          slo_window: 5m
+
+      # Count of currently down containers (with image label, excludes system cgroups)
+      - record: slo:containers_down:5m
+        expr: sum(1 - avg_over_time(up{job=~"cadvisor",image!=""}[5m])) by (name)
+
+  - name: slo:backup
+    interval: 5m
+    rules:
+      # Backup freshness (seconds since last successful backup)
+      - record: slo:backup_age_seconds:5m
+        expr: time() - sis_backup_last_success
+        labels:
+          slo_window: 5m
+
+      # Backup compliance: 1 if backup succeeded within 26h, 0 otherwise
+      - record: slo:backup_compliance:5m
+        expr: slo:backup_age_seconds:5m < 93600
+        labels:
+          slo_window: 5m
