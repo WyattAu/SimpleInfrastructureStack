@@ -31,6 +31,7 @@ services:
     networks:
       - traefik_net
       - backend_net
+      - data_net
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
@@ -81,6 +82,7 @@ services:
       - DB_DATABASE_NAME=${POSTGRES_DB}
     networks:
       - backend_net
+      - data_net
     deploy:
       resources:
         limits:
@@ -107,7 +109,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
     networks:
-      - backend_net
+      - data_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -131,7 +133,7 @@ services:
       - no-new-privileges:true
 
     networks:
-      - backend_net
+      - data_net
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 10s
@@ -151,4 +153,6 @@ networks:
   traefik_net:
     external: true
   backend_net:
+    external: true
+  data_net:
     external: true
