@@ -148,3 +148,115 @@ scrape_configs:
   - job_name: 'tempo'
     static_configs:
       - targets: ['monitoring-tempo:3200']
+
+  # =========================================================================
+  # Blackbox Exporter — Synthetic Monitoring Probes
+  # =========================================================================
+  # Probes services from inside the network to verify they actually respond.
+  # Complements container-level health checks (up metric) with real HTTP/TCP
+  # request/response validation.
+
+  # Internal HTTP probes — verify services respond with 2xx via internal Docker DNS.
+  # These bypass Traefik and Cloudflare, testing the backend directly.
+  - job_name: 'blackbox-http-internal'
+    scrape_interval: 60s
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://iam-keycloak:8080/health/ready       # Keycloak health
+          - http://iam-keycloak:8080/realms/company-realm # Keycloak realm
+          - http://operations-forgejo:3000/               # Forgejo web UI
+          - http://monitoring-grafana:3000/api/health    # Grafana health
+          - http://monitoring-kuma:3001/                  # Uptime Kuma
+          - http://monitoring-loki:3100/ready             # Loki readiness
+          - http://storage-collabora:9980/                # Collabora
+          - http://vaultwarden-server:80/                 # Vaultwarden
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        regex: 'http://([^/]+)(.*)'
+        target_label: instance
+        replacement: '${1}'
+      - source_labels: [__param_target]
+        target_label: target
+      - target_label: __address__
+        replacement: monitoring-blackbox-exporter:9115
+
+  # External HTTP probes — verify public URLs resolve and respond via TrueNAS IP.
+  # These test the full chain: DNS → Cloudflare → Tunnel → Traefik → Backend.
+  - job_name: 'blackbox-http-external'
+    scrape_interval: 120s
+    metrics_path: /probe
+    params:
+      module: [http_2xx_tls]
+    static_configs:
+      - targets:
+          - https://auth.wyattau.com/realms/company-realm
+          - https://forgejo.wyattau.com/
+          - https://grafana.wyattau.com/api/health
+          - https://kuma.wyattau.com/
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        regex: 'https://([^/]+)(.*)'
+        target_label: instance
+        replacement: '${1}'
+      - source_labels: [__param_target]
+        target_label: target
+      - target_label: __address__
+        replacement: monitoring-blackbox-exporter:9115
+
+  # TCP probes — verify critical ports are accepting connections
+  - job_name: 'blackbox-tcp'
+    scrape_interval: 60s
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+    static_configs:
+      - targets:
+          - iam-postgres:5432           # Keycloak PostgreSQL
+          - operations-postgres-forgejo:5432  # Forgejo PostgreSQL
+          - collaboration-postgres:5432  # Synapse PostgreSQL
+          - rss-postgres:5432            # FreshRSS PostgreSQL
+          - photos-postgres:5432         # Immich PostgreSQL
+          - documents-postgres:5432      # Paperless PostgreSQL
+          - photos-valkey:6379           # Immich Valkey
+          - documents-redis:6379         # Paperless Redis
+          - monitoring-loki:3100         # Loki gRPC
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        regex: '([^:]+):(.*)'
+        target_label: instance
+        replacement: '${1}'
+      - source_labels: [__param_target]
+        target_label: target
+      - target_label: __address__
+        replacement: monitoring-blackbox-exporter:9115
+
+  # DNS probes — verify internal DNS resolution
+  - job_name: 'blackbox-dns'
+    scrape_interval: 120s
+    metrics_path: /probe
+    params:
+      module: [dns_query]
+    static_configs:
+      - targets:
+          - iam-keycloak                   # Keycloak Docker DNS
+          - operations-forgejo             # Forgejo Docker DNS
+          - monitoring-prometheus           # Prometheus Docker DNS
+          - monitoring-tempo                # Tempo Docker DNS
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - source_labels: [__param_target]
+        target_label: target
+      - target_label: __address__
+        replacement: monitoring-blackbox-exporter:9115

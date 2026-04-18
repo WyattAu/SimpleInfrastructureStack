@@ -1,0 +1,65 @@
+---
+# Blackbox Exporter Configuration
+# Defines probe modules for HTTP, TCP, DNS, and ICMP checks.
+#
+# Probes are triggered by Prometheus via the blackbox_exporter's
+# /probe endpoint with ?module=<name>&target=<target>.
+#
+# Each module has a prober (http, tcp, dns, icmp) and configurable
+# timeouts, headers, and success criteria.
+
+modules:
+  # HTTP probes — verify web services respond with correct status codes
+  http_2xx:
+    prober: http
+    timeout: 10s
+    http:
+      valid_status_codes: [200, 301, 302, 303, 307, 308]
+      method: GET
+      no_follow_redirects: false
+      preferred_ip_protocol: ip4
+
+  # HTTP probe with TLS verification (for external HTTPS endpoints)
+  http_2xx_tls:
+    prober: http
+    timeout: 10s
+    http:
+      valid_status_codes: [200, 301, 302, 303, 307, 308]
+      method: GET
+      no_follow_redirects: false
+      preferred_ip_protocol: ip4
+      tls_config:
+        insecure_skip_verify: false
+
+  # HTTP POST probe (for API health checks)
+  http_post_2xx:
+    prober: http
+    timeout: 10s
+    http:
+      valid_status_codes: [200]
+      method: POST
+      preferred_ip_protocol: ip4
+
+  # TCP probe — verify a TCP port is accepting connections
+  tcp_connect:
+    prober: tcp
+    timeout: 10s
+    tcp:
+      preferred_ip_protocol: ip4
+
+  # DNS probe — verify DNS resolution
+  dns_query:
+    prober: dns
+    timeout: 10s
+    dns:
+      preferred_ip_protocol: ip4
+      query_name: ""
+      query_type: "A"
+
+  # ICMP probe — verify host is reachable (requires privileged mode)
+  # NOTE: Disabled by default. Requires --cap-add=NET_RAW on the container.
+  # icmp:
+  #   prober: icmp
+  #   timeout: 5s
+  #   icmp:
+  #     preferred_ip_protocol: ip4
