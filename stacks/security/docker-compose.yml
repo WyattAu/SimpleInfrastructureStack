@@ -80,7 +80,7 @@ services:
         max-file: "3"
 
   crowdsec-cloudflare-bouncer:
-    image: crowdsecurity/cs-cloudflare-bouncer:${CF_BOUNCER_VERSION}
+    image: crowdsecurity/cloudflare-bouncer:${CF_BOUNCER_VERSION}
     container_name: security-crowdsec-bouncer
     restart: unless-stopped
     security_opt:

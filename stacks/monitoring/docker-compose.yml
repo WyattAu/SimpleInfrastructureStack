@@ -471,7 +471,7 @@ services:
         max-file: "3"
 
   blackbox-exporter:
-    image: prom/blackbox_exporter:${BLACKBOX_EXPORTER_VERSION}
+    image: quay.io/prometheus/blackbox-exporter:${BLACKBOX_EXPORTER_VERSION}
     container_name: monitoring-blackbox-exporter
     restart: unless-stopped
     security_opt:
