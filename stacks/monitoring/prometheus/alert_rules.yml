@@ -389,3 +389,171 @@ groups:
         annotations:
           summary: "Widespread infrastructure outage detected"
           description: "All critical services (Traefik, Keycloak, Forgejo) are unreachable. The server may be down or Docker has crashed."
+
+  # =========================================================================
+  # SLO Burn Rate Alerts
+  # =========================================================================
+  # Uses multi-window burn rate alerts per Google SRE practices.
+  #
+  # Burn rate = (error rate) / (error budget rate)
+  #   - Burn rate of 1.0 = consuming error budget at exactly the expected rate
+  #   - Burn rate of 14.4 = budget exhausted in 1 day at current rate
+  #
+  # Multi-window strategy:
+  #   Short window (1h/6h): catches sudden spikes
+  #   Long window (6h/3d): catches sustained degradation
+  #   Both must exceed threshold to reduce false positives
+  #
+  # SLO targets and error budgets:
+  #   Critical services (traefik, keycloak): 99.9% → 0.1% error budget
+  #   Important services (forgejo, grafana, loki, synapse): 99.5% → 0.5% error budget
+  # =========================================================================
+
+  - name: slo_availability_critical
+    rules:
+      # Critical service SLO burn rate alerts (99.9% target, 0.1% error budget)
+      # Page (critical): burn rate > 14.4x in both 1h and 5m windows
+      # Budget would be exhausted in ~1 day at this rate
+      - alert: SLOCriticalAvailabilityBurn
+        expr: |
+          (
+            (1 - slo:availability_ratio:5m{job=~"traefik|keycloak"}) > 0.00144
+            and
+            (1 - slo:availability_ratio:1h{job=~"traefik|keycloak"}) > 0.00144
+          )
+        for: 2m
+        labels:
+          severity: critical
+          slo_target: "99.9%"
+          slo_class: critical
+        annotations:
+          summary: "Critical service {{ $labels.job }} SLO burn rate exceeds 14.4x"
+          description: >-
+            {{ $labels.job }} is burning through its 99.9% availability error budget
+            at >14.4x the expected rate. If sustained, the monthly budget would be
+            exhausted in under 1 day. Current 5m availability: {{ $value | humanizePercentage }}.
+
+      # Warning: burn rate > 1.0x in both 6h and 30m windows
+      - alert: SLOCriticalAvailabilityWarning
+        expr: |
+          (
+            (1 - slo:availability_ratio:30m{job=~"traefik|keycloak"}) > 0.0001
+            and
+            (1 - slo:availability_ratio:6h{job=~"traefik|keycloak"}) > 0.0001
+          )
+        for: 15m
+        labels:
+          severity: warning
+          slo_target: "99.9%"
+          slo_class: critical
+        annotations:
+          summary: "Critical service {{ $labels.job }} SLO budget burning faster than expected"
+          description: >-
+            {{ $labels.job }} is consuming its error budget faster than the
+            30-day linear allocation. Current 30m downtime ratio: {{ $value | humanizePercentage }}.
+
+  - name: slo_availability_important
+    rules:
+      # Important service SLO burn rate alerts (99.5% target, 0.5% error budget)
+      - alert: SLOImportantAvailabilityBurn
+        expr: |
+          (
+            (1 - slo:availability_ratio:5m{job=~"forgejo|grafana|loki|synapse"}) > 0.0072
+            and
+            (1 - slo:availability_ratio:1h{job=~"forgejo|grafana|loki|synapse"}) > 0.0072
+          )
+        for: 5m
+        labels:
+          severity: critical
+          slo_target: "99.5%"
+          slo_class: important
+        annotations:
+          summary: "Important service {{ $labels.job }} SLO burn rate exceeds 14.4x"
+          description: >-
+            {{ $labels.job }} is burning through its 99.5% availability error budget
+            at >14.4x the expected rate.
+
+      - alert: SLOImportantAvailabilityWarning
+        expr: |
+          (
+            (1 - slo:availability_ratio:30m{job=~"forgejo|grafana|loki|synapse"}) > 0.0005
+            and
+            (1 - slo:availability_ratio:6h{job=~"forgejo|grafana|loki|synapse"}) > 0.0005
+          )
+        for: 15m
+        labels:
+          severity: warning
+          slo_target: "99.5%"
+          slo_class: important
+        annotations:
+          summary: "Important service {{ $labels.job }} SLO budget burning faster than expected"
+          description: >-
+            {{ $labels.job }} is consuming its 99.5% error budget faster than expected.
+
+  - name: slo_http_errors
+    rules:
+      # HTTP error rate SLO alerts (99.5% success rate = 0.5% error budget)
+      - alert: SLOHTTPErrorBudgetBurn
+        expr: |
+          (
+            slo:http_5xx_ratio:5m > 0.072
+            and
+            slo:http_5xx_ratio:1h > 0.072
+          )
+        for: 5m
+        labels:
+          severity: critical
+          slo_target: "99.5%"
+          slo_class: http
+        annotations:
+          summary: "Service {{ $labels.service }} HTTP error rate burning budget at >14.4x"
+          description: >-
+            {{ $labels.service }} has a 5xx error rate of {{ $value | humanizePercentage }},
+            burning through the 0.5% error budget at >14.4x rate.
+
+      - alert: SLOHTTPErrorBudgetWarning
+        expr: |
+          (
+            slo:http_5xx_ratio:30m > 0.005
+            and
+            slo:http_5xx_ratio:6h > 0.005
+          )
+        for: 15m
+        labels:
+          severity: warning
+          slo_target: "99.5%"
+          slo_class: http
+        annotations:
+          summary: "Service {{ $labels.service }} HTTP error rate above SLO target"
+          description: >-
+            {{ $labels.service }} has a sustained 5xx error rate of {{ $value | humanizePercentage }},
+            exceeding the 0.5% error budget allocation.
+
+  - name: slo_30d_compliance
+    rules:
+      # Monthly SLO compliance check — fires if 30d availability drops below target
+      - alert: SLOMonthlyCriticalAtRisk
+        expr: slo:availability_ratio:30d{job=~"traefik|keycloak"} < 0.999
+        for: 1h
+        labels:
+          severity: warning
+          slo_target: "99.9%"
+          slo_class: critical
+        annotations:
+          summary: "Critical service {{ $labels.job }} 30-day SLO at risk ({{ $value | humanizePercentage }})"
+          description: >-
+            {{ $labels.job }} 30-day availability is {{ $value | humanizePercentage }},
+            below the 99.9% SLO target. Remaining error budget: {{ $value | humanizePercentage }}.
+
+      - alert: SLOMonthlyImportantAtRisk
+        expr: slo:availability_ratio:30d{job=~"forgejo|grafana|loki|synapse"} < 0.995
+        for: 1h
+        labels:
+          severity: warning
+          slo_target: "99.5%"
+          slo_class: important
+        annotations:
+          summary: "Important service {{ $labels.job }} 30-day SLO at risk ({{ $value | humanizePercentage }})"
+          description: >-
+            {{ $labels.job }} 30-day availability is {{ $value | humanizePercentage }},
+            below the 99.5% SLO target.
