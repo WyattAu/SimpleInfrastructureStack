@@ -468,6 +468,34 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  blackbox-exporter:
+    image: prom/blackbox_exporter:${BLACKBOX_EXPORTER_VERSION}
+    container_name: monitoring-blackbox-exporter
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./blackbox/config.yml:/etc/blackbox_exporter/config.yml:ro
+    command:
+      - '--config.file=/etc/blackbox_exporter/config.yml'
+    networks:
+      - backend_net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9115"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 networks:
   traefik_net:
     external: true
