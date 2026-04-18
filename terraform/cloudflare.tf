@@ -128,29 +128,12 @@ resource "cloudflare_record" "google_site_verification" {
 }
 
 # ===================================================================
-# DNS Records — Stale (should be reviewed / deleted)
+# DNS Records — Third-Party (not managed by Terraform)
 # ===================================================================
-# These records point to old IPs and may be from previous deployments.
-# They are imported here for visibility but could be removed.
-# TODO: Review and clean up stale records
+# These records are managed by external services or are intentional.
 
 locals {
-  # Records NOT managed by Terraform (stale or third-party)
-  # These exist in Cloudflare but we're not importing them to avoid
-  # accidental deletion. List them here for documentation:
-  stale_records = {
-    "ci.wyattau.com"              = "83.105.131.119 (old CI server)"
-    "ci-grpc.wyattau.com"         = "83.105.131.119 (old CI server)"
-    "dashboard.wyattau.com"       = "62.56.62.198 (old status page)"
-    "gitea.wyattau.com"           = "90.249.121.197 (pre-Forgejo)"
-    "owncloud.wyattau.com"        = "83.105.153.175 (pre-oCIS)"
-    "oauth_old.wyattau.com"       = "83.105.153.175 (old OAuth server)"
-    "registry.wyattau.com"        = "90.249.121.197 (old registry)"
-    "seafile.wyattau.com"         = "62.49.213.217 (old Seafile)"
-    "status.wyattau.com"          = "62.56.62.198 (old status page)"
-    "taiga.wyattau.com"           = "83.104.43.127 (old Taiga)"
-    "test.wyattau.com"            = "83.104.43.127 (test server)"
-    "*.wyattau.com (wildcard)"    = "83.104.112.249 (catch-all)"
+  third_party_records = {
     "academics.wyattau.com"       = "wyattsnotes-academics.pages.dev (Cloudflare Pages)"
     "alevel.wyattau.com"          = "wyattsnotes-alevel.pages.dev (Cloudflare Pages)"
     "link.wyattau.com"            = "track.smtp2go.net (SMTP2Go click tracking)"
