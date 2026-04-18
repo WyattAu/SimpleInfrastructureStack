@@ -1,0 +1,85 @@
+# ===================================================================
+# CrowdSec — Collaborative Intrusion Detection & Prevention
+# ===================================================================
+# Container-native security agent that reads Docker container logs,
+# detects malicious behavior (brute force, port scanning, exploits),
+# and shares threat intelligence with the CrowdSec CTI network.
+#
+# Architecture:
+#   Docker logs → CrowdSec agent (parse + detect) → CTI community
+#   CrowdSec agent → LAPI → (future: bouncer for active blocking)
+#
+# Current mode: DETECTION ONLY
+#   - CrowdSec analyzes all container logs for attack patterns
+#   - Decisions are logged and shared with the community CTI
+#   - No active blocking (bouncer can be added later)
+#
+# Future enhancement: Add a Cloudflare bouncer to automatically block
+# banned IPs at the Cloudflare edge. Requires Cloudflare API token
+# with Zone:Firewall:Edit permissions.
+
+services:
+  crowdsec:
+    image: crowdsecurity/crowdsec:${CROWDSEC_VERSION}
+    container_name: security-crowdsec
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_PTRACE
+    # CrowdSec needs:
+    #   NET_RAW — ping-based liveness checks for scenario validation
+    #   NET_ADMIN — network configuration for some parsers
+    #   SYS_PTRACE — process inspection for container acquis
+    # Most capabilities are dropped (ALL).
+    volumes:
+      # Docker socket via proxy (read-only, same as Traefik)
+      # Socket proxy allows CONTAINERS=1, NETWORKS=1, SERVICES=1
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - crowdsec-config:/etc/crowdsec
+      - crowdsec-data:/var/lib/crowdsec/data
+      # Host auth logs for SSH brute force detection
+      - /var/log:/hostlog:ro
+    environment:
+      - TZ=${TZ}
+      - GID=${PGID}
+      # Pre-configured LAPI secret (set in secrets/security.env.encrypted)
+      - CROWDSEC_LAPI_SECRET=${CROWDSEC_LAPI_SECRET}
+      # Collections to install on first start:
+      #   - docker: reads container logs via Docker socket
+      #   - linux: system-level parsers (ssh, auth, kernel)
+      #   - sshd: SSH brute force detection
+      - COLLECTIONS=crowdsecurity/docker crowdsecurity/linux crowdsecurity/sshd
+      # Don't share machine-specific metrics with CTI
+      - DISABLE_MACHINE_ID=false
+    networks:
+      - backend_net
+    healthcheck:
+      test: ["CMD", "cscli", "version"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  crowdsec-config:
+  crowdsec-data:
+
+networks:
+  backend_net:
+    external: true
