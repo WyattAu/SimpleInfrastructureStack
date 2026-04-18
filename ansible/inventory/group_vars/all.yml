@@ -73,6 +73,9 @@ health_check_containers:
   - vpn-wireguard
   - operations-forgejo-runner
 
+# Terraform
+terraform_bin_path: /mnt/pool_HDD_x2/infra/bin/terraform
+
 # Docker networks
 docker_networks:
   - name: traefik_net
