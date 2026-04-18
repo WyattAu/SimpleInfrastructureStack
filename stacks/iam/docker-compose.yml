@@ -14,7 +14,7 @@ services:
       - POSTGRES_USER=${KEYCLOAK_DATABASE_USER}
       - POSTGRES_PASSWORD=${KEYCLOAK_DATABASE_PASSWORD}
     networks:
-      - backend_net
+      - data_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${KEYCLOAK_DATABASE_USER} -d ${KEYCLOAK_DATABASE_NAME}"]
       interval: 10s
@@ -79,6 +79,7 @@ services:
     networks:
       - traefik_net
       - backend_net
+      - data_net
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
@@ -109,4 +110,6 @@ networks:
   traefik_net:
     external: true
   backend_net:
+    external: true
+  data_net:
     external: true
