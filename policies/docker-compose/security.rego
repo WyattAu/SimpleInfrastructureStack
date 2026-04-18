@@ -141,7 +141,16 @@ deny_sensitive_host_mount[msg] {
     msg := sprintf("Service '%s' has read-write mount to sensitive path: %s", [name, vol])
 }
 
-# WARN: Services with memory limits but no reservations may cause scheduling issues.
+# === Helper functions (must be defined before rules that use them) ===
+
+# Check if a string looks like a port number (all digits, at least one char).
+# Used to distinguish image tags from port numbers (e.g., image:5000).
+has_digits_only(s) {
+    count(s) > 0
+    not regex.match("[^0-9]", s)
+}
+
+# === DENY rules ===
 # Reservations help Docker place containers on nodes with sufficient resources.
 warn_no_memory_reservation[msg] {
     svc := input.services[name]
@@ -165,12 +174,7 @@ deny_untagged_image[msg] {
     # Reject empty tags
     tag != ""
     # But reject if tag looks like a port number (e.g., image:5000)
-    not is_number(tag)
+    not has_digits_only(tag)
 }
 
-is_number(s) {
-    is_string(s)
-    # Check if string is all digits
-    not regex.match("[^0-9]", s)
-    count(s) > 0
-}
+# WARN: Services with memory limits but no reservations may cause scheduling issues.
