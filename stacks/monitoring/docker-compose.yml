@@ -20,6 +20,7 @@ services:
         condition: service_completed_successfully
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/recording_rules.yml:/etc/prometheus/recording_rules.yml:ro
       - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
       - ${DATA_BASE_PATH}/monitoring/prometheus:/prometheus
     command:

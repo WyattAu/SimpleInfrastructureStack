@@ -9,6 +9,7 @@ alerting:
         - targets: ['monitoring-alertmanager:9093']
 
 rule_files:
+  - /etc/prometheus/recording_rules.yml
   - /etc/prometheus/alert_rules.yml
 
 scrape_configs:
