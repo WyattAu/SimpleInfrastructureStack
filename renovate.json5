@@ -13,6 +13,12 @@
   "commitMessageAction": "update",
   "packageRules": [
     {
+      "description": "Skip built-in docker-compose extraction — custom manager handles versions.env",
+      "matchManagers": ["docker-compose"],
+      "matchFiles": ["stacks/*/docker-compose.yml"],
+      "enabled": false
+    },
+    {
       "description": "Auto-merge minor and patch Docker image updates after CI passes",
       "matchDatasources": ["docker"],
       "matchUpdateTypes": ["minor", "patch"],

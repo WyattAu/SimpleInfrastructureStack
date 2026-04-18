@@ -99,16 +99,46 @@ scrape_configs:
     static_configs:
       - targets: ['monitoring-grafana:3000']
 
-  # Redis/Valkey exporter (multi-target: Valkey for Immich, Redis for Paperless)
+  # Redis/Valkey exporter (multi-target via redis-exporter on backend_net)
+  # Uses __param_target to select which Redis/Valkey instance to scrape.
   - job_name: 'redis'
     scrape_interval: 30s
     static_configs:
       - targets:
-          - 'photos-valkey:6379'
-          - 'documents-redis:6379'
+          - 'redis://photos-valkey:6379'
+          - 'redis://documents-redis:6379'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        regex: 'redis://([^:]+).*'
+        target_label: instance
+        replacement: '${1}'
+      - target_label: __address__
+        replacement: monitoring-redis-exporter:9121
 
   # MariaDB exporter for Akaunting
   - job_name: 'mariadb'
     scrape_interval: 30s
     static_configs:
       - targets: ['accounting-mariadb-exporter:9104']
+
+  # Uptime Kuma metrics (built-in /metrics on port 3001)
+  - job_name: 'uptime-kuma'
+    static_configs:
+      - targets: ['monitoring-kuma:3001']
+
+  # OAuth2-Proxy metrics (built-in /metrics on port 4180)
+  - job_name: 'oauth2-proxy'
+    static_configs:
+      - targets: ['proxy-oauth2-proxy:4180']
+
+  # Collabora Online metrics (built-in /metrics on port 9980)
+  - job_name: 'collabora'
+    static_configs:
+      - targets: ['storage-collabora:9980']
+
+  # Cloudflared tunnel metrics (host network, scrape via TrueNAS IP)
+  - job_name: 'cloudflared'
+    static_configs:
+      - targets: ['62.49.93.199:4788']
