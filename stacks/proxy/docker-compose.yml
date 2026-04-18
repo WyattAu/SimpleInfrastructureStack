@@ -38,7 +38,7 @@ services:
       - no-new-privileges:true
 
     command:
-      # - "--accesslog=true"
+      - "--accesslog=true"
       # --api.dashboard=true enables the api@internal service so the
       # Traefik dashboard can be reached via its own routing labels
       # (e.g. traefik.${DOMAIN_NAME}). No port 8080 binding needed.
@@ -106,7 +106,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 512M
     logging:
       driver: "json-file"
       options:

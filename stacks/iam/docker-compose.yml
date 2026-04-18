@@ -13,6 +13,8 @@ services:
       - POSTGRES_DB=${KEYCLOAK_DATABASE_NAME}
       - POSTGRES_USER=${KEYCLOAK_DATABASE_USER}
       - POSTGRES_PASSWORD=${KEYCLOAK_DATABASE_PASSWORD}
+      # Hardening: limit max connections (default 100 is overkill for single-app DB)
+      - POSTGRES_INITDB_ARGS=--max-connections=30
     networks:
       - data_net
     healthcheck:
@@ -23,7 +25,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 512M
     logging:
       driver: "json-file"
       options:
