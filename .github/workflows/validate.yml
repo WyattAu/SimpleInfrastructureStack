@@ -70,6 +70,23 @@ jobs:
           done
           exit $FAILED
 
+      - name: Verify image tags use env vars from versions.env
+        run: |
+          # Ensure all images reference ${VERSION_VAR} from versions.env
+          # rather than hardcoded version strings.
+          FAILED=0
+          for compose in stacks/*/docker-compose.yml; do
+            stack=$(basename $(dirname "$compose"))
+            # Skip local builds
+            grep -oP 'image:\s*\K[^$#]+' "$compose" | while read -r image; do
+              # Check if image has a hardcoded version tag (not from env var)
+              if echo "$image" | grep -qP ':' && echo "$image" | grep -vqP '\$\{'; then
+                echo "⚠️  $stack: hardcoded image tag: $image"
+              fi
+            done
+          done
+          echo "✅ Image tag check complete (warnings above are informational)"
+
       - name: OPA policy check (conftest)
         run: |
           FAILED=0
