@@ -126,4 +126,8 @@ resource "keycloak_user" "viswa" {
   username        = "viswa"
   enabled         = true
   email_verified  = true
+
+  lifecycle {
+    ignore_changes = [required_actions]
+  }
 }
