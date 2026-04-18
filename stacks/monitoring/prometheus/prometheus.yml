@@ -149,6 +149,12 @@ scrape_configs:
     static_configs:
       - targets: ['monitoring-tempo:3200']
 
+  # CrowdSec agent metrics (LAPI metrics on port 8080)
+  - job_name: 'crowdsec'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['security-crowdsec:8080']
+
   # =========================================================================
   # Blackbox Exporter — Synthetic Monitoring Probes
   # =========================================================================
