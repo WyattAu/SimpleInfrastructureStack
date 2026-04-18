@@ -41,7 +41,7 @@ Thumbs.db
 *.tfstate
 *.tfstate.*
 .terraform/
-.terraform.lock.hcl
+# Note: .terraform.lock.hcl is tracked (provider pinning)
 
 # Temporary files
 /tmp/

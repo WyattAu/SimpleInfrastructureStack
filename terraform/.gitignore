@@ -9,4 +9,8 @@
 
 # Provider binaries
 .terraform/
-.terraform.lock.hcl
+
+# Plan files (binary, environment-specific)
+*.tfplan
+tfplan*
+
