@@ -1,0 +1,140 @@
+---
+# Integration Tests — Service-to-Service Communication Verification
+# Runs after health checks to verify critical communication paths.
+# Tests run on the TrueNAS host, using container DNS names where possible.
+#
+# Non-blocking: failures are logged but don't trigger rollback.
+# The deploy pipeline uses ignore_errors: true for this role.
+
+- name: Integration Tests — Service Communication
+  block:
+
+    # =========================================================================
+    # Test Group 1: Internal HTTP endpoints (application health checks)
+    # These test services via localhost from within the container's namespace.
+    # We use docker exec to run curl from containers that have it.
+    # =========================================================================
+
+    - name: "[HTTP] Keycloak health/live"
+      ansible.builtin.command: docker exec iam-keycloak curl -sf http://localhost:9000/health/live
+      register: test_keycloak_health
+      changed_when: false
+      failed_when: false
+
+    - name: "[HTTP] Forgejo web UI"
+      ansible.builtin.command: docker exec operations-forgejo wget -q --spider http://localhost:3000/
+      register: test_forgejo_ui
+      changed_when: false
+      failed_when: false
+
+    - name: "[HTTP] Grafana health API"
+      ansible.builtin.command: docker exec monitoring-grafana wget -q --spider http://localhost:3000/api/health
+      register: test_grafana_health
+      changed_when: false
+      failed_when: false
+
+    - name: "[HTTP] Loki readiness"
+      ansible.builtin.command: docker exec monitoring-loki wget -q --spider http://localhost:3100/ready
+      register: test_loki_ready
+      changed_when: false
+      failed_when: false
+
+    - name: "[HTTP] Synapse client versions"
+      ansible.builtin.command: docker exec collaboration-synapse curl -sf http://localhost:8008/_matrix/client/versions
+      register: test_synapse_versions
+      changed_when: false
+      failed_when: false
+
+    - name: "[HTTP] Prometheus ready"
+      ansible.builtin.command: docker exec monitoring-prometheus wget -q --spider http://localhost:9090/-/ready
+      register: test_prometheus_ready
+      changed_when: false
+      failed_when: false
+
+    - name: "[HTTP] Alertmanager healthy"
+      ansible.builtin.command: docker exec monitoring-alertmanager wget -q --spider http://localhost:9093/-/healthy
+      register: test_alertmanager_healthy
+      changed_when: false
+      failed_when: false
+
+    - name: "[HTTP] Tempo ready"
+      ansible.builtin.command: docker exec monitoring-tempo wget -q --spider http://localhost:3200/ready
+      register: test_tempo_ready
+      changed_when: false
+      failed_when: false
+
+    # =========================================================================
+    # Test Group 2: Cross-stack communication (Docker DNS resolution)
+    # Tests that services can reach each other via Docker network DNS.
+    # =========================================================================
+
+    - name: "[DNS] Keycloak → PostgreSQL"
+      ansible.builtin.command: docker exec iam-keycloak bash -c "getent hosts iam-postgres"
+      register: test_dns_keycloak_pg
+      changed_when: false
+      failed_when: false
+
+    - name: "[DNS] Synapse → PostgreSQL"
+      ansible.builtin.command: docker exec collaboration-synapse bash -c "getent hosts collaboration-postgres"
+      register: test_dns_synapse_pg
+      changed_when: false
+      failed_when: false
+
+    - name: "[DNS] Prometheus → Traefik metrics"
+      ansible.builtin.command: docker exec monitoring-prometheus bash -c "getent hosts proxy-traefik"
+      register: test_dns_prom_traefik
+      changed_when: false
+      failed_when: false
+
+    # =========================================================================
+    # Test Group 3: Metrics endpoints (Prometheus scrape verification)
+    # =========================================================================
+
+    - name: "[METRICS] Keycloak metrics responding"
+      ansible.builtin.command: docker exec iam-keycloak curl -sf http://localhost:9000/metrics -o /dev/null -w "%{http_code}"
+      register: test_keycloak_metrics
+      changed_when: false
+      failed_when: false
+
+    - name: "[METRICS] Synapse metrics responding"
+      ansible.builtin.command: docker exec collaboration-synapse curl -sf http://localhost:19090/_synapse/metrics -o /dev/null -w "%{http_code}"
+      register: test_synapse_metrics
+      changed_when: false
+      failed_when: false
+
+    - name: "[METRICS] CrowdSec LAPI responding"
+      ansible.builtin.command: docker exec security-crowdsec curl -sf http://localhost:8080/v1/decision -o /dev/null -w "%{http_code}"
+      register: test_crowdsec_api
+      changed_when: false
+      failed_when: false
+
+    # =========================================================================
+    # Results Summary
+    # =========================================================================
+
+    - name: "Integration test results"
+      ansible.builtin.debug:
+        msg: |
+          ══════════════════════════════════════════════
+          Integration Test Results (non-blocking)
+          ══════════════════════════════════════════════
+          [HTTP]  Keycloak live:      {{ '✅' if test_keycloak_health.rc == 0 else '❌ (rc=' + (test_keycloak_health.rc | string) + ')' }}
+          [HTTP]  Forgejo UI:        {{ '✅' if test_forgejo_ui.rc == 0 else '❌ (rc=' + (test_forgejo_ui.rc | string) + ')' }}
+          [HTTP]  Grafana health:    {{ '✅' if test_grafana_health.rc == 0 else '❌ (rc=' + (test_grafana_health.rc | string) + ')' }}
+          [HTTP]  Loki ready:        {{ '✅' if test_loki_ready.rc == 0 else '❌ (rc=' + (test_loki_ready.rc | string) + ')' }}
+          [HTTP]  Synapse versions:  {{ '✅' if test_synapse_versions.rc == 0 else '❌ (rc=' + (test_synapse_versions.rc | string) + ')' }}
+          [HTTP]  Prometheus ready:  {{ '✅' if test_prometheus_ready.rc == 0 else '❌ (rc=' + (test_prometheus_ready.rc | string) + ')' }}
+          [HTTP]  Alertmanager:      {{ '✅' if test_alertmanager_healthy.rc == 0 else '❌ (rc=' + (test_alertmanager_healthy.rc | string) + ')' }}
+          [HTTP]  Tempo ready:       {{ '✅' if test_tempo_ready.rc == 0 else '❌ (rc=' + (test_tempo_ready.rc | string) + ')' }}
+          [DNS]   Keycloak→PG:       {{ '✅' if test_dns_keycloak_pg.rc == 0 else '❌ (rc=' + (test_dns_keycloak_pg.rc | string) + ')' }}
+          [DNS]   Synapse→PG:        {{ '✅' if test_dns_synapse_pg.rc == 0 else '❌ (rc=' + (test_dns_synapse_pg.rc | string) + ')' }}
+          [DNS]   Prometheus→Traefik:{{ '✅' if test_dns_prom_traefik.rc == 0 else '❌ (rc=' + (test_dns_prom_traefik.rc | string) + ')' }}
+          [METRICS] Keycloak:        {{ '✅' if test_keycloak_metrics.rc == 0 and test_keycloak_metrics.stdout == '200' else '❌' }}
+          [METRICS] Synapse:         {{ '✅' if test_synapse_metrics.rc == 0 and test_synapse_metrics.stdout == '200' else '❌' }}
+          [METRICS] CrowdSec:        {{ '✅' if test_crowdsec_api.rc == 0 else '❌' }}
+          ══════════════════════════════════════════════
+
+  rescue:
+    - name: "Integration tests encountered an error"
+      ansible.builtin.debug:
+        msg: "Integration tests failed with an unexpected error (non-blocking)"
