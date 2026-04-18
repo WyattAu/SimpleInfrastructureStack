@@ -140,3 +140,37 @@ deny_sensitive_host_mount[msg] {
     not contains(vol, "docker.sock")
     msg := sprintf("Service '%s' has read-write mount to sensitive path: %s", [name, vol])
 }
+
+# WARN: Services with memory limits but no reservations may cause scheduling issues.
+# Reservations help Docker place containers on nodes with sufficient resources.
+warn_no_memory_reservation[msg] {
+    svc := input.services[name]
+    not is_ephemeral(name)
+    svc.deploy
+    svc.deploy.resources.limits.memory
+    not svc.deploy.resources.reservations
+    msg := sprintf("Service '%s' has memory limit but no reservation", [name])
+}
+
+# DENY: No container should reference an image without a version tag.
+# Images must use a tag (e.g., v3.5.3) or digest (e.g., sha256:abc123).
+deny_untagged_image[msg] {
+    svc := input.services[name]
+    not is_ephemeral(name)
+    image := svc.image
+    not is_local_build(image)
+    # Must have a tag (colon followed by non-slash chars)
+    tag := split(":", image)[1]
+    not contains(tag, "/")
+    # Reject empty tags
+    tag != ""
+    # But reject if tag looks like a port number (e.g., image:5000)
+    not is_number(tag)
+}
+
+is_number(s) {
+    is_string(s)
+    # Check if string is all digits
+    not regex.match("[^0-9]", s)
+    count(s) > 0
+}
