@@ -402,6 +402,7 @@ services:
       - ${DATA_BASE_PATH}/monitoring/pgpass:/pgpass:ro
     networks:
       - backend_net
+      - data_net
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:9187/metrics"]
       interval: 30s
@@ -428,6 +429,7 @@ services:
       - REDIS_EXPORTER_WEB_LISTEN_ADDRESS=:9121
     networks:
       - backend_net
+      - data_net
     deploy:
       resources:
         limits:
@@ -480,6 +482,7 @@ services:
       - '--config.file=/etc/blackbox_exporter/config.yml'
     networks:
       - backend_net
+      - data_net
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:9115"]
       interval: 30s
@@ -500,4 +503,6 @@ networks:
   traefik_net:
     external: true
   backend_net:
+    external: true
+  data_net:
     external: true

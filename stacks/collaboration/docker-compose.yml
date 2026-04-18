@@ -26,7 +26,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_SYNAPSE}
       - POSTGRES_INITDB_ARGS=--encoding='UTF8' --lc-collate='C' --lc-ctype='C'
     networks:
-      - backend_net
+      - data_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER_SYNAPSE} -d ${POSTGRES_DB_SYNAPSE}"]
       interval: 10s
@@ -172,6 +172,7 @@ services:
     networks:
       - traefik_net
       - backend_net
+      - data_net
     healthcheck:
       test: ["CMD", "curl", "-fSs", "http://localhost:8008/_matrix/client/versions"]
       interval: 30s
@@ -297,6 +298,7 @@ services:
     networks:
       - traefik_net
       - backend_net
+      - data_net
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
@@ -318,6 +320,8 @@ networks:
   traefik_net:
     external: true
   backend_net:
+    external: true
+  data_net:
     external: true
 
 volumes:
