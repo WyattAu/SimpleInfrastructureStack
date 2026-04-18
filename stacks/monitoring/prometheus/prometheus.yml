@@ -155,6 +155,12 @@ scrape_configs:
     static_configs:
       - targets: ['security-crowdsec:8080']
 
+  # CrowdSec Cloudflare bouncer metrics (port 2112)
+  - job_name: 'crowdsec-bouncer'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['security-crowdsec-bouncer:2112']
+
   # =========================================================================
   # Blackbox Exporter — Synthetic Monitoring Probes
   # =========================================================================

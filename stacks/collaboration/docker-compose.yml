@@ -24,7 +24,9 @@ services:
       - POSTGRES_DB=${POSTGRES_DB_SYNAPSE}
       - POSTGRES_USER=${POSTGRES_USER_SYNAPSE}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_SYNAPSE}
-      - POSTGRES_INITDB_ARGS=--encoding='UTF8' --lc-collate='C' --lc-ctype='C'
+      # Synapse uses connection pooling (cp_min=5, cp_max=10 in homeserver.yaml)
+      # so 50 connections is plenty for federation + client traffic
+      - POSTGRES_INITDB_ARGS=--encoding='UTF8' --lc-collate='C' --lc-ctype='C' --max-connections=50
     networks:
       - data_net
     healthcheck:
@@ -35,7 +37,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 512M
     logging:
       driver: "json-file"
       options:
