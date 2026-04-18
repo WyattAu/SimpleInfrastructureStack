@@ -34,9 +34,11 @@ docker exec backup-restic restic snapshots 2>/dev/null || \
 # Create backup
 docker exec backup-restic restic backup \
   /data \
+  /terraform \
   --tag auto \
   --tag "$(date +%Y-%m-%d)" \
-  --exclude-if-present ".nobackup"
+  --exclude-if-present ".nobackup" \
+  --exclude "/terraform/.terraform/"
 
 # Prune old backups according to retention policy
 docker exec backup-restic restic forget \
