@@ -1,0 +1,46 @@
+# Tempo configuration — local mode for self-hosted tracing
+# Receives OTLP traces from Traefik and stores them locally.
+# Traces are queried via Grafana (no Jaeger UI needed).
+
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9095
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        http:
+          endpoint: 0.0.0.0:4318
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/traces
+    wal:
+      path: /var/tempo/wal
+    pool:
+      max_workers: 10
+      queue_depth: 2000
+
+compactor:
+  compaction:
+    block_retention: 168h  # 7 days
+
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+  storage:
+    path: /var/tempo/generator-wal
+    remote_write:
+      - url: http://monitoring-prometheus:9090/api/v1/write
+        send_exemplars: true
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors:
+        - service-graphs
+        - span-metrics
