@@ -41,6 +41,7 @@ stacks:
 health_check_containers:
   - proxy-well-known-server
   - security-crowdsec
+  - security-crowdsec-bouncer
   - proxy-oauth2-proxy
   - iam-postgres
   - iam-keycloak

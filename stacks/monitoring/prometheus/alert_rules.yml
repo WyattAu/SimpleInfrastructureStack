@@ -620,3 +620,57 @@ groups:
           description: >-
             HTTP probe to {{ $labels.target }} ({{ $labels.instance }}) took {{ $value }}s.
             The service is responding but may be degraded.
+
+  - name: security
+    rules:
+      # CrowdSec agent is down — no intrusion detection active
+      - alert: CrowdSecAgentDown
+        expr: up{job="crowdsec"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CrowdSec agent is down"
+          description: >-
+            CrowdSec agent container is not responding to health checks.
+            Intrusion detection and Cloudflare bouncer are not operational.
+
+      # CrowdSec bouncer is down — IPs not being blocked at edge
+      - alert: CrowdSecBouncerDown
+        expr: up{job="crowdsec-bouncer"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CrowdSec Cloudflare bouncer is down"
+          description: >-
+            CrowdSec Cloudflare bouncer is not running. Detected threats
+            are being logged but not blocked at the Cloudflare edge.
+
+      # High rate of 4xx client errors (potential brute force or scanning)
+      - alert: HighHTTPClientErrorRate
+        expr: |
+          sum(rate(traefik_service_requests_total{code=~"4.."}[5m])) by (service)
+          / sum(rate(traefik_service_requests_total[5m])) by (service) > 0.3
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High 4xx error rate on {{ $labels.service }} ({{ $value | humanizePercentage }})"
+          description: >-
+            Service {{ $labels.service }} is experiencing a 4xx error rate above 30%.
+            This may indicate brute force attempts, vulnerability scanning, or
+            misconfigured clients. CrowdSec should detect and block malicious IPs.
+
+      # SSH brute force detected by CrowdSec (via sshd collection)
+      - alert: SSHBruteForceDetected
+        expr: |
+          increase(crowdsec_decisions_total{type="ban",origin=~".*ssh.*"}[1h]) > 5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SSH brute force attack detected ({{ $value }} bans in last hour)"
+          description: >-
+            CrowdSec has issued {{ $value }} SSH-related bans in the last hour.
+            This indicates an active brute force attack against SSH services.
