@@ -20,3 +20,28 @@ datasources:
     secureJsonData:
       httpHeaderValue1: infra
     editable: true
+  - name: Tempo
+    type: tempo
+    uid: PD5C1C5A2498B41BB
+    access: proxy
+    url: http://monitoring-tempo:3200
+    editable: true
+    jsonData:
+      httpMethod: GET
+      serviceMap:
+        datasourceUid: PBFA97CFB590B2093
+      search:
+        hide: false
+      nodeGraph:
+        enabled: true
+      tracesToLogs:
+        datasourceUid: P8E80F9AEF21F6940
+        tags: ['job', 'instance', 'pod']
+        mappedTags: [{ key: 'service.name', value: 'service' }]
+        mapTagNamesEnabled: true
+        spanStartTimeShift: '-1m'
+        spanEndTimeShift: '1m'
+        filterByTraceID: true
+        filterBySpanID: false
+      tracesToMetrics:
+        datasourceUid: PBFA97CFB590B2093
