@@ -110,12 +110,15 @@ services:
         max-size: "10m"
         max-file: "3"
   # Collaboration service runs as a separate container. Connects to OCIS's
-  # REVA gateway directly via gRPC for storage operations and WOPI handling.
-  #
-  # Service discovery: uses go-micro with NATS KV registry. OCIS 7.x creates
-  # the "service-registry" bucket in its embedded NATS JetStream on startup.
+  # embedded NATS JetStream for service discovery (go-micro nats-js-kv).
+  # OCIS 7.x creates the "service-registry" KV bucket automatically on startup.
   # The collaboration service registers itself there so OCIS's proxy can
   # route WOPI requests to it.
+  #
+  # IMPORTANT: OCIS_REVA_GATEWAY is a go-micro SERVICE NAME, not a direct
+  # address. The collaboration service resolves it via the shared NATS registry.
+  # Do NOT set MICRO_REGISTRY=memory — that gives each container an isolated
+  # registry. Both containers must share the same NATS server.
   collaboration:
     image: owncloud/ocis:${OCIS_VERSION}
     container_name: storage-collaboration
@@ -129,6 +132,11 @@ services:
       collabora:
         condition: service_healthy
     command: ["collaboration", "server"]
+    volumes:
+      # Share OCIS config so collaboration reads WOPI secret, JWT secret,
+      # and other settings from the same config OCIS uses. Env vars below
+      # override config file values where set.
+      - ${DATA_BASE_PATH}/storage/ocis-config:/etc/ocis:ro
     environment:
       COLLABORATION_WOPI_SECRET: "${WOPI_SECRET}"
       COLLABORATION_WOPI_SRC: http://storage-collaboration:9300
@@ -138,16 +146,13 @@ services:
       COLLABORATION_APP_ICON: https://collabora.${DOMAIN_NAME}/favicon.ico
       COLLABORATION_APP_INSECURE: "true"
       COLLABORATION_CS3API_DATAGATEWAY_INSECURE: "true"
-      COLLABORATION_LOG_LEVEL: "debug"
-      COLLABORATION_STORE_NODES: "storage-ocis:9233"
+      COLLABORATION_LOG_LEVEL: "warn"
       OCIS_URL: https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
       OCIS_JWT_SECRET: "${OCIS_JWT_SECRET}"
-      # Direct REVA gateway address — bypasses go-micro service discovery
-      # which fails when the NATS KV service-registry bucket doesn't exist.
-      # OCIS 7.x embeds NATS on port 9233; the gateway is on 9142.
-      OCIS_REVA_GATEWAY: "storage-ocis:9142"
-      # Disable go-micro registry — use direct gateway address instead
-      MICRO_REGISTRY: "memory"
+      # Share OCIS's NATS JetStream for service discovery.
+      # OCIS exposes NATS on 0.0.0.0:9233 (via NATS_NATS_HOST env var).
+      MICRO_REGISTRY: "nats-js-kv"
+      MICRO_REGISTRY_ADDRESS: "storage-ocis:9233"
     networks:
       - traefik_net
       - backend_net
