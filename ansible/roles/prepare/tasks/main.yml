@@ -17,5 +17,15 @@
 - name: SOPS decrypt — decrypt secret files
   ansible.builtin.include_tasks: decrypt.yml
 
+# Ensure Docker networks exist before any compose up references them.
+# docker network create is idempotent (no-op if already exists).
+- name: Ensure Docker networks exist
+  ansible.builtin.shell: |
+    for net in traefik_net backend_net data_net; do
+      docker network inspect "$net" >/dev/null 2>&1 || docker network create "$net"
+    done
+  become: true
+  changed_when: false
+
 # NOTE: Template expansion and bind-mount detection are included
 # directly from site.yml to control ordering relative to include_vars.

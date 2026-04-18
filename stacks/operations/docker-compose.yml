@@ -15,7 +15,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER_FORGEJO}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_FORGEJO}
     networks:
-      - backend_net
+      - data_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER_FORGEJO} -d ${POSTGRES_DB_FORGEJO}"]
       interval: 10s
@@ -101,6 +101,7 @@ services:
     networks:
       - traefik_net
       - backend_net
+      - data_net
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
@@ -167,6 +168,7 @@ services:
     networks:
       - traefik_net
       - backend_net
+      - data_net
     command: '/bin/sh -c "sleep 5; forgejo-runner --config /data/config.yaml daemon"'
     healthcheck:
       test: ["CMD-SHELL", "pgrep -f 'forgejo-runner' || exit 1"]
@@ -190,4 +192,6 @@ networks:
   traefik_net:
     external: true
   backend_net:
+    external: true
+  data_net:
     external: true
