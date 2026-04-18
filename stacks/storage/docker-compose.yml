@@ -138,6 +138,10 @@ services:
       # override config file values where set.
       - ${DATA_BASE_PATH}/storage/ocis-config:/etc/ocis:ro
     environment:
+      # Bind gRPC and HTTP to 0.0.0.0 so OCIS proxy and other services
+      # can reach the collaboration service across containers.
+      COLLABORATION_GRPC_ADDR: "0.0.0.0:9301"
+      COLLABORATION_HTTP_ADDR: "0.0.0.0:9300"
       COLLABORATION_WOPI_SECRET: "${WOPI_SECRET}"
       COLLABORATION_WOPI_SRC: http://storage-collaboration:9300
       COLLABORATION_APP_NAME: "CollaboraOnline"
