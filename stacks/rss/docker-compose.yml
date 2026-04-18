@@ -23,6 +23,8 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      # Hardening: limit max connections (FreshRSS is single-app, very low concurrency)
+      - POSTGRES_INITDB_ARGS=--max-connections=20
     networks:
       - data_net
     healthcheck:

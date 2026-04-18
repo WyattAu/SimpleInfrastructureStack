@@ -7,16 +7,18 @@
 #
 # Architecture:
 #   Docker logs → CrowdSec agent (parse + detect) → CTI community
-#   CrowdSec agent → LAPI → (future: bouncer for active blocking)
+#   CrowdSec agent → LAPI → Cloudflare bouncer → Edge blocking
 #
-# Current mode: DETECTION ONLY
+# Current mode: DETECTION + ACTIVE BLOCKING
 #   - CrowdSec analyzes all container logs for attack patterns
 #   - Decisions are logged and shared with the community CTI
-#   - No active blocking (bouncer can be added later)
+#   - Cloudflare bouncer automatically bans IPs at the edge via
+#     Cloudflare Firewall Rules API
 #
-# Future enhancement: Add a Cloudflare bouncer to automatically block
-# banned IPs at the Cloudflare edge. Requires Cloudflare API token
-# with Zone:Firewall:Edit permissions.
+# Requirements:
+#   - Cloudflare API token with Zone:Firewall:Edit permission
+#   - CROWDSEC_LAPI_SECRET for agent-bouncer communication
+#   - CF_API_TOKEN for Cloudflare API access
 
 services:
   crowdsec:
@@ -53,7 +55,8 @@ services:
       #   - docker: reads container logs via Docker socket
       #   - linux: system-level parsers (ssh, auth, kernel)
       #   - sshd: SSH brute force detection
-      - COLLECTIONS=crowdsecurity/docker crowdsecurity/linux crowdsecurity/sshd
+      #   - crowdsecurity/traefik: Traefik access log parser (requires access logs enabled)
+      - COLLECTIONS=crowdsecurity/docker crowdsecurity/linux crowdsecurity/sshd crowdsecurity/traefik
       # Don't share machine-specific metrics with CTI
       - DISABLE_MACHINE_ID=false
     networks:
@@ -70,6 +73,51 @@ services:
           memory: 256M
         reservations:
           memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  crowdsec-cloudflare-bouncer:
+    image: crowdsecurity/cs-cloudflare-bouncer:${CF_BOUNCER_VERSION}
+    container_name: security-crowdsec-bouncer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    depends_on:
+      crowdsec:
+        condition: service_healthy
+    environment:
+      # CrowdSec LAPI connection
+      - CROWDSEC_LAPI_URL=http://security-crowdsec:8080
+      - CROWDSEC_LAPI_KEY=${CROWDSEC_LAPI_SECRET}
+      # Cloudflare API credentials
+      - CF_API_TOKEN=${CF_API_TOKEN}
+      - CF_ZONE_ID=${CF_ZONE_ID}
+      # Bouncer behavior
+      # ban_duration: how long IPs stay banned (default 4h)
+      - BAN_DURATION=4h
+      # excluded_routes: paths to never block (health checks, ACME, etc.)
+      - EXCLUDED_ROUTES=/.well-known/acme-challenge
+      # log_level: info for production (debug for troubleshooting)
+      - LOG_LEVEL=info
+      # update_frequency: how often to sync decisions with Cloudflare (default 10s)
+      - UPDATE_FREQUENCY=10s
+      # startup_delay: wait for CrowdSec LAPI to be ready
+      - STARTUP_DELAY=30s
+      # activation_mode: "at-least-one" bans on any scenario decision
+      - ACTIVATION_MODE=at-least-one
+    networks:
+      - backend_net
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 32M
     logging:
       driver: "json-file"
       options:
