@@ -142,6 +142,14 @@
           ansible.builtin.include_role:
             name: health_check
 
+        # Phase 4b: Integration tests (service-to-service communication)
+        # Verifies critical communication paths between services.
+        # Non-blocking: failures are reported but don't roll back.
+        - name: Run integration tests
+          ansible.builtin.include_role:
+            name: integration_test
+          ignore_errors: true
+
         - name: Deployment succeeded
           ansible.builtin.debug:
             msg: "=== DEPLOY COMPLETED SUCCESSFULLY ==="
