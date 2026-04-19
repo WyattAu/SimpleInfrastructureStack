@@ -27,7 +27,7 @@ output "forgejo_orgs" {
   description = "Forgejo organizations managed by Terraform"
 }
 
-output "geo_blocked_countries" {
-  value       = var.geo_blocked_countries
-  description = "Country codes blocked by Cloudflare WAF geo-blocking rule"
-}
+# output "geo_blocked_countries" {
+#   value       = var.geo_blocked_countries
+#   description = "Country codes blocked by Cloudflare WAF geo-blocking rule"
+# }
