@@ -108,6 +108,22 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  taiga-back-init:
+    image: taigaio/taiga-back:${TAIGA_VERSION}
+    container_name: project-management-back-init
+    # Handles chown of named volumes that the upstream entrypoint does,
+    # but which hangs on overlayfs. Runs once before taiga-back starts.
+    command: >
+      sh -c "
+        chown -R taiga:taiga /taiga-back/static /taiga-back/media 2>/dev/null;
+        echo 'Taiga volume ownership set'
+      "
+    volumes:
+      - taiga-static-data:/taiga-back/static
+      - taiga-media-data:/taiga-back/media
+    networks:
+      - backend_net
+
   taiga-back:
     image: taigaio/taiga-back:${TAIGA_VERSION}
     container_name: project-management-back
@@ -116,7 +132,10 @@ services:
     # `gosu taiga` to drop privileges, which requires setuid capability.
     # The container already runs as root initially and drops to taiga (uid 999)
     # via gosu, so no-new-privileges is redundant here.
+    entrypoint: ["/bin/bash", "/taiga-back/docker/entrypoint-custom.sh"]
     depends_on:
+      taiga-back-init:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       rabbitmq:
@@ -142,6 +161,7 @@ services:
       RABBITMQ_PASS: ${RABBITMQ_PASS}
       ENABLE_TELEMETRY: "False"
     volumes:
+      - ./config/taiga-back/entrypoint.sh:/taiga-back/docker/entrypoint-custom.sh:ro
       - taiga-static-data:/taiga-back/static
       - taiga-media-data:/taiga-back/media
     networks:
@@ -164,8 +184,10 @@ services:
     restart: unless-stopped
     # NOTE: no-new-privileges:true removed — same reason as taiga-back:
     # entrypoint uses `gosu taiga` which requires setuid capability.
-    entrypoint: ["/taiga-back/docker/async_entrypoint.sh"]
+    entrypoint: ["/bin/bash", "/taiga-back/docker/async_entrypoint-custom.sh"]
     depends_on:
+      taiga-back-init:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       rabbitmq:
@@ -191,6 +213,7 @@ services:
       RABBITMQ_PASS: ${RABBITMQ_PASS}
       ENABLE_TELEMETRY: "False"
     volumes:
+      - ./config/taiga-back/async_entrypoint.sh:/taiga-back/docker/async_entrypoint-custom.sh:ro
       - taiga-static-data:/taiga-back/static
       - taiga-media-data:/taiga-back/media
     networks:
