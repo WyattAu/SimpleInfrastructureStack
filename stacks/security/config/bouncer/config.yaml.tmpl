@@ -1,0 +1,32 @@
+# CrowdSec Cloudflare Bouncer Configuration
+# Generated from: docker run --rm crowdsecurity/cloudflare-bouncer -g <TOKEN>
+# Docs: https://doc.crowdsec.net/u/bouncers/cloudflare/
+#
+# This file is bind-mounted read-only into the bouncer container.
+# Secrets are templated from SOPS-decrypted env vars during deploy.
+
+crowdsec_lapi_url: http://security-crowdsec:8080/
+crowdsec_lapi_key: {{ CROWDSEC_LAPI_SECRET }}
+crowdsec_update_frequency: 10s
+
+cloudflare_config:
+  accounts:
+    - id: "26966ba2f4b3a12cb750cd615c8d0bcf"
+      token: "{{ CF_API_TOKEN }}"
+      ip_list_prefix: crowdsec
+      default_action: managed_challenge
+      zones:
+        - zone_id: "{{ CF_ZONE_ID }}"
+          actions:
+            - managed_challenge
+            - block
+  update_frequency: 10s
+
+daemon: false
+log_mode: stdout
+log_level: info
+
+prometheus:
+  enabled: true
+  listen_addr: 0.0.0.0
+  listen_port: "2112"
