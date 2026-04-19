@@ -16,7 +16,9 @@ ephemeral_names := {"-init", "-chown"}
 # Approved no-new-privileges exemptions (require elevated capabilities).
 # - collabora: requires CLONE_NEWUSER for document sandboxing.
 # - wireguard: requires privileged mode for VPN tunnel management.
-no_new_privileges_exempt := {"collabora", "wireguard"}
+# - taiga-back, taiga-async: entrypoint uses gosu to drop to taiga user,
+#   which requires setuid capability blocked by no-new-privileges.
+no_new_privileges_exempt := {"collabora", "wireguard", "taiga-back", "taiga-async"}
 
 # Approved privileged mode exemptions (require full host capabilities).
 # - wireguard: requires NET_ADMIN, SYS_MODULE for VPN tunnel management.
