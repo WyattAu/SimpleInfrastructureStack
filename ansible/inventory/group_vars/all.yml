@@ -27,6 +27,7 @@ stacks:
   - collaboration
   - storage
   - accounting
+  - project-management
   - utility
   - backup
   - vaultwarden
@@ -74,6 +75,8 @@ health_check_containers:
   - documents-postgres
   - documents-redis
   - documents-webserver
+  - project-management-postgres
+  - project-management-rabbitmq
   - infra-tunnel
   - vpn-wireguard
   - operations-forgejo-runner
