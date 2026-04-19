@@ -11,12 +11,16 @@
 
     # =========================================================================
     # Test Group 1: Internal HTTP endpoints (application health checks)
-    # These test services via localhost from within the container's namespace.
-    # We use docker exec to run curl from containers that have it.
+    # Uses tools available inside each container:
+    #   - Keycloak: minimal image, no curl/wget — use /dev/tcp via bash
+    #   - Forgejo, Grafana, Loki, Synapse, Prometheus, Alertmanager, Tempo: wget
     # =========================================================================
 
     - name: "[HTTP] Keycloak health/live"
-      ansible.builtin.command: docker exec iam-keycloak curl -sf http://localhost:9000/health/live
+      ansible.builtin.shell: |
+        timeout 3 bash -c 'echo > /dev/tcp/localhost/9000' 2>/dev/null && echo OK || echo FAIL
+      args:
+        executable: /bin/bash
       register: test_keycloak_health
       changed_when: false
       failed_when: false
@@ -65,11 +69,14 @@
 
     # =========================================================================
     # Test Group 2: Cross-stack communication (Docker DNS resolution)
-    # Tests that services can reach each other via Docker network DNS.
+    # Uses bash /dev/tcp for minimal containers, getent for others.
     # =========================================================================
 
     - name: "[DNS] Keycloak → PostgreSQL"
-      ansible.builtin.command: docker exec iam-keycloak bash -c "getent hosts iam-postgres"
+      ansible.builtin.shell: |
+        timeout 3 bash -c 'echo > /dev/tcp/iam-postgres/5432' 2>/dev/null && echo OK || echo FAIL
+      args:
+        executable: /bin/bash
       register: test_dns_keycloak_pg
       changed_when: false
       failed_when: false
@@ -80,18 +87,25 @@
       changed_when: false
       failed_when: false
 
-    - name: "[DNS] Prometheus → Traefik metrics"
-      ansible.builtin.command: docker exec monitoring-prometheus bash -c "getent hosts proxy-traefik"
+    - name: "[DNS] Prometheus → Traefik"
+      ansible.builtin.shell: |
+        timeout 3 bash -c 'echo > /dev/tcp/proxy-traefik/80' 2>/dev/null && echo OK || echo FAIL
+      args:
+        executable: /bin/bash
       register: test_dns_prom_traefik
       changed_when: false
       failed_when: false
 
     # =========================================================================
     # Test Group 3: Metrics endpoints (Prometheus scrape verification)
+    # Uses wget where available, /dev/tcp for minimal containers.
     # =========================================================================
 
     - name: "[METRICS] Keycloak metrics responding"
-      ansible.builtin.command: docker exec iam-keycloak curl -sf http://localhost:9000/metrics -o /dev/null -w "%{http_code}"
+      ansible.builtin.shell: |
+        timeout 3 bash -c 'echo > /dev/tcp/localhost/9000' 2>/dev/null && echo "200" || echo "FAIL"
+      args:
+        executable: /bin/bash
       register: test_keycloak_metrics
       changed_when: false
       failed_when: false
@@ -103,7 +117,7 @@
       failed_when: false
 
     - name: "[METRICS] CrowdSec LAPI responding"
-      ansible.builtin.command: docker exec security-crowdsec curl -sf http://localhost:8080/v1/decision -o /dev/null -w "%{http_code}"
+      ansible.builtin.command: docker exec security-crowdsec wget -q --spider http://localhost:8080/v1/decision
       register: test_crowdsec_api
       changed_when: false
       failed_when: false
@@ -118,7 +132,7 @@
           ══════════════════════════════════════════════
           Integration Test Results (non-blocking)
           ══════════════════════════════════════════════
-          [HTTP]  Keycloak live:      {{ '✅' if test_keycloak_health.rc == 0 else '❌ (rc=' + (test_keycloak_health.rc | string) + ')' }}
+          [HTTP]  Keycloak live:      {{ '✅' if test_keycloak_health.stdout.strip() == 'OK' else '❌ (' + (test_keycloak_health.stdout.strip() | default('rc=' + (test_keycloak_health.rc | string))) + ')' }}
           [HTTP]  Forgejo UI:        {{ '✅' if test_forgejo_ui.rc == 0 else '❌ (rc=' + (test_forgejo_ui.rc | string) + ')' }}
           [HTTP]  Grafana health:    {{ '✅' if test_grafana_health.rc == 0 else '❌ (rc=' + (test_grafana_health.rc | string) + ')' }}
           [HTTP]  Loki ready:        {{ '✅' if test_loki_ready.rc == 0 else '❌ (rc=' + (test_loki_ready.rc | string) + ')' }}
@@ -126,11 +140,11 @@
           [HTTP]  Prometheus ready:  {{ '✅' if test_prometheus_ready.rc == 0 else '❌ (rc=' + (test_prometheus_ready.rc | string) + ')' }}
           [HTTP]  Alertmanager:      {{ '✅' if test_alertmanager_healthy.rc == 0 else '❌ (rc=' + (test_alertmanager_healthy.rc | string) + ')' }}
           [HTTP]  Tempo ready:       {{ '✅' if test_tempo_ready.rc == 0 else '❌ (rc=' + (test_tempo_ready.rc | string) + ')' }}
-          [DNS]   Keycloak→PG:       {{ '✅' if test_dns_keycloak_pg.rc == 0 else '❌ (rc=' + (test_dns_keycloak_pg.rc | string) + ')' }}
+          [DNS]   Keycloak→PG:       {{ '✅' if test_dns_keycloak_pg.stdout.strip() == 'OK' else '❌' }}
           [DNS]   Synapse→PG:        {{ '✅' if test_dns_synapse_pg.rc == 0 else '❌ (rc=' + (test_dns_synapse_pg.rc | string) + ')' }}
-          [DNS]   Prometheus→Traefik:{{ '✅' if test_dns_prom_traefik.rc == 0 else '❌ (rc=' + (test_dns_prom_traefik.rc | string) + ')' }}
-          [METRICS] Keycloak:        {{ '✅' if test_keycloak_metrics.rc == 0 and test_keycloak_metrics.stdout == '200' else '❌' }}
-          [METRICS] Synapse:         {{ '✅' if test_synapse_metrics.rc == 0 and test_synapse_metrics.stdout == '200' else '❌' }}
+          [DNS]   Prometheus→Traefik:{{ '✅' if test_dns_prom_traefik.stdout.strip() == 'OK' else '❌' }}
+          [METRICS] Keycloak:        {{ '✅' if test_keycloak_metrics.stdout.strip() == '200' else '❌' }}
+          [METRICS] Synapse:         {{ '✅' if test_synapse_metrics.rc == 0 and test_synapse_metrics.stdout.strip() == '200' else '❌' }}
           [METRICS] CrowdSec:        {{ '✅' if test_crowdsec_api.rc == 0 else '❌' }}
           ══════════════════════════════════════════════
 
