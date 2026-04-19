@@ -14,7 +14,7 @@ echo Load default templates
 python manage.py loaddata initial_project_templates
 
 # Skip chown — handled by taiga-back-init container
-echo Skipping chown (handled by init container)
+echo "Skipping chown (handled by init container)"
 
 # Start Taiga processes
 echo Starting Taiga API...
