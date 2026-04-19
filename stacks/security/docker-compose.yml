@@ -92,26 +92,13 @@ services:
     depends_on:
       crowdsec:
         condition: service_healthy
-    environment:
-      # CrowdSec LAPI connection
-      - CROWDSEC_LAPI_URL=http://security-crowdsec:8080
-      - CROWDSEC_LAPI_KEY=${CROWDSEC_LAPI_SECRET}
-      # Cloudflare API credentials
-      - CF_API_TOKEN=${CF_API_TOKEN}
-      - CF_ZONE_ID=${CF_ZONE_ID}
-      # Bouncer behavior
-      # ban_duration: how long IPs stay banned (default 4h)
-      - BAN_DURATION=4h
-      # excluded_routes: paths to never block (health checks, ACME, etc.)
-      - EXCLUDED_ROUTES=/.well-known/acme-challenge
-      # log_level: info for production (debug for troubleshooting)
-      - LOG_LEVEL=info
-      # update_frequency: how often to sync decisions with Cloudflare (default 10s)
-      - UPDATE_FREQUENCY=10s
-      # startup_delay: wait for CrowdSec LAPI to be ready
-      - STARTUP_DELAY=30s
-      # activation_mode: "at-least-one" bans on any scenario decision
-      - ACTIVATION_MODE=at-least-one
+    # The Cloudflare bouncer reads its config from a YAML file, NOT env vars.
+    # Config is generated via: docker run --rm crowdsecurity/cloudflare-bouncer -g <TOKEN>
+    # and stored in the bouncer config bind-mount.
+    # Secrets (LAPI key, CF token) are in the config file sourced from SOPS.
+    volumes:
+      - ./config/bouncer:/etc/crowdsec/bouncers:ro
+    command: ["-c", "/etc/crowdsec/bouncers/config.yaml"]
     networks:
       - backend_net
     deploy:
