@@ -160,6 +160,7 @@ services:
       EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD}
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASS: ${RABBITMQ_PASS}
+      TAIGA_EVENTS_RABBITMQ_HOST: project-management-rabbitmq
       ENABLE_TELEMETRY: "False"
     volumes:
       - ./config/taiga-back/entrypoint.sh:/taiga-back/docker/entrypoint-custom.sh:ro
@@ -212,6 +213,7 @@ services:
       EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD}
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASS: ${RABBITMQ_PASS}
+      TAIGA_ASYNC_RABBITMQ_HOST: project-management-rabbitmq
       ENABLE_TELEMETRY: "False"
     volumes:
       - ./config/taiga-back/async_entrypoint.sh:/taiga-back/docker/async_entrypoint-custom.sh:ro
@@ -267,6 +269,7 @@ services:
     environment:
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASS: ${RABBITMQ_PASS}
+      TAIGA_EVENTS_RABBITMQ_HOST: project-management-rabbitmq
       TAIGA_SECRET_KEY: ${TAIGA_SECRET_KEY}
     networks:
       - backend_net
