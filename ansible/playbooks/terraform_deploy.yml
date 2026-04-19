@@ -48,19 +48,9 @@
       ansible.builtin.debug:
         msg: "{{ tf_init.stdout_lines[-3:] | default([]) }}"
 
-    # --- Read Forgejo token from file (separate from SOPS secrets) ---
-    - name: Read Forgejo API token
-      ansible.builtin.slurp:
-        src: "{{ infra_repo_path }}/.forgejo_token"
-      register: forgejo_token_file
-      no_log: true
-      ignore_errors: true
-
-    - name: Set Forgejo token fact
-      ansible.builtin.set_fact:
-        _forgejo_token: >-
-          {{ forgejo_token_file.content | b64decode | default('placeholder', true) }}
-      no_log: true
+    # --- Forgejo token (from SOPS-decrypted operations.env) ---
+    # FORGEJO_ADMIN_TOKEN is loaded via include_vars from decrypted secrets.
+    # Falls back to empty string if not available (non-fatal).
 
     # --- Plan ---
     - name: Run Terraform plan
@@ -76,7 +66,7 @@
         TF_VAR_kc_oauth2_proxy_secret: "{{ OAUTH2_PROXY_CLIENT_SECRET }}"
         TF_VAR_kc_grafana_secret: "{{ GRAFANA_OIDC_CLIENT_SECRET }}"
         TF_VAR_kc_forgejo_secret: "{{ FORGEJO_KEYCLOAK_CLIENT_SECRET }}"
-        TF_VAR_forgejo_token: "{{ _forgejo_token }}"
+        TF_VAR_forgejo_token: "{{ FORGEJO_ADMIN_TOKEN | default('') }}"
       register: tf_plan
       # rc 0 = no changes, rc 2 = changes detected, rc 1 = error
       failed_when: tf_plan.rc == 1
@@ -109,7 +99,7 @@
         TF_VAR_kc_oauth2_proxy_secret: "{{ OAUTH2_PROXY_CLIENT_SECRET }}"
         TF_VAR_kc_grafana_secret: "{{ GRAFANA_OIDC_CLIENT_SECRET }}"
         TF_VAR_kc_forgejo_secret: "{{ FORGEJO_KEYCLOAK_CLIENT_SECRET }}"
-        TF_VAR_forgejo_token: "{{ _forgejo_token }}"
+        TF_VAR_forgejo_token: "{{ FORGEJO_ADMIN_TOKEN | default('') }}"
       register: tf_apply
       changed_when: "'Apply complete' in tf_apply.stdout"
       when: tf_plan.rc == 2
