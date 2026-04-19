@@ -91,6 +91,15 @@ resource "cloudflare_record" "deploy" {
 # ===================================================================
 # WAF — Geo-Blocking Rules
 # ===================================================================
+# NOTE: The Cloudflare API token currently lacks "Zone > WAF > Edit"
+# permission (error 10000). This resource is commented out until the
+# token is updated with the required permission.
+#
+# To re-enable:
+#   1. Add "Zone > Workers Rulesets > Edit" to the Cloudflare API token
+#   2. Uncomment the resource block below
+#   3. Run terraform apply
+#
 # Blocks requests from high-risk countries to reduce scanner noise.
 # Uses Cloudflare WAF custom rules (zone-level ruleset).
 #
@@ -99,41 +108,41 @@ resource "cloudflare_record" "deploy" {
 #   - ACME challenge requests (*.acme-challenge.*) must pass for TLS certificate renewal
 #   - Hookshot (GitHub bridge API) must accept webhooks from GitHub globally
 
-variable "geo_blocked_countries" {
-  description = "ISO 3166-1 alpha-2 country codes to block"
-  type        = list(string)
-  default     = ["CN", "RU", "KP", "IR", "SY"]
-}
-
-locals {
-  # Build country match expression: "CN" "RU" "KP" → {"CN" "RU" "KP"}
-  geo_blocked_expr = join(" ", [for c in var.geo_blocked_countries : "\"${c}\""])
-}
-
-resource "cloudflare_ruleset" "geo_block" {
-  zone_id     = var.cf_zone_id
-  name        = "Geo-blocking: high-risk countries"
-  description = "Block HTTP requests from high-risk countries with exceptions for federation and ACME"
-  kind        = "zone"
-  phase       = "http_request_firewall_custom"
-
-  # Expression logic:
-  #   Block if country matches AND NOT (Matrix federation OR ACME challenge OR Hookshot)
-  rules {
-    action     = "block"
-    expression = <<-EXPR
-      (ip.geoip.country in {${local.geo_blocked_expr}})
-      and not (
-        http.request.uri.path contains "/.well-known/matrix"
-        or http.request.uri.path contains "/.well-known/openid-configuration"
-        or http.host contains "hookshot"
-        or http.request.uri.path contains ".well-known/acme-challenge"
-      )
-    EXPR
-    description = "Block high-risk countries (exceptions: Matrix federation, OIDC discovery, ACME, Hookshot)"
-    enabled     = true
-  }
-}
+# variable "geo_blocked_countries" {
+#   description = "ISO 3166-1 alpha-2 country codes to block"
+#   type        = list(string)
+#   default     = ["CN", "RU", "KP", "IR", "SY"]
+# }
+#
+# locals {
+#   # Build country match expression: "CN" "RU" "KP" → {"CN" "RU" "KP"}
+#   geo_blocked_expr = join(" ", [for c in var.geo_blocked_countries : "\"${c}\""])
+# }
+#
+# resource "cloudflare_ruleset" "geo_block" {
+#   zone_id     = var.cf_zone_id
+#   name        = "Geo-blocking: high-risk countries"
+#   description = "Block HTTP requests from high-risk countries with exceptions for federation and ACME"
+#   kind        = "zone"
+#   phase       = "http_request_firewall_custom"
+#
+#   # Expression logic:
+#   #   Block if country matches AND NOT (Matrix federation OR ACME challenge OR Hookshot)
+#   rules {
+#     action     = "block"
+#     expression = <<-EXPR
+#       (ip.geoip.country in {${local.geo_blocked_expr}})
+#       and not (
+#         http.request.uri.path contains "/.well-known/matrix"
+#         or http.request.uri.path contains "/.well-known/openid-configuration"
+#         or http.host contains "hookshot"
+#         or http.request.uri.path contains ".well-known/acme-challenge"
+#       )
+#     EXPR
+#     description = "Block high-risk countries (exceptions: Matrix federation, OIDC discovery, ACME, Hookshot)"
+#     enabled     = true
+#   }
+# }
 
 # Email routing (managed by Cloudflare Email Routing — NOT in Terraform)
 # MX records and DKIM are auto-managed by Cloudflare Email Routing and
