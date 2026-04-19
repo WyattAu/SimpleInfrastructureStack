@@ -48,12 +48,14 @@ modules:
       preferred_ip_protocol: ip4
 
   # DNS probe — verify DNS resolution
+  # query_name is set per-target via Prometheus relabeling.
+  # This module uses the target address as the DNS server to query.
   dns_query:
     prober: dns
     timeout: 10s
     dns:
       preferred_ip_protocol: ip4
-      query_name: ""
+      query_name: "localhost"
       query_type: "A"
 
   # ICMP probe — verify host is reachable (requires privileged mode)
