@@ -13,6 +13,8 @@ services:
     volumes:
       # Repo clone on TrueNAS (git pull target, source of compose files + ansible)
       - ${REPO_DIR:-/mnt/pool_HDD_x2/infra/stacks}:/mnt/pool_HDD_x2/infra/stacks
+      # Infrastructure binaries (terraform, etc.)
+      - /mnt/pool_HDD_x2/infra/bin:/mnt/pool_HDD_x2/infra/bin:ro
       # Docker socket for compose operations
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # Age key for SOPS decryption
