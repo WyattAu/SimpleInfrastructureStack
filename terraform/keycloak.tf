@@ -45,6 +45,7 @@ resource "keycloak_openid_client" "oauth2_proxy" {
     "https://homepage.wyattau.com/*",
     "https://kuma.wyattau.com/*",
     "https://prometheus.wyattau.com/*",
+    "https://taiga.wyattau.com/*",
     "https://traefik.wyattau.com/*",
   ]
   web_origins           = [
@@ -53,6 +54,7 @@ resource "keycloak_openid_client" "oauth2_proxy" {
     "https://homepage.wyattau.com",
     "https://kuma.wyattau.com",
     "https://prometheus.wyattau.com",
+    "https://taiga.wyattau.com",
     "https://traefik.wyattau.com",
   ]
   root_url              = "https://auth.wyattau.com"
