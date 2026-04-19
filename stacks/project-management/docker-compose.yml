@@ -112,8 +112,10 @@ services:
     image: taigaio/taiga-back:${TAIGA_VERSION}
     container_name: project-management-back
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
+    # NOTE: no-new-privileges:true removed — taiga-back entrypoint uses
+    # `gosu taiga` to drop privileges, which requires setuid capability.
+    # The container already runs as root initially and drops to taiga (uid 999)
+    # via gosu, so no-new-privileges is redundant here.
     depends_on:
       postgres:
         condition: service_healthy
@@ -160,8 +162,8 @@ services:
     image: taigaio/taiga-back:${TAIGA_VERSION}
     container_name: project-management-async
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
+    # NOTE: no-new-privileges:true removed — same reason as taiga-back:
+    # entrypoint uses `gosu taiga` which requires setuid capability.
     entrypoint: ["/taiga-back/docker/async_entrypoint.sh"]
     depends_on:
       postgres:
