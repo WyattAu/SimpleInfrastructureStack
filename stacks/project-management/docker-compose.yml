@@ -76,6 +76,29 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  rabbitmq-init:
+    image: rabbitmq:${RABBITMQ_VERSION}
+    container_name: project-management-rabbitmq-init
+    # Creates the 'taiga' vhost needed by Taiga async/events workers.
+    # RabbitMQ only creates the default '/' vhost on first boot.
+    # Idempotent: rabbitmqctl add_vhost exits 0 if vhost exists when
+    # using the management image. Uses rabbitmqctl directly.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        rabbitmqctl -q add_vhost taiga 2>/dev/null || true
+        rabbitmqctl -q set_permissions -p taiga $$RABBITMQ_DEFAULT_USER ".*" ".*" ".*"
+        echo "RabbitMQ vhost 'taiga' ready"
+    environment:
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend_net
+
   rabbitmq:
     image: rabbitmq:${RABBITMQ_VERSION}
     container_name: project-management-rabbitmq
@@ -137,9 +160,9 @@ services:
     depends_on:
       taiga-back-init:
         condition: service_completed_successfully
+      rabbitmq-init:
+        condition: service_completed_successfully
       postgres:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
     environment:
       POSTGRES_DB: taiga
@@ -190,9 +213,9 @@ services:
     depends_on:
       taiga-back-init:
         condition: service_completed_successfully
+      rabbitmq-init:
+        condition: service_completed_successfully
       postgres:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
     environment:
       POSTGRES_DB: taiga
@@ -264,8 +287,8 @@ services:
     security_opt:
       - no-new-privileges:true
     depends_on:
-      rabbitmq:
-        condition: service_healthy
+      rabbitmq-init:
+        condition: service_completed_successfully
     environment:
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASS: ${RABBITMQ_PASS}
