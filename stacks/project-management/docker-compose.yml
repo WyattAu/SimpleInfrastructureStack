@@ -109,18 +109,19 @@ services:
         max-file: "3"
 
   taiga-back-init:
-    image: taigaio/taiga-back:${TAIGA_VERSION}
+    image: busybox:1.37.0
     container_name: project-management-back-init
     # Handles chown of named volumes that the upstream entrypoint does,
     # but which hangs on overlayfs. Runs once before taiga-back starts.
+    # Uses busybox (not taiga-back image) to avoid needing env vars.
     command: >
       sh -c "
-        chown -R taiga:taiga /taiga-back/static /taiga-back/media 2>/dev/null;
+        chown -R 999:999 /taiga-static /taiga-media 2>/dev/null;
         echo 'Taiga volume ownership set'
       "
     volumes:
-      - taiga-static-data:/taiga-back/static
-      - taiga-media-data:/taiga-back/media
+      - taiga-static-data:/taiga-static
+      - taiga-media-data:/taiga-media
     networks:
       - backend_net
 
