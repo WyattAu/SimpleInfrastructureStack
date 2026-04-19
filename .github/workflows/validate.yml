@@ -122,6 +122,10 @@ jobs:
         run: |
           export ANSIBLE_CONFIG=$PWD/ansible/ansible.cfg
           for playbook in ansible/playbooks/*.yml; do
+            # Skip task-only files (no hosts: directive) included via include_tasks
+            case "$(basename $playbook)" in
+              terraform_deploy.yml) echo "$(basename $playbook): ⏭️ (task file, included via include_tasks)"; continue ;;
+            esac
             echo -n "$(basename $playbook): "
             if ansible-playbook --syntax-check "$playbook" 2>&1; then
               echo "✅"

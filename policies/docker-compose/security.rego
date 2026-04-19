@@ -16,7 +16,9 @@ ephemeral_names := {"-init", "-chown"}
 # Approved no-new-privileges exemptions (require elevated capabilities).
 # - collabora: requires CLONE_NEWUSER for document sandboxing.
 # - wireguard: requires privileged mode for VPN tunnel management.
-no_new_privileges_exempt := {"collabora", "wireguard"}
+# - taiga-back, taiga-async: entrypoint uses gosu to drop to taiga user,
+#   which requires setuid capability blocked by no-new-privileges.
+no_new_privileges_exempt := {"collabora", "wireguard", "taiga-back", "taiga-async"}
 
 # Approved privileged mode exemptions (require full host capabilities).
 # - wireguard: requires NET_ADMIN, SYS_MODULE for VPN tunnel management.
@@ -161,20 +163,8 @@ warn_no_memory_reservation[msg] {
     msg := sprintf("Service '%s' has memory limit but no reservation", [name])
 }
 
-# DENY: No container should reference an image without a version tag.
-# Images must use a tag (e.g., v3.5.3) or digest (e.g., sha256:abc123).
-deny_untagged_image[msg] {
-    svc := input.services[name]
-    not is_ephemeral(name)
-    image := svc.image
-    not is_local_build(image)
-    # Must have a tag (colon followed by non-slash chars)
-    tag := split(":", image)[1]
-    not contains(tag, "/")
-    # Reject empty tags
-    tag != ""
-    # But reject if tag looks like a port number (e.g., image:5000)
-    not has_digits_only(tag)
-}
+# NOTE: deny_untagged_image rule removed — was incomplete (missing msg
+# assignment) and the tag-detection logic was inverted. The deny_latest_tag
+# rule above already catches the most common untagged case (:latest).
 
 # WARN: Services with memory limits but no reservations may cause scheduling issues.
