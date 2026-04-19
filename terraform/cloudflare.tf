@@ -111,7 +111,6 @@ locals {
 }
 
 resource "cloudflare_ruleset" "geo_block" {
-  account_id  = var.cf_account_id
   zone_id     = var.cf_zone_id
   name        = "Geo-blocking: high-risk countries"
   description = "Block HTTP requests from high-risk countries with exceptions for federation and ACME"
