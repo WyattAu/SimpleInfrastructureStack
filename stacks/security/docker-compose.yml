@@ -52,11 +52,13 @@ services:
       # Pre-configured LAPI secret (set in secrets/security.env.encrypted)
       - CROWDSEC_LAPI_SECRET=${CROWDSEC_LAPI_SECRET}
       # Collections to install on first start:
-      #   - docker: reads container logs via Docker socket
       #   - linux: system-level parsers (ssh, auth, kernel)
       #   - sshd: SSH brute force detection
       #   - crowdsecurity/traefik: Traefik access log parser (requires access logs enabled)
-      - COLLECTIONS=crowdsecurity/docker crowdsecurity/linux crowdsecurity/sshd crowdsecurity/traefik
+      # NOTE: crowdsecurity/docker collection removed — it was a meta-collection that
+      # installed docker-logs + cri-logs parsers, which the CrowdSec entrypoint already
+      # installs automatically. The collection was removed from the hub index.
+      - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/traefik
       # Don't share machine-specific metrics with CTI
       - DISABLE_MACHINE_ID=false
     networks:

@@ -20,6 +20,11 @@
       ansible.builtin.file:
         path: "{{ infra_data_path }}/utility/homepage/config/"
         state: absent
+    - name: Ensure Homepage config parent directory exists
+      ansible.builtin.file:
+        path: "{{ infra_data_path }}/utility/homepage/config/"
+        state: directory
+        mode: "0755"
     - name: Copy git-tracked Homepage config to data directory
       ansible.builtin.shell: >
         cp -a {{ infra_base_path }}/utility/config/
