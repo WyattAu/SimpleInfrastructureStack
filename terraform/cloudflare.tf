@@ -35,6 +35,7 @@ locals {
     prometheus         = "Prometheus (metrics)"
     registry-forgejo   = "Forgejo container registry"
     rss                = "FreshRSS (feed reader)"
+    taiga              = "Taiga (project management)"
     traefik            = "Traefik (reverse proxy dashboard)"
     vault              = "Vaultwarden (password manager)"
     vpn                = "WireGuard VPN (DNS-only, no proxy)"
