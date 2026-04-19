@@ -6,7 +6,7 @@
 set -euo pipefail
 
 # Skip chown — handled by taiga-back-init container
-echo Skipping chown (handled by init container)
+echo "Skipping chown (handled by init container)"
 
 # Start Celery processes
 echo Starting Celery...
