@@ -37,6 +37,14 @@
       "matchPackageNames": ["data.forgejo.org/forgejo/runner"],
       "matchDatasources": ["docker"],
       "automerge": false
+    },
+    {
+      "description": "Chainguard free-tier images only have :latest — pin by digest and auto-merge",
+      "matchPackageNames": ["cgr.dev/chainguard/**"],
+      "matchDatasources": ["docker"],
+      "pinDigests": true,
+      "automerge": true,
+      "automergeType": "pr"
     }
   ],
   "customManagers": [
