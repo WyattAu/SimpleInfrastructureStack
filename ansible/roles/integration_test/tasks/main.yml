@@ -14,13 +14,11 @@
     # Uses tools available inside each container:
     #   - Keycloak: minimal image, no curl/wget — use /dev/tcp via bash
     #   - Forgejo, Grafana, Loki, Synapse, Prometheus, Alertmanager, Tempo: wget
+    #   - All tests use docker exec to run inside the container
     # =========================================================================
 
     - name: "[HTTP] Keycloak health/live"
-      ansible.builtin.shell: |
-        timeout 3 bash -c 'echo > /dev/tcp/localhost/9000' 2>/dev/null && echo OK || echo FAIL
-      args:
-        executable: /bin/bash
+      ansible.builtin.command: docker exec iam-keycloak bash -c "timeout 3 bash -c 'echo > /dev/tcp/localhost/9000' 2>/dev/null && echo OK || echo FAIL"
       register: test_keycloak_health
       changed_when: false
       failed_when: false
@@ -69,14 +67,12 @@
 
     # =========================================================================
     # Test Group 2: Cross-stack communication (Docker DNS resolution)
-    # Uses bash /dev/tcp for minimal containers, getent for others.
+    # Tests that containers can reach each other via Docker network DNS.
+    # Uses docker exec + bash /dev/tcp for minimal containers.
     # =========================================================================
 
     - name: "[DNS] Keycloak → PostgreSQL"
-      ansible.builtin.shell: |
-        timeout 3 bash -c 'echo > /dev/tcp/iam-postgres/5432' 2>/dev/null && echo OK || echo FAIL
-      args:
-        executable: /bin/bash
+      ansible.builtin.command: docker exec iam-keycloak bash -c "timeout 3 bash -c 'echo > /dev/tcp/iam-postgres/5432' 2>/dev/null && echo OK || echo FAIL"
       register: test_dns_keycloak_pg
       changed_when: false
       failed_when: false
@@ -88,10 +84,7 @@
       failed_when: false
 
     - name: "[DNS] Prometheus → Traefik"
-      ansible.builtin.shell: |
-        timeout 3 bash -c 'echo > /dev/tcp/proxy-traefik/80' 2>/dev/null && echo OK || echo FAIL
-      args:
-        executable: /bin/bash
+      ansible.builtin.command: docker exec monitoring-prometheus busybox wget -q -O /dev/null http://proxy-traefik:8080/metrics
       register: test_dns_prom_traefik
       changed_when: false
       failed_when: false
@@ -102,10 +95,7 @@
     # =========================================================================
 
     - name: "[METRICS] Keycloak metrics responding"
-      ansible.builtin.shell: |
-        timeout 3 bash -c 'echo > /dev/tcp/localhost/9000' 2>/dev/null && echo "200" || echo "FAIL"
-      args:
-        executable: /bin/bash
+      ansible.builtin.command: docker exec iam-keycloak bash -c "timeout 3 bash -c 'echo > /dev/tcp/localhost/9000' 2>/dev/null && echo 200 || echo FAIL"
       register: test_keycloak_metrics
       changed_when: false
       failed_when: false
@@ -117,7 +107,7 @@
       failed_when: false
 
     - name: "[METRICS] CrowdSec LAPI responding"
-      ansible.builtin.command: docker exec security-crowdsec wget -q --spider http://localhost:8080/v1/decision
+      ansible.builtin.command: docker exec security-crowdsec cscli decisions list
       register: test_crowdsec_api
       changed_when: false
       failed_when: false
