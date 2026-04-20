@@ -6,7 +6,7 @@
 # Secrets are templated from SOPS-decrypted env vars during deploy.
 
 crowdsec_lapi_url: http://security-crowdsec:8080/
-crowdsec_lapi_key: {{ CROWDSEC_LAPI_SECRET }}
+crowdsec_lapi_key: {{ CF_BOUNCER_API_KEY }}
 crowdsec_update_frequency: 10s
 
 cloudflare_config:
