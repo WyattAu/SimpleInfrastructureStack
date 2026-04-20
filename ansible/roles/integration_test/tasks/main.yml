@@ -132,7 +132,7 @@
           [HTTP]  Tempo ready:       {{ '✅' if test_tempo_ready.rc == 0 else '❌ (rc=' + (test_tempo_ready.rc | string) + ')' }}
           [DNS]   Keycloak→PG:       {{ '✅' if test_dns_keycloak_pg.stdout.strip() == 'OK' else '❌' }}
           [DNS]   Synapse→PG:        {{ '✅' if test_dns_synapse_pg.rc == 0 else '❌ (rc=' + (test_dns_synapse_pg.rc | string) + ')' }}
-          [DNS]   Prometheus→Traefik:{{ '✅' if test_dns_prom_traefik.stdout.strip() == 'OK' else '❌' }}
+          [DNS]   Prometheus→Traefik:{{ '✅' if test_dns_prom_traefik.rc == 0 else '❌' }}
           [METRICS] Keycloak:        {{ '✅' if test_keycloak_metrics.stdout.strip() == '200' else '❌' }}
           [METRICS] Synapse:         {{ '✅' if test_synapse_metrics.rc == 0 and test_synapse_metrics.stdout.strip() == '200' else '❌' }}
           [METRICS] CrowdSec:        {{ '✅' if test_crowdsec_api.rc == 0 else '❌' }}
