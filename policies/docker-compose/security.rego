@@ -20,6 +20,11 @@ ephemeral_names := {"-init", "-chown"}
 #   which requires setuid capability blocked by no-new-privileges.
 no_new_privileges_exempt := {"collabora", "wireguard", "taiga-back", "taiga-async"}
 
+# Approved :latest tag exemptions (free-tier images with no version tags).
+# - cgr.dev/chainguard/*: distroless images, free tier only provides :latest.
+#   Renovate tracks by digest (pinDigests) to detect image changes.
+latest_tag_exempt_prefixes := {"cgr.dev/chainguard/"}
+
 # Approved privileged mode exemptions (require full host capabilities).
 # - wireguard: requires NET_ADMIN, SYS_MODULE for VPN tunnel management.
 privileged_exempt := {"wireguard"}
@@ -83,14 +88,20 @@ deny_no_new_privileges[msg] {
     msg := sprintf("Service '%s' security_opt does not include no-new-privileges", [name])
 }
 
-# DENY: No image should use :latest tag (init containers and local builds exempt)
+# DENY: No image should use :latest tag (init containers, local builds, and Chainguard exempt)
 deny_latest_tag[msg] {
     svc := input.services[name]
     not is_ephemeral(name)
     image := svc.image
     endswith(image, ":latest")
     not is_local_build(image)
+    not is_latest_tag_exempt(image)
     msg := sprintf("Service '%s' uses unpinned image tag ':latest'", [name])
+}
+
+is_latest_tag_exempt(image) {
+    some prefix in latest_tag_exempt_prefixes
+    startswith(image, prefix)
 }
 
 # DENY: All long-running services should have logging configured
@@ -112,12 +123,24 @@ deny_no_resource_limits[msg] {
 }
 
 # WARN: Services with no health check (informational only)
+# Exempt: containers named "*-init" (ephemeral), and distroless images
+# that have no shell to run healthcheck commands.
 warn_no_healthcheck[msg] {
     svc := input.services[name]
     not is_ephemeral(name)
     not contains(name, "debug")
     not svc.healthcheck
+    not is_distroless_no_shell(name)
     msg := sprintf("Service '%s' has no health check", [name])
+}
+
+# Distroless containers with no shell cannot run CMD-based healthchecks.
+# These rely on Traefik's own health checking via the reverse proxy.
+distroless_no_shell_names := {"well-known-server", "project-management-gateway"}
+
+is_distroless_no_shell(name) {
+    some n in distroless_no_shell_names
+    name == n
 }
 
 # DENY: No service should mount Docker socket with read-write (except approved)
