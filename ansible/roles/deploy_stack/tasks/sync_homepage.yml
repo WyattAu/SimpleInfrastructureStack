@@ -10,7 +10,7 @@
 # EPERM on TrueNAS ZFS cross-pool paths. We use shell cp instead.
 # Homepage runs as its own UID and manages permissions internally.
 #
-# Wrapped in block/rescue so a failure here doesn't abort the deploy.
+# Non-critical: failure here should NOT trigger deploy rollback.
 
 - name: Sync Homepage config from git to data directory
   block:

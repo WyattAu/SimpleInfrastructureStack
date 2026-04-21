@@ -113,6 +113,7 @@
           ansible.builtin.include_tasks: "{{ prepare_role_path }}/detect_bind_mount_changes.yml"
 
         # Phase 2: Deploy stacks via Docker Compose
+        # This is the critical-path deployment. Failure here triggers rollback.
         - name: Deploy stacks
           ansible.builtin.include_role:
             name: deploy_stack
@@ -124,13 +125,17 @@
         # Phase 3b: Configure Keycloak realm SMTP via admin API.
         # Keycloak 26 ignores KC_SMTP_* env vars for realm smtpServer.
         # Must be done after Keycloak container is up and healthy.
+        # Non-critical: failure here should NOT trigger rollback.
         - name: Configure Keycloak realm SMTP
           ansible.builtin.include_tasks: "{{ playbook_dir }}/../roles/deploy_stack/tasks/configure_keycloak.yml"
+          ignore_errors: true
 
         # Phase 3c: Configure Hookshot GitHub bridge.
         # Writes private key, generates registration.yml, adds to Synapse.
+        # Non-critical: failure here should NOT trigger rollback.
         - name: Configure Hookshot GitHub bridge
           ansible.builtin.include_tasks: "{{ playbook_dir }}/../roles/deploy_stack/tasks/configure_hookshot.yml"
+          ignore_errors: true
 
         # Brief pause for containers to stabilize
         - name: Wait for containers to stabilize
