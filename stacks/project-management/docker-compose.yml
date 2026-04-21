@@ -332,11 +332,19 @@ services:
         max-file: "3"
 
   taiga-gateway:
-    image: nginx:1.27-alpine
+    # Chainguard nginx: distroless, no shell, daily CVE rebuilds.
+    # Free tier only provides :latest tag — Renovate tracks digest only.
+    # Default port is 8080 (not 80).
+    image: cgr.dev/chainguard/nginx:latest
     container_name: project-management-gateway
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+      - /var/lib/nginx/tmp
     depends_on:
       - taiga-front
       - taiga-back
@@ -356,7 +364,7 @@ services:
       - "traefik.http.routers.taiga.entrypoints=websecure"
       - "traefik.http.routers.taiga.tls.certresolver=cloudflare"
       - "traefik.http.routers.taiga.middlewares=global-rate-limit,keycloak-auth"
-      - "traefik.http.services.taiga.loadbalancer.server.port=80"
+      - "traefik.http.services.taiga.loadbalancer.server.port=8080"
     deploy:
       resources:
         limits:
