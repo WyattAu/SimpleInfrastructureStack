@@ -363,7 +363,7 @@ services:
       - "traefik.http.routers.taiga.rule=Host(`taiga.${DOMAIN_NAME}`)"
       - "traefik.http.routers.taiga.entrypoints=websecure"
       - "traefik.http.routers.taiga.tls.certresolver=cloudflare"
-      - "traefik.http.routers.taiga.middlewares=global-rate-limit"
+      - "traefik.http.routers.taiga.middlewares=global-rate-limit,keycloak-auth"
       - "traefik.http.services.taiga.loadbalancer.server.port=8080"
     deploy:
       resources:
