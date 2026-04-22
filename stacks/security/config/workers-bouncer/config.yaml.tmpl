@@ -6,7 +6,7 @@
 
 crowdsec_config:
   lapi_key: ${CROWDSEC_LAPI_SECRET}
-  lapi_url: http://security-crowdsec-lapi:8080
+  lapi_url: http://security-crowdsec:8080
   update_frequency: 10s
   only_include_decisions_from: ["cscli", "crowdsec"]
   # Limit to local decisions to stay within free plan KV write limits (1K/day)
@@ -27,4 +27,6 @@ log_level: info
 log_media: "stdout"
 
 prometheus:
-    enabled: false
+    enabled: true
+    listen_addr: 0.0.0.0
+    listen_port: "2112"
