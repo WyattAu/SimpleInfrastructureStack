@@ -40,9 +40,9 @@ stacks:
 # Containers with health checks that must pass after deploy
 # Only containers WITH a Docker healthcheck defined in compose should be listed here.
 health_check_containers:
-  - proxy-well-known-server
+  # NOTE: proxy-well-known-server NOT listed — Chainguard distroless has no shell for healthcheck
   - security-crowdsec
-  - security-crowdsec-bouncer
+  - security-cf-workers-bouncer
   - proxy-oauth2-proxy
   - iam-postgres
   - iam-keycloak
