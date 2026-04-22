@@ -181,6 +181,20 @@ resource "cloudflare_record" "google_site_verification" {
 }
 
 # ===================================================================
+# Cloudflare Workers — Matrix Well-Known
+# ===================================================================
+# The bare domain wyattau.com is a CNAME to Cloudflare Pages, so Traefik
+# cannot serve /.well-known/matrix/server. This Worker intercepts the
+# path and returns the correct JSON before Pages handles the request.
+# Worker script deployed via API (not Terraform-managed).
+
+resource "cloudflare_workers_route" "matrix_well_known" {
+  zone_id     = var.cf_zone_id
+  pattern     = "wyattau.com/.well-known/matrix/*"
+  script_name = "matrix-well-known"
+}
+
+# ===================================================================
 # DNS Records — Third-Party (not managed by Terraform)
 # ===================================================================
 # These records are managed by external services or are intentional.
