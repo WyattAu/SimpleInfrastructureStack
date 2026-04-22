@@ -107,7 +107,7 @@ services:
       - /mnt/pool_HDD_x2/infra/bin/crowdsec-cloudflare-worker-bouncer:/usr/local/bin/crowdsec-cloudflare-worker-bouncer:ro
     environment:
       - TZ=${TZ}
-    command: ["-c", "/config/config.yaml"]
+    command: ["/usr/local/bin/crowdsec-cloudflare-worker-bouncer", "-c", "/config/config.yaml"]
     networks:
       - backend_net
     healthcheck:
