@@ -212,44 +212,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-  well-known-server:
-    # Chainguard nginx: distroless, no shell, daily CVE rebuilds.
-    # Free tier only provides :latest tag — Renovate tracks digest only.
-    # Default port is 8080 (not 80).
-    image: cgr.dev/chainguard/nginx:latest
-    container_name: proxy-well-known-server
-    restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
-    read_only: true
-    tmpfs:
-      - /tmp
-      - /var/run
-      - /var/lib/nginx/tmp
-
-    volumes:
-      - ./config/matrix-well-known.json:/usr/share/nginx/html/.well-known/matrix/server:ro
-    networks:
-      - traefik_net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.matrix-well-known.rule=Host(`${DOMAIN_NAME}`)"
-      - "traefik.http.routers.matrix-well-known.entrypoints=websecure"
-      - "traefik.http.middlewares.matrix-headers.headers.customresponseheaders.Content-Type=application/json; charset=utf-8"
-      - "traefik.http.routers.matrix-well-known.middlewares=matrix-headers"
-      - "traefik.http.routers.matrix-well-known.tls.certresolver=cloudflare"
-      - "traefik.http.services.matrix-well-known.loadbalancer.server.port=8080"
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "2m"
-        max-file: "1"
-
 networks:
   traefik_net:
     external: true
