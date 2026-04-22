@@ -635,14 +635,14 @@ groups:
             CrowdSec agent container is not responding to health checks.
             Intrusion detection and Cloudflare bouncer are not operational.
 
-      # CrowdSec bouncer is down — IPs not being blocked at edge
-      - alert: CrowdSecBouncerDown
-        expr: up{job="crowdsec-bouncer"} == 0
+      # CrowdSec Workers Bouncer is down — IPs not being blocked at edge
+      - alert: CrowdSecWorkersBouncerDown
+        expr: up{job="crowdsec-workers-bouncer"} == 0
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "CrowdSec Cloudflare bouncer is down"
+          summary: "CrowdSec CF Workers Bouncer is down"
           description: >-
             CrowdSec Cloudflare bouncer is not running. Detected threats
             are being logged but not blocked at the Cloudflare edge.
