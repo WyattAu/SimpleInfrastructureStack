@@ -136,7 +136,7 @@ warn_no_healthcheck[msg] {
 
 # Distroless containers with no shell cannot run CMD-based healthchecks.
 # These rely on Traefik's own health checking via the reverse proxy.
-distroless_no_shell_names := {"well-known-server", "project-management-gateway"}
+distroless_no_shell_names := {"project-management-gateway"}
 
 is_distroless_no_shell(name) {
     some n in distroless_no_shell_names
