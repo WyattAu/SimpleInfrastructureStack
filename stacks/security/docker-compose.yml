@@ -7,16 +7,16 @@
 #
 # Architecture:
 #   Docker logs → CrowdSec agent (parse + detect) → CTI community
-#   CrowdSec agent → LAPI → Cloudflare bouncer → Edge blocking
+#   CrowdSec agent → LAPI → Workers Bouncer → Edge blocking
 #
 # Current mode: DETECTION + ACTIVE BLOCKING
 #   - CrowdSec analyzes all container logs for attack patterns
 #   - Decisions are logged and shared with the community CTI
-#   - Cloudflare bouncer automatically bans IPs at the edge via
-#     Cloudflare Firewall Rules API
+#   - CrowdSec Workers Bouncer automatically bans IPs at the edge via
+#     Cloudflare Worker (KV-backed, near-zero latency)
 #
 # Requirements:
-#   - Cloudflare API token with Zone:Firewall:Edit permission
+#   - Cloudflare API token with Workers Scripts/KV/Routes Edit permissions
 #   - CROWDSEC_LAPI_SECRET for agent-bouncer communication
 #   - CF_API_TOKEN for Cloudflare API access
 
@@ -81,9 +81,19 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  crowdsec-cloudflare-bouncer:
-    image: crowdsecurity/cloudflare-bouncer:${CF_BOUNCER_VERSION}
-    container_name: security-crowdsec-bouncer
+  crowdsec-cf-workers-bouncer:
+    # CrowdSec Cloudflare Workers Bouncer — blocks IPs at the edge via
+    # a Cloudflare Worker backed by KV. Replaces the deprecated Cloudflare
+    # bouncer (which used Firewall Rules API).
+    #
+    # Binary: /mnt/pool_HDD_x2/infra/bin/crowdsec-cloudflare-worker-bouncer
+    # Config:  generated on first run, stored in config volume
+    # Setup:   bouncer auto-deploys Worker + KV namespace on startup
+    #
+    # NOTE: Alpine base provides shell for healthcheck. Binary is bind-mounted
+    # from host to avoid committing a 14MB Go binary to git.
+    image: alpine:3.22
+    container_name: security-cf-workers-bouncer
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -92,21 +102,26 @@ services:
     depends_on:
       crowdsec:
         condition: service_healthy
-    # The Cloudflare bouncer reads its config from a YAML file, NOT env vars.
-    # Config is generated via: docker run --rm crowdsecurity/cloudflare-bouncer -g <TOKEN>
-    # and stored in the bouncer config bind-mount.
-    # Secrets (LAPI key, CF token) are in the config file sourced from SOPS.
     volumes:
-      - ./config/bouncer:/etc/crowdsec/bouncers:ro
-    command: ["-c", "/etc/crowdsec/bouncers/config.yaml"]
+      - ./config/workers-bouncer:/config:rw
+      - /mnt/pool_HDD_x2/infra/bin/crowdsec-cloudflare-worker-bouncer:/usr/local/bin/crowdsec-cloudflare-worker-bouncer:ro
+    environment:
+      - TZ=${TZ}
+    command: ["/usr/local/bin/crowdsec-cloudflare-worker-bouncer", "-c", "/config/config.yaml"]
     networks:
       - backend_net
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "crowdsec-cloudflare-worker-bouncer"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
     deploy:
       resources:
         limits:
-          memory: 128M
+          memory: 64M
         reservations:
-          memory: 32M
+          memory: 16M
     logging:
       driver: "json-file"
       options:
