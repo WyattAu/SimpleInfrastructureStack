@@ -5,7 +5,7 @@
 # DO NOT hardcode secrets here.
 
 crowdsec_config:
-  lapi_key: {{ CROWDSEC_LAPI_SECRET }}
+  lapi_key: {{ CF_BOUNCER_API_KEY }}
   lapi_url: http://security-crowdsec:8080
   update_frequency: 10s
   only_include_decisions_from: ["cscli", "crowdsec"]
