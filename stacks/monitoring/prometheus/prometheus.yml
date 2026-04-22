@@ -185,6 +185,9 @@ scrape_configs:
           - http://monitoring-loki:3100/ready             # Loki readiness
           - http://storage-collabora:9980/                # Collabora
           - http://vaultwarden-server:80/                 # Vaultwarden
+          - http://rss-freshrss:80/                       # FreshRSS web UI
+          - http://utility-homepage:80/                   # Homepage
+          - http://accounting-akaunting:80/               # Akaunting
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -236,6 +239,7 @@ scrape_configs:
           - rss-postgres:5432            # FreshRSS PostgreSQL
           - photos-postgres:5432         # Immich PostgreSQL
           - documents-postgres:5432      # Paperless PostgreSQL
+          - project-management-postgres:5432 # Taiga PostgreSQL
           - photos-valkey:6379           # Immich Valkey
           - documents-redis:6379         # Paperless Redis
           - monitoring-loki:3100         # Loki gRPC
