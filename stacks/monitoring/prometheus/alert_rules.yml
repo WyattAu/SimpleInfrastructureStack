@@ -339,6 +339,43 @@ groups:
           summary: "Paperless-ngx is down"
           description: "Paperless-ngx metrics endpoint is not responding. Document management is unavailable."
 
+      # Non-metric services — monitored via blackbox probes
+      - alert: FreshRSSDown
+        expr: probe_success{instance=~"rss-freshrss"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "FreshRSS is unreachable"
+          description: "FreshRSS web UI is not responding via internal blackbox probe."
+
+      - alert: HomepageDown
+        expr: probe_success{instance=~"utility-homepage"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Homepage is unreachable"
+          description: "Homepage web UI is not responding via internal blackbox probe."
+
+      - alert: AkauntingDown
+        expr: probe_success{instance=~"accounting-akaunting"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Akaunting is unreachable"
+          description: "Akaunting web UI is not responding via internal blackbox probe."
+
+      - alert: TaigaDown
+        expr: probe_success{instance=~"project-management-postgres"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Taiga database is unreachable"
+          description: "Taiga PostgreSQL is not accepting TCP connections via internal blackbox probe."
+
       - alert: GrafanaDown
         expr: up{job="grafana"} == 0
         for: 2m
@@ -635,14 +672,14 @@ groups:
             CrowdSec agent container is not responding to health checks.
             Intrusion detection and Cloudflare bouncer are not operational.
 
-      # CrowdSec bouncer is down — IPs not being blocked at edge
-      - alert: CrowdSecBouncerDown
-        expr: up{job="crowdsec-bouncer"} == 0
+      # CrowdSec Workers Bouncer is down — IPs not being blocked at edge
+      - alert: CrowdSecWorkersBouncerDown
+        expr: up{job="crowdsec-workers-bouncer"} == 0
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "CrowdSec Cloudflare bouncer is down"
+          summary: "CrowdSec CF Workers Bouncer is down"
           description: >-
             CrowdSec Cloudflare bouncer is not running. Detected threats
             are being logged but not blocked at the Cloudflare edge.
