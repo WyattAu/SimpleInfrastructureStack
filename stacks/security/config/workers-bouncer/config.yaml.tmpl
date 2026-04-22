@@ -1,11 +1,11 @@
 # CrowdSec Cloudflare Workers Bouncer Configuration
 # ================================================
-# This file is templated at deploy time by Ansible.
+# This file is templated at deploy time by Ansible Jinja2.
 # Secrets are sourced from SOPS-encrypted security.env.encrypted.
 # DO NOT hardcode secrets here.
 
 crowdsec_config:
-  lapi_key: ${CROWDSEC_LAPI_SECRET}
+  lapi_key: {{ CROWDSEC_LAPI_SECRET }}
   lapi_url: http://security-crowdsec:8080
   update_frequency: 10s
   only_include_decisions_from: ["cscli", "crowdsec"]
@@ -16,12 +16,12 @@ cloudflare_config:
     accounts:
         - id: "26966ba2f4b3a12cb750cd615c8d0bcf"
           zones:
-            - zone_id: "${CF_ZONE_ID}"
+            - zone_id: "{{ CF_ZONE_ID }}"
               actions:
                 - ban
               default_action: ban
               routes_to_protect: []
-          token: "${CF_API_TOKEN}"
+          token: "{{ CF_API_TOKEN }}"
 
 log_level: info
 log_media: "stdout"
