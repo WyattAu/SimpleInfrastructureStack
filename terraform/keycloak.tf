@@ -84,7 +84,7 @@ resource "keycloak_openid_client" "forgejo" {
   client_secret         = var.kc_forgejo_secret
   standard_flow_enabled = true
   access_type           = "CONFIDENTIAL"
-  valid_redirect_uris   = ["https://forgejo.wyattau.com/user/login"]
+  valid_redirect_uris   = ["https://forgejo.wyattau.com/user/oauth2/auth.wyattau.com/callback"]
   web_origins           = ["https://forgejo.wyattau.com"]
   root_url              = "https://forgejo.wyattau.com"
 }
