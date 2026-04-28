@@ -94,6 +94,11 @@
         href: https://akaunting.wyattau.com
         description: Accounting
         siteMonitor: https://akaunting.wyattau.com
+    - Calibre-Web:
+        icon: calibre-web.png
+        href: https://books.wyattau.com
+        description: eBook Library
+        siteMonitor: https://books.wyattau.com
 
 - Infrastructure:
     - WireGuard:
