@@ -1,0 +1,51 @@
+services:
+  calibre-web:
+    image: lscr.io/linuxserver/calibre-web:latest
+    container_name: calibre-web
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+      - DOCKER_MODS=linuxserver/mods:universal-calibre-v7.16.0  # Embedded Calibre for library management
+      - CALIBRE_WEB_INTERNAL_PORT=8083
+    volumes:
+      - ${BOOKS_DATA_DIR}:/config
+      - ${BOOKS_LIBRARY_DIR}:/books
+    networks:
+      - traefik_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
+
+      # Service
+      - "traefik.http.services.calibre-web-svc.loadbalancer.server.port=8083"
+
+      # Router: Web UI (Keycloak SSO)
+      - "traefik.http.routers.calibre-web.rule=Host(`${CALIBRE_SUBDOMAIN}.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.calibre-web.entrypoints=websecure"
+      - "traefik.http.routers.calibre-web.tls.certresolver=cloudflare"
+      - "traefik.http.routers.calibre-web.middlewares=keycloak-auth"
+      - "traefik.http.routers.calibre-web.service=calibre-web-svc"
+
+      # Router: OPDS feed (bypass SSO — eBook readers use basic auth)
+      - "traefik.http.routers.calibre-web-opds.rule=Host(`${CALIBRE_SUBDOMAIN}.${DOMAIN_NAME}`) && PathPrefix(`/opds`)"
+      - "traefik.http.routers.calibre-web-opds.entrypoints=websecure"
+      - "traefik.http.routers.calibre-web-opds.tls.certresolver=cloudflare"
+      - "traefik.http.routers.calibre-web-opds.service=calibre-web-svc"
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+networks:
+  traefik_net:
+    external: true
