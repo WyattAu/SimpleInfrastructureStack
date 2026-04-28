@@ -20,6 +20,7 @@ locals {
   active_services = {
     akaunting          = "Akaunting (accounting)"
     auth               = "Keycloak (SSO)"
+    books              = "Calibre-Web (eBook library)"
     collabora          = "Collabora Online (document editing)"
     docs               = "Documentation (wiki/knowledge base)"
     element            = "Element Web (Matrix client)"
