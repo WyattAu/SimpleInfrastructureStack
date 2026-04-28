@@ -35,6 +35,7 @@ stacks:
   - photos
   - documents
   - vpn
+  - books
   - updater
 
 # Containers with health checks that must pass after deploy
