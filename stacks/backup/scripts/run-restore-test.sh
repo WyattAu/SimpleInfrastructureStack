@@ -74,7 +74,7 @@ echo "[$(date -Iseconds)] Validating configuration files..."
 
 for config_file in \
     "${RESTORE_DIR}/data/collaboration/synapse/homeserver.yaml" \
-    "${RESTORE_DIR}/data/monitoring/prometheus/prometheus.yml" \
+    "${RESTORE_DIR}/data/monitoring/victoriametrics/scrape.yml" \
     "${RESTORE_DIR}/data/monitoring/alertmanager/alertmanager.yml"; do
 
     if docker exec backup-restic test -s "${config_file}"; then

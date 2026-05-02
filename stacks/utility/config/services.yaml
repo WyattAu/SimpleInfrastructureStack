@@ -31,7 +31,7 @@
         href: https://grafana.wyattau.com
         description: Dashboards
         siteMonitor: https://grafana.wyattau.com
-    - Prometheus:
+    - VictoriaMetrics:
         icon: prometheus.webp
         href: https://prometheus.wyattau.com
         description: Metrics

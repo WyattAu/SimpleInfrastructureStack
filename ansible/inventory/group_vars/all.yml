@@ -49,7 +49,9 @@ health_check_containers:
   - iam-keycloak
   - operations-postgres-forgejo
   - operations-forgejo
-  - monitoring-prometheus
+  - monitoring-victoriametrics
+  - monitoring-vmalert
+  - monitoring-victorialogs
   - monitoring-alertmanager
   - monitoring-grafana
   - monitoring-promtail

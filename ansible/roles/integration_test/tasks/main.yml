@@ -13,7 +13,7 @@
     # Test Group 1: Internal HTTP endpoints (application health checks)
     # Uses tools available inside each container:
     #   - Keycloak: minimal image, no curl/wget — use /dev/tcp via bash
-    #   - Forgejo, Grafana, Loki, Synapse, Prometheus, Alertmanager, Tempo: wget
+    #   - Forgejo, Grafana, VictoriaMetrics, VictoriaLogs, Synapse, Alertmanager, Tempo: wget
     #   - All tests use docker exec to run inside the container
     # =========================================================================
 
@@ -35,9 +35,9 @@
       changed_when: false
       failed_when: false
 
-    - name: "[HTTP] Loki readiness"
-      ansible.builtin.command: docker exec monitoring-loki wget -q --spider http://localhost:3100/ready
-      register: test_loki_ready
+    - name: "[HTTP] VictoriaLogs health"
+      ansible.builtin.command: docker exec monitoring-victorialogs wget -q --spider http://127.0.0.1:9428/health
+      register: test_victorialogs_health
       changed_when: false
       failed_when: false
 
@@ -47,9 +47,9 @@
       changed_when: false
       failed_when: false
 
-    - name: "[HTTP] Prometheus ready"
-      ansible.builtin.command: docker exec monitoring-prometheus wget -q --spider http://localhost:9090/-/ready
-      register: test_prometheus_ready
+    - name: "[HTTP] VictoriaMetrics health"
+      ansible.builtin.command: docker exec monitoring-victoriametrics wget -q --spider http://127.0.0.1:8428/health
+      register: test_victoriametrics_health
       changed_when: false
       failed_when: false
 
@@ -83,9 +83,9 @@
       changed_when: false
       failed_when: false
 
-    - name: "[DNS] Prometheus → Traefik"
-      ansible.builtin.command: docker exec monitoring-prometheus busybox wget -q -O /dev/null http://proxy-traefik:8080/metrics
-      register: test_dns_prom_traefik
+    - name: "[DNS] VictoriaMetrics → Traefik"
+      ansible.builtin.command: docker exec monitoring-victoriametrics busybox wget -q -O /dev/null http://proxy-traefik:8080/metrics
+      register: test_dns_vm_traefik
       changed_when: false
       failed_when: false
 
@@ -125,14 +125,14 @@
           [HTTP]  Keycloak live:      {{ '✅' if test_keycloak_health.stdout.strip() == 'OK' else '❌ (' + (test_keycloak_health.stdout.strip() | default('rc=' + (test_keycloak_health.rc | string))) + ')' }}
           [HTTP]  Forgejo UI:        {{ '✅' if test_forgejo_ui.rc == 0 else '❌ (rc=' + (test_forgejo_ui.rc | string) + ')' }}
           [HTTP]  Grafana health:    {{ '✅' if test_grafana_health.rc == 0 else '❌ (rc=' + (test_grafana_health.rc | string) + ')' }}
-          [HTTP]  Loki ready:        {{ '✅' if test_loki_ready.rc == 0 else '❌ (rc=' + (test_loki_ready.rc | string) + ')' }}
+          [HTTP]  VictoriaLogs:      {{ '✅' if test_victorialogs_health.rc == 0 else '❌ (rc=' + (test_victorialogs_health.rc | string) + ')' }}
           [HTTP]  Synapse versions:  {{ '✅' if test_synapse_versions.rc == 0 else '❌ (rc=' + (test_synapse_versions.rc | string) + ')' }}
-          [HTTP]  Prometheus ready:  {{ '✅' if test_prometheus_ready.rc == 0 else '❌ (rc=' + (test_prometheus_ready.rc | string) + ')' }}
+          [HTTP]  VictoriaMetrics:   {{ '✅' if test_victoriametrics_health.rc == 0 else '❌ (rc=' + (test_victoriametrics_health.rc | string) + ')' }}
           [HTTP]  Alertmanager:      {{ '✅' if test_alertmanager_healthy.rc == 0 else '❌ (rc=' + (test_alertmanager_healthy.rc | string) + ')' }}
           [HTTP]  Tempo ready:       {{ '✅' if test_tempo_ready.rc == 0 else '❌ (rc=' + (test_tempo_ready.rc | string) + ')' }}
           [DNS]   Keycloak→PG:       {{ '✅' if test_dns_keycloak_pg.stdout.strip() == 'OK' else '❌' }}
           [DNS]   Synapse→PG:        {{ '✅' if test_dns_synapse_pg.rc == 0 else '❌ (rc=' + (test_dns_synapse_pg.rc | string) + ')' }}
-          [DNS]   Prometheus→Traefik:{{ '✅' if test_dns_prom_traefik.rc == 0 else '❌' }}
+          [DNS]   VM→Traefik:        {{ '✅' if test_dns_vm_traefik.rc == 0 else '❌' }}
           [METRICS] Keycloak:        {{ '✅' if test_keycloak_metrics.stdout.strip() == '200' else '❌' }}
           [METRICS] Synapse:         {{ '✅' if test_synapse_metrics.rc == 0 and test_synapse_metrics.stdout.strip() == '200' else '❌' }}
           [METRICS] CrowdSec:        {{ '✅' if test_crowdsec_api.rc == 0 else '❌' }}
