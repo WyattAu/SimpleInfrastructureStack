@@ -1,9 +1,8 @@
 apiVersion: 1
 groups:
   # Prometheus-based alerts are managed in alert_rules.yml and evaluated by
-  # Prometheus itself. Do NOT duplicate them here — that causes double
-  # notifications. This file contains ONLY log-based alerts that require
-  # Grafana's Loki integration.
+  # vmalert. Do NOT duplicate them here — that causes double notifications.
+  # This file contains ONLY log-based alerts using VictoriaLogs LogsQL.
 
   - orgId: 1
     name: log_alerts.rules
@@ -18,7 +17,7 @@ groups:
             datasourceUid: P8E80F9AEF21F6940
             model:
               editorMode: code
-              expr: 'count_over_time({job="keycloak"} |~ "(?i)(ERROR|FATAL|exception)" [5m]) > 10'
+              expr: '{job="keycloak"} _time:5m ~"(?i)(ERROR|FATAL|exception)" | stats count() > 10'
               instant: true
               legendFormat: ""
               range: false
@@ -31,7 +30,7 @@ groups:
           severity: warning
         annotations:
           summary: "Keycloak logging >10 errors in 5m"
-          description: "Keycloak has logged {{ $value }} error-level messages in the last 5 minutes."
+          description: "Keycloak has logged {{ $values.A }} error-level messages in the last 5 minutes."
 
       - uid: log_synapse_errors
         title: Synapse Error Logs
@@ -41,7 +40,7 @@ groups:
             datasourceUid: P8E80F9AEF21F6940
             model:
               editorMode: code
-              expr: 'count_over_time({job="synapse"} |~ "(?i)(ERROR|CRITICAL|exception|traceback)" [5m]) > 20'
+              expr: '{job="synapse"} _time:5m ~"(?i)(ERROR|CRITICAL|exception|traceback)" | stats count() > 20'
               instant: true
               legendFormat: ""
               range: false
@@ -54,7 +53,7 @@ groups:
           severity: warning
         annotations:
           summary: "Synapse logging >20 errors in 5m"
-          description: "Synapse has logged {{ $value }} error-level messages in the last 5 minutes."
+          description: "Synapse has logged {{ $values.A }} error-level messages in the last 5 minutes."
 
       - uid: log_traefik_errors
         title: Traefik Error Logs
@@ -64,7 +63,7 @@ groups:
             datasourceUid: P8E80F9AEF21F6940
             model:
               editorMode: code
-              expr: 'count_over_time({job="traefik"} |~ "(?i)(error|panic|fatal)" [5m]) > 10'
+              expr: '{job="traefik"} _time:5m ~"(?i)(error|panic|fatal)" | stats count() > 10'
               instant: true
               legendFormat: ""
               range: false
@@ -77,7 +76,7 @@ groups:
           severity: warning
         annotations:
           summary: "Traefik logging >10 errors in 5m"
-          description: "Traefik has logged {{ $value }} error-level messages in the last 5 minutes."
+          description: "Traefik has logged {{ $values.A }} error-level messages in the last 5 minutes."
 
       - uid: log_oom_kill
         title: OOM Kill Detected in Logs
@@ -87,7 +86,7 @@ groups:
             datasourceUid: P8E80F9AEF21F6940
             model:
               editorMode: code
-              expr: 'count_over_time({job=~".+"} |~ "(?i)oom.killed|out of memory|memory exhausted" [10m]) > 0'
+              expr: '_time:10m ~"(?i)oom.killed|out of memory|memory exhausted" | stats count() > 0'
               instant: true
               legendFormat: ""
               range: false
