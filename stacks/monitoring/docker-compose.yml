@@ -32,7 +32,7 @@ services:
       - traefik_net
       - backend_net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8428/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8428/health"]
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -81,7 +81,7 @@ services:
     networks:
       - backend_net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8880/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8880/health"]
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -187,7 +187,7 @@ services:
     networks:
       - backend_net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9428/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:9428/health"]
       interval: 30s
       timeout: 10s
       start_period: 30s
