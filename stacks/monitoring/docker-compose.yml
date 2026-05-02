@@ -241,12 +241,18 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
+    # --- HDD Performance Tuning ---
+    # Default housekeeping_interval=1s causes 168% CPU spikes on HDD-backed
+    # ZFS pools (du on large overlay2 layers takes 17-20s each). Increase to
+    # 60s to reduce I/O pressure while retaining all container metrics.
+    command:
+      - '--housekeeping_interval=60s'
     networks:
       - backend_net
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 128M
     logging:
       driver: "json-file"
       options:
