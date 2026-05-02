@@ -32,7 +32,7 @@ locals {
     oauth              = "OAuth2-Proxy (SSO middleware)"
     ocis               = "oCIS (file storage)"
     photos             = "Immich (photo management)"
-    prometheus         = "Prometheus (metrics)"
+    prometheus         = "VictoriaMetrics (metrics)"
     registry-forgejo   = "Forgejo container registry"
     rss                = "FreshRSS (feed reader)"
     taiga              = "Taiga (project management)"
