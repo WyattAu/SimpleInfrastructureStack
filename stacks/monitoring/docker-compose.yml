@@ -1,40 +1,38 @@
 services:
-  prometheus-init:
+  victoriametrics-init:
     image: busybox:1.37.0
-    container_name: monitoring-prometheus-init
-    # The Prometheus process runs as the 'nobody' user (UID 65534).
-    command: chown -R 65534:65534 /prometheus
+    container_name: monitoring-victoriametrics-init
+    # VictoriaMetrics runs as the user specified by the image (root by default).
+    # Data directory ownership doesn't require special chown like Prometheus.
+    command: mkdir -p /victoria-metrics-data
     volumes:
-      - ${DATA_BASE_PATH}/monitoring/prometheus:/prometheus
+      - ${DATA_BASE_PATH}/monitoring/victoriametrics:/victoria-metrics-data
     networks: []
 
-  prometheus:
-    image: prom/prometheus:${PROMETHEUS_VERSION}
-    container_name: monitoring-prometheus
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:${VICTORIAMETRICS_VERSION}
+    container_name: monitoring-victoriametrics
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
 
     depends_on:
-      prometheus-init:
+      victoriametrics-init:
         condition: service_completed_successfully
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./prometheus/recording_rules.yml:/etc/prometheus/recording_rules.yml:ro
-      - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
-      - ${DATA_BASE_PATH}/monitoring/prometheus:/prometheus
+      - ./victoriametrics/scrape.yml:/etc/victoriametrics/scrape.yml:ro
+      - ${DATA_BASE_PATH}/monitoring/victoriametrics:/victoria-metrics-data
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-lifecycle'
-      - '--storage.tsdb.retention.time=30d'
+      - '--promscrape.config=/etc/victoriametrics/scrape.yml'
+      - '--promscrape.config.strictParse=false'
+      - '--storageDataPath=/victoria-metrics-data'
+      - '--retentionPeriod=30d'
+      - '--httpListenAddr=:8428'
     networks:
       - traefik_net
       - backend_net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/ready"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8428/health"]
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -46,15 +44,54 @@ services:
       - "traefik.http.routers.prometheus.entrypoints=websecure"
       - "traefik.http.routers.prometheus.middlewares=keycloak-auth"
       - "traefik.http.routers.prometheus.tls.certresolver=cloudflare"
-      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=8428"
       - "traefik.http.services.prometheus.loadbalancer.server.scheme=http"
     deploy:
       resources:
         limits:
-          memory: 4G
-        reservations:
-          cpus: '0.5'
           memory: 512M
+        reservations:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  vmalert:
+    image: victoriametrics/vmalert:${VMALERT_VERSION}
+    container_name: monitoring-vmalert
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+    depends_on:
+      victoriametrics:
+        condition: service_healthy
+    volumes:
+      - ./prometheus/alert_rules.yml:/etc/vmalert/alert_rules.yml:ro
+      - ./prometheus/recording_rules.yml:/etc/vmalert/recording_rules.yml:ro
+    command:
+      - '--rule=/etc/vmalert/alert_rules.yml'
+      - '--rule=/etc/vmalert/recording_rules.yml'
+      - '--datasource.url=http://monitoring-victoriametrics:8428'
+      - '--notifier.url=http://monitoring-alertmanager:9093'
+      - '--remoteWrite.url=http://monitoring-victoriametrics:8428'
+      - '--httpListenAddr=:8880'
+    networks:
+      - backend_net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8880/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 32M
     logging:
       driver: "json-file"
       options:
