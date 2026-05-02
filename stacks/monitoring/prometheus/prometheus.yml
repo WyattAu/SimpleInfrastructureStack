@@ -182,7 +182,7 @@ scrape_configs:
           - http://operations-forgejo:3000/               # Forgejo web UI
           - http://monitoring-grafana:3000/api/health    # Grafana health
           - http://monitoring-kuma:3001/                  # Uptime Kuma
-          - http://monitoring-loki:3100/ready             # Loki readiness
+          - http://monitoring-victorialogs:9428/health             # Loki readiness
           - http://storage-collabora:9980/                # Collabora
           - http://vaultwarden-server:80/                 # Vaultwarden
           - http://rss-freshrss:80/                       # FreshRSS web UI
@@ -242,7 +242,7 @@ scrape_configs:
           - project-management-postgres:5432 # Taiga PostgreSQL
           - photos-valkey:6379           # Immich Valkey
           - documents-redis:6379         # Paperless Redis
-          - monitoring-loki:3100         # Loki gRPC
+          - monitoring-victorialogs:9428         # VictoriaLogs
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target

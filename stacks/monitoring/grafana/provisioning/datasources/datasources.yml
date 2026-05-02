@@ -10,11 +10,11 @@ datasources:
     jsonData:
       httpMethod: POST
     editable: true
-  - name: Loki
-    type: loki
+  - name: VictoriaLogs
+    type: victoriametrics-logs-datasource
     uid: P8E80F9AEF21F6940
     access: proxy
-    url: http://monitoring-loki:3100
+    url: http://monitoring-victorialogs:9428
     jsonData:
       httpHeaderName1: X-Scope-OrgID
     secureJsonData:
