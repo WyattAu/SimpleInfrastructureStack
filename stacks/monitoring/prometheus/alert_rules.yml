@@ -141,14 +141,14 @@ groups:
           summary: "Rate limiting active for {{ $labels.service }}"
           description: "{{ $labels.service }} received {{ $value }} rate-limit rejections in the last 5 minutes."
 
-      - alert: PrometheusTSDBCompactionFailure
-        expr: prometheus_tsdb_compactions_failed_total > 0
-        for: 10m
+      - alert: VictoriaMetricsDown
+        expr: up{job="victoriametrics"} == 0
+        for: 2m
         labels:
-          severity: warning
+          severity: critical
         annotations:
-          summary: "Prometheus TSDB compaction failures"
-          description: "Prometheus has experienced TSDB compaction failures."
+          summary: "VictoriaMetrics is down"
+          description: "VictoriaMetrics is not responding. All metrics scraping and alert evaluation is unavailable."
 
   - name: synapse_health
     rules:
@@ -399,6 +399,15 @@ groups:
         annotations:
           summary: "Monitoring exporter {{ $labels.job }} is down"
           description: "The {{ $labels.job }} exporter is not responding. Container/service metrics for ALL services will be stale or missing."
+
+      - alert: VictoriaMetricsAlertingDown
+        expr: up{job="vmalert"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "vmalert is down"
+          description: "vmalert is not responding. Alerting and recording rules are no longer being evaluated."
 
   - name: server_health
     rules:
