@@ -174,23 +174,14 @@ groups:
 
   - name: loki_health
     rules:
-      - alert: LokiTooManyFailedRequests
-        expr: sum(rate(loki_request_duration_seconds_count{status_code=~"5.."}[5m])) by (method, route) > 1
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Loki high 5xx rate on {{ $labels.method }} {{ $labels.route }}"
-          description: "Loki is experiencing {{ $value }} 5xx errors/s on {{ $labels.method }} {{ $labels.route }}."
-
-      - alert: LokiDown
+      - alert: VictoriaLogsDown
         expr: up{job="loki"} == 0
         for: 2m
         labels:
           severity: critical
         annotations:
-          summary: "Loki is down"
-          description: "The Loki metrics endpoint is not responding. Log aggregation may be unavailable."
+          summary: "VictoriaLogs is down"
+          description: "VictoriaLogs is not responding. Log aggregation may be unavailable."
 
   - name: backup_health
     rules:
