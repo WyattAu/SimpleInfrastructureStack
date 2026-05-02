@@ -69,6 +69,16 @@ services:
       - KC_METRICS_ENABLED=true
       - KC_HTTP_ENABLED=true
       - KC_CACHE=local
+      # --- JVM Memory Tuning ---
+      # 4 users, local cache only. 768M heap + 256M metaspace fits comfortably
+      # in 1G container (was 2G, sitting at 97% utilization). Quarkus auto-sizes
+      # based on container limit; explicit JAVA_OPTS overrides that behavior.
+      - JAVA_OPTS=-Xmx768m -XX:MaxMetaspaceSize=256m -XX:+UseG1GC
+      # --- Database Connection Pool ---
+      # Default pool too small for scheduled tasks (ClearExpiredAdminEvents
+      # was failing with "Acquisition timeout while waiting for new connection").
+      - KC_DB_POOL_INITIAL_SIZE=5
+      - KC_DB_POOL_MAX_SIZE=20
       # --- Email (SMTP) Settings ---
       - KC_SMTP_HOST=${SMTP_HOST}
       - KC_SMTP_PORT=${SMTP_PORT}
@@ -98,10 +108,10 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 1G
         reservations:
-          cpus: '0.5'
-          memory: 512M
+          cpus: '0.25'
+          memory: 256M
     logging:
       driver: "json-file"
       options:

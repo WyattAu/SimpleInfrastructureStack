@@ -109,6 +109,13 @@ services:
       RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE}
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+      # --- Memory Watermark Tuning ---
+      # Default watermark is 40% of system RAM (~6G). With the system under
+      # memory pressure (swap at 87%), RabbitMQ repeatedly hits the watermark,
+      # causing CPU spikes from aggressive GC and queue paging. Set to 0.25
+      # of container limit (256M * 0.25 = 64M absolute_watermark), which is
+      # sufficient for 3 Taiga users with lightweight async/event queues.
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: -rabbit memory_high_watermark 0.25
     volumes:
       - ${DATA_BASE_PATH}/project-management/rabbitmq:/var/lib/rabbitmq
     healthcheck:
