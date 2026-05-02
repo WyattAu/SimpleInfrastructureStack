@@ -1,6 +1,14 @@
 ---
 apiVersion: 1
-deleteDatasources: true
+
+# Delete old Prometheus and Loki datasources whose UIDs conflict with
+# the new VictoriaMetrics/VictoriaLogs entries below.
+deleteDatasources:
+  - name: Prometheus
+    orgId: 1
+  - name: Loki
+    orgId: 1
+
 datasources:
   - name: VictoriaMetrics
     type: victoriametrics-metrics-datasource
