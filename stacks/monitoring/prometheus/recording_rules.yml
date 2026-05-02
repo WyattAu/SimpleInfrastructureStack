@@ -5,7 +5,7 @@
 #
 # SLO Targets:
 #   Critical services (99.9%): traefik, keycloak
-#   Important services (99.5%): forgejo, grafana, loki, synapse
+#   Important services (99.5%): forgejo, grafana, victorialogs, synapse
 #   Standard services (99.0%): all others
 #
 # Error Budget = 1 - SLO target

@@ -171,7 +171,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  loki:
+  victorialogs:
     image: victoriametrics/victoria-logs:${VICTORIALOGS_VERSION}
     container_name: monitoring-victorialogs
     restart: unless-stopped

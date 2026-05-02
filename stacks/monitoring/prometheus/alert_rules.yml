@@ -172,10 +172,10 @@ groups:
           summary: "Synapse is down"
           description: "The Synapse metrics endpoint is not responding. Matrix may be unavailable."
 
-  - name: loki_health
+  - name: victorialogs_health
     rules:
       - alert: VictoriaLogsDown
-        expr: up{job="loki"} == 0
+        expr: up{job="victorialogs"} == 0
         for: 2m
         labels:
           severity: critical
@@ -443,7 +443,7 @@ groups:
   #
   # SLO targets and error budgets:
   #   Critical services (traefik, keycloak): 99.9% → 0.1% error budget
-  #   Important services (forgejo, grafana, loki, synapse): 99.5% → 0.5% error budget
+  #   Important services (forgejo, grafana, victorialogs, synapse): 99.5% → 0.5% error budget
   # =========================================================================
 
   - name: slo_availability_critical
@@ -495,9 +495,9 @@ groups:
       - alert: SLOImportantAvailabilityBurn
         expr: |
           (
-            (1 - slo:availability_ratio:5m{job=~"forgejo|grafana|loki|synapse"}) > 0.0072
+            (1 - slo:availability_ratio:5m{job=~"forgejo|grafana|victorialogs|synapse"}) > 0.0072
             and
-            (1 - slo:availability_ratio:1h{job=~"forgejo|grafana|loki|synapse"}) > 0.0072
+            (1 - slo:availability_ratio:1h{job=~"forgejo|grafana|victorialogs|synapse"}) > 0.0072
           )
         for: 5m
         labels:
@@ -513,9 +513,9 @@ groups:
       - alert: SLOImportantAvailabilityWarning
         expr: |
           (
-            (1 - slo:availability_ratio:30m{job=~"forgejo|grafana|loki|synapse"}) > 0.0005
+            (1 - slo:availability_ratio:30m{job=~"forgejo|grafana|victorialogs|synapse"}) > 0.0005
             and
-            (1 - slo:availability_ratio:6h{job=~"forgejo|grafana|loki|synapse"}) > 0.0005
+            (1 - slo:availability_ratio:6h{job=~"forgejo|grafana|victorialogs|synapse"}) > 0.0005
           )
         for: 15m
         labels:
@@ -583,7 +583,7 @@ groups:
             below the 99.9% SLO target. Remaining error budget: {{ $value | humanizePercentage }}.
 
       - alert: SLOMonthlyImportantAtRisk
-        expr: slo:availability_ratio:30d{job=~"forgejo|grafana|loki|synapse"} < 0.995
+        expr: slo:availability_ratio:30d{job=~"forgejo|grafana|victorialogs|synapse"} < 0.995
         for: 1h
         labels:
           severity: warning
