@@ -245,6 +245,9 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by entrypoint: setpriv uses setgroups(2) to drop supplementary groups
+    cap_add:
+      - SETGID
 
     volumes:
       - ${DATA_BASE_PATH}/monitoring/kuma:/app/data
