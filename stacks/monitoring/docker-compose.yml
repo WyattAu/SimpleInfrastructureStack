@@ -309,15 +309,12 @@ services:
     # --disable_metrics=disk,diskIO eliminates the per-container du calls
     # that cause /metrics to hang for 300+ seconds. Container disk usage is
     # already available via node_exporter's host-level disk metrics.
-    # --listen_ip=0.0.0.0 forces IPv4 binding; cAdvisor defaults to :: (IPv6)
-    # which causes IPv4 scrape failures from VictoriaMetrics (Alpine wget).
-    # NOTE: /metrics endpoint deadlocks in v0.53.0 on TrueNAS with pid:host.
-    # scrape.yml uses metrics_path: /metrics/prometheus as workaround.
+    # v0.53.0 /metrics endpoint deadlocks on TrueNAS with pid:host; downgraded
+    # to v0.47.2 (last stable release before major internal refactoring).
     command:
       - '--housekeeping_interval=60s'
       - '--docker_only=true'
       - '--disable_metrics=disk,diskIO'
-      - '--listen_ip=0.0.0.0'
     networks:
       - backend_net
     healthcheck:
