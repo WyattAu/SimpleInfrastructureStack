@@ -283,6 +283,7 @@ services:
     image: ghcr.io/google/cadvisor:${CADVISOR_VERSION}
     container_name: monitoring-cadvisor
     restart: unless-stopped
+    pid: "host"
     security_opt:
       - no-new-privileges:true
     cap_drop:
