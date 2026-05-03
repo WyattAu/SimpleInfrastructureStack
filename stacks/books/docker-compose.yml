@@ -1,6 +1,6 @@
 services:
   calibre-web:
-    image: lscr.io/linuxserver/calibre-web:latest
+    image: lscr.io/linuxserver/calibre-web:${CALIBRE_WEB_VERSION}
     container_name: calibre-web
     restart: unless-stopped
     security_opt:
