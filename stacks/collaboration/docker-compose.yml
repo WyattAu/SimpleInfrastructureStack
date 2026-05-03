@@ -13,6 +13,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     depends_on:
       postgres-init:
@@ -156,6 +158,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     user: "${PUID}:${PGID}"
     depends_on:
@@ -251,6 +255,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     # read_only not feasible: image runs as user nginx (UID 101) and entrypoint
     # writes to /etc/nginx/conf.d, /var/log/nginx, /var/cache/nginx. tmpfs mounts
     # default to root ownership, causing permission denied for the nginx user.
@@ -261,6 +267,12 @@ services:
       - ${DATA_BASE_PATH}/collaboration/element-config/config.json:/app/config.json:ro
     networks:
       - traefik_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
@@ -290,6 +302,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     depends_on:
       synapse:
@@ -301,6 +315,12 @@ services:
       - traefik_net
       - backend_net
       - data_net
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8080 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"

@@ -270,7 +270,7 @@ cd /mnt/pool_HDD_x2/infra/stacks/terraform
 
 ### Phase 10: Restore Monitoring Data (Optional)
 
-Prometheus TSDB and Loki data are backed up but large. Restoring them gives
+VictoriaMetrics and VictoriaLogs data are backed up but large. Restoring them gives
 you historical metrics and logs but is not critical for operations.
 
 ```bash

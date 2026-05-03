@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     volumes:
       - ${DATA_BASE_PATH}/iam/postgres:/var/lib/postgresql/data
@@ -38,6 +40,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     command: ["start"]
     #entrypoint: ["/bin/sh", "/opt/keycloak/bin/docker-entrypoint-override.sh"]

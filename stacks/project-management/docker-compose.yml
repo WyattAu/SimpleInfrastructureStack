@@ -47,6 +47,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     depends_on:
       postgres-init:
         condition: service_completed_successfully
@@ -105,6 +107,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment:
       RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE}
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
@@ -198,6 +202,12 @@ services:
       - taiga-media-data:/taiga-back/media
     networks:
       - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/api/v1/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 5
     deploy:
       resources:
         limits:
@@ -251,6 +261,12 @@ services:
       - taiga-media-data:/taiga-back/media
     networks:
       - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'celery' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 5
     deploy:
       resources:
         limits:
@@ -269,12 +285,20 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment:
       TAIGA_URL: "https://taiga.${DOMAIN_NAME}"
       TAIGA_WEBSOCKETS_URL: "wss://taiga.${DOMAIN_NAME}"
       TAIGA_SUBPATH: ""
     networks:
       - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     deploy:
       resources:
         limits:
@@ -293,6 +317,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     depends_on:
       rabbitmq-init:
         condition: service_completed_successfully
@@ -303,6 +329,12 @@ services:
       TAIGA_SECRET_KEY: ${TAIGA_SECRET_KEY}
     networks:
       - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8888 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     deploy:
       resources:
         limits:
@@ -321,11 +353,19 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment:
       MAX_AGE: "360"
       SECRET_KEY: ${TAIGA_SECRET_KEY}
     networks:
       - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 9003 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     deploy:
       resources:
         limits:
@@ -347,6 +387,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     read_only: true
     tmpfs:
       - /tmp
@@ -364,6 +406,12 @@ services:
     networks:
       - traefik_net
       - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8080 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"

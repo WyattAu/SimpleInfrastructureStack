@@ -26,7 +26,7 @@
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "sum(rate(loki_distributor_lines_received_total[5m]))",
+          "expr": "sum(rate(vl_rows_ingested_total[5m]))",
           "legendFormat": "lines/s"
         }
       ],
@@ -42,7 +42,7 @@
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "sum(rate(logql_query_duration_seconds_count[5m]))",
+          "expr": "sum(rate(vl_http_requests_total{path=~\"/select/.*\"}[5m]))",
           "legendFormat": "queries/s"
         }
       ],
@@ -58,8 +58,8 @@
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "sum(rate(loki_request_duration_seconds_count{status_code=~\"5..\"}[5m])) by (method, route)",
-          "legendFormat": "{{method}} {{route}}"
+          "expr": "sum(rate(vl_http_requests_total{status_code=~\"5..\"}[5m])) by (method, path)",
+          "legendFormat": "{{method}} {{path}}"
         }
       ],
       "fieldConfig": {
@@ -74,7 +74,7 @@
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "process_resident_memory_bytes{job=\"loki\"}",
+          "expr": "process_resident_memory_bytes{job=\"victorialogs\"}",
           "legendFormat": "RSS"
         }
       ],
@@ -84,14 +84,14 @@
       }
     },
     {
-      "title": "Stored Chunks",
+      "title": "Stored Blocks",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 16 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "loki_chunk_store_stored_chunks_total",
-          "legendFormat": "chunks"
+          "expr": "vl_storage_blocks_total",
+          "legendFormat": "blocks"
         }
       ],
       "fieldConfig": {
@@ -100,13 +100,13 @@
       }
     },
     {
-      "title": "Chunk Store Size",
+      "title": "Storage Size",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 16 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "loki_chunk_store_stored_chunk_bytes_total",
+          "expr": "vl_storage_size_bytes",
           "legendFormat": "bytes"
         }
       ],
@@ -122,7 +122,7 @@
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "go_goroutines{job=\"loki\"}",
+          "expr": "go_goroutines{job=\"victorialogs\"}",
           "legendFormat": "goroutines"
         }
       ],
@@ -138,7 +138,7 @@
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
-          "expr": "time() - process_start_time_seconds{job=\"loki\"}",
+          "expr": "time() - process_start_time_seconds{job=\"victorialogs\"}",
           "legendFormat": "uptime"
         }
       ],
@@ -149,7 +149,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["infrastructure", "loki", "logs"],
+  "tags": ["infrastructure", "victorialogs", "logs"],
   "templating": {
     "list": [
       {
@@ -162,6 +162,6 @@
     ]
   },
   "time": { "from": "now-6h", "to": "now" },
-  "title": "Loki Logs",
-  "uid": "loki-logs"
+  "title": "VictoriaLogs",
+  "uid": "victorialogs-logs"
 }
