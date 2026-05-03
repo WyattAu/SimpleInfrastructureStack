@@ -287,9 +287,11 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    # Non-privileged mode: requires CADVISOR_VERSION >= v0.47 for cgroups v2 support.
-    # Loses only process/perf_event collectors (niche). All core CPU/memory/disk/network
-    # metrics preserved. Based on official K8s daemonset configuration.
+    # Required by cAdvisor: SYS_PTRACE needed to read /proc/[pid]/smaps
+    # from other containers for memory metrics. Without it, /metrics handler
+    # fails with "Cannot read smaps files" and returns EAGAIN.
+    cap_add:
+      - SYS_PTRACE
     devices:
       - /dev/kmsg:/dev/kmsg:ro
     volumes:
