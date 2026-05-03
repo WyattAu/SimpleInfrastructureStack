@@ -7,6 +7,13 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by mariadb entrypoint: chown data dir, mysql_switch to drop to mysql user
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
 
     volumes:
       - ${DATA_BASE_PATH}/accounting/mariadb-akaunting:/var/lib/mysql
@@ -40,6 +47,13 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by akaunting entrypoint: chmod data dirs, su-exec to drop to www-data
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
 
     depends_on:
       mariadb-akaunting:

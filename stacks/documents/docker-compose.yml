@@ -15,6 +15,13 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by postgres entrypoint: chown data dir, gosu/su-exec to drop to postgres user
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
 
     depends_on:
       paperless-db-init:
@@ -52,6 +59,13 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by redis entrypoint: chown data dir, su-exec to drop to redis user
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
 
     command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
     volumes:
@@ -81,6 +95,13 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by paperless entrypoint: useradd, chown dirs, su-exec to mapped user
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
 
     depends_on:
       paperless-postgres:

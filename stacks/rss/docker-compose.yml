@@ -15,6 +15,13 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by postgres entrypoint: chown data dir, gosu/su-exec to drop to postgres user
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
 
     depends_on:
       rss-db-init:
@@ -52,6 +59,13 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by freshrss entrypoint: chown data dir, start Apache as www-data
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
 
     depends_on:
       postgres-rss:

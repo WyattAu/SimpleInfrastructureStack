@@ -7,6 +7,11 @@ services:
       - no-new-privileges:true
     cap_add:
       - IPC_LOCK
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
     cap_drop:
       - ALL
 
@@ -71,6 +76,11 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by immich-ml entrypoint: chown /cache dir
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
 
     depends_on:
       immich-postgres:
@@ -113,6 +123,13 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by postgres entrypoint: chown data dir, gosu/su-exec to drop to postgres user
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
 
     volumes:
       - ${DATA_BASE_PATH}/photos/db:/var/lib/postgresql/data
@@ -147,6 +164,10 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by valkey entrypoint: setpriv to drop to valkey user
+    cap_add:
+      - SETUID
+      - SETGID
 
     networks:
       - data_net
