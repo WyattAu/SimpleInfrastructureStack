@@ -317,6 +317,11 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by nginx entrypoint: chown /var/cache/nginx/client_temp
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
     environment:
       TAIGA_URL: "https://taiga.${DOMAIN_NAME}"
       TAIGA_WEBSOCKETS_URL: "wss://taiga.${DOMAIN_NAME}"
@@ -349,6 +354,11 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by entrypoint: write /taiga-events/.env
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
     depends_on:
       rabbitmq-init:
         condition: service_completed_successfully
@@ -385,6 +395,11 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by entrypoint: chown /taiga-protected/*
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
     environment:
       MAX_AGE: "360"
       SECRET_KEY: ${TAIGA_SECRET_KEY}
