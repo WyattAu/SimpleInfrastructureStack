@@ -103,6 +103,7 @@
         # deploying containers. Runs init + plan, applies only if changes detected.
         - name: Terraform infrastructure
           ansible.builtin.include_tasks: "{{ playbook_dir }}/terraform_deploy.yml"
+          ignore_errors: true
 
         # Phase 1c: Expand templates (needs vars from 1b)
         - name: Expand templates (Jinja2)
