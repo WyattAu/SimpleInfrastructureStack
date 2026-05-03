@@ -114,11 +114,6 @@ scrape_configs:
     static_configs:
       - targets: ['monitoring-kuma:3001']
 
-  # Cloudflared tunnel metrics (host network, scrape via TrueNAS IP)
-  - job_name: 'cloudflared'
-    static_configs:
-      - targets: ['62.49.93.199:4788']
-
   # Tempo tracing backend metrics
   - job_name: 'tempo'
     static_configs:
