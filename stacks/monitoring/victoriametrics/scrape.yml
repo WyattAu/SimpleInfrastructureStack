@@ -73,12 +73,6 @@ scrape_configs:
       - target_label: __address__
         replacement: monitoring-postgres-exporter:9187
 
-  # Immich metrics (port 8081 when IMMICH_METRICS=true, path /v1/metrics)
-  - job_name: 'immich'
-    metrics_path: /v1/metrics
-    static_configs:
-      - targets: ['photos-server:8081']
-
   # Paperless-ngx metrics (/metrics on port 8000 when PAPERLESS_ENABLE_METRICS=true)
   - job_name: 'paperless'
     metrics_path: /metrics
@@ -130,13 +124,6 @@ scrape_configs:
     static_configs:
       - targets: ['monitoring-tempo:3200']
 
-  # CrowdSec agent metrics (LAPI metrics on port 8080, path /v1/metrics)
-  - job_name: 'crowdsec'
-    scrape_interval: 30s
-    metrics_path: /v1/metrics
-    static_configs:
-      - targets: ['security-crowdsec:8080']
-
   # CrowdSec CF Workers Bouncer metrics (port 2112)
   - job_name: 'crowdsec-workers-bouncer'
     scrape_interval: 30s
@@ -165,8 +152,6 @@ scrape_configs:
           - http://monitoring-grafana:3000/api/health    # Grafana health
           - http://monitoring-kuma:3001/                  # Uptime Kuma
           - http://monitoring-victorialogs:9428/health       # VictoriaLogs health
-          - http://storage-collabora:9980/                # Collabora
-          - http://vaultwarden-server:80/                 # Vaultwarden
           - http://rss-freshrss:80/                       # FreshRSS web UI
           - http://utility-homepage:80/                   # Homepage
           - http://accounting-akaunting:80/               # Akaunting
