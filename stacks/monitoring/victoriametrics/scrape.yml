@@ -16,6 +16,9 @@ scrape_configs:
       - targets: ['monitoring-node-exporter:9100']
   - job_name: 'cadvisor'
     scrape_interval: 60s
+    # cAdvisor v0.53.0: /metrics endpoint deadlocks on TrueNAS with pid:host.
+    # Use /metrics/prometheus instead (same Prometheus format, working handler).
+    metrics_path: /metrics/prometheus
     # cAdvisor with 60+ containers produces >16MB uncompressed response.
     # Default -promscrape.maxScrapeSize is 16777216 (16MB).
     max_scrape_size: 67108864  # 64MB
