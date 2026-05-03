@@ -306,15 +306,19 @@ services:
     # ZFS pools (du on large overlay2 layers takes 5-10s each). Increase to
     # 60s to reduce I/O pressure while retaining all container metrics.
     # --docker_only skips non-Docker filesystems (100+ ZFS mounts on TrueNAS).
-    # --disable_metrics=disk,diskIO eliminates the per-container du calls
+      # --disable_metrics=disk,diskIO eliminates the per-container du calls
       # that cause /metrics to hang for 300+ seconds. Container disk usage is
       # already available via node_exporter's host-level disk metrics.
+      # --disable_metrics=process,referenced_memory disables smaps-based metrics.
+      # On TrueNAS with 100+ ZFS mounts and pid:host, reading /proc/[pid]/smaps
+      # causes the /metrics Prometheus endpoint to deadlock/hang indefinitely.
+      # Container-level memory metrics (from cgroup) remain available.
       # --listen_ip=0.0.0.0 forces IPv4 binding; cAdvisor defaults to :: (IPv6)
       # which causes IPv4 scrape failures from VictoriaMetrics (Alpine wget).
     command:
       - '--housekeeping_interval=60s'
       - '--docker_only=true'
-      - '--disable_metrics=disk,diskIO'
+      - '--disable_metrics=disk,diskIO,process,referenced_memory'
       - '--listen_ip=0.0.0.0'
     networks:
       - backend_net
