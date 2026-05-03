@@ -49,6 +49,13 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by postgres entrypoint: chown data dir, gosu/su-exec to drop to postgres user
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
     depends_on:
       postgres-init:
         condition: service_completed_successfully
@@ -109,6 +116,13 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by rabbitmq entrypoint: chown data dir, su-exec to drop to rabbitmq user
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
     environment:
       RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE}
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
@@ -163,10 +177,17 @@ services:
     image: taigaio/taiga-back:${TAIGA_VERSION}
     container_name: project-management-back
     restart: unless-stopped
-    # NOTE: no-new-privileges:true removed — taiga-back entrypoint uses
-    # `gosu taiga` to drop privileges, which requires setuid capability.
-    # The container already runs as root initially and drops to taiga (uid 999)
-    # via gosu, so no-new-privileges is redundant here.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    # Required by taiga-back entrypoint: gosu taiga to drop privileges (uid 999)
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
     entrypoint: ["/bin/bash", "/taiga-back/docker/entrypoint-custom.sh"]
     depends_on:
       taiga-back-init:
@@ -224,8 +245,17 @@ services:
     image: taigaio/taiga-back:${TAIGA_VERSION}
     container_name: project-management-async
     restart: unless-stopped
-    # NOTE: no-new-privileges:true removed — same reason as taiga-back:
-    # entrypoint uses `gosu taiga` which requires setuid capability.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    # Required by taiga-async entrypoint: gosu taiga to drop privileges (uid 999)
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
     entrypoint: ["/bin/bash", "/taiga-back/docker/async_entrypoint-custom.sh"]
     depends_on:
       taiga-back-init:

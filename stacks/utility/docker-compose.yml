@@ -9,6 +9,13 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # Required by homepage entrypoint: chown /app/.next, su-exec to drop to PUID:PGID
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
 
     volumes:
       - ${DATA_BASE_PATH}/utility/homepage/config:/app/config
