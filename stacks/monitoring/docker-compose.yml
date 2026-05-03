@@ -299,15 +299,18 @@ services:
     # Default housekeeping_interval=1s causes 168% CPU spikes on HDD-backed
     # ZFS pools (du on large overlay2 layers takes 17-20s each). Increase to
     # 60s to reduce I/O pressure while retaining all container metrics.
+    # --docker_only skips 100+ ZFS filesystem mounts that cause /metrics to
+    # hang (response timeout) on this TrueNAS host.
     command:
       - '--housekeeping_interval=60s'
+      - '--docker_only=true'
     networks:
       - backend_net
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/metrics || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/healthz || exit 1"]
       interval: 30s
       timeout: 10s
-      start_period: 30s
+      start_period: 60s
       retries: 3
     deploy:
       resources:
