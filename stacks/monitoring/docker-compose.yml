@@ -310,7 +310,7 @@ services:
     command:
       - '--housekeeping_interval=60s'
       - '--docker_only=true'
-      - '--disable_metrics=disk,diskIO'
+      - '--disable_metrics=disk,diskIO,referenced_memory'
     networks:
       - backend_net
     healthcheck:
