@@ -34,6 +34,7 @@
   when: not (tf_bin_check.stat.exists | default(false)) or not (tf_dir_check.stat.exists | default(false))
 
 - name: Terraform deployment block
+  ignore_errors: true
   block:
     # --- Init (idempotent — fast if nothing changed) ---
     - name: Initialize Terraform providers
