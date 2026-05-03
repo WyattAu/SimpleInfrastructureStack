@@ -280,7 +280,7 @@ services:
         max-file: "3"
 
   cadvisor:
-    image: ghcr.io/google/cadvisor:${CADVISOR_VERSION}
+    image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION}
     container_name: monitoring-cadvisor
     restart: unless-stopped
     pid: "host"
