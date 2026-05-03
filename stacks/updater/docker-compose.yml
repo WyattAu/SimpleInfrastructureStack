@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     command: --interval 86400 --cleanup --label-enable --monitor-only
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -15,6 +17,12 @@ services:
       - WATCHTOWER_LABEL_ENABLE=true
       - TZ=${TZ}
     networks: []
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/v1/update || exit 1"]
+      interval: 3600s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     deploy:
       resources:
         limits:

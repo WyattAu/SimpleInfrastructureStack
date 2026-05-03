@@ -1,6 +1,6 @@
 # SimpleInfrastructureStack — Infrastructure Documentation
 
-Self-hosted homelab on TrueNAS SCALE (wyattau.com). 50+ containers across 17 stacks,
+Self-hosted homelab on TrueNAS SCALE (wyattau.com). ~62 containers across 21 stacks,
 managed entirely from a single Git repository with automated CI/CD.
 
 ---
@@ -62,11 +62,12 @@ GitHub push → validate.yml (CI) → webhook (POST) → deploy.sh
 | — | proxy-well-known-server | nginx | 80 | proxy | Matrix .well-known/server |
 | `auth` | iam-keycloak | quay.io/keycloak/keycloak | 8080, 9000 | iam | SSO identity provider |
 | — | iam-postgres | postgres | 5432 | iam | Keycloak database |
-| `prometheus` | monitoring-prometheus | prom/prometheus | 9090 | monitoring | Metrics collection |
+| `prometheus` | monitoring-victoriametrics | victoriametrics/victoria-metrics | 8428 | monitoring | Metrics collection (Prometheus-compatible) |
 | `grafana` | monitoring-grafana | grafana/grafana | 3000 | monitoring | Dashboards + visualization |
 | `kuma` | monitoring-kuma | louislam/uptime-kuma | 3001 | monitoring | Uptime monitoring |
-| — | monitoring-loki | grafana/loki | 3100 | monitoring | Log aggregation |
-| — | monitoring-promtail | grafana/promtail | — | monitoring | Log shipper |
+| — | monitoring-victorialogs | victoriametrics/victoria-logs | 9428 | monitoring | Log aggregation (Loki-compatible) |
+| — | monitoring-promtail | grafana/promtail | — | monitoring | Log shipper → VictoriaLogs |
+| — | monitoring-vmalert | victoriametrics/vmalert | 8880 | monitoring | Alerting engine (Prometheus-compatible) |
 | — | monitoring-alertmanager | prom/alertmanager | 9093 | monitoring | Alert routing → ntfy |
 | — | monitoring-node-exporter | prom/node-exporter | 9100 | monitoring | Host metrics |
 | — | monitoring-cadvisor | ghcr.io/google/cadvisor | 8080 | monitoring | Container metrics |
@@ -107,7 +108,7 @@ GitHub push → validate.yml (CI) → webhook (POST) → deploy.sh
 | — | backup-cron-trigger | (build) | — | backup | Cron scheduler |
 | — | updater-watchtower | containrrr/watchtower | — | updater | Update monitor (notify only) |
 
-Plus init containers: `monitoring-prometheus-init`, `monitoring-grafana-init`, `monitoring-postgres-exporter-init`,
+Plus init containers: `monitoring-victoriametrics-init`, `monitoring-grafana-init`, `monitoring-postgres-exporter-init`,
 `monitoring-textfile-init`, `collaboration-postgres-init`, `collaboration-synapse-init`,
 `collaboration-synapse-chown`, `collaboration-element-init`, `documents-postgres-init`, `rss-db-init`,
 `storage-ocis-init`.
@@ -131,7 +132,7 @@ Plus init containers: `monitoring-prometheus-init`, `monitoring-grafana-init`, `
 | `web` | 80 | HTTP → redirects to websecure |
 | `websecure` | 443 | HTTPS (Cloudflare DNS challenge TLS) |
 | `matrix` | 8448 | Matrix federation (TCP TLS passthrough) |
-| `traefik` | 8080 | Prometheus metrics (backend_net only) |
+| `traefik` | 8080 | VictoriaMetrics/Prometheus metrics (backend_net only) |
 
 ### Traefik Middlewares
 
@@ -153,7 +154,7 @@ CNAME records: `ssh.wyattau.com` → `75ad59d3-...cfargotunnel.com`, `deploy.wya
 
 Services behind Keycloak auth (middleware `keycloak-auth`):
 - Traefik dashboard (`traefik.wyattau.com`)
-- Prometheus (`prometheus.wyattau.com`)
+- VictoriaMetrics (`prometheus.wyattau.com`)
 - Uptime Kuma (`kuma.wyattau.com`)
 - Forgejo (`forgejo.wyattau.com`)
 - Akaunting (`akaunting.wyattau.com`)
@@ -176,14 +177,17 @@ Keycloak OIDC clients (managed in Terraform):
 
 ## Monitoring Stack
 
-### Prometheus (monitoring-prometheus)
+### VictoriaMetrics (monitoring-victoriametrics)
 
 **Scrape targets (22 jobs):**
-prometheus, node-exporter, cadvisor, traefik, forgejo, keycloak, loki, synapse, alertmanager,
-promtail, postgres-exporter (6 PG), vaultwarden, immich, paperless, grafana, redis (2 instances),
+victoriametrics, node-exporter, cadvisor, traefik, forgejo, keycloak, victorialogs, synapse, alertmanager,
+promtail, postgres-exporter (6 PG), immich, paperless, grafana, redis (2 instances),
 mariadb, uptime-kuma, oauth2-proxy, collabora, cloudflared, tempo, crowdsec,
 blackbox-http-internal (8 targets), blackbox-http-external (4 targets),
 blackbox-tcp (9 targets), blackbox-dns (4 targets).
+
+**Alerting:** vmalert evaluates Prometheus-compatible alert rules against VictoriaMetrics
+and forwards alerts to Alertmanager → ntfy.sh.
 
 **Recording rules (4 groups):**
 - `slo:availability` — 5m/30m/1h/6h/1d/3d/30d availability ratios
@@ -194,9 +198,9 @@ blackbox-tcp (9 targets), blackbox-dns (4 targets).
 **Alert rules (15 groups, 35+ alerts):**
 - `container_health` — ContainerOOMKilled, ContainerHighMemoryUsage, ContainerHighCPUUsage, ContainerRestartLoop, ContainerDown
 - `host_health` — HostHighMemoryUsage, HostHighDiskUsage, DataPoolHighDiskUsage, HostDiskInodesExhausted, HostHighCPUUsage, HostClockNotSynchronized, HostDiskIOErrors
-- `service_health` — TraefikHighErrorRate, TraefikRateLimitTriggered, PrometheusTSDBCompactionFailure
+- `service_health` — TraefikHighErrorRate, TraefikRateLimitTriggered
 - `synapse_health` — SynapseHighEventFetchBacklog, SynapseDown
-- `loki_health` — LokiTooManyFailedRequests, LokiDown
+- `logs_health` — LogsTooManyFailedRequests, LogsDown
 - `backup_health` — BackupContainerDown, BackupStale, BackupOffsiteSyncStale
 - `system_health` — HostDiskFull, HostMemoryExhaustion
 - `alertmanager_health` — AlertmanagerDown
@@ -215,7 +219,7 @@ blackbox-tcp (9 targets), blackbox-dns (4 targets).
 
 **SLO targets:**
 - Critical (99.9%): traefik, keycloak
-- Important (99.5%): forgejo, grafana, loki, synapse
+- Important (99.5%): forgejo, grafana, victorialogs, synapse
 - HTTP errors (99.5% success rate): all Traefik services
 
 ### Grafana (monitoring-grafana)
@@ -228,7 +232,7 @@ blackbox-tcp (9 targets), blackbox-dns (4 targets).
 - `forgejo-ci.json` — Forgejo CI pipeline status
 - `host-overview.json` — Host CPU/memory/disk/network
 - `keycloak-iam.json` — Keycloak auth metrics
-- `loki-logs.json` — Log volume and query analytics
+- `victorialogs-logs.json` — Log volume and query analytics
 - `synapse-matrix.json` — Matrix federation health
 - `traefik-traffic.json` — HTTP traffic and error rates
 
@@ -236,7 +240,8 @@ blackbox-tcp (9 targets), blackbox-dns (4 targets).
 
 | Component | Container | Purpose |
 |---|---|---|
-| Loki + Promtail | monitoring-loki, monitoring-promtail | Log aggregation from all containers |
+| VictoriaLogs + Promtail | monitoring-victorialogs, monitoring-promtail | Log aggregation from all containers (Loki-compatible) |
+| vmalert | monitoring-vmalert | Prometheus-compatible alerting engine → Alertmanager |
 | Alertmanager | monitoring-alertmanager | Routes alerts → ntfy.sh |
 | Tempo | monitoring-tempo | Distributed tracing (Traefik OTLP export) |
 | Blackbox Exporter | monitoring-blackbox-exporter | Synthetic HTTP/TCP/DNS probes |
@@ -265,7 +270,8 @@ blackbox-tcp (9 targets), blackbox-dns (4 targets).
 
 ### Container Hardening
 - `no-new-privileges: true` on all containers (except Collabora, VPN)
-- `cap_drop: ALL` on webhook and tunnel containers
+- `cap_drop: ALL` on all containers (46 services)
+- Healthchecks on 18 services with `depends_on: condition: service_healthy` where applicable
 - `read_only: true` on backup-restic and proxy-well-known-server
 - Resource memory/CPU limits on all containers
 - Docker socket mounted `:ro` everywhere
@@ -292,7 +298,7 @@ blackbox-tcp (9 targets), blackbox-dns (4 targets).
 
 ### Monitoring
 - `restic check` runs after every backup
-- Backup freshness exported as Prometheus metric (`sis_backup_last_success`)
+- Backup freshness exported as VictoriaMetrics metric (`sis_backup_last_success`)
 - Alert if no successful backup in 26 hours (`BackupStale`)
 - Alert if no offsite sync in 48 hours (`BackupOffsiteSyncStale`)
 
@@ -423,12 +429,12 @@ git push
 2. Grafana auto-loads from the provisioning directory
 3. Commit and push
 
-### Add a New Prometheus Alert
+### Add a New Alert Rule
 
 1. Add rule to `stacks/monitoring/prometheus/alert_rules.yml` under appropriate group
 2. Optionally add recording rule to `stacks/monitoring/prometheus/recording_rules.yml`
-3. Test locally: `docker exec monitoring-prometheus promtool check rules /etc/prometheus/alert_rules.yml`
-4. Commit and push
+3. Test syntax: `docker exec monitoring-vmalert wget -qO- 'http://localhost:8880/api/v1/rules' | head`
+4. Commit and push (vmalert picks up changes on next restart)
 
 ### Restore from Backup
 

@@ -7,6 +7,8 @@ services:
       - no-new-privileges:true
     cap_add:
       - IPC_LOCK
+    cap_drop:
+      - ALL
 
     command: start.sh
     depends_on:
@@ -67,6 +69,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     depends_on:
       immich-postgres:
@@ -83,6 +87,12 @@ services:
     networks:
       - backend_net
       - data_net
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 3003 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 5
     deploy:
       resources:
         limits:
@@ -101,6 +111,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     volumes:
       - ${DATA_BASE_PATH}/photos/db:/var/lib/postgresql/data
@@ -133,6 +145,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     networks:
       - data_net
