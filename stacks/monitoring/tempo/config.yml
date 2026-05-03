@@ -21,8 +21,8 @@ storage:
     wal:
       path: /var/tempo/wal
     pool:
-      max_workers: 10
-      queue_depth: 2000
+      max_workers: 2
+      queue_depth: 500
 
 compactor:
   compaction:
