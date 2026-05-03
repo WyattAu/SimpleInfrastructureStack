@@ -38,7 +38,7 @@ Cloudflare Tunnel ──► deploy.wyattau.com ──► infra-webhook:9001
 | tunnel | cloudflared | host | Cloudflare Tunnel (independent) |
 | proxy | traefik, oauth2-proxy, socket-proxy, ddns, well-known | traefik_net, backend_net | Reverse proxy + auth |
 | iam | keycloak, postgres | backend_net | Identity (Keycloak) |
-| monitoring | prometheus, grafana, loki, promtail, kuma, cadvisor, node-exporter, alertmanager | traefik_net, backend_net | Observability |
+| monitoring | victoriametrics, vmalert, grafana, victorialogs, promtail, kuma, cadvisor, node-exporter, alertmanager | traefik_net, backend_net | Observability |
 | operations | forgejo, forgejo-runner, postgres | traefik_net, backend_net | Git hosting + CI |
 | collaboration | synapse, element, hookshot, postgres | traefik_net, backend_net | Matrix chat + GitHub bridge |
 | storage | ocis, collabora | traefik_net, backend_net | Files + office |
@@ -61,7 +61,7 @@ Cloudflare Tunnel ──► deploy.wyattau.com ──► infra-webhook:9001
 | forgejo.wyattau.com | Forgejo | OAuth2 |
 | registry-forgejo.wyattau.com | Forgejo container registry | Token |
 | grafana.wyattau.com | Grafana | OIDC (Keycloak) |
-| prometheus.wyattau.com | Prometheus | OAuth2 |
+| prometheus.wyattau.com | VictoriaMetrics | OAuth2 |
 | kuma.wyattau.com | Uptime Kuma | OAuth2 |
 | homepage.wyattau.com | Homepage | OAuth2 |
 | element.wyattau.com | Element Web | Public |
@@ -100,12 +100,12 @@ ssh -i ~/.ssh/id_ed25519 truenas_admin@192.168.1.3 "tail -50 /var/log/infra-depl
 ssh -i ~/.ssh/id_ed25519 truenas_admin@192.168.1.3 "sudo docker ps --format 'table {{.Names}}\t{{.Status}}' | sort"
 ```
 
-### Check Prometheus Alerts
+### Check Alerts
 
 ```bash
 # From inside any backend_net container (e.g., operations-forgejo)
 sudo docker exec operations-forgejo curl -s \
-  'http://monitoring-prometheus:9090/api/v1/query?query=ALERTS%7Balertstate%3D%22firing%22%7D'
+  'http://monitoring-victoriametrics:8428/api/v1/query?query=ALERTS%7Balertstate%3D%22firing%22%7D'
 ```
 
 ### Decrypt Secrets Locally
@@ -201,7 +201,7 @@ Offsite backup (B2) → `s3:.../SisInfraBackup/repo`
 ### What's NOT Backed Up (Recreated from Git)
 
 - Docker images (pulled from registries)
-- Compose files, Ansible playbooks, Prometheus rules (all in git)
+- Compose files, Ansible playbooks, alert rules (all in git)
 - Keycloak realm config (export via admin API if needed)
 - Traefik ACME certs (auto-renewed via DNS-01 challenge)
 
@@ -267,7 +267,7 @@ sudo docker start operations-forgejo
 
 - **Grafana:** https://grafana.wyattau.com (Keycloak OIDC login)
 - **Uptime Kuma:** https://kuma.wyattau.com (Keycloak OAuth2 login)
-- **Prometheus:** https://prometheus.wyattau.com (Keycloak OAuth2 login)
+- **VictoriaMetrics:** https://prometheus.wyattau.com (Keycloak OAuth2 login)
 - **Traefik:** https://traefik.wyattau.com (Keycloak OAuth2 login)
 
 ### SMTP Email
@@ -286,7 +286,7 @@ SMTP provider: SMTP2GO (`mail.smtp2go.com:2525`)
 - **Resolver:** Traefik ACME (`cloudflare` certresolver)
 - **Storage:** `/mnt/pool_HDD_x2/tank/datasources/sis/appdata/proxy/letsencrypt/acme.json`
 - **Auto-renewal:** Traefik renews at 30 days before expiry
-- **Expiry alerting:** Prometheus alert (14d warning, 7d critical)
+- **Expiry alerting:** Alert rule (14d warning, 7d critical)
 
 ## CI/CD Pipeline
 
@@ -385,7 +385,7 @@ curl -s -o /dev/null -w "%{http_code}" -X POST "https://deploy.wyattau.com/hooks
 ### High Memory Usage
 
 - Check: `sudo docker stats --no-stream | sort -k4 -h`
-- Prometheus: 6GB limit (30d retention)
+- VictoriaMetrics: 512M limit (30d retention)
 - Keycloak: 4GB limit
 - Forgejo: 4GB limit
 - Synapse: 8GB limit
@@ -396,6 +396,51 @@ If the webhook container is broken, deploy from the server directly:
 ```bash
 ssh -i ~/.ssh/id_ed25519 truenas_admin@192.168.1.3
 sudo docker exec infra-webhook bash /opt/webhook/deploy.sh
+```
+
+### VictoriaMetrics
+
+```bash
+# Check health
+sudo docker exec monitoring-victoriametrics wget -qO- http://127.0.0.1:8428/health
+
+# Check scrape targets
+sudo docker exec monitoring-victoriametrics wget -qO- 'http://127.0.0.1:8428/api/v1/targets' | python3 -m json.tool
+
+# Query metrics
+sudo docker exec operations-forgejo curl -s \
+  'http://monitoring-victoriametrics:8428/api/v1/query?query=up'
+
+# Restart
+sudo docker restart monitoring-victoriametrics
+```
+
+### VictoriaLogs
+
+```bash
+# Check health
+sudo docker exec monitoring-victorialogs wget -qO- http://127.0.0.1:9428/health
+
+# Check log ingestion (recent logs)
+sudo docker exec operations-forgejo curl -s \
+  'http://monitoring-victorialogs:9428/select/logsql/query' \
+  -d 'query=_time:5m'
+
+# Restart
+sudo docker restart monitoring-victorialogs
+```
+
+### vmalert
+
+```bash
+# Check health
+sudo docker exec monitoring-vmalert wget -qO- http://127.0.0.1:8880/health
+
+# Check loaded alert rules
+sudo docker exec monitoring-vmalert wget -qO- 'http://127.0.0.1:8880/api/v1/rules'
+
+# Restart
+sudo docker restart monitoring-vmalert
 ```
 
 ## Network Topology
@@ -412,8 +457,8 @@ sudo docker exec infra-webhook bash /opt/webhook/deploy.sh
 │  backend_net (172.16.7.0/24)                        │
 │  ── All service containers                          │
 │  ── PostgreSQL databases                            │
-│  ── Prometheus, Loki, Alertmanager                   │
-│  ── Prometheus scrape targets                       │
+│  ── VictoriaMetrics, VictoriaLogs, Alertmanager           │
+│  ── VictoriaMetrics scrape targets                        │
 └─────────────────────────────────────────────────────┘
 ```
 

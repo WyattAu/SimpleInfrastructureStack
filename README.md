@@ -62,7 +62,7 @@ TrueNAS SCALE Host
 | `operations` | Forgejo, Forgejo Runner, PostgreSQL | Git hosting, CI/CD |
 | `collaboration` | Synapse, Element Web, Hookshot, PostgreSQL | Matrix chat, GitHub bridge |
 | `storage` | oCIS, Collabora Online | File storage, document editing |
-| `monitoring` | Prometheus, Grafana, Loki, Promtail, Uptime Kuma, cAdvisor, Node Exporter, Alertmanager | Metrics, logs, uptime |
+| `monitoring` | VictoriaMetrics, vmalert, Grafana, VictoriaLogs, Promtail, Uptime Kuma, cAdvisor, Node Exporter, Alertmanager | Metrics, logs, uptime |
 | `utility` | Homepage | Personal dashboard |
 | `accounting` | Akaunting, MariaDB | Self-hosted accounting |
 | `backup` | Restic, Cron Trigger (local + Backblaze B2 offsite) | Automated backups |
@@ -147,19 +147,19 @@ Security policies in `policies/docker-compose/security.rego` enforce:
 
 ## Monitoring & Alerting
 
-### Prometheus Alert Rules (`alert_rules.yml`)
+### Alert Rules (`alert_rules.yml`)
 
 - Container OOM kills, high memory/CPU, restart loops, downed containers
 - Host memory, disk, inode exhaustion
-- Service health: Traefik 5xx rate, Prometheus TSDB, Synapse, Loki
+- Service health: Traefik 5xx rate, Synapse, VictoriaLogs
 - Backup container down detection
 
 ### Grafana Log Alerts (`rules.yml`)
 
-- Keycloak error rate (Loki)
-- Synapse error rate (Loki)
-- Traefik error rate (Loki)
-- OOM kill events (Loki)
+- Keycloak error rate (VictoriaLogs)
+- Synapse error rate (VictoriaLogs)
+- Traefik error rate (VictoriaLogs)
+- OOM kill events (VictoriaLogs)
 
 Alerts route to ntfy.sh topics:
 - **Warning**: `https://ntfy.sh/wyattau-infra-0e92568ce5d04343c3b796ed558a04b9`
@@ -187,7 +187,7 @@ Services protected by Keycloak authentication (via `keycloak-auth` Traefik middl
 - Traefik Dashboard (`traefik.wyattau.com`)
 - Homepage (`homepage.wyattau.com`)
 - Uptime Kuma (`kuma.wyattau.com`)
-- Prometheus (`prometheus.wyattau.com`)
+- VictoriaMetrics (`prometheus.wyattau.com`)
 - Forgejo Web UI (`forgejo.wyattau.com`)
 
 Services with built-in auth (not behind Keycloak):
