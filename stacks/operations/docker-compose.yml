@@ -7,6 +7,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     volumes:
       - ${DATA_BASE_PATH}/operations/postgres-forgejo:/var/lib/postgresql/data
@@ -41,6 +43,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     ports:
       - "127.0.0.1:2222:2522"
@@ -166,6 +170,8 @@ services:
     volumes:
       - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
       - ./forgejo-runner/config.yaml:/data/config.yaml:ro
+      # REQUIRED: Docker socket access needed for Forgejo CI to spawn
+      # ephemeral job containers. Runner acts as Docker-in-Docker.
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - traefik_net

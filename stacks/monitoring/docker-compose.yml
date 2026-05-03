@@ -15,6 +15,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     depends_on:
       victoriametrics-init:
@@ -64,6 +66,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     depends_on:
       victoriametrics:
@@ -114,6 +118,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     depends_on:
       grafana-init:
@@ -177,6 +183,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     volumes:
       - ${DATA_BASE_PATH}/monitoring/victorialogs:/victoria-logs-data
@@ -208,6 +216,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -233,6 +243,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     volumes:
       - ${DATA_BASE_PATH}/monitoring/kuma:/app/data
@@ -270,6 +282,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     # Non-privileged mode: requires CADVISOR_VERSION >= v0.47 for cgroups v2 support.
     # Loses only process/perf_event collectors (niche). All core CPU/memory/disk/network
     # metrics preserved. Based on official K8s daemonset configuration.
@@ -289,6 +303,12 @@ services:
       - '--housekeeping_interval=60s'
     networks:
       - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/metrics || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -315,6 +335,8 @@ services:
         condition: service_completed_successfully
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     volumes:
       - /proc:/host/proc:ro
@@ -333,6 +355,12 @@ services:
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|var|tmp|home|root|usr|run|opt|boot|mnt/pool_HDD_x2/(.+)|mnt/.ix-apps|audit|conf|data)($$|/)'
     networks:
       - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9100/metrics || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -349,6 +377,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     volumes:
       - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
@@ -431,6 +461,8 @@ services:
         condition: service_completed_successfully
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     # Multi-target mode: each DATA_SOURCE_NAME_N connects to a different PG instance.
     # Passwords are NOT embedded in URLs — they contain special characters that
     # break URL parsing. Instead, the lib/pq driver reads .pgpass (PGPASSFILE).
@@ -471,11 +503,19 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment:
       - REDIS_EXPORTER_WEB_LISTEN_ADDRESS=:9121
     networks:
       - backend_net
       - data_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9121/metrics || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -492,6 +532,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     volumes:
       - ${DATA_BASE_PATH}/monitoring/tempo:/var/tempo
       - ./tempo/config.yml:/etc/tempo/config.yml:ro
@@ -522,6 +564,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     volumes:
       - ./blackbox/config.yml:/etc/blackbox_exporter/config.yml:ro
     command:
