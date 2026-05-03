@@ -283,16 +283,10 @@ services:
     image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION}
     container_name: monitoring-cadvisor
     restart: unless-stopped
-    pid: "host"
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    # Required by cAdvisor: SYS_PTRACE needed to read /proc/[pid]/smaps
-    # from other containers for memory metrics. Without it, /metrics handler
-    # fails with "Cannot read smaps files" and returns EAGAIN.
-    cap_add:
-      - SYS_PTRACE
     devices:
       - /dev/kmsg:/dev/kmsg:ro
     volumes:
@@ -309,8 +303,10 @@ services:
     # --disable_metrics=disk,diskIO eliminates the per-container du calls
     # that cause /metrics to hang for 300+ seconds. Container disk usage is
     # already available via node_exporter's host-level disk metrics.
-    # v0.53.0 /metrics endpoint deadlocks on TrueNAS with pid:host; downgraded
-    # to v0.47.2 (last stable release before major internal refactoring).
+    # NOTE: pid:host removed — TrueNAS kernel.yama.ptrace_scope=1 blocks smaps
+    # reading, causing /metrics Prometheus handler to deadlock. cAdvisor gets
+    # all container metrics via Docker socket + cgroup (no ptrace needed).
+    # v0.53.0 /metrics deadlocks regardless; using gcr.io/cadvisor/cadvisor:v0.49.1.
     command:
       - '--housekeeping_interval=60s'
       - '--docker_only=true'
