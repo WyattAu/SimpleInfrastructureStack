@@ -127,6 +127,7 @@ resource "keycloak_user" "viswa" {
   realm_id        = data.keycloak_realm.main.id
   username        = "viswa"
   enabled         = true
+  email           = "viswa@example.com"
   email_verified  = true
 
   lifecycle {

@@ -40,13 +40,17 @@ is_ephemeral(name) {
     endswith(name, suffix)
 }
 
-is_local_build(image) {
-    not contains(image, "/")
-    not contains(image, ".")
-}
-
+# Local builds: images built from Dockerfile (no registry path).
+# Identified by "infra-" prefix for project-built images.
 is_local_build(image) {
     startswith(image, "infra-")
+}
+
+# resource_limits is true when deploy.resources.limits contains at least
+# one key (e.g. memory, cpus). An empty limits block still counts.
+resource_limits(svc) {
+    limits := svc.deploy.resources.limits
+    count(limits) > 0
 }
 
 has_no_new_privileges(security_opt) {
@@ -117,8 +121,7 @@ deny_no_resource_limits[msg] {
     svc := input.services[name]
     not is_ephemeral(name)
     not contains(name, "debug")
-    not svc.deploy
-    not svc.mem_limit
+    not svc.resource_limits
     msg := sprintf("Service '%s' has no resource limits", [name])
 }
 
@@ -186,8 +189,19 @@ warn_no_memory_reservation[msg] {
     msg := sprintf("Service '%s' has memory limit but no reservation", [name])
 }
 
-# NOTE: deny_untagged_image rule removed — was incomplete (missing msg
-# assignment) and the tag-detection logic was inverted. The deny_latest_tag
-# rule above already catches the most common untagged case (:latest).
+# DENY: Images without any tag (e.g. "postgres" instead of "postgres:16").
+# Exemptions: local builds (infra-*), ephemeral containers, and Chainguard.
+deny_untagged_image[msg] {
+    svc := input.services[name]
+    not is_ephemeral(name)
+    image := svc.image
+    not is_local_build(image)
+    not is_latest_tag_exempt(image)
+    not contains(image, ":")
+    msg := sprintf("Service '%s' uses untagged image '%s' (no version pin)", [name, image])
+}
+
+# NOTE: deny_untagged_image rule — deny_latest_tag catches ":latest",
+# and deny_untagged_image catches images with no tag at all.
 
 # WARN: Services with memory limits but no reservations may cause scheduling issues.

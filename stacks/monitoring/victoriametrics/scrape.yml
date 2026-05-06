@@ -155,6 +155,8 @@ scrape_configs:
           - http://accounting-akaunting:80/               # Akaunting
           - http://vaultwarden-server:80/                 # Vaultwarden
           - http://photos-server:2283/                    # Immich
+          - http://project-management-gateway:9001/       # Taiga gateway
+          - http://project-management-back:8000/          # Taiga back API
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
