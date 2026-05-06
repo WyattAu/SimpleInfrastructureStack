@@ -15,9 +15,10 @@ scrape_configs:
     static_configs:
       - targets: ['monitoring-node-exporter:9100']
   - job_name: 'cadvisor'
-    scrape_interval: 60s
-    # cAdvisor with 60+ containers produces >16MB uncompressed response.
-    # Default -promscrape.maxScrapeSize is 16777216 (16MB).
+    scrape_interval: 120s
+    scrape_timeout: 90s
+    # cAdvisor with 60+ containers on HDD-backed ZFS can take 60-90s to
+    # collect metrics. Response size can exceed 16MB uncompressed.
     max_scrape_size: 67108864  # 64MB
     static_configs:
       - targets: ['monitoring-cadvisor:8080']
@@ -225,24 +226,6 @@ scrape_configs:
       - target_label: __address__
         replacement: monitoring-blackbox-exporter:9115
 
-  # DNS probes — verify internal DNS resolution
-  - job_name: 'blackbox-dns'
-    scrape_interval: 120s
-    metrics_path: /probe
-    params:
-      module: [dns_query]
-    static_configs:
-      - targets:
-          - iam-keycloak                   # Keycloak Docker DNS
-          - operations-forgejo             # Forgejo Docker DNS
-          - monitoring-victoriametrics     # VictoriaMetrics Docker DNS
-          - monitoring-tempo                # Tempo Docker DNS
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
-      - source_labels: [__param_target]
-        target_label: target
-      - target_label: __address__
-        replacement: monitoring-blackbox-exporter:9115
+  # DNS probes removed — blackbox dns_query module uses the target as the
+  # DNS server to query (not the hostname to resolve). Docker DNS health
+  # is already implicitly verified by all HTTP/TCP probes resolving names.
