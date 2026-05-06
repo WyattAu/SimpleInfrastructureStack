@@ -5,6 +5,10 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    # NOTE: No cap_drop: ALL — HAProxy requires raw socket access for
+    # Docker socket proxying. Network capability is needed for nc healthcheck.
+    cap_add:
+      - NET_RAW
 
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 2375 || exit 1"]
@@ -138,6 +142,8 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
     healthcheck:
       test: ["CMD-SHELL", "pgrep -f 'cloudflare-ddns' || exit 1"]

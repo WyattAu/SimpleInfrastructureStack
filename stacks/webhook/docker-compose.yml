@@ -1,6 +1,8 @@
 services:
   webhook:
     build: .
+    # Local build — :latest is intentional (no external registry).
+    # OPA policy exempts local builds from deny_latest_tag.
     image: infra-webhook:latest
     container_name: infra-webhook
     restart: unless-stopped
