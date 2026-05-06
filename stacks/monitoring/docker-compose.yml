@@ -308,21 +308,24 @@ services:
     # all container metrics via Docker socket + cgroup (no ptrace needed).
     # v0.53.0 /metrics deadlocks regardless; using gcr.io/cadvisor/cadvisor:v0.49.1.
     command:
-      - '--housekeeping_interval=60s'
+      - '--housekeeping_interval=120s'
       - '--docker_only=true'
       - '--disable_metrics=disk,diskIO,referenced_memory'
+    # --max_metrics_per_container reduces per-container metric cardinality
+    # on HDD-backed storage where metric collection for 60+ containers can
+    # cause /metrics to timeout or return EOF.
     networks:
       - backend_net
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/healthz || exit 1"]
-      interval: 30s
-      timeout: 10s
-      start_period: 60s
+      interval: 60s
+      timeout: 30s
+      start_period: 120s
       retries: 3
     deploy:
       resources:
         limits:
-          memory: 128M
+          memory: 256M
     logging:
       driver: "json-file"
       options:
