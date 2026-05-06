@@ -32,7 +32,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Boot pool (/) disk usage percentage. Alert threshold at 85%.",
@@ -81,7 +81,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Data pool disk usage percentage. Alert threshold at 85%.",
@@ -130,7 +130,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Available space on the data pool.",
@@ -176,7 +176,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Total capacity of the data pool.",
@@ -218,7 +218,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Estimated days until data pool is full based on 7-day growth rate.",
@@ -265,7 +265,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Inode usage on the data pool.",
@@ -321,7 +321,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Available space on the data pool over time. Downward trend = disk consumption. 85% threshold shown.",
@@ -384,7 +384,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Host memory utilization. 90% warning threshold.",
@@ -446,7 +446,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Host CPU utilization by mode. 90% warning threshold.",
@@ -503,7 +503,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Swap usage over time. High swap indicates memory pressure.",
@@ -558,7 +558,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Top memory-consuming containers.",
@@ -621,7 +621,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Total memory used by all containers.",
@@ -681,7 +681,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Total CPU used by all containers.",
@@ -744,7 +744,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Time since last successful backup. Threshold at 26 hours (missed daily window).",
@@ -790,7 +790,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Time since last successful offsite sync to B2. Threshold at 48 hours.",
@@ -836,7 +836,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Number of containers currently running.",
@@ -893,7 +893,7 @@
         "multi": false,
         "name": "DS_PROMETHEUS",
         "options": [],
-        "query": "prometheus",
+        "query": "VictoriaMetrics",
         "queryValue": "",
         "refresh": 1,
         "regex": "",

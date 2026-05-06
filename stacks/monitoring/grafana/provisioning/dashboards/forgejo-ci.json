@@ -23,7 +23,7 @@
       "title": "Forgejo Overview",
       "type": "stat",
       "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "expr": "gitea_repositories",
@@ -44,7 +44,7 @@
       "title": "Users",
       "type": "stat",
       "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "expr": "gitea_users",
@@ -65,7 +65,7 @@
       "title": "Organizations",
       "type": "stat",
       "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "expr": "gitea_organizations",
@@ -86,7 +86,7 @@
       "title": "Open Issues",
       "type": "stat",
       "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "expr": "gitea_issues_open",
@@ -107,7 +107,7 @@
       "title": "Public Keys",
       "type": "stat",
       "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "expr": "gitea_publickeys",
@@ -128,7 +128,7 @@
       "title": "Webhooks",
       "type": "stat",
       "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "expr": "gitea_webhooks",
@@ -149,7 +149,7 @@
       "title": "Goroutines",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "expr": "go_goroutines{job=\"forgejo\"}",
@@ -165,7 +165,7 @@
       "title": "Memory Allocation",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "expr": "go_memstats_alloc_bytes{job=\"forgejo\"}",
@@ -185,7 +185,7 @@
       "title": "GC Duration",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "expr": "rate(go_gc_duration_seconds_sum{job=\"forgejo\"}[5m]) / rate(go_gc_duration_seconds_count{job=\"forgejo\"}[5m])",
@@ -201,7 +201,7 @@
       "title": "Forgejo Activity Summary",
       "type": "table",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "expr": "gitea_repositories",
