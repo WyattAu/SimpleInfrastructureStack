@@ -131,7 +131,7 @@ services:
       - backend_net
       - data_net
     healthcheck:
-      test: ["CMD-SHELL", "curl -fSs http://localhost:8000 || exit 1"]
+      test: ["CMD-SHELL", "curl -fSs http://127.0.0.1:8000 || exit 1"]
       interval: 30s
       timeout: 10s
       start_period: 60s

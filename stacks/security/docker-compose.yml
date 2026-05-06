@@ -92,7 +92,7 @@ services:
     #
     # NOTE: Alpine base provides shell for healthcheck. Binary is bind-mounted
     # from host to avoid committing a 14MB Go binary to git.
-    image: alpine:3.22
+    image: alpine:${ALPINE_VERSION}
     container_name: security-cf-workers-bouncer
     restart: unless-stopped
     security_opt:

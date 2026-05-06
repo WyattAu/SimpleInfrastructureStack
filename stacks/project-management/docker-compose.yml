@@ -42,7 +42,7 @@ services:
       - backend_net
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:${POSTGRES_VERSION}
     container_name: project-management-postgres
     restart: unless-stopped
     security_opt:
