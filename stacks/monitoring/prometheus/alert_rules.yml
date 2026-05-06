@@ -359,13 +359,13 @@ groups:
           description: "Akaunting web UI is not responding via internal blackbox probe."
 
       - alert: TaigaDown
-        expr: probe_success{instance=~"project-management-postgres"} == 0
+        expr: probe_success{instance=~"project-management-(gateway|back|front)"} == 0
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "Taiga database is unreachable"
-          description: "Taiga PostgreSQL is not accepting TCP connections via internal blackbox probe."
+          summary: "Taiga is partially or fully down"
+          description: "One or more Taiga components (gateway, back, or front) are not responding to HTTP probes."
 
       - alert: GrafanaDown
         expr: up{job="grafana"} == 0
