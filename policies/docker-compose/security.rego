@@ -121,7 +121,7 @@ deny_no_resource_limits[msg] {
     svc := input.services[name]
     not is_ephemeral(name)
     not contains(name, "debug")
-    not svc.resource_limits
+    not resource_limits(svc)
     msg := sprintf("Service '%s' has no resource limits", [name])
 }
 
