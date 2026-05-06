@@ -153,6 +153,8 @@ scrape_configs:
           - http://rss-freshrss:80/                       # FreshRSS web UI
           - http://utility-homepage:80/                   # Homepage
           - http://accounting-akaunting:80/               # Akaunting
+          - http://vaultwarden-server:80/                 # Vaultwarden
+          - http://photos-server:2283/                    # Immich
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -208,6 +210,7 @@ scrape_configs:
           - photos-valkey:6379           # Immich Valkey
           - documents-redis:6379         # Paperless Redis
           - monitoring-victorialogs:9428     # VictoriaLogs
+          - security-crowdsec:8080       # CrowdSec API
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target

@@ -155,7 +155,7 @@ services:
       - traefik_net
       - backend_net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3000/api/health"]
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -264,7 +264,7 @@ services:
       - "traefik.http.services.kuma.loadbalancer.server.port=3001"
     # Internal health check
     healthcheck:
-      test: ["CMD", "curl", "-fSs", "http://localhost:3001/"]
+      test: ["CMD", "curl", "-fSs", "http://127.0.0.1:3001/"]
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -399,7 +399,7 @@ services:
     networks:
       - backend_net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9093/-/healthy"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:9093/-/healthy"]
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -492,7 +492,7 @@ services:
       - backend_net
       - data_net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9187/metrics"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:9187/metrics"]
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -587,7 +587,7 @@ services:
       - backend_net
       - data_net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9115"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:9115"]
       interval: 30s
       timeout: 10s
       start_period: 30s

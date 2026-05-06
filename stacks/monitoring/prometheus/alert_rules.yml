@@ -304,22 +304,22 @@ groups:
   - name: application_health
     rules:
       - alert: VaultwardenDown
-        expr: up{job="vaultwarden"} == 0
+        expr: probe_success{job="blackbox-http-internal",instance="vaultwarden-server"} == 0
         for: 2m
         labels:
           severity: critical
         annotations:
           summary: "Vaultwarden is down"
-          description: "Vaultwarden metrics endpoint is not responding. Password management is unavailable."
+          description: "Vaultwarden HTTP endpoint is not responding. Password management is unavailable."
 
       - alert: ImmichDown
-        expr: up{job="immich"} == 0
+        expr: probe_success{job="blackbox-http-internal",instance="photos-server"} == 0
         for: 2m
         labels:
           severity: critical
         annotations:
           summary: "Immich is down"
-          description: "Immich metrics endpoint is not responding. Photo storage and sharing is unavailable."
+          description: "Immich HTTP endpoint is not responding. Photo storage and sharing is unavailable."
 
       - alert: PaperlessDown
         expr: up{job="paperless"} == 0
@@ -392,7 +392,7 @@ groups:
     rules:
       # If these exporters/scrapers go down, ALL container/service alerts become blind.
       - alert: MonitoringExporterDown
-        expr: up{job=~"cadvisor|node-exporter|postgres-exporter|promtail|redis|mariadb|tempo|blackbox-exporter|crowdsec"} == 0
+        expr: up{job=~"cadvisor|node-exporter|postgres-exporter|promtail|redis|mariadb|tempo|blackbox-exporter|crowdsec-workers-bouncer|victoriametrics|victorialogs"} == 0
         for: 2m
         labels:
           severity: critical
@@ -662,15 +662,15 @@ groups:
     rules:
       # CrowdSec agent is down — no intrusion detection active
       - alert: CrowdSecAgentDown
-        expr: up{job="crowdsec"} == 0
+        expr: probe_success{job="blackbox-tcp",instance="security-crowdsec"} == 0
         for: 5m
         labels:
           severity: warning
         annotations:
           summary: "CrowdSec agent is down"
           description: >-
-            CrowdSec agent container is not responding to health checks.
-            Intrusion detection and Cloudflare bouncer are not operational.
+            CrowdSec agent API port is not responding to TCP probe.
+            Intrusion detection and Cloudflare bouncer may not be operational.
 
       # CrowdSec Workers Bouncer is down — IPs not being blocked at edge
       - alert: CrowdSecWorkersBouncerDown
