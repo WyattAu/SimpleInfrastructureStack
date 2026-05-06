@@ -23,7 +23,7 @@
       "title": "HTTP Response Time (p50)",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "histogram_quantile(0.50, sum(rate(synapse_http_server_response_time_seconds_bucket[5m])) by (le))",
@@ -43,7 +43,7 @@
       "title": "Requests Received",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "sum(rate(synapse_http_server_requests_received_total{method=\"GET\"}[5m])) by (servlet)",
@@ -67,7 +67,7 @@
       "title": "Daily Active Users",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "synapse_admin_daily_active_users",
@@ -83,7 +83,7 @@
       "title": "Notified Rooms",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "synapse_notifier_rooms",
@@ -99,7 +99,7 @@
       "title": "Memory Usage",
       "type": "gauge",
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "process_resident_memory_bytes{job=\"synapse\"}",
@@ -119,7 +119,7 @@
       "title": "Uptime",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "time() - process_start_time_seconds{job=\"synapse\"}",
@@ -135,7 +135,7 @@
       "title": "User Logins",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "sum(rate(synapse_user_logins_total[5m])) by (method, type)",
@@ -151,7 +151,7 @@
       "title": "Event Fetches",
       "type": "stat",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "synapse_event_fetch_ongoing",
@@ -175,7 +175,7 @@
       {
         "name": "DS_PROMETHEUS",
         "type": "datasource",
-        "query": "prometheus",
+        "query": "VictoriaMetrics",
         "current": {},
         "hide": 0
       }

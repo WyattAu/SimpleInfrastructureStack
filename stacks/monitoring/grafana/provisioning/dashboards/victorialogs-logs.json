@@ -23,7 +23,7 @@
       "title": "Ingestion Rate",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "sum(rate(vl_rows_ingested_total[5m]))",
@@ -39,7 +39,7 @@
       "title": "Query Rate",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "sum(rate(vl_http_requests_total{path=~\"/select/.*\"}[5m]))",
@@ -55,7 +55,7 @@
       "title": "Request Errors",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "sum(rate(vl_http_requests_total{status_code=~\"5..\"}[5m])) by (method, path)",
@@ -71,7 +71,7 @@
       "title": "Memory Usage",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "process_resident_memory_bytes{job=\"victorialogs\"}",
@@ -87,7 +87,7 @@
       "title": "Stored Blocks",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 16 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "vl_storage_blocks_total",
@@ -103,7 +103,7 @@
       "title": "Storage Size",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 16 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "vl_storage_size_bytes",
@@ -119,7 +119,7 @@
       "title": "Goroutines",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 16 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "go_goroutines{job=\"victorialogs\"}",
@@ -135,7 +135,7 @@
       "title": "Uptime",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 16 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "time() - process_start_time_seconds{job=\"victorialogs\"}",
@@ -155,7 +155,7 @@
       {
         "name": "DS_PROMETHEUS",
         "type": "datasource",
-        "query": "prometheus",
+        "query": "VictoriaMetrics",
         "current": {},
         "hide": 0
       }

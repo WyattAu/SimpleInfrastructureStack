@@ -23,7 +23,7 @@
       "title": "Connections per Instance",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "pg_stat_activity_count{datname!~\"template.*\"}",
@@ -47,7 +47,7 @@
       "title": "Transactions per Second",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "rate(pg_stat_database_xact_commit{datname!~\"template.*\"}[5m])",
@@ -75,7 +75,7 @@
       "title": "Cache Hit Ratio",
       "type": "gauge",
       "gridPos": { "h": 8, "w": 6, "x": 0, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "avg(pg_stat_database_blks_hit{datname!~\"template.*\"} / (pg_stat_database_blks_hit{datname!~\"template.*\"} + pg_stat_database_blks_read{datname!~\"template.*\"})) * 100",
@@ -108,7 +108,7 @@
       "title": "Database Size",
       "type": "bargauge",
       "gridPos": { "h": 8, "w": 6, "x": 6, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "pg_database_size_bytes{datname!~\"template.*\"}",
@@ -133,7 +133,7 @@
       "title": "Locks Held",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "sum(pg_locks_count{mode!~\"vacuum|accessshare\"})",
@@ -165,7 +165,7 @@
       "title": "Dead Tuples",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "sum(pg_stat_database_dead_tuples{datname!~\"template.*\"})",
@@ -197,7 +197,7 @@
       "title": "Max Connections vs Active",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "pg_settings_max_connections",
@@ -229,7 +229,7 @@
       "title": "Uptime",
       "type": "stat",
       "gridPos": { "h": 4, "w": 12, "x": 12, "y": 16 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "pg_postmaster_uptime_seconds",
@@ -259,7 +259,7 @@
       "title": "Replication Lag",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "pg_replication_lag_seconds",
@@ -283,7 +283,7 @@
       "title": "Rows per Second",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "rate(pg_stat_database_tup_returned{datname!~\"template.*\"}[5m])",
@@ -319,7 +319,7 @@
       {
         "name": "DS_PROMETHEUS",
         "type": "datasource",
-        "query": "prometheus",
+        "query": "VictoriaMetrics",
         "current": { "selected": true, "text": "Prometheus", "value": "PBFA97CFB590B2093" },
         "hide": 0
       }
