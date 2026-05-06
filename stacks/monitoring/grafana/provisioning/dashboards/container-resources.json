@@ -23,7 +23,7 @@
       "title": "CPU Usage by Container",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "rate(container_cpu_usage_seconds_total{name=~\".+\"}[5m]) * 100",
@@ -39,7 +39,7 @@
       "title": "Memory Usage by Container",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "container_memory_usage_bytes{name=~\".+\"}",
@@ -55,7 +55,7 @@
       "title": "Network I/O by Container",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "rate(container_network_receive_bytes_total{name=~\".+\"}[5m])",
@@ -75,7 +75,7 @@
       "title": "Container Restarts",
       "type": "stat",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
           "expr": "sum(increase(container_restarts_total[24h])) by (name)",
@@ -91,7 +91,7 @@
       {
         "name": "DS_PROMETHEUS",
         "type": "datasource",
-        "query": "prometheus",
+        "query": "VictoriaMetrics",
         "current": {},
         "hide": 0
       }

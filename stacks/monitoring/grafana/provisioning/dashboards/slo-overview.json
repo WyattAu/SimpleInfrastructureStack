@@ -32,7 +32,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
@@ -69,7 +69,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -84,7 +84,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
@@ -121,7 +121,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -136,7 +136,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
@@ -173,7 +173,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -188,7 +188,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
@@ -225,7 +225,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -240,7 +240,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
@@ -277,7 +277,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -292,7 +292,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
@@ -329,7 +329,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -352,7 +352,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Remaining error budget as a percentage. 100% = full budget remaining, 0% = budget exhausted.\n\nCritical services (Traefik, Keycloak): 0.1% budget = 43.2 min/month\nImportant services (Forgejo, Grafana, Loki, Synapse): 0.5% budget = 3.6 hours/month",
@@ -394,7 +394,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -405,7 +405,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -416,7 +416,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -427,7 +427,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -438,7 +438,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -449,7 +449,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -464,7 +464,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Error budget remaining expressed as time. Shows how much downtime budget is left for the current 30-day window.",
@@ -503,7 +503,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -514,7 +514,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -525,7 +525,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -536,7 +536,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -547,7 +547,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -558,7 +558,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -581,7 +581,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Critical services availability over time. 99.9% SLO target shown as green threshold.",
@@ -632,7 +632,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -647,7 +647,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Important services availability over time. 99.5% SLO target shown as green threshold.",
@@ -698,7 +698,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -721,7 +721,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "5xx error rate per Traefik service. SLO target: < 0.5% error rate (green line).",
@@ -772,7 +772,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -787,7 +787,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Total request rate per service for context.",
@@ -834,7 +834,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -857,7 +857,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "description": "Time since last successful backup. SLO: backup must succeed within 26 hours (daily at 02:00 UTC).",
@@ -895,7 +895,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -910,7 +910,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
+        "type": "victoriametrics-metrics-datasource",
         "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
@@ -947,7 +947,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "victoriametrics-metrics-datasource",
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
@@ -978,7 +978,7 @@
         "multi": false,
         "name": "DS_PROMETHEUS",
         "options": [],
-        "query": "prometheus",
+        "query": "VictoriaMetrics",
         "queryValue": "",
         "refresh": 1,
         "regex": "",
