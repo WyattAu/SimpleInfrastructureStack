@@ -24,10 +24,8 @@ datasources:
     uid: P8E80F9AEF21F6940
     access: proxy
     url: http://monitoring-victorialogs:9428
-    jsonData:
-      httpHeaderName1: X-Scope-OrgID
-    secureJsonData:
-      httpHeaderValue1: infra
+    # VictoriaLogs uses uint32 account IDs, not string tenant IDs.
+    # No X-Scope-OrgID header needed — default account (0) is used.
     editable: true
   - name: Tempo
     type: tempo

@@ -93,3 +93,5 @@ docker_networks:
     driver: bridge
   - name: backend_net
     driver: bridge
+  - name: data_net
+    driver: bridge

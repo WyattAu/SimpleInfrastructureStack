@@ -318,10 +318,13 @@ services:
     cap_drop:
       - ALL
     # Required by nginx entrypoint: chown /var/cache/nginx/client_temp
+    # and s6-overlay su-exec to drop to nginx user
     cap_add:
       - CHOWN
       - DAC_OVERRIDE
       - FOWNER
+      - SETGID
+      - SETUID
     environment:
       TAIGA_URL: "https://taiga.${DOMAIN_NAME}"
       TAIGA_WEBSOCKETS_URL: "wss://taiga.${DOMAIN_NAME}"
@@ -359,6 +362,8 @@ services:
       - CHOWN
       - DAC_OVERRIDE
       - FOWNER
+      - SETGID
+      - SETUID
     depends_on:
       rabbitmq-init:
         condition: service_completed_successfully
@@ -400,6 +405,8 @@ services:
       - CHOWN
       - DAC_OVERRIDE
       - FOWNER
+      - SETGID
+      - SETUID
     environment:
       MAX_AGE: "360"
       SECRET_KEY: ${TAIGA_SECRET_KEY}
