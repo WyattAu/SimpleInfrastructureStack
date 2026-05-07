@@ -122,8 +122,8 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(container_restarts_total[24h])) by (name)",
-          "legendFormat": "{{name}}"
+          "expr": "container_label_restartcount{container_label_restartcount!=\"\"}",
+          "legendFormat": "{{container_label_com_docker_compose_service}}"
         }
       ]
     }
