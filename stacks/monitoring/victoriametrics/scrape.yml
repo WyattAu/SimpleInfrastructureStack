@@ -19,7 +19,7 @@ scrape_configs:
     scrape_timeout: 90s
     # cAdvisor with 60+ containers on HDD-backed ZFS can take 60-90s to
     # collect metrics. Response size can exceed 16MB uncompressed.
-    max_scrape_size: 67108864  # 64MB
+    max_scrape_size: 167772160  # 160MB (60 containers produce ~140MB)
     static_configs:
       - targets: ['monitoring-cadvisor:8080']
   - job_name: 'traefik'
