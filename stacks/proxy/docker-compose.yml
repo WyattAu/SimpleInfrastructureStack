@@ -145,12 +145,9 @@ services:
     cap_drop:
       - ALL
 
-    healthcheck:
-      test: ["CMD-SHELL", "pgrep -f 'cloudflare-ddns' || exit 1"]
-      interval: 120s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+    # Distroless image — no /bin/sh for CMD-SHELL healthcheck.
+    # Monitored via blackbox exporter probe and Cloudflare DNS records.
+    # distroless_no_shell exemption covers this in OPA policy.
 
     environment:
       - CLOUDFLARE_API_TOKEN=${CF_API_TOKEN}

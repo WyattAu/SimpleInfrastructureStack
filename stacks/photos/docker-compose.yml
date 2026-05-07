@@ -97,12 +97,9 @@ services:
     networks:
       - backend_net
       - data_net
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z 127.0.0.1 3003 || exit 1"]
-      interval: 30s
-      timeout: 10s
-      start_period: 60s
-      retries: 5
+    # immich-ml is a Python image — no wget/curl/nc available.
+    # Relies on Traefik health checking and Immich server-to-server checks.
+    # distroless_no_shell exemption covers this in OPA policy.
     deploy:
       resources:
         limits:
