@@ -3,7 +3,10 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
@@ -22,8 +25,16 @@
     {
       "title": "CPU Usage",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "PBFA97CFB590B2093"
+      },
       "targets": [
         {
           "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
@@ -31,15 +42,27 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "percent", "min": 0, "max": 100 },
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        },
         "overrides": []
       }
     },
     {
       "title": "Memory Usage",
       "type": "stat",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "PBFA97CFB590B2093"
+      },
       "targets": [
         {
           "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
@@ -54,9 +77,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 70 },
-              { "color": "red", "value": 90 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
             ]
           }
         },
@@ -66,8 +98,16 @@
     {
       "title": "Memory Breakdown",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "PBFA97CFB590B2093"
+      },
       "targets": [
         {
           "expr": "node_memory_MemTotal_bytes",
@@ -92,7 +132,10 @@
           "min": 0,
           "custom": {
             "fillOpacity": 80,
-            "stacking": { "mode": "normal", "group": "A" },
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
             "lineWidth": 1,
             "pointSize": 5,
             "showPoints": "auto"
@@ -104,8 +147,16 @@
     {
       "title": "Disk Usage",
       "type": "bargauge",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "PBFA97CFB590B2093"
+      },
       "targets": [
         {
           "expr": "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"})) * 100",
@@ -120,9 +171,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 70 },
-              { "color": "red", "value": 90 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
             ]
           }
         },
@@ -132,8 +192,16 @@
     {
       "title": "Disk I/O",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "PBFA97CFB590B2093"
+      },
       "targets": [
         {
           "expr": "rate(node_disk_read_bytes_total[5m])",
@@ -145,15 +213,26 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "Bps", "min": 0 },
+        "defaults": {
+          "unit": "Bps",
+          "min": 0
+        },
         "overrides": []
       }
     },
     {
       "title": "Network Traffic",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "PBFA97CFB590B2093"
+      },
       "targets": [
         {
           "expr": "rate(node_network_receive_bytes_total{device=~\"eth.*\"}[5m])",
@@ -165,15 +244,26 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "Bps", "min": 0 },
+        "defaults": {
+          "unit": "Bps",
+          "min": 0
+        },
         "overrides": []
       }
     },
     {
       "title": "System Load",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "PBFA97CFB590B2093"
+      },
       "targets": [
         {
           "expr": "node_load1",
@@ -189,15 +279,26 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "short", "min": 0 },
+        "defaults": {
+          "unit": "short",
+          "min": 0
+        },
         "overrides": []
       }
     },
     {
       "title": "Uptime",
       "type": "stat",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "PBFA97CFB590B2093"
+      },
       "targets": [
         {
           "expr": "time() - node_boot_time_seconds",
@@ -210,7 +311,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           }
         },
@@ -220,26 +324,23 @@
         {
           "id": "organize",
           "options": {
-            "excludeByName": { "Time": true }
+            "excludeByName": {
+              "Time": true
+            }
           }
         }
       ]
     }
   ],
   "schemaVersion": 39,
-  "tags": ["host", "node-exporter"],
-  "templating": {
-    "list": [
-      {
-        "name": "DS_PROMETHEUS",
-        "type": "datasource",
-        "query": "VictoriaMetrics",
-        "current": {},
-        "hide": 0
-      }
-    ]
+  "tags": [
+    "host",
+    "node-exporter"
+  ],
+  "time": {
+    "from": "now-6h",
+    "to": "now"
   },
-  "time": { "from": "now-6h", "to": "now" },
   "title": "Host Overview",
   "uid": "host-overview"
 }
