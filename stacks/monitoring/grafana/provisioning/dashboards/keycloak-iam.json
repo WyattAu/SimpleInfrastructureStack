@@ -84,7 +84,7 @@
       }
     },
     {
-      "title": "Cache Entries (sessions)",
+      "title": "Cache Entries (auth sessions)",
       "type": "stat",
       "gridPos": {
         "h": 4,
@@ -98,8 +98,8 @@
       },
       "targets": [
         {
-          "expr": "vendor_statistics_current_number_of_entries_in_memory{job=\"keycloak\",cache=\"sessions\"}",
-          "legendFormat": "sessions"
+          "expr": "vendor_statistics_current_number_of_entries_in_memory{job=\"keycloak\",cache=\"authenticationSessions\"}",
+          "legendFormat": "auth sessions"
         }
       ],
       "fieldConfig": {
@@ -263,7 +263,7 @@
       },
       "targets": [
         {
-          "expr": "vendor_statistics_hit_ratio{job=\"keycloak\",cache=~\"sessions|users|realms|offlineSessions|userRevisions\"}",
+          "expr": "vendor_statistics_hit_ratio{job=\"keycloak\",cache=~\"authenticationSessions|users|realms|authorization|userRevisions|realmRevisions\"}",
           "legendFormat": "{{cache}}"
         }
       ],
