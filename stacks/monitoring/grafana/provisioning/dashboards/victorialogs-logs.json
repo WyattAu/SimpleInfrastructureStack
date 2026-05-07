@@ -160,7 +160,7 @@
       },
       "targets": [
         {
-          "expr": "vl_storage_blocks_total",
+          "expr": "sum(vl_storage_blocks)",
           "legendFormat": "blocks"
         }
       ],
@@ -190,7 +190,7 @@
       },
       "targets": [
         {
-          "expr": "vl_storage_size_bytes",
+          "expr": "vl_data_size_bytes{type=\"storage\"}",
           "legendFormat": "bytes"
         }
       ],
