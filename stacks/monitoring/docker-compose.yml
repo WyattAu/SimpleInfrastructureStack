@@ -520,15 +520,13 @@ services:
       - ALL
     environment:
       - REDIS_EXPORTER_WEB_LISTEN_ADDRESS=:9121
+      - REDIS_ADDR=documents-redis:6379
     networks:
       - backend_net
       - data_net
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9121/metrics || exit 1"]
-      interval: 30s
-      timeout: 10s
-      start_period: 15s
-      retries: 3
+    # Distroless image — no /bin/sh for CMD-SHELL healthcheck.
+    # Monitored via VictoriaMetrics scrape target (port 9121).
+    # distroless_no_shell exemption covers this in OPA policy.
     deploy:
       resources:
         limits:
