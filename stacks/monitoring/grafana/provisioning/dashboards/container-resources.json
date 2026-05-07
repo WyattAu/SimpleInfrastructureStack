@@ -3,7 +3,10 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
@@ -22,8 +25,16 @@
     {
       "title": "CPU Usage by Container",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "PBFA97CFB590B2093"
+      },
       "targets": [
         {
           "expr": "rate(container_cpu_usage_seconds_total{name=~\".+\"}[5m]) * 100",
@@ -31,15 +42,26 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "percent", "min": 0 },
+        "defaults": {
+          "unit": "percent",
+          "min": 0
+        },
         "overrides": []
       }
     },
     {
       "title": "Memory Usage by Container",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "PBFA97CFB590B2093"
+      },
       "targets": [
         {
           "expr": "container_memory_usage_bytes{name=~\".+\"}",
@@ -47,15 +69,26 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "bytes", "min": 0 },
+        "defaults": {
+          "unit": "bytes",
+          "min": 0
+        },
         "overrides": []
       }
     },
     {
       "title": "Network I/O by Container",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "PBFA97CFB590B2093"
+      },
       "targets": [
         {
           "expr": "rate(container_network_receive_bytes_total{name=~\".+\"}[5m])",
@@ -67,15 +100,26 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "Bps", "min": 0 },
+        "defaults": {
+          "unit": "Bps",
+          "min": 0
+        },
         "overrides": []
       }
     },
     {
       "title": "Container Restarts",
       "type": "stat",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "PBFA97CFB590B2093"
+      },
       "targets": [
         {
           "expr": "sum(increase(container_restarts_total[24h])) by (name)",
@@ -85,19 +129,14 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["infrastructure", "containers"],
-  "templating": {
-    "list": [
-      {
-        "name": "DS_PROMETHEUS",
-        "type": "datasource",
-        "query": "VictoriaMetrics",
-        "current": {},
-        "hide": 0
-      }
-    ]
+  "tags": [
+    "infrastructure",
+    "containers"
+  ],
+  "time": {
+    "from": "now-6h",
+    "to": "now"
   },
-  "time": { "from": "now-6h", "to": "now" },
   "title": "Container Resources",
   "uid": "container-resources"
 }
