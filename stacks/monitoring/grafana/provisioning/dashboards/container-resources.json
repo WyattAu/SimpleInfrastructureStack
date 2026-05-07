@@ -109,7 +109,7 @@
     },
     {
       "title": "Container Restarts",
-      "type": "stat",
+      "type": "table",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -122,8 +122,107 @@
       },
       "targets": [
         {
-          "expr": "container_label_restartcount{container_label_restartcount!=\"\"}",
-          "legendFormat": "{{container_label_com_docker_compose_service}}"
+          "expr": "count by (container_label_com_docker_compose_service, container_label_restartcount) (container_last_seen{container_label_restartcount!=\"\"})",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 5 },
+                    { "color": "red", "value": 20 }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "container_label_com_docker_compose_service"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              },
+              {
+                "id": "displayName",
+                "value": "Service"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "container_label_restartcount"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Restarts"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true
+            },
+            "indexByName": {
+              "container_label_com_docker_compose_service": 0,
+              "container_label_restartcount": 1
+            },
+            "renameByName": {}
+          }
         }
       ]
     }
