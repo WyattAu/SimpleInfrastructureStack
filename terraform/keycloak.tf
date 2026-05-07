@@ -41,6 +41,7 @@ resource "keycloak_openid_client" "oauth2_proxy" {
   access_type           = "CONFIDENTIAL"
   valid_redirect_uris   = [
     "https://akaunting.wyattau.com/*",
+    "https://books.wyattau.com/*",
     "https://forgejo.wyattau.com/*",
     "https://homepage.wyattau.com/*",
     "https://kuma.wyattau.com/*",
@@ -50,6 +51,7 @@ resource "keycloak_openid_client" "oauth2_proxy" {
   ]
   web_origins           = [
     "https://akaunting.wyattau.com",
+    "https://books.wyattau.com",
     "https://forgejo.wyattau.com",
     "https://homepage.wyattau.com",
     "https://kuma.wyattau.com",
