@@ -274,8 +274,8 @@
       },
       "targets": [
         {
-          "expr": "sum(pg_stat_database_dead_tuples{datname!~\"template.*\"})",
-          "legendFormat": "dead tuples"
+          "expr": "sum by (instance) (pg_stat_user_tables_n_dead_tup{datname!~\"template.*\"})",
+          "legendFormat": "{{instance}}"
         }
       ],
       "fieldConfig": {
@@ -369,7 +369,7 @@
       }
     },
     {
-      "title": "Uptime",
+      "title": "PostgreSQL Status",
       "type": "stat",
       "gridPos": {
         "h": 4,
@@ -383,8 +383,8 @@
       },
       "targets": [
         {
-          "expr": "pg_postmaster_uptime_seconds",
-          "legendFormat": "{{target}}"
+          "expr": "pg_up",
+          "legendFormat": "{{instance}}"
         }
       ],
       "fieldConfig": {
@@ -392,15 +392,36 @@
           "color": {
             "mode": "thresholds"
           },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 0,
+                  "text": "DOWN"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 1,
+                  "text": "UP"
+                }
+              },
+              "type": "value"
+            }
+          ],
           "thresholds": {
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
               }
             ]
           },
-          "unit": "s"
+          "unit": "none"
         },
         "overrides": []
       },
@@ -412,8 +433,8 @@
           "fields": "",
           "values": false
         },
-        "colorMode": "value",
-        "graphMode": "area",
+        "colorMode": "background",
+        "graphMode": "none",
         "justifyMode": "auto"
       }
     },

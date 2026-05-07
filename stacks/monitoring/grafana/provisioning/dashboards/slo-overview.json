@@ -1298,9 +1298,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "slo:backup_compliance:5m",
+          "expr": "vector(sis_backup_last_success > 0 and (time() - sis_backup_last_success) < 93600) or vector(0)",
           "legendFormat": "Compliance",
-          "range": true,
           "refId": "A"
         }
       ],
