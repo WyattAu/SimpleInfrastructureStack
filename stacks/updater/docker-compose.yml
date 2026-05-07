@@ -17,12 +17,9 @@ services:
       - WATCHTOWER_LABEL_ENABLE=true
       - TZ=${TZ}
     networks: []
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/v1/update || exit 1"]
-      interval: 3600s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+    # Distroless image — no /bin/sh for CMD-SHELL healthcheck.
+    # Watchtower logs daily scan results; monitored via log scraping.
+    # distroless_no_shell exemption covers this in OPA policy.
     deploy:
       resources:
         limits:
