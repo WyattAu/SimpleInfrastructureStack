@@ -335,7 +335,7 @@ services:
   textfile-init:
     image: busybox:1.37.0
     container_name: monitoring-textfile-init
-    command: sh -c "mkdir -p /textfile-collector && printf '# HELP sis_backup_last_success Unix timestamp of last successful backup\n# TYPE sis_backup_last_success gauge\nsis_backup_last_success 0\n# HELP sis_backup_last_run Unix timestamp of last backup attempt\n# TYPE sis_backup_last_run gauge\nsis_backup_last_run 0\n# HELP sis_backup_offsite_last_success Unix timestamp of last successful offsite sync\n# TYPE sis_backup_offsite_last_success gauge\nsis_backup_offsite_last_success 0\n' > /textfile-collector/backup.prom"
+    command: sh -c "mkdir -p /textfile-collector && printf '# HELP sis_backup_last_success Unix timestamp of last successful backup\\n# TYPE sis_backup_last_success gauge\\nsis_backup_last_success 0\\n# HELP sis_backup_last_run Unix timestamp of last backup attempt\\n# TYPE sis_backup_last_run gauge\\nsis_backup_last_run 0\\n# HELP sis_backup_offsite_last_success Unix timestamp of last successful offsite sync\\n# TYPE sis_backup_offsite_last_success gauge\\nsis_backup_offsite_last_success 0\\n' > /textfile-collector/backup.prom"
     volumes:
       - ${DATA_BASE_PATH}/monitoring/textfile-collector:/textfile-collector
 
