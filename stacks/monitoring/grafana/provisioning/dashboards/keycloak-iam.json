@@ -84,7 +84,7 @@
       }
     },
     {
-      "title": "Cache Entries (auth sessions)",
+      "title": "Cache Entries (authorization)",
       "type": "stat",
       "gridPos": {
         "h": 4,
@@ -98,8 +98,8 @@
       },
       "targets": [
         {
-          "expr": "vendor_statistics_current_number_of_entries_in_memory{job=\"keycloak\",cache=\"authenticationSessions\"}",
-          "legendFormat": "auth sessions"
+          "expr": "vendor_statistics_current_number_of_entries_in_memory{job=\"keycloak\",cache=\"authorization\"}",
+          "legendFormat": "authorization"
         }
       ],
       "fieldConfig": {
