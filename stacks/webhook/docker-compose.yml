@@ -1,3 +1,4 @@
+---
 services:
   webhook:
     build: .
@@ -21,7 +22,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # Age key for SOPS decryption
       # Mount the parent directory containing keys.txt (not the file itself)
-      - ${SOPS_AGE_KEY_DIR}:/root/.config/sops/age:ro
+      - ${SOPS_AGE_KEY_DIR:-/root/.config/sops/age}:/root/.config/sops/age:ro
       # SSH deploy key for private repo git pull
       - ./ssh:/root/.ssh:ro
       # Deploy script and webhook config template

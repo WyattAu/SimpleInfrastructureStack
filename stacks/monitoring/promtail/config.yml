@@ -1,3 +1,4 @@
+---
 server:
   http_listen_port: 9080
   grpc_listen_port: 0
@@ -7,9 +8,9 @@ positions:
 
 clients:
   - url: http://monitoring-victorialogs:9428/insert/loki/api/v1/push
-    # VictoriaLogs uses uint32 account IDs (default: 0), not string tenant IDs.
-    # Loki used string tenant IDs like "infra" — that causes 400 errors here.
-    # Omitting tenant_id uses the default account (0).
+  # VictoriaLogs uses uint32 account IDs (default: 0), not string tenant IDs.
+  # Loki used string tenant IDs like "infra" — that causes 400 errors here.
+  # Omitting tenant_id uses the default account (0).
 
 scrape_configs:
   - job_name: docker

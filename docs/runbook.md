@@ -4,7 +4,7 @@
 
 ## Architecture Overview
 
-```
+```text
 GitHub (main) ──push──► GitHub Actions (validate)
                         │
                         ├─ merge to main
@@ -190,10 +190,12 @@ All secrets are encrypted with [SOPS](https://github.com/getsops/sops) using [ag
 ### What's Backed Up
 
 Local backup (Restic) → `/mnt/pool_HDD_x2/tank/datasources/sis/backups/restic-repo/`
+
 - All app data: `/mnt/pool_HDD_x2/tank/datasources/sis/appdata/`
 - Retention: 24 hourly, 7 daily, 4 weekly, 6 monthly, 3 yearly
 
 Offsite backup (B2) → `s3:.../SisInfraBackup/repo`
+
 - Synced after each local backup
 - Cost: ~$0.12/month for 30GB
 - Same retention policy as local
@@ -265,10 +267,10 @@ sudo docker start operations-forgejo
 
 ### Key Dashboards
 
-- **Grafana:** https://grafana.wyattau.com (Keycloak OIDC login)
-- **Uptime Kuma:** https://kuma.wyattau.com (Keycloak OAuth2 login)
-- **VictoriaMetrics:** https://prometheus.wyattau.com (Keycloak OAuth2 login)
-- **Traefik:** https://traefik.wyattau.com (Keycloak OAuth2 login)
+- **Grafana:** <https://grafana.wyattau.com> (Keycloak OIDC login)
+- **Uptime Kuma:** <https://kuma.wyattau.com> (Keycloak OAuth2 login)
+- **VictoriaMetrics:** <https://prometheus.wyattau.com> (Keycloak OAuth2 login)
+- **Traefik:** <https://traefik.wyattau.com> (Keycloak OAuth2 login)
 
 ### SMTP Email
 
@@ -293,6 +295,7 @@ SMTP provider: SMTP2GO (`mail.smtp2go.com:2525`)
 ### GitHub Actions (validate.yml)
 
 Runs on push to `main`/`feature/*` and on PRs:
+
 1. YAML lint (yamllint)
 2. Docker Compose validation (all stacks)
 3. OPA policy check (security.rego)
@@ -314,7 +317,7 @@ Runs on push to `main`/`feature/*` and on PRs:
 
 ### Deploy Pipeline
 
-```
+```text
 git push origin main
   → GitHub Actions validates
   → merge completes
@@ -335,11 +338,13 @@ git push origin main
 ## Rollback
 
 Automatic rollback is built into the Ansible `site.yml` rescue block:
+
 1. Git reset to previous SHA (stored before deploy)
 2. Re-run `docker compose up` from previous commit
 3. Notify via ntfy
 
 Manual rollback:
+
 ```bash
 # Find the previous good commit
 ssh -i ~/.ssh/id_ed25519 truenas_admin@192.168.1.3 \
@@ -393,6 +398,7 @@ curl -s -o /dev/null -w "%{http_code}" -X POST "https://deploy.wyattau.com/hooks
 ### Lost Webhook Access
 
 If the webhook container is broken, deploy from the server directly:
+
 ```bash
 ssh -i ~/.ssh/id_ed25519 truenas_admin@192.168.1.3
 sudo docker exec infra-webhook bash /opt/webhook/deploy.sh
@@ -445,7 +451,7 @@ sudo docker restart monitoring-vmalert
 
 ## Network Topology
 
-```
+```text
 ┌─────────────────────────────────────────────────────┐
 │  traefik_net (172.16.6.0/24)                        │
 │  ── Traefik (443, 80, 8448)                         │

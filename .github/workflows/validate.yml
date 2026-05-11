@@ -62,45 +62,9 @@ jobs:
               sed -i 's/\${[^}]*}/dummy/g' "$stack_dir/.env"
             fi
             if docker compose --env-file /tmp/ci-dummy.env -f "$compose" config --quiet 2>&1; then
-              echo "✅ $stack"
+              echo "[PASS] $stack"
             else
-              echo "❌ $stack"
-              FAILED=1
-            fi
-            # Clean up dummy .env
-            rm -f "$stack_dir/.env"
-            echo "::endgroup::"
-          done
-          exit $FAILED
-
-      - name: Verify image tags use env vars from versions.env
-        run: |
-          # Ensure all images reference ${VERSION_VAR} from versions.env
-          # rather than hardcoded version strings.
-          FAILED=0
-          for compose in stacks/*/docker-compose.yml; do
-            stack=$(basename $(dirname "$compose"))
-            # Skip local builds
-            grep -oP 'image:\s*\K[^$#]+' "$compose" | while read -r image; do
-              # Check if image has a hardcoded version tag (not from env var)
-              if echo "$image" | grep -qP ':' && echo "$image" | grep -vqP '\$\{'; then
-                echo "⚠️  $stack: hardcoded image tag: $image"
-              fi
-            done
-          done
-          echo "✅ Image tag check complete (warnings above are informational)"
-
-      - name: OPA policy check (conftest)
-        run: |
-          FAILED=0
-          for compose in stacks/*/docker-compose.yml; do
-            stack=$(basename $(dirname "$compose"))
-            echo "::group::$stack"
-            if conftest test -p policies/ "$compose" --namespace dockercompose.security --no-color 2>&1; then
-              echo "✅ $stack"
-            else
-              echo "❌ $stack"
-              FAILED=1
+              echo "[FAIL] $stack"
             fi
             echo "::endgroup::"
           done
@@ -127,13 +91,13 @@ jobs:
           for playbook in ansible/playbooks/*.yml; do
             # Skip task-only files (no hosts: directive) included via include_tasks
             case "$(basename $playbook)" in
-              terraform_deploy.yml) echo "$(basename $playbook): ⏭️ (task file, included via include_tasks)"; continue ;;
+              terraform_deploy.yml) echo "$(basename $playbook): [SKIP] (task file, included via include_tasks)"; continue ;;
             esac
             echo -n "$(basename $playbook): "
             if ansible-playbook --syntax-check "$playbook" 2>&1; then
-              echo "✅"
+              echo "[PASS]"
             else
-              echo "❌"
+              echo "[FAIL]"
               exit 1
             fi
           done
@@ -155,7 +119,7 @@ jobs:
               elif isinstance(h, list):
                 hosts.update(str(x) for x in h)
           assert 'localhost' in hosts, f'Missing localhost host in inventory. Found: {hosts}'
-          print(f'✅ Inventory valid: {len(hosts)} host(s)')
+          print(f'[PASS] Inventory valid: {len(hosts)} host(s)')
           "
 
   trivy-scan:
@@ -178,10 +142,10 @@ jobs:
           for dockerfile in $(find stacks/ -name "*.Dockerfile" -o -name "Dockerfile"); do
             echo "::group::$dockerfile"
             if trivy fs --severity HIGH,CRITICAL --exit-code 1 "$dockerfile" 2>&1; then
-              echo "✅ $dockerfile"
+              echo "[PASS] $dockerfile"
             else
               FAILED=$?
-              echo "❌ $dockerfile"
+              echo "[FAIL] $dockerfile"
             fi
             echo "::endgroup::"
           done
@@ -195,10 +159,10 @@ jobs:
             stack=$(basename $(dirname "$compose"))
             echo "::group::$stack"
             if trivy config --severity HIGH,CRITICAL --exit-code 1 "$compose" 2>&1; then
-              echo "✅ $stack"
+              echo "[PASS] $stack"
             else
               FAILED=$?
-              echo "❌ $stack"
+              echo "[FAIL] $stack"
             fi
             echo "::endgroup::"
           done

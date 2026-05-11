@@ -1,3 +1,4 @@
+---
 services:
   socket-proxy:
     image: tecnativa/docker-socket-proxy:${SOCKET_PROXY_VERSION}
@@ -18,7 +19,7 @@ services:
       start_period: 15s
 
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro # Mount the real socket read-only
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # Mount the real socket read-only
     environment:
       - LOG_LEVEL=info
       - CONTAINERS=1
@@ -75,8 +76,8 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.endpoint=tcp://socket-proxy:2375"
-      #- "--providers.file.directory=/etc/traefik/dynamic"
-      #- "--providers.file.watch=true"
+      # - "--providers.file.directory=/etc/traefik/dynamic"
+      # - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
@@ -115,7 +116,7 @@ services:
     volumes:
       # - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${DATA_BASE_PATH}/proxy/letsencrypt:/letsencrypt
-      #- ./traefik-config/dynamic:/etc/traefik/dynamic:ro
+      # - ./traefik-config/dynamic:/etc/traefik/dynamic:ro
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -185,7 +186,7 @@ services:
 
     networks:
       - traefik_net
-      - backend_net # Connect oauth2-proxy to the backend network
+      - backend_net  # Connect oauth2-proxy to the backend network
     # No Docker healthcheck: distroless image has no shell or wget.
     # Container is verified via Ansible health check (running status).
     environment:
@@ -211,7 +212,7 @@ services:
       - OAUTH2_PROXY_COOKIE_SECURE=true
       - OAUTH2_PROXY_COOKIE_SAMESITE=strict
       - OAUTH2_PROXY_COOKIE_DOMAIN=.${DOMAIN_NAME}
-      #- OAUTH2_PROXY_REDIRECT_URL=https://traefik.${DOMAIN_NAME}/oauth2/callback
+      # - OAUTH2_PROXY_REDIRECT_URL=https://traefik.${DOMAIN_NAME}/oauth2/callback
       # This bypasses the public DNS lookup for server-to-server communication.
       - OAUTH2_PROXY_REDEEM_URL=http://iam-keycloak:8080/realms/company-realm/protocol/openid-connect/token
       - OAUTH2_PROXY_OIDC_JWKS_URL=http://iam-keycloak:8080/realms/company-realm/protocol/openid-connect/certs

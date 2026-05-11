@@ -1,3 +1,4 @@
+---
 # Tempo configuration — local mode for self-hosted tracing
 # Receives OTLP traces from Traefik and stores them locally.
 # Traces are queried via Grafana (no Jaeger UI needed).

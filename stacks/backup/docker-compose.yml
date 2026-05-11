@@ -1,3 +1,4 @@
+---
 services:
   backup-restic:
     image: restic/restic:${RESTIC_VERSION}

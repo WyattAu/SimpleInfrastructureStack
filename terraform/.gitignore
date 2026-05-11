@@ -13,4 +13,3 @@
 # Plan files (binary, environment-specific)
 *.tfplan
 tfplan*
-

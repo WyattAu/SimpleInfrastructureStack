@@ -75,8 +75,8 @@ services:
       # official documentation prefer USER_UID and USER_GID https://forgejo.org/docs/v1.21/admin/installation-docker/
       - USER_UID=${PUID}
       - USER_GID=${PGID}
-      #- PUID=${PUID}
-      #- PGID=${PGID}
+      # - PUID=${PUID}
+      # - PGID=${PGID}
       - TZ=${TZ}
 
       # --- Database Settings ---
@@ -104,7 +104,7 @@ services:
       - FORGEJO__oauth2_client__keycloak__AUTO_DISCOVER_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/.well-known/openid-configuration
 
       # --- UI/Service Settings ---
-      #- FORGEJO__service__DISABLE_REGISTRATION=false
+      # - FORGEJO__service__DISABLE_REGISTRATION=false
       - FORGEJO__service__SHOW_REGISTRATION_BUTTON=false
 
       # --- Email Settings ---
@@ -118,7 +118,7 @@ services:
       - FORGEJO__actions__ENABLED=true
       - FORGEJO__container__ENABLE=true
       - FORGEJO__container__REGISTRY_HOST=${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}
-    #- FORGEJO__metrics__ENABLED=true
+    # - FORGEJO__metrics__ENABLED=true
     networks:
       - traefik_net
       - backend_net
@@ -149,7 +149,7 @@ services:
       - "traefik.http.routers.forgejo-registry.tls.certresolver=cloudflare"
       - "traefik.http.routers.forgejo-registry.service=forgejo-svc"
     healthcheck:
-      #test: ["CMD-SHELL", "su-exec git /usr/local/bin/forgejo doctor check-database"]
+      # test: ["CMD-SHELL", "su-exec git /usr/local/bin/forgejo doctor check-database"]
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/ || exit 1"]
       interval: 60s
       timeout: 15s

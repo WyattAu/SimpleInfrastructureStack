@@ -49,7 +49,8 @@ You MUST have these to recover:
 
 The deploy pipeline includes automatic rollback. If Ansible fails, it resets to the previous commit and redeploys.
 
-### Manual recovery:
+### Manual recovery
+
 ```bash
 # SSH to server
 ssh truenas_admin@192.168.1.3
@@ -76,7 +77,8 @@ curl -X POST https://deploy.wyattau.com/hooks/deploy \
 
 Use Restic to restore specific files or entire directories from a snapshot.
 
-### List available snapshots:
+### List available snapshots
+
 ```bash
 # SSH to server, enter backup container
 ssh truenas_admin@192.168.1.3
@@ -87,14 +89,16 @@ restic -r /backup/repo snapshots
 restic -r /backup/repo snapshots --tag offsite  # B2 snapshots
 ```
 
-### Restore a specific file:
+### Restore a specific file
+
 ```bash
 sudo docker exec -it backup-restic sh
 restic -r /backup/repo restore latest --target /tmp/restore --include "/data/iam/keycloak/*"
 sudo cp /tmp/restore/data/iam/keycloak/<file> /mnt/pool_HDD_x2/tank/datasources/sis/appdata/iam/keycloak/
 ```
 
-### Restore an entire stack's data:
+### Restore an entire stack's data
+
 ```bash
 sudo docker exec -it backup-restic sh
 restic -r /backup/repo restore latest --target /tmp/restore --include "/data/collaboration/*"
@@ -102,7 +106,8 @@ sudo systemctl stop collaboration-*  # or docker compose down
 sudo cp -a /tmp/restore/data/collaboration/* /mnt/pool_HDD_x2/tank/datasources/sis/appdata/collaboration/
 ```
 
-### Restore from B2 (offsite):
+### Restore from B2 (offsite)
+
 ```bash
 sudo docker exec -it backup-restic sh
 export B2_ACCOUNT_ID="<from backup.env.encrypted>"
@@ -256,11 +261,12 @@ curl -sf https://grafana.wyattau.com/api/health && echo "Grafana: OK"
 The Terraform state is backed up in the Restic backup under `/terraform/`.
 After restoring application data, the state file should be at:
 
-```
+```text
 /mnt/pool_HDD_x2/infra/stacks/terraform/terraform.tfstate
 ```
 
 Verify:
+
 ```bash
 cd /mnt/pool_HDD_x2/infra/stacks/terraform
 /mnt/pool_HDD_x2/infra/bin/terraform init
@@ -288,6 +294,7 @@ cp -a /tmp/monitoring-restore/data/monitoring/* \
 If secrets are leaked or a container is compromised:
 
 ### 1. Rotate Cloudflare API token
+
 ```bash
 # Cloudflare Dashboard → My Profile → API Tokens → Create new token
 # Update secrets/proxy.env.encrypted
@@ -298,12 +305,14 @@ sops -e --input-type dotenv --output-type dotenv \
 ```
 
 ### 2. Rotate Keycloak client secrets
+
 ```bash
 # Keycloak Admin Console → Clients → <client> → Credentials → Regenerate
 # Update the relevant .env.encrypted file
 ```
 
 ### 3. Rotate Forgejo token
+
 ```bash
 sudo docker exec -u git operations-forgejo \
   gitea -c /data/gitea/conf/app.ini \
@@ -312,6 +321,7 @@ sudo docker exec -u git operations-forgejo \
 ```
 
 ### 4. Rotate database passwords
+
 ```bash
 # Connect to each PostgreSQL container and alter the user password
 sudo docker exec -it iam-postgres psql -U keycloak -d keycloak \
@@ -321,6 +331,7 @@ sudo docker exec -it iam-postgres psql -U keycloak -d keycloak \
 ```
 
 ### 5. Rotate webhook shared secret
+
 ```bash
 # Generate a new random secret
 openssl rand -hex 32
@@ -329,6 +340,7 @@ openssl rand -hex 32
 ```
 
 ### 6. Rotate age key (last resort)
+
 ```bash
 # This requires re-encrypting ALL secret files
 age-keygen -o ~/.config/sops/age/keys.txt
@@ -376,7 +388,7 @@ The backup system includes automated verification:
 | Restore test (single file) | Monthly (03:00, 1st of month) | `run-restore-test.sh` |
 | Offsite sync to B2 | Daily (after backup) | `run-backup.sh` |
 
-### Manual full restore test (recommended quarterly):
+### Manual full restore test (recommended quarterly)
 
 1. Spin up a test VM or TrueNAS instance
 2. Follow Scenario 3 (Full Server Recovery) using B2 as the source

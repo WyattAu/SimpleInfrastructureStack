@@ -40,7 +40,7 @@ Automated daily backups using [Restic](https://restic.net/) with local storage o
 
 ### Step 1: Create a B2 Bucket
 
-1. Go to https://secure.backblaze.com/b2_buckets.htm
+1. Go to <https://secure.backblaze.com/b2_buckets.htm>
 2. Click "Create a Bucket"
 3. Bucket name: `sis-infra-backup` (or any name you prefer)
 4. File Lifecycle Rules: Keep all versions (default)
@@ -48,7 +48,7 @@ Automated daily backups using [Restic](https://restic.net/) with local storage o
 
 ### Step 2: Create Application Keys
 
-1. Go to https://secure.backblaze.com/app_keys.htm
+1. Go to <https://secure.backblaze.com/app_keys.htm>
 2. Click "Add Application Key"
 3. Key Name: `sis-infra-restic`
 4. Allow access to Bucket(s): `sis-infra-backup`
@@ -103,27 +103,32 @@ You should see: `Syncing to offsite repository: s3:...` and `Offsite sync comple
 ## Manual Operations
 
 ### Check backup status
+
 ```bash
 sudo docker exec backup-restic restic snapshots
 sudo docker exec backup-restic restic stats --mode raw-data
 ```
 
 ### Restore a specific file
+
 ```bash
 sudo docker exec backup-restic restic restore latest --target /tmp/restore --include "/data/<path>"
 ```
 
 ### Restore everything (disaster recovery)
+
 ```bash
 sudo docker exec backup-restic restic restore latest --target /mnt/pool_HDD_x2/tank/datasources/sis/
 ```
 
 ### Force a backup now
+
 ```bash
 sudo docker exec backup-cron-trigger /scripts/run-backup.sh
 ```
 
 ### Check repository health
+
 ```bash
 sudo docker exec backup-restic restic check
 ```

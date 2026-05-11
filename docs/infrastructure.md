@@ -7,8 +7,8 @@ managed entirely from a single Git repository with automated CI/CD.
 
 ## Architecture Overview
 
-```
-                        Internet
+```text
+                         Internet
                            |
                     Cloudflare (WAF/DNS/TLS)
                            |
@@ -30,12 +30,14 @@ managed entirely from a single Git repository with automated CI/CD.
 ```
 
 **3-tier network architecture:**
+
 - `traefik_net` — ingress network. Only containers that serve HTTP/Traefik attach here.
 - `backend_net` — application network. Inter-service communication (exporters, metrics, internal APIs).
 - `data_net` — database network. PostgreSQL, MariaDB, Redis, Valkey instances only.
 
 **Deployment flow:**
-```
+
+```text
 GitHub push → validate.yml (CI) → webhook (POST) → deploy.sh
   → ansible-playbook site.yml
     → prepare (git sync + SOPS decrypt)
@@ -153,6 +155,7 @@ CNAME records: `ssh.wyattau.com` → `75ad59d3-...cfargotunnel.com`, `deploy.wya
 **SSO:** Keycloak (auth.wyattau.com, realm: `company-realm`) via OAuth2-Proxy forwardAuth middleware.
 
 Services behind Keycloak auth (middleware `keycloak-auth`):
+
 - Traefik dashboard (`traefik.wyattau.com`)
 - VictoriaMetrics (`prometheus.wyattau.com`)
 - Uptime Kuma (`kuma.wyattau.com`)
@@ -161,14 +164,17 @@ Services behind Keycloak auth (middleware `keycloak-auth`):
 - Homepage (`homepage.wyattau.com`)
 
 Services with their own auth (no Keycloak middleware):
+
 - Vaultwarden — Bitwarden clients cannot handle OAuth2 redirects
 - Immich — Mobile apps/CLI use native auth
 - Grafana — Uses Keycloak OIDC directly (not via forwardAuth)
 
 Public-facing (no auth required):
+
 - Element, Collabora, oCIS, FreshRSS, Paperless, Hookshot (rate-limited only)
 
 Keycloak OIDC clients (managed in Terraform):
+
 - `oauth2-proxy` — ForwardAuth for Traefik
 - `grafana` — Direct OIDC integration
 - `forgejo` — SSO login
@@ -190,12 +196,14 @@ blackbox-tcp (9 targets), blackbox-dns (4 targets).
 and forwards alerts to Alertmanager → ntfy.sh.
 
 **Recording rules (4 groups):**
+
 - `slo:availability` — 5m/30m/1h/6h/1d/3d/30d availability ratios
 - `slo:http_errors` — 5xx error ratios + request rate per Traefik service
 - `slo:container_health` — Container up ratio + down count
 - `slo:backup` — Backup age + compliance check
 
 **Alert rules (15 groups, 35+ alerts):**
+
 - `container_health` — ContainerOOMKilled, ContainerHighMemoryUsage, ContainerHighCPUUsage, ContainerRestartLoop, ContainerDown
 - `host_health` — HostHighMemoryUsage, HostHighDiskUsage, DataPoolHighDiskUsage, HostDiskInodesExhausted, HostHighCPUUsage, HostClockNotSynchronized, HostDiskIOErrors
 - `service_health` — TraefikHighErrorRate, TraefikRateLimitTriggered
@@ -218,6 +226,7 @@ and forwards alerts to Alertmanager → ntfy.sh.
 - `synthetic_monitoring` — SyntheticHTTPInternalFailure, SyntheticHTTPExternalFailure, SyntheticTCPFailure, SyntheticDNSFailure, SyntheticHTTPLatency
 
 **SLO targets:**
+
 - Critical (99.9%): traefik, keycloak
 - Important (99.5%): forgejo, grafana, victorialogs, synapse
 - HTTP errors (99.5% success rate): all Traefik services
@@ -225,6 +234,7 @@ and forwards alerts to Alertmanager → ntfy.sh.
 ### Grafana (monitoring-grafana)
 
 **Provisioned dashboards (10):**
+
 - `capacity-planning.json` — Resource capacity planning
 - `slo-overview.json` — SLO compliance + burn rates
 - `postgresql-overview.json` — PostgreSQL cluster health
@@ -257,18 +267,21 @@ and forwards alerts to Alertmanager → ntfy.sh.
 ## Security Measures
 
 ### Cloudflare Edge
+
 - **WAF:** Zone-level custom ruleset for geo-blocking
 - **Geo-blocking:** CN, RU, KP, IR, SY (exceptions: Matrix federation, OIDC discovery, ACME, Hookshot)
 - **TLS:** Cloudflare proxy (proxied=true) with DNS challenge certificate renewal
 - **DDoS:** Automatic DDoS protection via Cloudflare
 
 ### Application Security
+
 - **OAuth2-Proxy:** Keycloak forwardAuth middleware on protected services
 - **Rate limiting:** 100 req/s average, 50 burst (global-rate-limit middleware)
 - **CrowdSec:** Collaborative intrusion detection (detection-only, no active bouncer yet)
 - **Network segmentation:** data_net isolates databases from application containers
 
 ### Container Hardening
+
 - `no-new-privileges: true` on all containers (except Collabora, VPN)
 - `cap_drop: ALL` on all containers (46 services)
 - Healthchecks on 18 services with `depends_on: condition: service_healthy` where applicable
@@ -278,6 +291,7 @@ and forwards alerts to Alertmanager → ntfy.sh.
 - Log rotation: `max-size: 10m`, `max-file: 3` on all containers
 
 ### Secrets Management
+
 - All secrets encrypted with SOPS + age (single key)
 - Decrypted to `.secrets.tmp/` only during deploy, wiped after
 - `.forgejo_token` committed to git (non-sensitive admin token)
@@ -297,6 +311,7 @@ and forwards alerts to Alertmanager → ntfy.sh.
 | Backup scope | `/data` (app data) + `/terraform` (Terraform state) |
 
 ### Monitoring
+
 - `restic check` runs after every backup
 - Backup freshness exported as VictoriaMetrics metric (`sis_backup_last_success`)
 - Alert if no successful backup in 26 hours (`BackupStale`)
@@ -307,6 +322,7 @@ and forwards alerts to Alertmanager → ntfy.sh.
 ## Terraform IaC (68 resources)
 
 ### Cloudflare DNS (terraform/cloudflare.tf)
+
 - 20 A records (active services → 62.49.93.199)
 - 20 AAAA records (active services → 2a0a:ef40:1175:d801:6e4b:90ff:fe48:c063)
 - 2 CNAME records (ssh, deploy → Cloudflare Tunnel)
@@ -317,10 +333,12 @@ and forwards alerts to Alertmanager → ntfy.sh.
 - VPN record is DNS-only (not proxied) for WireGuard
 
 ### Keycloak Identity (terraform/keycloak.tf)
+
 - 3 OIDC clients: oauth2-proxy, grafana, forgejo
 - 4 users: wyatt, joshkad, ayo, viswa
 
 ### Forgejo Organization (terraform/forgejo.tf)
+
 - 6 organizations: QuestHive, BlocMarket, Rankhub, Aether, Deontic, Suture
 - 6 teams: Owners (one per org)
 - 7 team memberships
@@ -339,7 +357,7 @@ Runs on push to `main`/`feature/*` and PRs to `main`:
 
 ### Deploy Pipeline
 
-```
+```text
 GitHub push → webhook (POST to deploy.wyattau.com)
   → deploy.sh → ansible-playbook ansible/playbooks/site.yml
     → prepare:       git sync + SOPS decrypt to .secrets.tmp/
@@ -490,15 +508,17 @@ For any secret rotation:
 
 1. **Generate new value** (via admin UI, CLI command, or `openssl rand -hex 32`)
 2. **Update the SOPS-encrypted file:**
+
    ```bash
    sops -d --input-type dotenv --output-type dotenv secrets/<stack>.env.encrypted > /tmp/<stack>.env
    # Edit the value
    nano /tmp/<stack>.env
    sops -e --input-type dotenv --output-type dotenv /tmp/<stack>.env > secrets/<stack>.env.encrypted
-   rm /tmp/<stack>.env
-   ```
-3. **Commit and push** — deploy pipeline will use the new value on next deploy
-4. **Verify** — check the service still works after deploy
+    rm /tmp/<stack>.env
+    ```
+
+3. **Commit and push** -- deploy pipeline will use the new value on next deploy
+4. **Verify** -- check the service still works after deploy
 
 ### Age Key Rotation (Emergency Only)
 
@@ -507,11 +527,13 @@ If the age key is compromised, ALL secrets must be re-encrypted:
 1. Generate new key: `age-keygen -o ~/.config/sops/age/keys.txt`
 2. Copy new public key to `.sops.yaml`
 3. Re-encrypt all secret files:
+
    ```bash
    for f in secrets/*.env.encrypted; do
      sops updatekeys -y "$f"
    done
    ```
+
 4. Copy new key to server: `sudo cp ~/.config/sops/age/keys.txt /root/.config/sops/age/keys.txt`
 5. Test decryption: `sops -d secrets/proxy.env.encrypted`
 

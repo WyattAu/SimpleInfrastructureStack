@@ -1,3 +1,4 @@
+---
 services:
   calibre-web:
     image: lscr.io/linuxserver/calibre-web:${CALIBRE_WEB_VERSION}

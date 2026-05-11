@@ -41,7 +41,7 @@ services:
     # command: ["-c", "ocis init || true; exec ocis server"]
     command: ["-c", "if [ ! -f /etc/ocis/ocis.yaml ]; then ocis init; fi; exec ocis server"]
     environment:
-      #- TZ=${TZ}
+      # - TZ=${TZ}
       # Expose internal services to external collaboration container:
       # NATS: service registry (default 127.0.0.1, needs 0.0.0.0 for cross-container)
       NATS_NATS_HOST: "0.0.0.0"
@@ -64,7 +64,7 @@ services:
       OCIS_URL: https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
       OCIS_LOG_LEVEL: ${OCIS_LOG_LEVEL:-info}
       OCIS_LOG_COLOR: ${OCIS_LOG_COLOR:-true}
-      PROXY_TLS: "false" # do not use SSL between Traefik and oCIS
+      PROXY_TLS: "false"  # do not use SSL between Traefik and oCIS
       PROXY_USER_OIDC_CLAIM: "preferred_username"
       PROXY_USER_CS3_CLAIM: "username"
       # INSECURE: needed if oCIS / Traefik is using self generated certificates

@@ -1,3 +1,4 @@
+---
 groups:
   # Filters applied to container alerts:
   #   image != "" — excludes host system cgroups (systemd, ssh, cron etc.)

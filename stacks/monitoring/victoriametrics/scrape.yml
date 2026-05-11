@@ -1,3 +1,4 @@
+---
 # VictoriaMetrics scrape configuration.
 # Format is identical to Prometheus scrape_configs.
 # VictoriaMetrics uses -promscrape.config flag to load this file.
@@ -146,7 +147,7 @@ scrape_configs:
     static_configs:
       - targets:
           - http://iam-keycloak:8080/health/ready       # Keycloak health
-          - http://iam-keycloak:8080/realms/company-realm # Keycloak realm
+          - http://iam-keycloak:8080/realms/company-realm  # Keycloak realm
           - http://operations-forgejo:3000/               # Forgejo web UI
           - http://monitoring-grafana:3000/api/health    # Grafana health
           - http://monitoring-kuma:3001/                  # Uptime Kuma
@@ -209,7 +210,7 @@ scrape_configs:
           - rss-postgres:5432            # FreshRSS PostgreSQL
           - photos-postgres:5432         # Immich PostgreSQL
           - documents-postgres:5432      # Paperless PostgreSQL
-          - project-management-postgres:5432 # Taiga PostgreSQL
+          - project-management-postgres:5432  # Taiga PostgreSQL
           - photos-valkey:6379           # Immich Valkey
           - documents-redis:6379         # Paperless Redis
           - monitoring-victorialogs:9428     # VictoriaLogs
@@ -226,6 +227,6 @@ scrape_configs:
       - target_label: __address__
         replacement: monitoring-blackbox-exporter:9115
 
-  # DNS probes removed — blackbox dns_query module uses the target as the
-  # DNS server to query (not the hostname to resolve). Docker DNS health
-  # is already implicitly verified by all HTTP/TCP probes resolving names.
+        # DNS probes removed — blackbox dns_query module uses the target as the
+        # DNS server to query (not the hostname to resolve). Docker DNS health
+        # is already implicitly verified by all HTTP/TCP probes resolving names.
