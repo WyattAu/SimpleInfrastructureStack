@@ -65,11 +65,11 @@ jobs:
             -d "$PAYLOAD")
 
           if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "204" ]; then
-            echo "✅ Webhook accepted (HTTP $HTTP_CODE)"
+            echo "[PASS] Webhook accepted (HTTP $HTTP_CODE)"
           elif [ "$HTTP_CODE" = "403" ]; then
-            echo "❌ HMAC signature mismatch (HTTP 403)"
+            echo "[FAIL] HMAC signature mismatch (HTTP 403)"
             exit 1
           else
-            echo "❌ Webhook error (HTTP $HTTP_CODE)"
+            echo "[FAIL] Webhook error (HTTP $HTTP_CODE)"
             exit 1
           fi

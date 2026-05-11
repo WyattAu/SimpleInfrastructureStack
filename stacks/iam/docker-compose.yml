@@ -1,3 +1,4 @@
+---
 services:
   postgres-iam:
     image: postgres:${POSTGRES_VERSION}
@@ -51,11 +52,11 @@ services:
       - ALL
 
     command: ["start"]
-    #entrypoint: ["/bin/sh", "/opt/keycloak/bin/docker-entrypoint-override.sh"]
+    # entrypoint: ["/bin/sh", "/opt/keycloak/bin/docker-entrypoint-override.sh"]
     depends_on:
       postgres-iam:
         condition: service_healthy
-    #volumes:
+    # volumes:
     #  - ./config/keycloak/docker-entrypoint-override.sh:/opt/keycloak/bin/docker-entrypoint-override.sh
     #  - ./config/keycloak/company-realm.dist.json:/opt/keycloak/data/import/company-realm.json
     environment:

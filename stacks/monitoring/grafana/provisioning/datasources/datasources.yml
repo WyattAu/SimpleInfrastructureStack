@@ -44,7 +44,7 @@ datasources:
       tracesToLogs:
         datasourceUid: P8E80F9AEF21F6940
         tags: ['job', 'instance', 'pod']
-        mappedTags: [{ key: 'service.name', value: 'service' }]
+        mappedTags: [{key: 'service.name', value: 'service'}]
         mapTagNamesEnabled: true
         spanStartTimeShift: '-1m'
         spanEndTimeShift: '1m'

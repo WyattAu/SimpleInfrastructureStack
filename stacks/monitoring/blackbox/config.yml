@@ -58,10 +58,10 @@ modules:
       query_name: "localhost"
       query_type: "A"
 
-  # ICMP probe — verify host is reachable (requires privileged mode)
-  # NOTE: Disabled by default. Requires --cap-add=NET_RAW on the container.
-  # icmp:
-  #   prober: icmp
-  #   timeout: 5s
-  #   icmp:
-  #     preferred_ip_protocol: ip4
+      # ICMP probe — verify host is reachable (requires privileged mode)
+      # NOTE: Disabled by default. Requires --cap-add=NET_RAW on the container.
+      # icmp:
+      #   prober: icmp
+      #   timeout: 5s
+      #   icmp:
+      #     preferred_ip_protocol: ip4

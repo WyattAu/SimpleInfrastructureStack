@@ -1,3 +1,4 @@
+---
 services:
   mariadb-akaunting:
     image: mariadb:${MARIADB_AKAUNTING_VERSION}

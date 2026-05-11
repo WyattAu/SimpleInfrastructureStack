@@ -1,3 +1,4 @@
+---
 directives:
   child-src:
     - '''self'''

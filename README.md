@@ -4,7 +4,7 @@ Self-hosted infrastructure stack running on TrueNAS SCALE with defense-in-depth 
 
 ## Architecture
 
-```
+```text
 GitHub (push to main)
   │
   ▼
@@ -24,7 +24,7 @@ Webhook (Cloudflare Tunnel) ──▶ TrueNAS SCALE
 
 ### Runtime Architecture
 
-```
+```text
 Internet
   │
   ▼
@@ -162,6 +162,7 @@ Security policies in `policies/docker-compose/security.rego` enforce:
 - OOM kill events (VictoriaLogs)
 
 Alerts route to ntfy.sh topics:
+
 - **Warning**: `https://ntfy.sh/wyattau-infra-0e92568ce5d04343c3b796ed558a04b9`
 - **Critical**: `https://ntfy.sh/wyattau-infra-0e92568ce5d04343c3b796ed558a04b9-critical`
 

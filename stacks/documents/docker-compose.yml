@@ -1,3 +1,4 @@
+---
 services:
   paperless-db-init:
     image: busybox:1.37.0

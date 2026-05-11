@@ -29,7 +29,7 @@ install-hooks:
 
 format:
 	@echo -e "$(GREEN)--> Manually formatting all supported files...$(NC)"
-	@pre-commit run prettier --all-files
+	@pre-commit run end-of-file-fixer trailing-whitespace --all-files
 
 
 lint check:
