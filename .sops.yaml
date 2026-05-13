@@ -1,8 +1,16 @@
 ---
 keys:
   - &admin_age age13kqew6kglat9hlswcstcxpdtvfh8v7pckr0wt3qvqkn7u2cj3e6qnm03uc
+  # RECOVERY KEY: Add a second age key here for redundancy.
+  # Generate with: age-keygen
+  # Store the private key offline (physical safe, password manager).
+  # If the admin key is lost, this key can still decrypt all secrets.
+  # Uncomment and replace the placeholder below:
+  # - &recovery_age age1XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 creation_rules:
   - path_regex: ^secrets/.*\.env\.encrypted$
     key_groups:
       - age:
           - *admin_age
+          # Uncomment when recovery key is added:
+          # - *recovery_age

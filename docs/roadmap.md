@@ -350,6 +350,8 @@ accumulate silently.
 
 ## Completed (This Audit)
 
+### Initial Audit (Commit 463c9b4)
+
 - [x] All pre-commit hooks pass (trailing-whitespace, end-of-file-fixer, check-yaml, check-json, check-merge-conflict, check-added-large-files, markdownlint-cli2, yamllint)
 - [x] All 19 Docker Compose stacks validate with `docker compose config`
 - [x] All 6 Ansible playbooks pass syntax check
@@ -357,6 +359,30 @@ accumulate silently.
 - [x] 30 YAML files updated with document-start markers
 - [x] yamllint errors and warnings resolved
 - [x] Webhook compose volume spec fixed
+- [x] CI workflow emojis replaced with text labels
+- [x] Dead prettier hook reference removed
+- [x] Makefile format target fixed
+
+### Roadmap Implementation (Commit 5ee9521+)
+
+- [x] P0-1: Fix compose validation exit code bug in validate.yml
+- [x] P0-2: Document Cloudflare WAF geo-blocking as disabled, add SECURITY NOTE
+- [x] P0-3: Add recovery key placeholder and documentation to .sops.yaml
+- [x] P0-4: Fix DR runbook Restic path (/backup/repo -> /restic-repo)
+- [x] P0-5: Add conftest OPA policy check step to CI
+- [x] P1-6: Add cap_drop: ALL to socket-proxy and forgejo-runner
+- [x] P1-7: Add pre-backup pg_dump for all 6 PostgreSQL instances
+- [x] P1-8: Add Terraform fmt/init/validate job to CI
+- [x] P1-9: Add gitleaks secret scanning job to CI
+- [x] P1-10: Add ansible-lint job to CI
+- [x] P1-11: Add shellcheck job to CI
+- [x] P1-12: Add SARIF upload for Trivy vulnerability scans
+- [x] P1-13: Fix SMTP provider discrepancy (terraform defaults now match runbook)
+- [x] P2-15: Log-based alerting already exists (Keycloak, Synapse, Traefik, OOM)
+- [x] P2-16: Add backup size metric (sis_backup_size_bytes) and alert
+- [x] P2-17: Add dump file verification to monthly restore test
+- [x] P2-20: Add no-new-privileges:true to WireGuard VPN
+- [x] P3-30: Add CODEOWNERS file
 - [x] CI workflow emojis replaced with text labels
 - [x] Dead prettier hook reference removed
 - [x] Makefile format target fixed

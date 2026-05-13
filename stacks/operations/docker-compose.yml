@@ -175,8 +175,10 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    # NOTE: No cap_drop: ALL — runner needs access to host Docker socket
-    # via group_add: docker (GID 999). Capabilities are minimal by default.
+    cap_drop:
+      - ALL
+    # NOTE: Runner needs access to host Docker socket via group_add: docker (GID 999).
+    # All other capabilities are dropped; the socket access is via filesystem group, not capability.
     user: "1001:1001"
     group_add:
       - "999"  # docker group for host socket access

@@ -712,3 +712,20 @@ groups:
           description: >-
             CrowdSec has issued {{ $value }} SSH-related bans in the last hour.
             This indicates an active brute force attack against SSH services.
+
+  - name: backup_health
+    interval: 60s
+    rules:
+      - alert: BackupSizeDrop
+        expr: |
+          (sis_backup_size_bytes < 10737418240)
+          and (sis_backup_last_success > 0)
+        for: 2h
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backup size dropped below 10GB"
+          description: >-
+            The last successful backup was only {{ $value | humanize1024 }}.
+            Previous backups were approximately 30GB. This may indicate data loss
+            or a significant reduction in stored data.

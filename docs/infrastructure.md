@@ -268,8 +268,8 @@ and forwards alerts to Alertmanager → ntfy.sh.
 
 ### Cloudflare Edge
 
-- **WAF:** Zone-level custom ruleset for geo-blocking
-- **Geo-blocking:** CN, RU, KP, IR, SY (exceptions: Matrix federation, OIDC discovery, ACME, Hookshot)
+- **WAF:** Geo-blocking ruleset defined in `terraform/cloudflare.tf` but currently **disabled** (API token lacks Zone Rulesets permission)
+- **Geo-blocking (planned):** CN, RU, KP, IR, SY (exceptions: Matrix federation, OIDC discovery, ACME, Hookshot)
 - **TLS:** Cloudflare proxy (proxied=true) with DNS challenge certificate renewal
 - **DDoS:** Automatic DDoS protection via Cloudflare
 

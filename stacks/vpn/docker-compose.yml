@@ -4,7 +4,10 @@ services:
     image: linuxserver/wireguard:${WIREGUARD_VERSION}
     container_name: vpn-wireguard
     restart: unless-stopped
-    network_mode: host
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     cap_add:
       - NET_ADMIN
       - SYS_MODULE

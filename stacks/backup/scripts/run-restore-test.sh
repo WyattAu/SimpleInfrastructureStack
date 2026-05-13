@@ -21,12 +21,12 @@ FAIL=0
 
 pass() {
     PASS=$((PASS + 1))
-    RESULTS="${RESULTS}✅ $1\n"
+    RESULTS="${RESULTS}[PASS] $1\n"
 }
 
 fail() {
     FAIL=$((FAIL + 1))
-    RESULTS="${RESULTS}❌ $1\n"
+    RESULTS="${RESULTS}[FAIL] $1\n"
 }
 
 cleanup() {
@@ -48,26 +48,47 @@ docker exec backup-restic sh -c "
 # Step 2: Validate database directories contain files
 echo "[$(date -Iseconds)] Validating database directories..."
 
-for db_dir in \
-    "${RESTORE_DIR}/data/operations/postgres-forgejo" \
-    "${RESTORE_DIR}/data/collaboration/postgres" \
-    "${RESTORE_DIR}/data/iam/postgres" \
-    "${RESTORE_DIR}/data/accounting/mariadb-akaunting" \
-    "${RESTORE_DIR}/data/rss/postgres" \
-    "${RESTORE_DIR}/data/photos/db" \
-    "${RESTORE_DIR}/data/documents/postgres"; do
+for db_entry in \
+    "operations/postgres-forgejo:iam-postgres-forgejo:forgejo" \
+    "collaboration/postgres:collaboration-postgres:synapse" \
+    "iam/postgres:iam-postgres:keycloak" \
+    "rss/postgres:rss-postgres:freshrss" \
+    "photos/db:photos-postgres:immich" \
+    "documents/postgres:documents-postgres:paperless"; do
+
+    db_dir="${RESTORE_DIR}/data/${db_entry%%:*}"
+    db_container="${db_entry#*:}"
+    db_name="${db_entry##*:}"
 
     if [ -d "${db_dir}" ]; then
         file_count=$(docker exec backup-restic find "${db_dir}" -type f | wc -l)
         if [ "$file_count" -gt 0 ]; then
-            pass "Database $(basename $(dirname "${db_dir}"))/$(basename "${db_dir}"): ${file_count} files"
+            # Check for PostgreSQL backup dump files (FC format from pg_dump)
+            if docker exec backup-restic test -f "${RESTORE_DIR}/tmp/pg-dumps/${db_name}.dump" 2>/dev/null; then
+                pass "Database ${db_name}: ${file_count} data files + dump verified"
+            else
+                pass "Database ${db_name}: ${file_count} files"
+            fi
         else
-            fail "Database $(basename $(dirname "${db_dir}"))/$(basename "${db_dir}"): EMPTY (0 files)"
+            fail "Database ${db_name}: EMPTY (0 files)"
         fi
     else
-        fail "Database directory missing: ${db_dir}"
+        fail "Database directory missing: ${db_name} at ${db_dir}"
     fi
 done
+
+# Validate MariaDB directory separately
+MARIADB_DIR="${RESTORE_DIR}/data/accounting/mariadb-akaunting"
+if [ -d "${MARIADB_DIR}" ]; then
+    mariadb_count=$(docker exec backup-restic find "${MARIADB_DIR}" -type f | wc -l)
+    if [ "$mariadb_count" -gt 0 ]; then
+        pass "MariaDB akaunting: ${mariadb_count} files"
+    else
+        fail "MariaDB akaunting: EMPTY (0 files)"
+    fi
+else
+    fail "MariaDB directory missing: ${MARIADB_DIR}"
+fi
 
 # Step 3: Validate key configuration files exist and are non-empty
 echo "[$(date -Iseconds)] Validating configuration files..."
@@ -153,15 +174,13 @@ echo "=========================================="
 # Send ntfy notification
 if [ -n "${NTFY_TOPIC}" ]; then
     if [ "$FAIL" -eq 0 ]; then
-        curl -s -H "Title: ✅ Backup Restore Test PASSED" \
+        curl -s -H "Title: Backup Restore Test PASSED" \
              -H "Priority: default" \
-             -H "Tags: white_check_mark" \
              -d "All ${PASS} checks passed. Snapshot: ${SNAPSHOT_DATE}" \
              "https://ntfy.sh/${NTFY_TOPIC}" > /dev/null 2>&1 || true
     else
-        curl -s -H "Title: ❌ Backup Restore Test FAILED" \
+        curl -s -H "Title: Backup Restore Test FAILED" \
              -H "Priority: high" \
-             -H "Tags: x" \
              -d "${FAIL}/${PASS} checks failed. See deploy log for details." \
              "https://ntfy.sh/${NTFY_TOPIC}" > /dev/null 2>&1 || true
     fi

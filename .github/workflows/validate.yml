@@ -65,6 +65,23 @@ jobs:
               echo "[PASS] $stack"
             else
               echo "[FAIL] $stack"
+              FAILED=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $FAILED
+
+      - name: OPA policy check (conftest)
+        run: |
+          FAILED=0
+          for compose in stacks/*/docker-compose.yml; do
+            stack=$(basename $(dirname "$compose"))
+            echo "::group::$stack"
+            if conftest test -p policies/ "$compose" --namespace dockercompose.security --no-color 2>&1; then
+              echo "[PASS] $stack"
+            else
+              echo "[FAIL] $stack"
+              FAILED=1
             fi
             echo "::endgroup::"
           done
@@ -167,3 +184,87 @@ jobs:
             echo "::endgroup::"
           done
           exit $FAILED
+
+  terraform-validate:
+    name: Terraform Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ">= 1.5.0"
+
+      - name: Terraform fmt check
+        run: terraform fmt -check -recursive
+        working-directory: terraform
+
+      - name: Terraform init
+        run: terraform init -backend=false -input=false
+        working-directory: terraform
+
+      - name: Terraform validate
+        run: terraform validate
+        working-directory: terraform
+
+  secret-scan:
+    name: Secret Scanning (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  shellcheck:
+    name: Shell Script Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update -qq && sudo apt-get install -yqq shellcheck
+
+      - name: Lint shell scripts
+        run: |
+          FAILED=0
+          for script in $(find stacks/ scripts/ -name "*.sh" -type f); do
+            echo "::group::$script"
+            if shellcheck --severity=warning "$script" 2>&1; then
+              echo "[PASS] $script"
+            else
+              echo "[FAIL] $script"
+              FAILED=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $FAILED
+
+  ansible-lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    needs: [ansible-check]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ansible-lint
+        run: pip install ansible-lint
+
+      - name: Run ansible-lint
+        env:
+          ANSIBLE_ROLES_PATH: ansible/roles
+          ANSIBLE_CONFIG: $PWD/ansible/ansible.cfg
+        run: |
+          ansible-lint ansible/playbooks/ ansible/roles/ \
+            --exclude ansible/roles/prepare/tasks/decrypt.yml \
+            --skip-list role-name,no-changed-when,command-instead-of-shell \
+            || true

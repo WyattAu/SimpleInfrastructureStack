@@ -85,15 +85,15 @@ ssh truenas_admin@192.168.1.3
 sudo docker exec -it backup-restic sh
 
 # List snapshots
-restic -r /backup/repo snapshots
-restic -r /backup/repo snapshots --tag offsite  # B2 snapshots
+restic -r /restic-repo snapshots
+restic -r /restic-repo snapshots --tag offsite  # B2 snapshots
 ```
 
 ### Restore a specific file
 
 ```bash
 sudo docker exec -it backup-restic sh
-restic -r /backup/repo restore latest --target /tmp/restore --include "/data/iam/keycloak/*"
+restic -r /restic-repo restore latest --target /tmp/restore --include "/data/iam/keycloak/*"
 sudo cp /tmp/restore/data/iam/keycloak/<file> /mnt/pool_HDD_x2/tank/datasources/sis/appdata/iam/keycloak/
 ```
 
@@ -101,7 +101,7 @@ sudo cp /tmp/restore/data/iam/keycloak/<file> /mnt/pool_HDD_x2/tank/datasources/
 
 ```bash
 sudo docker exec -it backup-restic sh
-restic -r /backup/repo restore latest --target /tmp/restore --include "/data/collaboration/*"
+restic -r /restic-repo restore latest --target /tmp/restore --include "/data/collaboration/*"
 sudo systemctl stop collaboration-*  # or docker compose down
 sudo cp -a /tmp/restore/data/collaboration/* /mnt/pool_HDD_x2/tank/datasources/sis/appdata/collaboration/
 ```

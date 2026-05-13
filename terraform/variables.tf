@@ -60,13 +60,13 @@ variable "kc_realm" {
 variable "kc_smtp_host" {
   description = "SMTP server hostname"
   type        = string
-  default     = "smtp.protonmail.ch"
+  default     = "mail.smtp2go.com"
 }
 
 variable "kc_smtp_port" {
   description = "SMTP server port"
   type        = number
-  default     = 587
+  default     = 2525
 }
 
 variable "kc_smtp_user" {
