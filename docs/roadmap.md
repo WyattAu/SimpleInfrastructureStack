@@ -393,6 +393,9 @@ accumulate silently.
 - [x] P3-29: Restrict Renovate auto-merge to vetted image allowlist
 - [x] P3-30: Add CODEOWNERS file
 - [x] P3-31: Add markdown-link-check job to validate.yml
+- [x] P2-14: Add ZFS pool metrics (textfile collector script + alert rules)
+- [x] P3-24: Add Terraform remote state backend configuration (backend.tf with S3/TFC/git options)
+- [x] P3-25: Configure Keycloak dedicated service account (terraform-cli) in provider
 - [x] CI workflow emojis replaced with text labels
 - [x] Dead prettier hook reference removed
 - [x] Makefile format target fixed

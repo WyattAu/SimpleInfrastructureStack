@@ -1,13 +1,32 @@
 # ===================================================================
 # Phase B: Keycloak Provider
 # ===================================================================
+# Uses a dedicated service account (terraform-sa) with minimal permissions
+# instead of the admin user. This limits blast radius if the account is
+# compromised.
+#
+# Setup (one-time, via Keycloak admin console):
+#   1. Create client "terraform-cli" in realm "master":
+#      - Client ID: terraform-cli
+#      - Client authenticator type: client-id-secret
+#      - Service accounts roles: toggle ON
+#   2. Assign realm-management roles to the service account:
+#      - realm-management > manage-users (view/manage users)
+#      - realm-management > manage-clients (view/manage OIDC clients)
+#      - realm-management > view-realm (read realm config)
+#   3. Copy the client secret and set:
+#      export TF_VAR_kc_sa_client_secret="<client-secret>"
+#
+# Until the service account is created, the provider falls back to
+# admin-cli auth using TF_VAR_kc_admin_password.
+# ===================================================================
 
 provider "keycloak" {
-  url             = var.kc_base_url
-  realm           = "master"
-  client_id       = "admin-cli"
-  username        = var.kc_admin_username
-  password        = var.kc_admin_password
+  url       = var.kc_base_url
+  realm     = "master"
+  client_id = var.kc_sa_client_id
+  username  = ""
+  password  = var.kc_sa_client_secret
 }
 
 # ===================================================================
