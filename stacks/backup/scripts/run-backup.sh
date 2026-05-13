@@ -31,6 +31,33 @@ docker exec backup-restic restic unlock --remove-all 2>/dev/null || true
 docker exec backup-restic restic snapshots 2>/dev/null || \
   docker exec backup-restic restic init
 
+# Pre-backup: dump PostgreSQL databases for consistent backups
+# Raw file copies of PG data directories can be corrupted if the DB is mid-write.
+echo "[$(date -Iseconds)] Dumping PostgreSQL databases for consistent backup..."
+DUMP_DIR="/tmp/pg-dumps"
+docker exec backup-restic mkdir -p "${DUMP_DIR}"
+
+# PostgreSQL instances and their dump targets
+# Format: "container_name:database_name"
+PG_DUMPS="iam-postgres:keycloak operations-postgres-forgejo:forgejo collaboration-postgres:synapse rss-postgres:freshrss photos-postgres:immich documents-postgres:paperless"
+
+for pg_entry in ${PG_DUMPS}; do
+  PG_CONTAINER="${pg_entry%%:*}"
+  PG_DATABASE="${pg_entry##*:}"
+  DUMP_FILE="${DUMP_DIR}/${PG_DATABASE}.dump"
+
+  if docker exec "${PG_CONTAINER}" pg_isready -U postgres --quiet 2>/dev/null; then
+    echo "  Dumping ${PG_DATABASE} from ${PG_CONTAINER}..."
+    docker exec "${PG_CONTAINER}" pg_dump -U postgres -Fc "${PG_DATABASE}" > /tmp/"${PG_DATABASE}".dump 2>/dev/null && \
+      docker cp /tmp/"${PG_DATABASE}".dump "backup-restic:${DUMP_FILE}" && \
+      rm -f /tmp/"${PG_DATABASE}".dump
+  else
+    echo "  WARNING: ${PG_CONTAINER} is not ready, skipping ${PG_DATABASE} dump"
+  fi
+done
+
+echo "[$(date -Iseconds)] PostgreSQL dumps complete."
+
 # Create backup
 docker exec backup-restic restic backup \
   /data \
@@ -51,6 +78,10 @@ docker exec backup-restic restic forget \
 
 # Check repository health
 docker exec backup-restic restic check
+
+# Record backup size for monitoring
+BACKUP_SIZE=$(docker exec backup-restic restic stats --mode raw-data --latest 2>/dev/null | awk '/total size/{print $4}' || echo "0")
+echo "  Backup size: ${BACKUP_SIZE}"
 
 # Verify restore works by restoring a single known file and checking its content
 echo "[$(date -Iseconds)] Verifying restore..."
@@ -113,6 +144,9 @@ sis_backup_last_run $(date +%s)
 # HELP sis_backup_duration_seconds Duration of last backup run in seconds
 # TYPE sis_backup_duration_seconds gauge
 sis_backup_duration_seconds ${BACKUP_DURATION}
+# HELP sis_backup_size_bytes Size of last backup in bytes (raw data)
+# TYPE sis_backup_size_bytes gauge
+sis_backup_size_bytes ${BACKUP_SIZE:-0}
 # HELP sis_backup_offsite_last_success Unix timestamp of last successful offsite sync
 # TYPE sis_backup_offsite_last_success gauge
 sis_backup_offsite_last_success ${SIS_BACKUP_OFFSITE_LAST_SUCCESS:-0}

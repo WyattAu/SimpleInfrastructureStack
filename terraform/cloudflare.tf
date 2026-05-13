@@ -89,9 +89,9 @@ resource "cloudflare_record" "deploy" {
 }
 
 # ===================================================================
-# WAF — Geo-Blocking Rules
+# WAF -- Geo-Blocking Rules (DISABLED)
 # ===================================================================
-# NOTE: The Cloudflare API token currently lacks "Zone > WAF > Edit"
+# NOTE: The Cloudflare API token lacks "Zone > Workers Rulesets > Edit"
 # permission (error 10000). This resource is commented out until the
 # token is updated with the required permission.
 #
@@ -100,13 +100,10 @@ resource "cloudflare_record" "deploy" {
 #   2. Uncomment the resource block below
 #   3. Run terraform apply
 #
-# Blocks requests from high-risk countries to reduce scanner noise.
-# Uses Cloudflare WAF custom rules (zone-level ruleset).
-#
-# Exceptions:
-#   - Matrix federation endpoints (/.well-known/matrix/*) must be globally accessible
-#   - ACME challenge requests (*.acme-challenge.*) must pass for TLS certificate renewal
-#   - Hookshot (GitHub bridge API) must accept webhooks from GitHub globally
+# SECURITY NOTE: Without geo-blocking, all services accept traffic from
+# every country. Rate limiting (100 req/s, 50 burst) via Traefik
+# global-rate-limit middleware is the only DDoS mitigation.
+# See docs/infrastructure.md "Cloudflare Edge" section.
 
 # variable "geo_blocked_countries" {
 #   description = "ISO 3166-1 alpha-2 country codes to block"

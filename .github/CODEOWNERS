@@ -1,0 +1,22 @@
+# CODEOWNERS -- Review requirements for critical paths
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-on-github/managing-codeowners
+
+# Terraform (DNS, identity, orgs)
+/terraform/ @WyattAu
+
+# Ansible playbooks and roles
+/ansible/ @WyattAu
+
+# OPA/Conftest security policies
+/policies/ @WyattAu
+
+# Pre-commit configuration
+.pre-commit-config.yaml @WyattAu
+.yamllint.yml @WyattAu
+.markdownlint.yml @WyattAu
+
+# CI/CD workflows
+/.github/workflows/ @WyattAu
+
+# Secrets management
+.sops.yaml @WyattAu
