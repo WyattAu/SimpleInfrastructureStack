@@ -38,13 +38,25 @@ variable "kc_base_url" {
 }
 
 variable "kc_admin_username" {
-  description = "Keycloak admin username"
+  description = "Keycloak admin username (legacy, kept for reference)"
   type        = string
   default     = "admin"
 }
 
 variable "kc_admin_password" {
   description = "Keycloak admin password (from SOPS secrets/iam.env.encrypted)"
+  type        = string
+  sensitive   = true
+}
+
+variable "kc_sa_client_id" {
+  description = "Keycloak service account client ID for Terraform (set TF_VAR_kc_sa_client_id)"
+  type        = string
+  default     = "terraform-cli"
+}
+
+variable "kc_sa_client_secret" {
+  description = "Keycloak service account client secret (set TF_VAR_kc_sa_client_secret)"
   type        = string
   sensitive   = true
 }

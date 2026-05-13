@@ -11,9 +11,11 @@
 #   C - Forgejo   (organizations, teams, membership)
 #
 # Usage:
-#   export TF_VAR_cf_api_token="..."     # from SOPS secrets/proxy.env.encrypted
-#   export TF_VAR_kc_admin_password="..." # from SOPS secrets/iam.env.encrypted
-#   export TF_VAR_forgejo_token="..."     # from Forgejo admin token
+#   export TF_VAR_cf_api_token="..."          # from SOPS secrets/proxy.env.encrypted
+#   export TF_VAR_cf_zone_id="..."            # Cloudflare zone ID
+#   export TF_VAR_cf_account_id="..."         # Cloudflare account ID
+#   export TF_VAR_kc_sa_client_secret="..."   # Keycloak terraform-cli client secret
+#   export TF_VAR_forgejo_token="..."         # Forgejo admin token
 #   terraform init
 #   terraform plan
 #   terraform apply

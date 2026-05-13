@@ -729,3 +729,69 @@ groups:
             The last successful backup was only {{ $value | humanize1024 }}.
             Previous backups were approximately 30GB. This may indicate data loss
             or a significant reduction in stored data.
+
+  - name: zfs_health
+    interval: 60s
+    rules:
+      # Pool health degradation — ZFS array has a faulted or degraded vdev
+      - alert: ZFSPoolDegraded
+        expr: sis_zfs_pool_health == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ZFS pool {{ $labels.pool }} is degraded or faulted"
+          description: >-
+            ZFS pool {{ $labels.pool }} health is not ONLINE. One or more vdevs
+            may be faulted. Check immediately with: zpool status {{ $labels.pool }}
+
+      # Pool capacity warning (>80%)
+      - alert: ZFSPoolHighCapacity
+        expr: sis_zfs_pool_capacity_pct > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "ZFS pool {{ $labels.pool }} capacity at {{ $value }}%"
+          description: >-
+            ZFS pool {{ $labels.pool }} is at {{ $value }}% capacity.
+            ZFS performance degrades significantly above 80%. Consider
+            expanding the pool or freeing space.
+
+      # Pool capacity critical (>90%)
+      - alert: ZFSPoolCriticalCapacity
+        expr: sis_zfs_pool_capacity_pct > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ZFS pool {{ $labels.pool }} critically full at {{ $value }}%"
+          description: >-
+            ZFS pool {{ $labels.pool }} is at {{ $value }}% capacity. Write
+            performance will be severely impacted. Free space immediately.
+
+      # Scrub errors detected
+      - alert: ZFSPoolScrubErrors
+        expr: sis_zfs_pool_scrub_errors > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ZFS pool {{ $labels.pool }} has {{ $value }} scrub errors"
+          description: >-
+            The last scrub of ZFS pool {{ $labels.pool }} found {{ $value }} errors.
+            This indicates data corruption. Run: zpool scrub {{ $labels.pool }}
+            and check: zpool status {{ $labels.pool }}
+
+      # Scrub stale (>45 days since last scrub)
+      - alert: ZFSPoolScrubStale
+        expr: (time() - sis_zfs_pool_scrub_timestamp) > 3888000
+          and sis_zfs_pool_scrub_timestamp > 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "ZFS pool {{ $labels.pool }} last scrubbed >45 days ago"
+          description: >-
+            ZFS pool {{ $labels.pool }} has not been scrubbed in over 45 days.
+            Monthly scrubs are recommended to detect and repair silent data corruption.
