@@ -28,11 +28,11 @@ route:
 receivers:
   - name: 'ntfy'
     webhook_configs:
-      - url: 'https://ntfy.sh/wyattau-infra-0e92568ce5d04343c3b796ed558a04b9-critical'
+      - url: '${NTFY_TOPIC_CRITICAL_URL}'
         send_resolved: true
   - name: 'ntfy-info'
     webhook_configs:
-      - url: 'https://ntfy.sh/wyattau-infra-0e92568ce5d04343c3b796ed558a04b9'
+      - url: '${NTFY_TOPIC_INFO_URL}'
         send_resolved: true
 
 inhibit_rules:

@@ -35,9 +35,9 @@ services:
     deploy:
       resources:
         limits:
+          cpus: "1.0"
           memory: 512M
-        reservations:
-          memory: 128M
+          pids_limit: 100
     logging:
       driver: "json-file"
       options:
@@ -160,6 +160,7 @@ services:
         limits:
           cpus: '1.0'
           memory: 1G
+          pids_limit: 100
         reservations:
           cpus: '0.25'
           memory: 256M
@@ -206,9 +207,9 @@ services:
     deploy:
       resources:
         limits:
+          cpus: "1.0"
           memory: 512M
-        reservations:
-          memory: 64M
+          pids_limit: 100
     logging:
       driver: "json-file"
       options:

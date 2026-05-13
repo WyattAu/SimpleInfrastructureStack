@@ -37,9 +37,9 @@ services:
     deploy:
       resources:
         limits:
+          cpus: "1.0"
           memory: 256M
-        reservations:
-          memory: 32M
+          pids_limit: 100
     healthcheck:
       # webhook binary only accepts POST (-http-methods POST).
       # Sending POST with empty body triggers HMAC validation which returns
