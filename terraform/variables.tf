@@ -14,15 +14,13 @@ variable "cf_api_token" {
 }
 
 variable "cf_zone_id" {
-  description = "Cloudflare zone ID for wyattau.com"
+  description = "Cloudflare zone ID for wyattau.com (set via TF_VAR_cf_zone_id)"
   type        = string
-  default     = "55ec52794cd169def38cb5ca2cad3481"
 }
 
 variable "cf_account_id" {
-  description = "Cloudflare account ID"
+  description = "Cloudflare account ID (set via TF_VAR_cf_account_id)"
   type        = string
-  default     = "26966ba2f4b3a12cb750cd615c8d0bcf"
 }
 
 variable "cf_tunnel_id" {

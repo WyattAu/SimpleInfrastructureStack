@@ -103,6 +103,10 @@ resource "keycloak_user" "wyatt" {
   first_name = "Wyatt"
   last_name  = "Au"
   email_verified = true
+
+  lifecycle {
+    ignore_changes = [initial_password, credentials, required_actions]
+  }
 }
 
 resource "keycloak_user" "joshkad" {
@@ -113,6 +117,10 @@ resource "keycloak_user" "joshkad" {
   first_name      = "Joshua"
   last_name       = "Kadungure"
   email_verified  = true
+
+  lifecycle {
+    ignore_changes = [initial_password, credentials, required_actions]
+  }
 }
 
 resource "keycloak_user" "ayo" {
@@ -123,6 +131,10 @@ resource "keycloak_user" "ayo" {
   first_name      = "Ayomikun"
   last_name       = "Labinjo"
   email_verified  = true
+
+  lifecycle {
+    ignore_changes = [initial_password, credentials, required_actions]
+  }
 }
 
 resource "keycloak_user" "viswa" {
@@ -133,6 +145,6 @@ resource "keycloak_user" "viswa" {
   email_verified  = true
 
   lifecycle {
-    ignore_changes = [required_actions]
+    ignore_changes = [initial_password, credentials, required_actions]
   }
 }

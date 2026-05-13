@@ -1,0 +1,29 @@
+{
+  "timeout": "20s",
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackRetryDelay": "30s",
+  "ignorePatterns": [
+    {
+      "pattern": "^https?://(localhost|127\\.0\\.0\\.1|10\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.|192\\.168\\.)"
+    },
+    {
+      "pattern": "^https?://.*\\.internal"
+    },
+    {
+      "pattern": "^https?://.*\\.local"
+    },
+    {
+      "pattern": "auth\\.wyattau\\.com"
+    },
+    {
+      "pattern": "grafana\\.wyattau\\.com"
+    },
+    {
+      "pattern": "prometheus\\.wyattau\\.com"
+    },
+    {
+      "pattern": "kuma\\.wyattau\\.com"
+    }
+  ]
+}

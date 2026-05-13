@@ -206,4 +206,79 @@ deny_untagged_image[msg] {
 # NOTE: deny_untagged_image rule — deny_latest_tag catches ":latest",
 # and deny_untagged_image catches images with no tag at all.
 
-# WARN: Services with memory limits but no reservations may cause scheduling issues.
+# Approved cap_add exemptions (require specific Linux capabilities).
+# - wireguard: requires NET_ADMIN, SYS_MODULE for VPN tunnel management.
+cap_add_exempt := {"wireguard"}
+
+# Approved user directive exemptions (image entrypoints manage users).
+# - postgres, mariadb, redis, valkey, mongo: images use dedicated runtime users
+#   via their own entrypoint scripts; explicit user breaks health checks or data dirs.
+user_directive_exempt := {"postgres", "mariadb", "redis", "valkey", "mongo"}
+
+# Approved read_only exemptions (need writable filesystem at runtime).
+# - postgres, mariadb, redis, valkey, mongo: database engines write to data dirs.
+# - collabora: document rendering requires writable tmp and font cache.
+# - taiga-back, taiga-async: Python apps need writable virtualenv/cache.
+# - immich-ml: ML inference needs writable model cache.
+# - vaultwarden: needs writable data dir and RSA key generation.
+# - akaunting: PHP app needs writable storage and bootstrap cache.
+# - synapse: homeserver needs writable media store and signing keys.
+read_only_exempt := {"postgres", "mariadb", "redis", "valkey", "mongo",
+  "collabora", "taiga-back", "taiga-async", "immich-ml",
+  "vaultwarden", "akaunting", "synapse"}
+
+is_cap_add_exempt(name) {
+    some suffix in cap_add_exempt
+    endswith(name, suffix)
+}
+
+is_user_directive_exempt(name) {
+    some suffix in user_directive_exempt
+    endswith(name, suffix)
+}
+
+is_read_only_exempt(name) {
+    some suffix in read_only_exempt
+    endswith(name, suffix)
+}
+
+# WARN: Services with cap_add should also have cap_drop: ALL (except approved).
+warn_no_cap_drop[msg] {
+    svc := input.services[name]
+    not is_ephemeral(name)
+    not is_cap_add_exempt(name)
+    svc.cap_add
+    not svc.cap_drop
+    msg := sprintf("Service '%s' has cap_add but no cap_drop: ALL", [name])
+}
+
+# WARN: Services should run as non-root via user directive or entrypoint
+# (except images that manage their own runtime user).
+warn_no_user_directive[msg] {
+    svc := input.services[name]
+    not is_ephemeral(name)
+    not is_user_directive_exempt(name)
+    not svc.user
+    msg := sprintf("Service '%s' has no user directive — consider PUID/PGID or explicit UID", [name])
+}
+
+# WARN: Services should use read_only: true with tmpfs for writable paths
+# (except images that require persistent writable filesystem).
+warn_no_read_only[msg] {
+    svc := input.services[name]
+    not is_ephemeral(name)
+    not is_read_only_exempt(name)
+    not svc.read_only
+    msg := sprintf("Service '%s' is not read_only — consider read_only: true with tmpfs mounts", [name])
+}
+
+# WARN: Long-running services should have a pids_limit to prevent fork bombs.
+warn_no_pids_limit[msg] {
+    svc := input.services[name]
+    not is_ephemeral(name)
+    not contains(name, "debug")
+    svc.deploy
+    svc.deploy.resources.limits
+    not svc.deploy.resources.limits.pids_limit
+    msg := sprintf("Service '%s' has no pids_limit — consider adding pids_limit: 100", [name])
+}

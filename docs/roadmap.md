@@ -382,7 +382,17 @@ accumulate silently.
 - [x] P2-16: Add backup size metric (sis_backup_size_bytes) and alert
 - [x] P2-17: Add dump file verification to monthly restore test
 - [x] P2-20: Add no-new-privileges:true to WireGuard VPN
+- [x] P2-18: Template Alertmanager ntfy URLs via envsubst entrypoint wrapper
+- [x] P2-19: Add pids_limit:100 to all 58 long-running containers
+- [x] P2-21: Add CPU limits to all memory-heavy containers
+- [x] P3-22: Add read_only:true WARN rule to security.rego
+- [x] P3-23: Add user directive and cap_drop WARN rules to security.rego
+- [x] P3-26: Add ignore_changes=[credentials] to all Keycloak user resources
+- [x] P3-27: Remove hardcoded defaults from cf_zone_id and cf_account_id
+- [x] P3-28: Add GitHub Actions caching for conftest, trivy, pip
+- [x] P3-29: Restrict Renovate auto-merge to vetted image allowlist
 - [x] P3-30: Add CODEOWNERS file
+- [x] P3-31: Add markdown-link-check job to validate.yml
 - [x] CI workflow emojis replaced with text labels
 - [x] Dead prettier hook reference removed
 - [x] Makefile format target fixed
