@@ -18,27 +18,27 @@ data "cloudflare_zone" "main" {
 locals {
   # Services currently running on this TrueNAS
   active_services = {
-    akaunting          = "Akaunting (accounting)"
-    auth               = "Keycloak (SSO)"
-    collabora          = "Collabora Online (document editing)"
-    docs               = "Documentation (wiki/knowledge base)"
-    element            = "Element Web (Matrix client)"
-    forgejo            = "Forgejo (git hosting)"
-    grafana            = "Grafana (dashboards)"
-    homepage           = "Homepage (personal dashboard)"
-    hookshot           = "Hookshot (GitHub bridge API)"
-    kuma               = "Uptime Kuma (monitoring)"
-    matrix             = "Synapse (Matrix federation)"
-    oauth              = "OAuth2-Proxy (SSO middleware)"
-    ocis               = "oCIS (file storage)"
-    photos             = "Immich (photo management)"
-    prometheus         = "VictoriaMetrics (metrics)"
-    registry-forgejo   = "Forgejo container registry"
-    rss                = "FreshRSS (feed reader)"
-    taiga              = "Taiga (project management)"
-    traefik            = "Traefik (reverse proxy dashboard)"
-    vault              = "Vaultwarden (password manager)"
-    vpn                = "WireGuard VPN (DNS-only, no proxy)"
+    akaunting        = "Akaunting (accounting)"
+    auth             = "Keycloak (SSO)"
+    collabora        = "Collabora Online (document editing)"
+    docs             = "Documentation (wiki/knowledge base)"
+    element          = "Element Web (Matrix client)"
+    forgejo          = "Forgejo (git hosting)"
+    grafana          = "Grafana (dashboards)"
+    homepage         = "Homepage (personal dashboard)"
+    hookshot         = "Hookshot (GitHub bridge API)"
+    kuma             = "Uptime Kuma (monitoring)"
+    matrix           = "Synapse (Matrix federation)"
+    oauth            = "OAuth2-Proxy (SSO middleware)"
+    ocis             = "oCIS (file storage)"
+    photos           = "Immich (photo management)"
+    prometheus       = "VictoriaMetrics (metrics)"
+    registry-forgejo = "Forgejo container registry"
+    rss              = "FreshRSS (feed reader)"
+    taiga            = "Taiga (project management)"
+    traefik          = "Traefik (reverse proxy dashboard)"
+    vault            = "Vaultwarden (password manager)"
+    vpn              = "WireGuard VPN (DNS-only, no proxy)"
   }
 }
 
@@ -50,7 +50,7 @@ resource "cloudflare_record" "service_v4" {
   name    = each.key
   type    = "A"
   content = var.primary_ipv4
-  proxied = each.key != "vpn"  # VPN must be DNS-only for WireGuard
+  proxied = each.key != "vpn" # VPN must be DNS-only for WireGuard
   ttl     = 1
 }
 
@@ -149,32 +149,32 @@ resource "cloudflare_record" "deploy" {
 
 # DMARC record (can be managed via API — not controlled by Email Routing)
 resource "cloudflare_record" "dmarc" {
-  zone_id  = var.cf_zone_id
-  name     = "_dmarc"
-  type     = "TXT"
+  zone_id = var.cf_zone_id
+  name    = "_dmarc"
+  type    = "TXT"
   content = "v=DMARC1; p=none; rua=mailto:1aa26a2e9a5c459fb892d8df10af4f3b@dmarc-reports.cloudflare.net"
-  proxied  = false
-  ttl      = 1
+  proxied = false
+  ttl     = 1
 }
 
 # SPF record
 resource "cloudflare_record" "spf" {
-  zone_id  = var.cf_zone_id
-  name     = "wyattau.com"
-  type     = "TXT"
+  zone_id = var.cf_zone_id
+  name    = "wyattau.com"
+  type    = "TXT"
   content = "v=spf1 include:_spf.mx.cloudflare.net ~all"
-  proxied  = false
-  ttl      = 1
+  proxied = false
+  ttl     = 1
 }
 
 # Google site verification
 resource "cloudflare_record" "google_site_verification" {
-  zone_id  = var.cf_zone_id
-  name     = "wyattau.com"
-  type     = "TXT"
+  zone_id = var.cf_zone_id
+  name    = "wyattau.com"
+  type    = "TXT"
   content = "google-site-verification=3YGmsHSnCAxQTAZuYgJtLM-DGTAv9nj8vStESWghuXM"
-  proxied  = false
-  ttl      = 3600
+  proxied = false
+  ttl     = 3600
 }
 
 # ===================================================================
@@ -198,13 +198,13 @@ resource "cloudflare_workers_route" "matrix_well_known" {
 
 locals {
   third_party_records = {
-    "academics.wyattau.com"       = "wyattsnotes-academics.pages.dev (Cloudflare Pages)"
-    "alevel.wyattau.com"          = "wyattsnotes-alevel.pages.dev (Cloudflare Pages)"
-    "link.wyattau.com"            = "track.smtp2go.net (SMTP2Go click tracking)"
-    "omniflutter-*.wyattau.com"   = "wyattau.github.io (GitHub Pages)"
-    "programming.wyattau.com"     = "wyattsnotes-programming.pages.dev"
-    "www.wyattau.com"             = "ssr-temp.pages.dev (temporary)"
-    "wyattau.com (apex)"          = "ssr-temp.pages.dev (temporary)"
-    "wyattsnotes.wyattau.com"     = "wyattsnotes.pages.dev (Cloudflare Pages)"
+    "academics.wyattau.com"     = "wyattsnotes-academics.pages.dev (Cloudflare Pages)"
+    "alevel.wyattau.com"        = "wyattsnotes-alevel.pages.dev (Cloudflare Pages)"
+    "link.wyattau.com"          = "track.smtp2go.net (SMTP2Go click tracking)"
+    "omniflutter-*.wyattau.com" = "wyattau.github.io (GitHub Pages)"
+    "programming.wyattau.com"   = "wyattsnotes-programming.pages.dev"
+    "www.wyattau.com"           = "ssr-temp.pages.dev (temporary)"
+    "wyattau.com (apex)"        = "ssr-temp.pages.dev (temporary)"
+    "wyattsnotes.wyattau.com"   = "wyattsnotes.pages.dev (Cloudflare Pages)"
   }
 }

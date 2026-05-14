@@ -1,7 +1,7 @@
 # SimpleInfrastructureStack -- Roadmap
 
 Comprehensive improvement plan derived from a full monorepo audit (2026-05-11).
-The audit covered: 19 Docker Compose stacks, 7 Ansible playbooks, 4 CI/CD workflows,
+The audit covered: 20 Docker Compose stacks, 7 Ansible playbooks, 4 CI/CD workflows,
 68 Terraform resources, 1 OPA policy, 3 documentation files, and all shell scripts.
 
 ---
@@ -20,7 +20,7 @@ The audit covered: 19 Docker Compose stacks, 7 Ansible playbooks, 4 CI/CD workfl
 | Large files | check-added-large-files | PASS |
 | Markdown lint | markdownlint-cli2 v0.18.1 | PASS (91 errors fixed) |
 | YAML lint | yamllint v1.37.1 | PASS (30 document-start, 2 brace, comment fixes) |
-| Docker Compose config | docker compose config | PASS (19/19 stacks) |
+| Docker Compose config | docker compose config | PASS (20/20 stacks) |
 | Ansible syntax | ansible-playbook --syntax-check | PASS (6/6 playbooks) |
 | Terraform validate | terraform validate | SKIP (providers not cached locally) |
 
@@ -396,7 +396,4 @@ accumulate silently.
 - [x] P2-14: Add ZFS pool metrics (textfile collector script + alert rules)
 - [x] P3-24: Add Terraform remote state backend configuration (backend.tf with S3/TFC/git options)
 - [x] P3-25: Configure Keycloak dedicated service account (terraform-cli) in provider
-- [x] CI workflow emojis replaced with text labels
-- [x] Dead prettier hook reference removed
-- [x] Makefile format target fixed
 - [x] Changes committed (463c9b4) and pushed to main

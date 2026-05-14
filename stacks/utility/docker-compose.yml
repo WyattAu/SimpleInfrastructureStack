@@ -1,59 +1,59 @@
----
-
 services:
   homepage:
     image: ghcr.io/gethomepage/homepage:${HOMEPAGE_VERSION}
     container_name: utility-homepage
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-    # Required by homepage entrypoint: chown /app/.next, su-exec to drop to PUID:PGID
+    - ALL
     cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - FOWNER
-      - SETGID
-      - SETUID
-
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
     volumes:
-      - ${DATA_BASE_PATH}/utility/homepage/config:/app/config
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+    - ${DATA_BASE_PATH}/utility/homepage/config:/app/config
+    - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
-      - HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_SUBDOMAIN}.${DOMAIN_NAME}
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
+    - HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_SUBDOMAIN}.${DOMAIN_NAME}
+    - PUID=${PUID}
+    - PGID=${PGID}
+    - TZ=${TZ}
     networks:
-      - traefik_net
+    - traefik_net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3000/"]
+      test:
+      - CMD
+      - wget
+      - --spider
+      - -q
+      - http://127.0.0.1:3000/
       interval: 30s
       timeout: 10s
       start_period: 30s
       retries: 3
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.homepage.rule=Host(`${HOMEPAGE_SUBDOMAIN}.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.homepage.entrypoints=websecure"
-      - "traefik.http.routers.homepage.middlewares=keycloak-auth"
-      - "traefik.http.services.homepage.loadbalancer.server.port=3000"
-      - "traefik.http.routers.homepage.tls.certresolver=cloudflare"
-      - "traefik.http.services.homepage.loadbalancer.server.scheme=http"
+    - traefik.enable=true
+    - traefik.docker.network=traefik_net
+    - traefik.http.routers.homepage.rule=Host(`${HOMEPAGE_SUBDOMAIN}.${DOMAIN_NAME}`)
+    - traefik.http.routers.homepage.entrypoints=websecure
+    - traefik.http.routers.homepage.middlewares=keycloak-auth
+    - traefik.http.services.homepage.loadbalancer.server.port=3000
+    - traefik.http.routers.homepage.tls.certresolver=cloudflare
+    - traefik.http.services.homepage.loadbalancer.server.scheme=http
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 256M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
 networks:
   traefik_net:
     external: true

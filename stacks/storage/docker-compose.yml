@@ -1,224 +1,186 @@
----
-
 services:
   ocis-init:
-    # Use a minimal image with the necessary tools
     image: busybox:1.37.0
     container_name: storage-ocis-init
-    # Set the ownership to the hardcoded UID/GID that the OCIS container uses internally.
-    # Only chown if ownership is incorrect (avoids OOM on 16GB data re-chown every deploy)
     command: sh -c "if [ \"$(stat -c '%u:%g' /etc/ocis 2>/dev/null || echo wrong)\" != '1000:1000' ]; then chown -R 1000:1000 /etc/ocis /var/lib/ocis; else echo 'Ownership already correct, skipping chown'; fi"
     volumes:
-      # Mount the same volume as the main ocis service
-      - ${DATA_BASE_PATH}/storage/ocis-config:/etc/ocis
-      - ${DATA_BASE_PATH}/storage/ocis-data:/var/lib/ocis
+    - ${DATA_BASE_PATH}/storage/ocis-config:/etc/ocis
+    - ${DATA_BASE_PATH}/storage/ocis-data:/var/lib/ocis
     environment:
-      - PUID=1000
-      - PGID=1000
-    # This init container does not need to be on any network
+    - PUID=1000
+    - PGID=1000
     networks: []
   ocis:
     image: owncloud/ocis:${OCIS_VERSION}
     container_name: storage-ocis
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-
+    - ALL
     depends_on:
       ocis-init:
         condition: service_completed_successfully
     volumes:
-      - ./config/ocis/banned-password-list.txt:/etc/ocis/banned-password-list.txt
-      - ./config/ocis/csp.yaml:/etc/ocis/csp.yaml
-      - ${DATA_BASE_PATH}/storage/ocis-config:/etc/ocis
-      - ${DATA_BASE_PATH}/storage/ocis-data:/var/lib/ocis
+    - ./config/ocis/banned-password-list.txt:/etc/ocis/banned-password-list.txt
+    - ./config/ocis/csp.yaml:/etc/ocis/csp.yaml
+    - ${DATA_BASE_PATH}/storage/ocis-config:/etc/ocis
+    - ${DATA_BASE_PATH}/storage/ocis-data:/var/lib/ocis
     entrypoint:
-      - /bin/sh
-    # This command initializes a full config with random secrets on first run,
-    # and then starts the server on all subsequent runs.
-    # command: ["-c", "ocis init || true; exec ocis server"]
-    command: ["-c", "if [ ! -f /etc/ocis/ocis.yaml ]; then ocis init; fi; exec ocis server"]
+    - /bin/sh
+    command:
+    - -c
+    - if [ ! -f /etc/ocis/ocis.yaml ]; then ocis init; fi; exec ocis server
     environment:
-      # - TZ=${TZ}
-      # Expose internal services to external collaboration container:
-      # NATS: service registry (default 127.0.0.1, needs 0.0.0.0 for cross-container)
-      NATS_NATS_HOST: "0.0.0.0"
-      # REVA Gateway: CS3 API for storage operations (default 127.0.0.1:9142)
-      OCIS_GATEWAY_GRPC_ADDR: "0.0.0.0:9142"
-      # Keycloak IDP specific configuration
-      FRONTEND_APP_HANDLER_SECURE_VIEW_APP_ADDR: "com.owncloud.api.collaboration.CollaboraOnline"
-      COLLABORA_DOMAIN: "collabora.${DOMAIN_NAME}"
-      PROXY_AUTOPROVISION_ACCOUNTS: "true"
-      PROXY_ROLE_ASSIGNMENT_DRIVER: "oidc"
+      NATS_NATS_HOST: 0.0.0.0
+      OCIS_GATEWAY_GRPC_ADDR: 0.0.0.0:9142
+      FRONTEND_APP_HANDLER_SECURE_VIEW_APP_ADDR: com.owncloud.api.collaboration.CollaboraOnline
+      COLLABORA_DOMAIN: collabora.${DOMAIN_NAME}
+      PROXY_AUTOPROVISION_ACCOUNTS: 'true'
+      PROXY_ROLE_ASSIGNMENT_DRIVER: oidc
       OCIS_OIDC_ISSUER: https://auth.${DOMAIN_NAME}/realms/company-realm
-
       WEB_OIDC_AUTHORITY: https://auth.${DOMAIN_NAME}/realms/company-realm
-
       WEB_OIDC_METADATA_URL: https://auth.${DOMAIN_NAME}/realms/company-realm/.well-known/openid-configuration
-
-      PROXY_OIDC_REWRITE_WELLKNOWN: "true"
+      PROXY_OIDC_REWRITE_WELLKNOWN: 'true'
       WEB_OIDC_CLIENT_ID: ${OCIS_OIDC_CLIENT_ID:-web}
-      # general config
       OCIS_URL: https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
       OCIS_LOG_LEVEL: ${OCIS_LOG_LEVEL:-info}
       OCIS_LOG_COLOR: ${OCIS_LOG_COLOR:-true}
-      PROXY_TLS: "false"  # do not use SSL between Traefik and oCIS
-      PROXY_USER_OIDC_CLAIM: "preferred_username"
-      PROXY_USER_CS3_CLAIM: "username"
-      # INSECURE: needed if oCIS / Traefik is using self generated certificates
-      OCIS_INSECURE: "${INSECURE:-false}"
-      OCIS_ADMIN_USER_ID: ""
-      OCIS_EXCLUDE_RUN_SERVICES: "idp"
-      GRAPH_ASSIGN_DEFAULT_USER_ROLE: "false"
-      GRAPH_USERNAME_MATCH: "none"
-      # password policies
-      OCIS_PASSWORD_POLICY_BANNED_PASSWORDS_LIST: "banned-password-list.txt"
+      PROXY_TLS: 'false'
+      PROXY_USER_OIDC_CLAIM: preferred_username
+      PROXY_USER_CS3_CLAIM: username
+      OCIS_INSECURE: ${INSECURE:-false}
+      OCIS_ADMIN_USER_ID: ''
+      OCIS_EXCLUDE_RUN_SERVICES: idp
+      GRAPH_ASSIGN_DEFAULT_USER_ROLE: 'false'
+      GRAPH_USERNAME_MATCH: none
+      OCIS_PASSWORD_POLICY_BANNED_PASSWORDS_LIST: banned-password-list.txt
       PROXY_CSP_CONFIG_FILE_LOCATION: /etc/ocis/csp.yaml
       KEYCLOAK_DOMAIN: auth.${DOMAIN_NAME}
       OCIS_MFA_ENABLED: ${OCIS_MFA_ENABLED:-false}
-      WEB_OIDC_SCOPE: "openid profile email roles groups"
-      OCIS_DEBUG_PROFILING: "false"
-      OCIS_HEALTH_CHECK_ENABLED: "true"
+      WEB_OIDC_SCOPE: openid profile email roles groups
+      OCIS_DEBUG_PROFILING: 'false'
+      OCIS_HEALTH_CHECK_ENABLED: 'true'
     networks:
-      - traefik_net
-      - backend_net
+    - traefik_net
+    - backend_net
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:9200/"]
+      test:
+      - CMD
+      - wget
+      - -q
+      - --spider
+      - http://127.0.0.1:9200/
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 60s
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.ocis.rule=Host(`${OCIS_SUBDOMAIN}.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.ocis.entrypoints=websecure"
-      - "traefik.http.routers.ocis.tls.certresolver=cloudflare"
-      - "traefik.http.routers.ocis.middlewares=global-rate-limit"
-      - "traefik.http.services.ocis.loadbalancer.server.port=9200"
-      - "traefik.http.services.ocis.loadbalancer.server.scheme=http"
+    - traefik.enable=true
+    - traefik.docker.network=traefik_net
+    - traefik.http.routers.ocis.rule=Host(`${OCIS_SUBDOMAIN}.${DOMAIN_NAME}`)
+    - traefik.http.routers.ocis.entrypoints=websecure
+    - traefik.http.routers.ocis.tls.certresolver=cloudflare
+    - traefik.http.routers.ocis.middlewares=global-rate-limit
+    - traefik.http.services.ocis.loadbalancer.server.port=9200
+    - traefik.http.services.ocis.loadbalancer.server.scheme=http
     deploy:
       resources:
         limits:
-          cpus: "2.0"
+          cpus: '2.0'
           memory: 1G
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-  # Collaboration service runs as a separate container. Connects to OCIS's
-  # embedded NATS JetStream for service discovery (go-micro nats-js-kv).
-  # OCIS 7.x creates the "service-registry" KV bucket automatically on startup.
-  # The collaboration service registers itself there so OCIS's proxy can
-  # route WOPI requests to it.
-  #
-  # IMPORTANT: OCIS_REVA_GATEWAY is a go-micro SERVICE NAME, not a direct
-  # address. The collaboration service resolves it via the shared NATS registry.
-  # Do NOT set MICRO_REGISTRY=memory — that gives each container an isolated
-  # registry. Both containers must share the same NATS server.
+        max-size: 10m
+        max-file: '3'
   collaboration:
     image: owncloud/ocis:${OCIS_VERSION}
     container_name: storage-collaboration
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-
+    - ALL
     depends_on:
       ocis:
         condition: service_healthy
       collabora:
         condition: service_healthy
-    command: ["collaboration", "server"]
+    command:
+    - collaboration
+    - server
     volumes:
-      # Share OCIS config so collaboration reads WOPI secret, JWT secret,
-      # and other settings from the same config OCIS uses. Env vars below
-      # override config file values where set.
-      - ${DATA_BASE_PATH}/storage/ocis-config:/etc/ocis:ro
+    - ${DATA_BASE_PATH}/storage/ocis-config:/etc/ocis:ro
     environment:
-      # Bind gRPC and HTTP to 0.0.0.0 so OCIS proxy and other services
-      # can reach the collaboration service across containers.
-      COLLABORATION_GRPC_ADDR: "0.0.0.0:9301"
-      COLLABORATION_HTTP_ADDR: "0.0.0.0:9300"
-      COLLABORATION_WOPI_SECRET: "${WOPI_SECRET}"
+      COLLABORATION_GRPC_ADDR: 0.0.0.0:9301
+      COLLABORATION_HTTP_ADDR: 0.0.0.0:9300
+      COLLABORATION_WOPI_SECRET: ${WOPI_SECRET}
       COLLABORATION_WOPI_SRC: http://storage-collaboration:9300
-      COLLABORATION_APP_NAME: "CollaboraOnline"
-      # Use internal Docker URL for WOPI discovery (avoid Cloudflare round-trip)
-      COLLABORATION_APP_ADDR: "http://storage-collabora:9980"
+      COLLABORATION_APP_NAME: CollaboraOnline
+      COLLABORATION_APP_ADDR: http://storage-collabora:9980
       COLLABORATION_APP_ICON: https://collabora.${DOMAIN_NAME}/favicon.ico
-      COLLABORATION_APP_INSECURE: "true"
-      COLLABORATION_CS3API_DATAGATEWAY_INSECURE: "true"
-      COLLABORATION_LOG_LEVEL: "warn"
+      COLLABORATION_APP_INSECURE: 'true'
+      COLLABORATION_CS3API_DATAGATEWAY_INSECURE: 'true'
+      COLLABORATION_LOG_LEVEL: warn
       OCIS_URL: https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
-      OCIS_JWT_SECRET: "${OCIS_JWT_SECRET}"
-      # Share OCIS's NATS JetStream for service discovery.
-      # OCIS exposes NATS on 0.0.0.0:9233 (via NATS_NATS_HOST env var).
-      MICRO_REGISTRY: "nats-js-kv"
-      MICRO_REGISTRY_ADDRESS: "storage-ocis:9233"
+      OCIS_JWT_SECRET: ${OCIS_JWT_SECRET}
+      MICRO_REGISTRY: nats-js-kv
+      MICRO_REGISTRY_ADDRESS: storage-ocis:9233
     networks:
-      - traefik_net
-      - backend_net
-    # No healthcheck: the collaboration service only responds to specific WOPI
-    # paths (not /). It either starts successfully or crash-loops immediately.
+    - traefik_net
+    - backend_net
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 512M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   collabora:
     image: collabora/code:${COLLABORA_VERSION}
     container_name: storage-collabora
     restart: unless-stopped
-    # no-new-privileges removed: Collabora requires CLONE_NEWUSER for
-    # document sandboxing (user namespace creation). Without it, child
-    # processes cannot spawn and the WOPI endpoint never responds.
-    # See: https://sdk.collaboraonline.com/docs/installation/CODE_Docker_image.html
-
     environment:
-      - "extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:net.frame_ancestors=${OCIS_SUBDOMAIN}.${DOMAIN_NAME}"
-      - "domain=${OCIS_SUBDOMAIN}\\.${DOMAIN_NAME}"
-      - "server_name=collabora.${DOMAIN_NAME}"
-      - "DONT_GEN_SSL_CERT=true"
+    - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:net.frame_ancestors=${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
+    - domain=${OCIS_SUBDOMAIN}\.${DOMAIN_NAME}
+    - server_name=collabora.${DOMAIN_NAME}
+    - DONT_GEN_SSL_CERT=true
     networks:
-      - traefik_net
-      - backend_net
+    - traefik_net
+    - backend_net
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.collabora.rule=Host(`collabora.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.collabora.entrypoints=websecure"
-      - "traefik.http.routers.collabora.tls.certresolver=cloudflare"
-      - "traefik.http.services.collabora.loadbalancer.server.port=9980"
+    - traefik.enable=true
+    - traefik.docker.network=traefik_net
+    - traefik.http.routers.collabora.rule=Host(`collabora.${DOMAIN_NAME}`)
+    - traefik.http.routers.collabora.entrypoints=websecure
+    - traefik.http.routers.collabora.tls.certresolver=cloudflare
+    - traefik.http.services.collabora.loadbalancer.server.port=9980
     healthcheck:
-      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9980"]
+      test:
+      - CMD
+      - bash
+      - -c
+      - exec 3<>/dev/tcp/127.0.0.1/9980
       interval: 30s
       timeout: 10s
       retries: 3
     deploy:
       resources:
         limits:
-          cpus: "2.0"
+          cpus: '2.0'
           memory: 1G
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
-
+        max-size: 10m
+        max-file: '3'
 networks:
   traefik_net:
     external: true

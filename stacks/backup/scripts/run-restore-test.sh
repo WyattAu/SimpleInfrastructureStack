@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Monthly Backup Restore Test
 # Restores the latest snapshot to a temporary location and validates:
 #   1. Key files exist and are non-empty
@@ -57,6 +57,8 @@ for db_entry in \
     "documents/postgres:documents-postgres:paperless"; do
 
     db_dir="${RESTORE_DIR}/data/${db_entry%%:*}"
+    # db_container extracted for future pg_isready connectivity checks
+    # shellcheck disable=SC2034
     db_container="${db_entry#*:}"
     db_name="${db_entry##*:}"
 
@@ -100,7 +102,7 @@ for config_file in \
 
     if docker exec backup-restic test -s "${config_file}"; then
         size=$(docker exec backup-restic wc -c < "${config_file}")
-        pass "Config $(basename $(dirname "${config_file}"))/$(basename "${config_file}"): ${size} bytes"
+        pass "Config $(basename "$(dirname "${config_file}")")/$(basename "${config_file}"): ${size} bytes"
     else
         fail "Config missing or empty: ${config_file}"
     fi
@@ -156,6 +158,7 @@ else
 fi
 
 # Step 9: Get snapshot info for reporting
+# shellcheck disable=SC2034
 SNAPSHOT_INFO=$(docker exec backup-restic restic snapshots --latest --json 2>/dev/null | head -1)
 SNAPSHOT_DATE=$(docker exec backup-restic restic snapshots --latest --compact 2>/dev/null)
 

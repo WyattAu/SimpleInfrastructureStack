@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Backup Script for SimpleInfrastructureStack
 # Runs inside backup-cron-trigger container, triggers backup-restic
 

@@ -273,12 +273,13 @@ warn_no_read_only[msg] {
 }
 
 # WARN: Long-running services should have a pids_limit to prevent fork bombs.
+# Per the Compose Specification, pids goes under deploy.resources.limits.
 warn_no_pids_limit[msg] {
     svc := input.services[name]
     not is_ephemeral(name)
     not contains(name, "debug")
     svc.deploy
     svc.deploy.resources.limits
-    not svc.deploy.resources.limits.pids_limit
-    msg := sprintf("Service '%s' has no pids_limit — consider adding pids_limit: 100", [name])
+    not svc.deploy.resources.limits.pids
+    msg := sprintf("Service '%s' has no pids limit -- consider adding pids: 100 under deploy.resources.limits", [name])
 }

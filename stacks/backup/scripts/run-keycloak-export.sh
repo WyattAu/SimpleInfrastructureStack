@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Keycloak Realm Export Script
 # Exports the company-realm configuration (users, clients, roles) to a JSON file
 # in the backup data directory so it gets included in the nightly Restic backup.

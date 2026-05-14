@@ -1,32 +1,25 @@
----
 services:
   cloudflared:
     image: cloudflare/cloudflared:${CLOUDFLARED_VERSION}
     container_name: infra-tunnel
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-    # --config and --metrics are tunnel subcommand flags (must come before 'run')
+    - ALL
     command: tunnel --config /etc/cloudflared/config.yml --metrics 0.0.0.0:4788 run
     volumes:
-      - ./config.yml:/etc/cloudflared/config.yml:ro
-      - ./credentials.json:/etc/cloudflared/credentials.json:ro
-    # No Traefik labels — the tunnel must be independent
-    # If Traefik breaks, the tunnel must still work to deliver deploys
+    - ./config.yml:/etc/cloudflared/config.yml:ro
+    - ./credentials.json:/etc/cloudflared/credentials.json:ro
     network_mode: host
-    # No Docker healthcheck — cloudflared image is distroless/static (no curl/wget/shell).
-    # The tunnel is self-healing via restart: unless-stopped and logs connection status.
-    # Metrics available at http://localhost:4788/metrics for Prometheus scraping.
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 256M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: 10m
+        max-file: '3'

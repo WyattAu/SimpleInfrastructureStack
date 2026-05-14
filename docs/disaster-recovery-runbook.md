@@ -102,7 +102,7 @@ sudo cp /tmp/restore/data/iam/keycloak/<file> /mnt/pool_HDD_x2/tank/datasources/
 ```bash
 sudo docker exec -it backup-restic sh
 restic -r /restic-repo restore latest --target /tmp/restore --include "/data/collaboration/*"
-sudo systemctl stop collaboration-*  # or docker compose down
+sudo docker compose -f /mnt/pool_HDD_x2/infra/stacks/stacks/collaboration/docker-compose.yml down
 sudo cp -a /tmp/restore/data/collaboration/* /mnt/pool_HDD_x2/tank/datasources/sis/appdata/collaboration/
 ```
 
@@ -211,8 +211,9 @@ unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
 
 ```bash
 # Create data directories for each stack
-for stack in proxy iam monitoring operations collaboration storage \
-             accounting utility backup vaultwarden rss photos documents vpn updater; do
+for stack in proxy iam monitoring operations collaboration \
+             storage accounting utility backup vaultwarden rss photos documents \
+             vpn updater security webhook books project-management; do
   mkdir -p /mnt/pool_HDD_x2/tank/datasources/sis/appdata/$stack
 done
 
@@ -236,7 +237,7 @@ done
 # Deploy all stacks
 for stack in tunnel proxy iam monitoring operations collaboration \
              storage accounting utility backup vaultwarden rss photos \
-             documents vpn updater; do
+             documents vpn updater security webhook books project-management; do
   docker compose -f stacks/$stack/docker-compose.yml --env-file .secrets.tmp/${stack}.env up -d
 done
 
@@ -365,7 +366,7 @@ the deploy webhook routes through it. If the tunnel breaks:
 
 ```bash
 # Check tunnel status
-sudo docker logs monitoring-tunnel --tail 50
+sudo docker logs infra-tunnel --tail 50
 
 # Restart tunnel
 cd /mnt/pool_HDD_x2/infra/stacks
@@ -392,7 +393,7 @@ The backup system includes automated verification:
 
 1. Spin up a test VM or TrueNAS instance
 2. Follow Scenario 3 (Full Server Recovery) using B2 as the source
-3. Verify all 50 containers start and pass health checks
+3. Verify all containers start and pass health checks
 4. Verify SSO login works via Keycloak
 5. Document any issues found
 

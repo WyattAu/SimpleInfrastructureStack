@@ -1,4 +1,3 @@
----
 # ===================================================================
 # CrowdSec — Collaborative Intrusion Detection & Prevention
 # ===================================================================
@@ -27,13 +26,13 @@ services:
     container_name: security-crowdsec
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
+    - ALL
     cap_add:
-      - NET_ADMIN
-      - NET_RAW
-      - SYS_PTRACE
+    - NET_ADMIN
+    - NET_RAW
+    - SYS_PTRACE
     # CrowdSec needs:
     #   NET_RAW — ping-based liveness checks for scenario validation
     #   NET_ADMIN — network configuration for some parsers
@@ -42,16 +41,16 @@ services:
     volumes:
       # Docker socket via proxy (read-only, same as Traefik)
       # Socket proxy allows CONTAINERS=1, NETWORKS=1, SERVICES=1
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - crowdsec-config:/etc/crowdsec
-      - crowdsec-data:/var/lib/crowdsec/data
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - crowdsec-config:/etc/crowdsec
+    - crowdsec-data:/var/lib/crowdsec/data
       # Host auth logs for SSH brute force detection
-      - /var/log:/hostlog:ro
+    - /var/log:/hostlog:ro
     environment:
-      - TZ=${TZ}
-      - GID=${PGID}
+    - TZ=${TZ}
+    - GID=${PGID}
       # Pre-configured LAPI secret (set in secrets/security.env.encrypted)
-      - CROWDSEC_LAPI_SECRET=${CROWDSEC_LAPI_SECRET}
+    - CROWDSEC_LAPI_SECRET=${CROWDSEC_LAPI_SECRET}
       # Collections to install on first start:
       #   - linux: system-level parsers (ssh, auth, kernel)
       #   - sshd: SSH brute force detection
@@ -59,11 +58,11 @@ services:
       # NOTE: crowdsecurity/docker collection removed — it was a meta-collection that
       # installed docker-logs + cri-logs parsers, which the CrowdSec entrypoint already
       # installs automatically. The collection was removed from the hub index.
-      - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/traefik
+    - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/traefik
       # Don't share machine-specific metrics with CTI
-      - DISABLE_MACHINE_ID=false
+    - DISABLE_MACHINE_ID=false
     networks:
-      - backend_net
+    - backend_net
     healthcheck:
       test: ["CMD", "cscli", "version"]
       interval: 30s
@@ -75,7 +74,7 @@ services:
         limits:
           cpus: "1.0"
           memory: 256M
-          pids_limit: 100
+          pids: 100
     logging:
       driver: "json-file"
       options:
@@ -97,20 +96,20 @@ services:
     container_name: security-cf-workers-bouncer
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
+    - ALL
     depends_on:
       crowdsec:
         condition: service_healthy
     volumes:
-      - ./config/workers-bouncer:/config:rw
-      - /mnt/pool_HDD_x2/infra/bin/crowdsec-cloudflare-worker-bouncer:/usr/local/bin/crowdsec-cloudflare-worker-bouncer:ro
+    - ./config/workers-bouncer:/config:rw
+    - /mnt/pool_HDD_x2/infra/bin/crowdsec-cloudflare-worker-bouncer:/usr/local/bin/crowdsec-cloudflare-worker-bouncer:ro
     environment:
-      - TZ=${TZ}
+    - TZ=${TZ}
     command: ["/usr/local/bin/crowdsec-cloudflare-worker-bouncer", "-c", "/config/config.yaml"]
     networks:
-      - backend_net
+    - backend_net
     healthcheck:
       test: ["CMD", "pgrep", "-f", "crowdsec-cloudflare-worker-bouncer"]
       interval: 30s
@@ -122,7 +121,7 @@ services:
         limits:
           cpus: "1.0"
           memory: 64M
-          pids_limit: 100
+          pids: 100
     logging:
       driver: "json-file"
       options:
