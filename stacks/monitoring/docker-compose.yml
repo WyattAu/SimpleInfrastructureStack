@@ -412,8 +412,7 @@ services:
     entrypoint:
     - /entrypoint.sh
     environment:
-    - NTFY_TOPIC_CRITICAL_URL=${NTFY_TOPIC_CRITICAL_URL}
-    - NTFY_TOPIC_INFO_URL=${NTFY_TOPIC_INFO_URL}
+    - NTFY_TOPIC=${NTFY_TOPIC}
     command:
     - --config.file=/etc/alertmanager/alertmanager.yml
     - --storage.path=/alertmanager
