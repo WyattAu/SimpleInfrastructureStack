@@ -28,11 +28,7 @@ route:
 receivers:
   - name: 'ntfy'
     webhook_configs:
-      - url: '${NTFY_TOPIC_CRITICAL_URL}'
-        send_resolved: true
-  - name: 'ntfy-info'
-    webhook_configs:
-      - url: '${NTFY_TOPIC_INFO_URL}'
+      - url: 'https://ntfy.sh/${NTFY_TOPIC}'
         send_resolved: true
 
 inhibit_rules:

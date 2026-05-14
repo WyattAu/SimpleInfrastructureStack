@@ -10,8 +10,7 @@ OUTPUT="/etc/alertmanager/alertmanager.yml"
 
 if [ -f "$TEMPLATE" ]; then
   sed \
-    -e "s|\${NTFY_TOPIC_CRITICAL_URL}|${NTFY_TOPIC_CRITICAL_URL}|g" \
-    -e "s|\${NTFY_TOPIC_INFO_URL}|${NTFY_TOPIC_INFO_URL}|g" \
+    -e "s|\${NTFY_TOPIC}|${NTFY_TOPIC}|g" \
     "$TEMPLATE" > "$OUTPUT"
 fi
 
