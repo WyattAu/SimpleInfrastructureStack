@@ -1,7 +1,7 @@
 ---
 keys:
   - &admin_age age13kqew6kglat9hlswcstcxpdtvfh8v7pckr0wt3qvqkn7u2cj3e6qnm03uc
-  - &recovery_age age15e06k0euwx8h4wy6trr7skrwhr2gzkdxgymhjxgkqc2j68tx3rq2d5qk6
+  - &recovery_age age15e06kq0euwx8h4wy6trr7skrwhr2gzkdxgymhjxgkqc2j68tx3rq2d5qk6
 creation_rules:
   - path_regex: ^secrets/.*\.env\.encrypted$
     key_groups:
