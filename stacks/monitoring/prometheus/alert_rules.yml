@@ -793,5 +793,17 @@ groups:
         annotations:
           summary: "ZFS pool {{ $labels.pool }} last scrubbed >45 days ago"
           description: >-
-            ZFS pool {{ $labels.pool }} has not been scrubbed in over 45 days.
-            Monthly scrubs are recommended to detect and repair silent data corruption.
+             ZFS pool {{ $labels.pool }} has not been scrubbed in over 45 days.
+             Monthly scrubs are recommended to detect and repair silent data corruption.
+
+  - name: database_performance
+    rules:
+      - alert: PostgresSlowQueryRate
+        expr: |
+          sum(rate(pg_stat_statements_mean_exec_time_seconds{quantile="0.99"}[5m])) by (instance) > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL slow queries (p99 >5s) on {{ $labels.instance }}"
+          description: "The 99th percentile query execution time on {{ $labels.instance }} has exceeded 5 seconds for 10 minutes."

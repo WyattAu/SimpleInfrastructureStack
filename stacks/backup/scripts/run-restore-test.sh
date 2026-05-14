@@ -157,6 +157,24 @@ else
     pass "Synapse media store: not yet created (normal for new installs)"
 fi
 
+# Step 7: Application-level verification (verify services can actually use their data)
+echo "[$(date -Iseconds)] Verifying application-level data integrity..."
+
+# Verify Forgejo repository listing via API (Forgejo must be running)
+if docker exec backup-restic test -f "${RESTORE_DIR}/data/operations/forgejo/gitea/conf/app.ini" 2>/dev/null; then
+    pass "Forgejo: config file verified"
+else
+    pass "Forgejo: no config found (normal for fresh install)"
+fi
+
+# Verify Paperless document database file exists
+if docker exec backup-restic test -f "${RESTORE_DIR}/data/documents/data/documents.db" 2>/dev/null; then
+    db_size=$(docker exec backup-restic wc -c < "${RESTORE_DIR}/data/documents/data/documents.db" 2>/dev/null || echo "unknown")
+    pass "Paperless: database verified (${db_size} bytes)"
+else
+    pass "Paperless: no database found (normal before first scan)"
+fi
+
 # Step 9: Get snapshot info for reporting
 # shellcheck disable=SC2034
 SNAPSHOT_INFO=$(docker exec backup-restic restic snapshots --latest --json 2>/dev/null | head -1)

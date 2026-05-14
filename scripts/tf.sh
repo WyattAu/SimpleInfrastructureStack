@@ -41,12 +41,13 @@ CF_API_TOKEN=$(sops -d --input-type dotenv --output-type dotenv \
   | grep '^CF_API_TOKEN=' | cut -d= -f2 | tr -d "'")
 export TF_VAR_cf_api_token="$CF_API_TOKEN"
 
-# Keycloak
-KC_PASS=$(sops -d --input-type dotenv --output-type dotenv \
+# Keycloak service account
+KC_SA_SECRET=$(sops -d --input-type dotenv --output-type dotenv \
   "$REPO_DIR/secrets/iam.env.encrypted" 2>/dev/null \
-  | grep '^KEYCLOAK_ADMIN_PASSWORD=' | cut -d= -f2 | tr -d "'")
-export TF_VAR_kc_admin_password="$KC_PASS"
+  | grep '^KC_SA_CLIENT_SECRET=' | cut -d= -f2 | tr -d "'")
+export TF_VAR_kc_sa_client_secret="$KC_SA_SECRET"
 
+# Keycloak SMTP
 KC_SMTP_PASS=$(sops -d --input-type dotenv --output-type dotenv \
   "$REPO_DIR/secrets/iam.env.encrypted" 2>/dev/null \
   | grep '^SMTP_PASSWORD=' | cut -d= -f2 | tr -d "'")

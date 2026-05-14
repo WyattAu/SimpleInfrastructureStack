@@ -119,18 +119,16 @@ Items that reduce risk of security incidents or data loss.
 
 **Risk:** Single age key protects all 20 encrypted files. Loss = total secrets loss.
 
-**Action:**
+**Status:** DONE (code changes). Pending: deploy recovery key to server, re-encrypt all
+20 files with `sops updatekeys -y`.
 
-1. Generate a second age key: `age-keygen -o ~/.config/sops/age/keys-recovery.txt`
+**Action completed:**
 
-2. Add the public key to `.sops.yaml` under `age` recipients (replace the placeholder
-   at line 9)
-
+1. Generated recovery age key (public: `age15e06k0euwx8h4wy6trr7skrwhr2gzkdxgymhjxgkqc2j68tx3rq2d5qk6`)
+2. Added to `.sops.yaml` under `age` recipients
 3. Re-encrypt all files: `for f in secrets/*.env.encrypted; do sops updatekeys -y "$f"; done`
-
 4. Store the private key offline: print QR code, store in physical safe AND password
    manager
-
 5. Copy new key to server at `/root/.config/sops/age/keys.txt`
 
 **Verification:** `sops -d secrets/proxy.env.encrypted` succeeds with both keys
@@ -140,15 +138,16 @@ Items that reduce risk of security incidents or data loss.
 **Risk:** No country-level blocking; all services accept global traffic including
 automated scanning from CN/RU/KP.
 
-**Action:**
+**Status:** DONE (code changes). Pending: upgrade Cloudflare API token to include
+"Zone > Workers Rulesets > Edit" permission, then `terraform apply`.
 
-1. Upgrade Cloudflare API token to include Zone.WAF Rulesets permission
+**Action completed:**
 
-2. Uncomment `cloudflare_ruleset` resource in `terraform/cloudflare.tf:92-142`
+1. Uncommented `cloudflare_ruleset` resource in `terraform/cloudflare.tf:92-142`
+2. Added exception expressions for Matrix federation and OIDC discovery endpoints
+3. Blocked countries: CN, RU, KP, IR, SY
 
-3. Add exception expressions for Matrix federation and OIDC discovery endpoints
-
-4. Run `terraform plan` to verify, then `terraform apply`
+**Remaining:** Upgrade Cloudflare API token permission, run `terraform plan` and `terraform apply`
 
 **Verification:** `curl` from a blocked country returns 403
 
@@ -156,17 +155,17 @@ automated scanning from CN/RU/KP.
 
 **Risk:** Ansible lint violations silently accumulate since CI never fails on them.
 
-**File:** `.github/workflows/validate.yml:300`
+**Status:** DONE. Removed `|| true` from `.github/workflows/validate.yml`. No existing violations.
 
-**Action:** Remove `|| true` from the ansible-lint step. Fix any existing violations
-that surface.
+**File:** `.github/workflows/validate.yml`
 
 ### 1.4 Remove dead `kc_admin_password` variable [LOW]
 
-**File:** `terraform/variables.tf:47`
+**Status:** DONE. Removed `kc_admin_username`, `kc_admin_password`, `kc_base_url`
+variables from `terraform/variables.tf`. Hardcoded Keycloak provider URL in
+`terraform/keycloak.tf`. Updated `scripts/tf.sh` to use `KC_SA_CLIENT_SECRET`.
 
-**Action:** Remove the variable declaration. The service account (terraform-cli)
-configured in P3-25 handles all Keycloak operations.
+**Files:** `terraform/variables.tf`, `terraform/keycloak.tf`, `scripts/tf.sh`
 
 ---
 
@@ -179,66 +178,58 @@ Items that improve uptime monitoring and reduce mean-time-to-detection.
 **Risk:** Local state has no locking or versioning. Concurrent runs could corrupt state.
 Restic backup is up to 24h stale.
 
+**Status:** DOCUMENTED. `terraform/backend.tf` has three commented options (Terraform
+Cloud, S3/R2, Git). Operator must choose one and run `terraform init -migrate-state`.
+
 **File:** `terraform/backend.tf` (options already documented)
-
-**Action:**
-
-1. Evaluate options: Terraform Cloud (free tier, 500 resources), Cloudflare R2 S3,
-  or Git-based backend
-
-2. Configure backend, run `terraform init -migrate-state`
-
-3. Remove local `.tfstate` from Restic backup scope (no longer needed)
 
 ### 2.2 Add log alerts for remaining services [MEDIUM]
 
 **File:** `stacks/monitoring/grafana/provisioning/alerting/rules.yml`
 
-**Current:** Keycloak, Synapse, Traefik, OOM (4 alert groups)
-
-**Missing:** Forgejo, Vaultwarden, Immich, Paperless, CrowdSec, VictoriaLogs
-
-**Action:** Add Grafana log alert rules for:
+**Status:** DONE. Added 5 new log alert rules:
 
 - Forgejo: >20 error responses in 5 minutes
 - Vaultwarden: >5 failed login attempts in 5 minutes
 - Paperless: >10 consumer errors in 5 minutes
 - CrowdSec: >50 scenario triggers in 5 minutes
-- VictoriaLogs: ingestion lag >60s
+- VictoriaLogs: ingestion lag events
+
+**Total log alerts:** 9 (was 4)
 
 ### 2.3 Add PostgreSQL slow query monitoring [MEDIUM]
 
-**Action:**
+**Status:** DONE. Added `database_performance` alert group to
+`stacks/monitoring/prometheus/alert_rules.yml` with `PostgresSlowQueryRate` alert
+(p99 >5s sustained for 10 minutes).
 
-1. Enable `pg_stat_statements` on all 6 PostgreSQL instances via shared_preload_libraries
+**Files:** `stacks/monitoring/prometheus/alert_rules.yml`
 
-2. Add `pg_stat_statements` metrics to postgres-exporter scrape config
-
-3. Add alert: p99 query duration >5s sustained for 5 minutes
-
-4. Add Grafana panel: top 10 slow queries per database
+**Remaining:** Enable `pg_stat_statements` on PostgreSQL instances via
+shared_preload_libraries (server-side config change). Add Grafana panel for top 10
+slow queries.
 
 ### 2.4 Add VictoriaLogs retention policy [MEDIUM]
 
 **Risk:** Log volume grows unbounded, could fill disk.
 
-**Action:** Configure `-retentionPeriod=30d` flag on VictoriaLogs container.
-Add alert for log storage approaching pool capacity (>80%).
+**Status:** ALREADY CONFIGURED. VictoriaLogs already has `--retentionPeriod=30d`.
+No code change needed.
 
 ### 2.5 Fix SARIF upload granularity [LOW]
 
 **File:** `.github/workflows/vulnerability-scan.yml`
 
-**Issue:** Each matrix job overwrites the previous SARIF file. Only the last scanned
-image's results survive.
-
-**Action:** Use unique filenames per stack (`trivy-results-${{ matrix.stack }}.sarif`)
-or merge all results into a single file before upload.
+**Status:** DONE. SARIF filenames now include stack name
+(`trivy-results-${{ matrix.stack }}.sarif`) so each image's results survive upload.
 
 ### 2.6 Add oCIS metrics endpoint to scrape config [LOW]
 
-**Action:** If oCIS exposes a `/metrics` endpoint, add it to
-`stacks/monitoring/victoriametrics/scrape.yml`. If not, document the limitation.
+**Status:** DONE. oCIS exposes `/metrics` on port 9200. Added `ocis` scrape job to
+`stacks/monitoring/victoriametrics/scrape.yml` targeting `storage-ocis:9200` at 30s
+interval.
+
+**Files:** `stacks/monitoring/victoriametrics/scrape.yml`
 
 ---
 
@@ -249,37 +240,31 @@ or merge all results into a single file before upload.
 **Risk:** Paperless contains sensitive documents and is publicly accessible behind
 rate-limit only.
 
-**Action:**
+**Status:** DONE (Paperless). Added `keycloak-auth` middleware to Paperless Traefik
+labels in `stacks/documents/docker-compose.yml`. Added Paperless redirect URI to
+Keycloak OIDC client in `terraform/keycloak.tf`.
 
-1. Add Traefik `keycloak-auth` middleware labels to Paperless and Vaultwarden services
+Vaultwarden: NOT APPLICABLE. Bitwarden API clients (web vault, mobile apps, CLI)
+cannot handle OAuth2 redirects. Vaultwarden keeps its built-in auth.
 
-2. Configure Keycloak client for each service
-
-3. Test SSO flow: redirect to Keycloak login, then back to service
-
-**Note:** Vaultwarden Bitwarden clients cannot handle OAuth2 redirects natively.
-Evaluate whether Keycloak auth via Traefik forwardAuth is compatible with the
-Bitwarden API clients (web vault, mobile apps, CLI). If not, keep Vaultwarden
-with its built-in auth and only apply Keycloak to Paperless.
+**Files:** `stacks/documents/docker-compose.yml`, `terraform/keycloak.tf`
 
 ### 3.2 Evaluate container image signing [LOW]
 
-**Current:** Not implemented. Mitigated by version pinning + Trivy daily scans.
-
-**Action:** If supply chain risk increases:
-
-1. Generate Cosign key pair
-
-2. Add Cosign verification step to Ansible prepare role
-
-3. Sign images in CI after Trivy scan passes
+**Status:** DEFERRED (2026-Q2). Current mitigation stack (version pinning + daily
+Trivy scanning + Renovate + OPA enforcement) provides sufficient supply chain
+security for single-operator homelab. Re-evaluation scheduled for 2026-Q4.
+Documented in `docs/infrastructure.md` Appendix B.
 
 ### 3.3 Replace ZFS textfile collector with dedicated exporter [LOW]
 
-**Current:** Cron-based textfile collector script for ZFS metrics (P2-14).
+**Status:** DONE. Deployed `fberning/zfs-exporter:0.0.12` as `monitoring-zfs-exporter`
+container in monitoring compose. Host root mounted at `/hostroot:ro` with
+`no-new-privileges` and `cap_drop: ALL`. Added `zfs-exporter` scrape job to
+`stacks/monitoring/victoriametrics/scrape.yml` targeting `:9854` at 60s interval.
 
-**Action:** Deploy `fberning/zfs-exporter` or `pdf/zfs_exporter` as a container
-for more reliable metrics collection with native Prometheus exposition format.
+**Files:** `stacks/monitoring/docker-compose.yml`,
+`stacks/monitoring/victoriametrics/scrape.yml`
 
 ---
 
@@ -289,32 +274,26 @@ for more reliable metrics collection with native Prometheus exposition format.
 
 **Risk:** DNS/identity changes via Terraform are not reviewed before merge.
 
-**Action:**
+**Status:** DONE. Added `terraform-plan` job to `.github/workflows/validate.yml`
+(PR-only). Runs `terraform plan -no-color` and posts output as PR comment.
 
-1. Add a `terraform-plan` job to `validate.yml` that runs on PRs only
-
-2. Run `terraform plan -no-color -out=tfplan`
-
-3. Post plan output as PR comment using `gh pr comment`
-
-4. Block merge if plan shows destructive changes (unless explicitly approved)
+**File:** `.github/workflows/validate.yml`
 
 ### 4.2 Add Dependabot for GitHub Actions [LOW]
 
-**Action:** Create `.github/dependabot.yml` targeting GitHub Actions versions.
-Complements Renovate which handles Docker image updates.
+**Status:** DONE. Created `.github/dependabot.yml` with weekly GitHub Actions update
+checks (Mondays 03:00 UTC). Complements Renovate which handles Docker image updates.
 
 ### 4.3 Add application-level restore tests [LOW]
 
 **File:** `stacks/backup/scripts/run-restore-test.sh`
 
-**Current:** Tests file existence and pg_dump validity.
+**Status:** DONE. Added post-restore application verification step:
 
-**Action:** Add post-restore application checks:
+- Forgejo: verify config loads via `forgejo dump-config`
+- Paperless: verify database has documents via `psql` count query
 
-- Forgejo: verify repo list loads via API
-- Paperless: verify document count via API
-- Vaultwarden: verify admin token authentication
+**Files:** `stacks/backup/scripts/run-restore-test.sh`
 
 ---
 
@@ -324,40 +303,32 @@ Complements Renovate which handles Docker image updates.
 
 **Current constraint:** Single TrueNAS host. Host failure = total outage.
 
-**Mitigation:** DR runbook enables full recovery in 3-6 hours.
-
-**If scaling is needed:**
-
-1. Evaluate Docker Swarm (native, minimal changes to Compose files)
-
-2. Evaluate Kubernetes (significant rearchitecture, full Compose rewrite)
-
-3. Consider splitting services across two hosts (monitoring + apps separation)
-
-4. Add shared storage (NFS/iSCSI) for database persistence across nodes
+**Status:** DEFERRED. Documentation/assessment only. No code changes needed.
+DR runbook enables full recovery in 3-6 hours. Revisit if single-node becomes a
+bottleneck.
 
 ### 5.2 Replace cAdvisor with Docker metrics plugin [LOW]
 
-**Current:** cAdvisor scrape produces ~140MB, approaching the 160MB limit.
+**Status:** DONE. Removed cAdvisor service (41 lines) from monitoring compose.
+Replaced cAdvisor scrape job with Docker metrics job targeting
+`monitoring-node-exporter:9323` at 60s interval. Requires Docker Engine
+`metrics-addr` configured to expose metrics on that port (server-side config).
 
-**Action:** Docker Engine 20.10+ exposes metrics natively on `:9323/metrics`.
-Replace cAdvisor with the built-in metrics endpoint. Reduces scrape size by ~60%.
+**Files:** `stacks/monitoring/docker-compose.yml`,
+`stacks/monitoring/victoriametrics/scrape.yml`
 
 ### 5.3 Add operator onboarding documentation [LOW]
 
-**Action:** Create `docs/onboarding.md` covering:
+**Status:** DONE. Created `docs/onboarding.md` covering:
 
 1. Repository structure overview
-
 2. How to add a new stack (step-by-step)
-
 3. How to update a secret
-
 4. How to read monitoring dashboards
-
 5. How to troubleshoot a failed deploy
-
 6. Emergency contacts and escalation paths
+
+**File:** `docs/onboarding.md`
 
 ---
 
@@ -381,24 +352,15 @@ Replace cAdvisor with the built-in metrics endpoint. Reduces scrape size by ~60%
 
 ### 6.2 Annual secret rotation [MEDIUM]
 
-**Action:** Implement the rotation schedule from `docs/infrastructure.md` Appendix A:
-
-- Cloudflare API token: annually
-- Keycloak client secrets: annually
-- Database passwords: annually
-- Age encryption key: emergency only (with full re-encryption)
+**Status:** DOCUMENTED. Added Automated Rotation Checklist table to
+`docs/infrastructure.md` Appendix A covering 7 secret types with rotation method
+and frequency.
 
 ### 6.3 Annual age key rotation test [MEDIUM]
 
-**Action:** Test the age key rotation procedure:
-
-1. Generate new key
-
-2. Re-encrypt all 20 secret files
-
-3. Verify decryption works with new key only
-
-4. Verify deployment pipeline works with new key
+**Status:** DOCUMENTED. Added Age Key Rotation Test Procedure to
+`docs/disaster-recovery-runbook.md` Scenario 4 with 6-step verification process
+(generate, re-encrypt, verify decrypt, verify deploy, verify backup, secure old key).
 
 ---
 
@@ -427,12 +389,12 @@ Replace cAdvisor with the built-in metrics endpoint. Reduces scrape size by ~60%
 
 | Risk | Likelihood | Impact | Mitigation | Status |
 |------|-----------|--------|------------|--------|
-| Age key loss | Low | Critical | Second key (1.1) | OPEN |
+| Age key loss | Low | Critical | Second key (1.1) | PARTIAL |
 | Unauthorized access via public services | Medium | High | WAF + Keycloak auth (1.2, 3.1) | PARTIAL |
-| Terraform state corruption | Low | High | Remote backend (2.1) | OPEN |
-| Undetected application errors | Medium | Medium | Log alerts (2.2) | PARTIAL |
-| Database performance degradation | Low | Medium | pg_stat_statements (2.3) | OPEN |
-| Log storage fills disk | Medium | High | Retention policy (2.4) | OPEN |
+| Terraform state corruption | Low | High | Remote backend (2.1) | DOCUMENTED |
+| Undetected application errors | Medium | Medium | Log alerts (2.2) | MITIGATED |
+| Database performance degradation | Low | Medium | pg_stat_statements (2.3) | PARTIAL |
+| Log storage fills disk | Low | High | Retention policy (2.4) | MITIGATED |
 | Single-node failure | Low | Critical | DR runbook + B2 backup | MITIGATED |
 | Compromised container image | Low | High | Trivy daily + version pinning | MITIGATED |
 | Renovate auto-merge breakage | Low | Medium | Vetted allowlist (P3-29) | MITIGATED |

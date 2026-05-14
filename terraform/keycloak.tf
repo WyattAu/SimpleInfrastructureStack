@@ -22,7 +22,7 @@
 # ===================================================================
 
 provider "keycloak" {
-  url       = var.kc_base_url
+  url       = "https://auth.wyattau.com"
   realm     = "master"
   client_id = var.kc_sa_client_id
   username  = ""
@@ -66,6 +66,7 @@ resource "keycloak_openid_client" "oauth2_proxy" {
     "https://kuma.wyattau.com/*",
     "https://prometheus.wyattau.com/*",
     "https://taiga.wyattau.com/*",
+    "https://docs.wyattau.com/*",
     "https://traefik.wyattau.com/*",
   ]
   web_origins = [
@@ -76,6 +77,7 @@ resource "keycloak_openid_client" "oauth2_proxy" {
     "https://kuma.wyattau.com",
     "https://prometheus.wyattau.com",
     "https://taiga.wyattau.com",
+    "https://docs.wyattau.com",
     "https://traefik.wyattau.com",
   ]
   root_url = "https://auth.wyattau.com"

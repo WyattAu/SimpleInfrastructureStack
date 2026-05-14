@@ -283,53 +283,37 @@ services:
       options:
         max-size: 10m
         max-file: '3'
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION}
-    container_name: monitoring-cadvisor
-    restart: unless-stopped
-    security_opt:
-    - no-new-privileges:true
-    cap_drop:
-    - ALL
-    devices:
-    - /dev/kmsg:/dev/kmsg:ro
-    volumes:
-    - /:/rootfs:ro
-    - /var/run:/var/run:ro
-    - /sys:/sys:ro
-    - /var/lib/docker/:/var/lib/docker:ro
-    - /dev/disk/:/dev/disk:ro
-    command:
-    - --housekeeping_interval=120s
-    - --docker_only=true
-    - --disable_metrics=disk,diskIO,referenced_memory
-    networks:
-    - backend_net
-    healthcheck:
-      test:
-      - CMD-SHELL
-      - wget -qO- http://127.0.0.1:8080/healthz || exit 1
-      interval: 60s
-      timeout: 30s
-      start_period: 120s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 256M
-          pids: 100
-    logging:
-      driver: json-file
-      options:
-        max-size: 10m
-        max-file: '3'
   textfile-init:
     image: busybox:1.37.0
     container_name: monitoring-textfile-init
     command: sh -c "mkdir -p /textfile-collector && printf '# HELP sis_backup_last_success Unix timestamp of last successful backup\\n# TYPE sis_backup_last_success gauge\\nsis_backup_last_success 0\\n# HELP sis_backup_last_run Unix timestamp of last backup attempt\\n# TYPE sis_backup_last_run gauge\\nsis_backup_last_run 0\\n# HELP sis_backup_offsite_last_success Unix timestamp of last successful offsite sync\\n# TYPE sis_backup_offsite_last_success gauge\\nsis_backup_offsite_last_success 0\\n' > /textfile-collector/backup.prom"
     volumes:
     - ${DATA_BASE_PATH}/monitoring/textfile-collector:/textfile-collector
+  monitoring-zfs-exporter:
+    image: fberning/zfs-exporter:0.0.12
+    container_name: monitoring-zfs-exporter
+    restart: unless-stopped
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    command:
+    - -poll=60
+    volumes:
+    - /:/hostroot:ro
+    networks:
+    - backend_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 64M
+          pids: 50
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
   node-exporter:
     image: prom/node-exporter:${NODE_EXPORTER_VERSION}
     container_name: monitoring-node-exporter
