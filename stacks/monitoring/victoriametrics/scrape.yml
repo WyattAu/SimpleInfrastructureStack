@@ -15,11 +15,14 @@ scrape_configs:
   - job_name: 'node-exporter'
     static_configs:
       - targets: ['monitoring-node-exporter:9100']
-  # Docker Engine metrics (replaces cAdvisor -- reduces scrape size ~60%)
-  - job_name: 'docker'
-    scrape_interval: 60s
+  # cAdvisor container metrics (tuned: disk/diskIO/tcp/udp/percpu disabled to
+  # reduce scrape size from ~140MB to ~15MB with 60+ containers on HDD-backed ZFS).
+  - job_name: 'cadvisor'
+    scrape_interval: 120s
+    scrape_timeout: 90s
+    max_scrape_size: 52428800  # 50MB (tuned metrics produce ~15MB)
     static_configs:
-      - targets: ['monitoring-node-exporter:9323']
+      - targets: ['monitoring-cadvisor:8080']
   - job_name: 'zfs-exporter'
     scrape_interval: 60s
     static_configs:

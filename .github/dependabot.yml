@@ -9,5 +9,7 @@ updates:
       time: "03:00"
       timezone: UTC
     groups:
-      - production-dependencies
-        applies-to: github-actions
+      - production-dependencies:
+          update-types:
+            - minor
+            - patch
