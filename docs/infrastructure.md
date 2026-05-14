@@ -539,6 +539,18 @@ If the age key is compromised, ALL secrets must be re-encrypted:
 4. Copy new key to server: `sudo cp ~/.config/sops/age/keys.txt /root/.config/sops/age/keys.txt`
 5. Test decryption: `sops -d secrets/proxy.env.encrypted`
 
+### Automated Rotation Checklist
+
+| Secret | Rotation Method | Automation | Status |
+|--------|----------------|-----------|--------|
+| Cloudflare API token | Cloudflare dashboard + SOPS update | Manual | Annual |
+| Keycloak client secrets | Keycloak Admin Console + SOPS update | Manual | Annual |
+| Database passwords | ALTER USER + SOPS update | Manual | Annual |
+| Forgejo admin token | gitea admin user generate-access-token | Manual | On compromise |
+| Webhook shared secret | openssl rand -hex 32 + update both locations | Manual | On compromise |
+| Age encryption key | Full re-encryption of all 20 files | Manual | Emergency only |
+| SOPS recovery key | sops updatekeys -y on all encrypted files | Manual | Emergency only |
+
 ---
 
 ## Appendix B: Container Image Signing Assessment
@@ -546,31 +558,22 @@ If the age key is compromised, ALL secrets must be re-encrypted:
 Container image signing (Cosign/Notation) adds supply chain verification by cryptographically
 signing container images to prove they haven't been tampered with.
 
-### Current Status: Not Implemented
+### Current Status: Evaluated, Not Required
 
-### Assessment
+### Assessment (2026-Q2 Re-evaluation)
 
 | Factor | Evaluation |
 |--------|------------|
-| Attack surface | Low — images pulled from trusted registries (GHCR, Docker Hub, Quay) |
-| Benefit | Medium — detect compromised upstream images |
-| Cost | High — requires Cosign + key management + signing pipeline |
-| Complexity | High — every image needs signing, rotation, verification |
-| Applicability | Low — personal homelab, not a production environment |
+| Attack surface | Low -- all images from trusted registries (GHCR, Docker Hub, Quay) with version pinning |
+| Supply chain risk | Low -- Renovate tracks upstream CVEs daily, Trivy scans nightly |
+| Image signing benefit | Marginal -- would catch registry compromise but adds significant ops overhead |
+| Implementation cost | High -- Cosign key management, per-image signing pipeline, rotation procedures |
+| Current mitigations | Version pinning (no `:latest` tags), daily Trivy CVE scanning, Renovate auto-tracking, OPA policy enforcement |
 
-### Future Implementation (If Needed)
+### Decision: Deferred
 
-If image signing becomes necessary:
+Container image signing is deferred. The current mitigation stack (version pinning + daily vulnerability scanning + OPA enforcement) provides sufficient supply chain security for a single-operator homelab. Re-evaluate if:
 
-1. **Generate Cosign key pair:** `cosign generate-key-pair`
-2. **Sign images in CI:** Add Cosign step to GitHub Actions validate.yml
-3. **Verify on deploy:** Add Cosign verification to Ansible prepare role
-4. **Key rotation:** Annual key rotation, store private key securely
-
-### Current Mitigations (Without Signing)
-
-- Images are version-pinned via `versions.env` (no `latest` tags)
-- Renovate tracks upstream vulnerabilities (daily Trivy scan)
-- `v2.32.3` Docker Compose doesn't support `--ansi` flag (version pinned)
-- Trusted registries only: ghcr.io, docker.io, quay.io
-- Daily vulnerability scanning via GitHub Actions (`vulnerability-scan.yml`)
+- A registry compromise affects pinned images
+- Multi-operator access requires stronger provenance guarantees
+- Regulatory requirements mandate image signing

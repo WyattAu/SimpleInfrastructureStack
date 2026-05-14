@@ -101,3 +101,118 @@ groups:
         annotations:
           summary: "OOM kill detected in container logs"
           description: "A container has logged an OOM kill event in the last 10 minutes."
+
+      - uid: log_forgejo_errors
+        title: Forgejo Error Logs
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: P8E80F9AEF21F6940
+            model:
+              editorMode: code
+              expr: '{job="forgejo"} _time:5m ~"(?i)(error|panic|fatal|500)" | stats count() > 20'
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Forgejo logging >20 errors in 5m"
+          description: "Forgejo has logged {{ $values.A }} error-level messages in the last 5 minutes."
+
+      - uid: log_vaultwarden_auth_failures
+        title: Vaultwarden Authentication Failures
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: P8E80F9AEF21F6940
+            model:
+              editorMode: code
+              expr: '{app="vaultwarden"} _time:5m ~"(?i)(invalid.*password|username.*not.*found|failed.*auth)" | stats count() > 5'
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Vaultwarden >5 auth failures in 5m"
+          description: "Vaultwarden has logged {{ $values.A }} authentication failures in the last 5 minutes."
+
+      - uid: log_paperless_consumer_errors
+        title: Paperless Consumer Errors
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: P8E80F9AEF21F6940
+            model:
+              editorMode: code
+              expr: '{app="paperless"} _time:5m ~"(?i)(consumer.*error|ocr.*fail|document.*corrupt)" | stats count() > 10'
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Paperless >10 consumer errors in 5m"
+          description: "Paperless-ngx has logged {{ $values.A }} consumer/OCR errors in the last 5 minutes."
+
+      - uid: log_crowdsec_alerts
+        title: CrowdSec High Alert Rate
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: P8E80F9AEF21F6940
+            model:
+              editorMode: code
+              expr: '{app="crowdsec"} _time:5m ~"(?i)(scenario.*trigger|alert|blocked)" | stats count() > 50'
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CrowdSec >50 alerts in 5m"
+          description: "CrowdSec has triggered {{ $values.A }} scenarios in the last 5 minutes."
+
+      - uid: log_victorialogs_ingestion_lag
+        title: VictoriaLogs Ingestion Lag
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: P8E80F9AEF21F6940
+            model:
+              editorMode: code
+              expr: '{job="victorialogs"} _time:5m ~"(?i)(ingestion.*lag|write.*timeout|queue.*full)" | stats count() > 3'
+              instant: true
+              legendFormat: ""
+              range: false
+              refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "VictoriaLogs ingestion lag detected"
+          description: "VictoriaLogs has reported {{ $values.A }} ingestion lag events in the last 5 minutes."

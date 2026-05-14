@@ -296,8 +296,7 @@ jobs:
         run: |
           ansible-lint ansible/playbooks/ ansible/roles/ \
             --exclude ansible/roles/prepare/tasks/decrypt.yml \
-            --skip-list role-name,no-changed-when,command-instead-of-shell \
-            || true
+            --skip-list role-name,no-changed-when,command-instead-of-shell
 
   markdown-link-check:
     name: Markdown Link Check
@@ -314,3 +313,50 @@ jobs:
           file-extension: .md
           use-quiet-mode: "yes"
           use-verbose-mode: "no"
+
+  terraform-plan:
+    name: Terraform Plan (PR only)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ">= 1.5.0"
+
+      - name: Terraform init
+        run: terraform init -backend=false -input=false
+        working-directory: terraform
+
+      - name: Terraform plan
+        id: plan
+        run: terraform plan -no-color -input=false -out=tfplan 2>&1
+        working-directory: terraform
+        continue-on-error: true
+
+      - name: Post plan as PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            export PLAN_OUTPUT="$(cat <<'ENDOFPLAN'
+            ${{ steps.plan.outputs.stdout }}
+            ENDOFPLAN
+            )"
+
+            gh pr comment ${{ github.event.pull_request.number }} \
+              --body "## Terraform Plan
+
+            <details><summary>Show plan output</summary>
+
+            \`\`\`
+            ${PLAN_OUTPUT}
+            \`\`\`
+
+            **Note:** This plan uses mock provider credentials. Resource IDs and
+            data sources will differ from actual apply. The purpose is to catch
+            syntax errors, breaking changes, and unintended resource modifications
+            before merge." \
+              || true

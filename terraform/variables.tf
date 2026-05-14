@@ -29,26 +29,10 @@ variable "cf_tunnel_id" {
   default     = "75ad59d3-5247-43f4-982a-48fe88c62247"
 }
 
-# --- Keycloak ---
-
-variable "kc_base_url" {
-  description = "Keycloak base URL (public, via Cloudflare proxy)"
-  type        = string
-  default     = "https://auth.wyattau.com"
-}
-
-variable "kc_admin_username" {
-  description = "Keycloak admin username (legacy, kept for reference)"
-  type        = string
-  default     = "admin"
-}
-
-variable "kc_admin_password" {
-  description = "Keycloak admin password (from SOPS secrets/iam.env.encrypted)"
-  type        = string
-  sensitive   = true
-}
-
+# --- Keycloak Service Account ---
+# Terraform authenticates as terraform-cli (dedicated service account).
+# See terraform/keycloak.tf header for setup instructions.
+# The legacy admin password variable was removed in favor of the SA.
 variable "kc_sa_client_id" {
   description = "Keycloak service account client ID for Terraform (set TF_VAR_kc_sa_client_id)"
   type        = string

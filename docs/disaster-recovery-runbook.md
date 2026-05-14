@@ -357,6 +357,22 @@ done
 # Copy new key to server
 ```
 
+### Age Key Rotation Test Procedure
+
+To verify the recovery key works before an actual emergency:
+
+1. Ensure the current `.sops.yaml` has both `*admin_age` and `*recovery_age` recipients
+2. Verify decryption works with the admin key:
+   `sops -d secrets/proxy.env.encrypted > /dev/null 2>&1 && echo "Admin key: OK"`
+3. Simulate admin key loss by temporarily removing it from `.sops.yaml`:
+   - Comment out the `&admin_age` line and its reference in `key_groups`
+   - Run `sops -d secrets/proxy.env.encrypted > /dev/null 2>&1` -- this MUST fail
+4. Verify decryption works with the recovery key alone:
+   - Uncomment only the `&recovery_age` line and reference in `key_groups`
+   - Run `sops -d secrets/proxy.env.encrypted > /dev/null 2>&1 && echo "Recovery key: OK"`
+5. Restore the admin key in `.sops.yaml`
+6. Document the test result with date in `.reports/key-rotation-test.md`
+
 ---
 
 ## Scenario 5: Cloudflare Tunnel Failure
