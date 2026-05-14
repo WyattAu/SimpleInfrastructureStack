@@ -1,139 +1,118 @@
----
 services:
   postgres-iam:
     image: postgres:${POSTGRES_VERSION}
     container_name: iam-postgres
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-    # Required by postgres entrypoint: chown data dir, gosu/su-exec to drop to postgres user
+    - ALL
     cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - FOWNER
-      - SETGID
-      - SETUID
-
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
     volumes:
-      - ${DATA_BASE_PATH}/iam/postgres:/var/lib/postgresql/data
+    - ${DATA_BASE_PATH}/iam/postgres:/var/lib/postgresql/data
     environment:
-      # These variables are used by the postgres image to initialize the database
-      - POSTGRES_DB=${KEYCLOAK_DATABASE_NAME}
-      - POSTGRES_USER=${KEYCLOAK_DATABASE_USER}
-      - POSTGRES_PASSWORD=${KEYCLOAK_DATABASE_PASSWORD}
-      # Hardening: limit max connections (default 100 is overkill for single-app DB)
-      - POSTGRES_INITDB_ARGS=--max-connections=30
+    - POSTGRES_DB=${KEYCLOAK_DATABASE_NAME}
+    - POSTGRES_USER=${KEYCLOAK_DATABASE_USER}
+    - POSTGRES_PASSWORD=${KEYCLOAK_DATABASE_PASSWORD}
+    - POSTGRES_INITDB_ARGS=--max-connections=30
     networks:
-      - data_net
+    - data_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${KEYCLOAK_DATABASE_USER} -d ${KEYCLOAK_DATABASE_NAME}"]
+      test:
+      - CMD-SHELL
+      - pg_isready -U ${KEYCLOAK_DATABASE_USER} -d ${KEYCLOAK_DATABASE_NAME}
       interval: 10s
       timeout: 5s
       retries: 5
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 512M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   keycloak:
     image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
     container_name: iam-keycloak
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-
-    command: ["start"]
-    # entrypoint: ["/bin/sh", "/opt/keycloak/bin/docker-entrypoint-override.sh"]
+    - ALL
+    command:
+    - start
     depends_on:
       postgres-iam:
         condition: service_healthy
-    # volumes:
-    #  - ./config/keycloak/docker-entrypoint-override.sh:/opt/keycloak/bin/docker-entrypoint-override.sh
-    #  - ./config/keycloak/company-realm.dist.json:/opt/keycloak/data/import/company-realm.json
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-      - KC_BOOTSTRAP_ADMIN_USERNAME=${KEYCLOAK_ADMIN_USER}
-      - KC_BOOTSTRAP_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
-      # --- Database Connection (Corrected for modern Keycloak) ---
-      - KC_DB=postgres
-      - KC_DB_URL=jdbc:postgresql://iam-postgres:5432/${KEYCLOAK_DATABASE_NAME}
-      - KC_DB_USERNAME=${KEYCLOAK_DATABASE_USER}
-      - KC_DB_PASSWORD=${KEYCLOAK_DATABASE_PASSWORD}
-      # --- Proxy and Hostname Configuration ---
-      - KC_HOSTNAME=auth.${DOMAIN_NAME}
-      - KC_PROXY_HEADERS=xforwarded
-      # Explicitly trust the public hostname and loopback.
-      # Prevents KC-SERVICES0101 "Failed to verify remote host" warnings
-      # from Cloudflare proxy IPs hitting the client-registration endpoint.
-      - KC_TRUSTED_HOSTS=auth.${DOMAIN_NAME},localhost,127.0.0.1
-      - KC_HEALTH_ENABLED=true
-      - KC_METRICS_ENABLED=true
-      - KC_HTTP_ENABLED=true
-      - KC_CACHE=local
-      # --- JVM Memory Tuning ---
-      # 4 users, local cache only. 768M heap + 256M metaspace fits comfortably
-      # in 1G container (was 2G, sitting at 97% utilization). Quarkus auto-sizes
-      # based on container limit; explicit JAVA_OPTS overrides that behavior.
-      - JAVA_OPTS=-Xmx768m -XX:MaxMetaspaceSize=256m -XX:+UseG1GC
-      # --- Database Connection Pool ---
-      # Default pool too small for scheduled tasks (ClearExpiredAdminEvents
-      # was failing with "Acquisition timeout while waiting for new connection").
-      - KC_DB_POOL_INITIAL_SIZE=5
-      - KC_DB_POOL_MAX_SIZE=20
-      # --- Email (SMTP) Settings ---
-      - KC_SMTP_HOST=${SMTP_HOST}
-      - KC_SMTP_PORT=${SMTP_PORT}
-      - KC_SMTP_AUTH=true
-      - KC_SMTP_USERNAME=${SMTP_USERNAME}
-      - KC_SMTP_PASSWORD=${SMTP_PASSWORD}
-      - KC_SMTP_FROM=noreply@${DOMAIN_NAME}
-      - KC_SMTP_STARTTLS=true
-    #  - OCIS_URL=https://${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
+    - PUID=${PUID}
+    - PGID=${PGID}
+    - TZ=${TZ}
+    - KC_BOOTSTRAP_ADMIN_USERNAME=${KEYCLOAK_ADMIN_USER}
+    - KC_BOOTSTRAP_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+    - KC_DB=postgres
+    - KC_DB_URL=jdbc:postgresql://iam-postgres:5432/${KEYCLOAK_DATABASE_NAME}
+    - KC_DB_USERNAME=${KEYCLOAK_DATABASE_USER}
+    - KC_DB_PASSWORD=${KEYCLOAK_DATABASE_PASSWORD}
+    - KC_HOSTNAME=auth.${DOMAIN_NAME}
+    - KC_PROXY_HEADERS=xforwarded
+    - KC_TRUSTED_HOSTS=auth.${DOMAIN_NAME},localhost,127.0.0.1
+    - KC_HEALTH_ENABLED=true
+    - KC_METRICS_ENABLED=true
+    - KC_HTTP_ENABLED=true
+    - KC_CACHE=local
+    - JAVA_OPTS=-Xmx768m -XX:MaxMetaspaceSize=256m -XX:+UseG1GC
+    - KC_DB_POOL_INITIAL_SIZE=5
+    - KC_DB_POOL_MAX_SIZE=20
+    - KC_SMTP_HOST=${SMTP_HOST}
+    - KC_SMTP_PORT=${SMTP_PORT}
+    - KC_SMTP_AUTH=true
+    - KC_SMTP_USERNAME=${SMTP_USERNAME}
+    - KC_SMTP_PASSWORD=${SMTP_PASSWORD}
+    - KC_SMTP_FROM=noreply@${DOMAIN_NAME}
+    - KC_SMTP_STARTTLS=true
     networks:
-      - traefik_net
-      - backend_net
-      - data_net
+    - traefik_net
+    - backend_net
+    - data_net
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.keycloak.rule=Host(`auth.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.keycloak.entrypoints=websecure"
-      - "traefik.http.routers.keycloak.service=keycloak-svc"
-      - "traefik.http.services.keycloak-svc.loadbalancer.server.port=8080"
-      - "traefik.http.routers.keycloak.tls.certresolver=cloudflare"
+    - traefik.enable=true
+    - traefik.docker.network=traefik_net
+    - traefik.http.routers.keycloak.rule=Host(`auth.${DOMAIN_NAME}`)
+    - traefik.http.routers.keycloak.entrypoints=websecure
+    - traefik.http.routers.keycloak.service=keycloak-svc
+    - traefik.http.services.keycloak-svc.loadbalancer.server.port=8080
+    - traefik.http.routers.keycloak.tls.certresolver=cloudflare
     healthcheck:
-      test: ['CMD-SHELL', '[ -f /tmp/HealthCheck.java ] || echo "public class HealthCheck { public static void main(String[] args) throws java.lang.Throwable { java.net.URI uri = java.net.URI.create(args[0]); System.exit(java.net.HttpURLConnection.HTTP_OK == ((java.net.HttpURLConnection)uri.toURL().openConnection()).getResponseCode() ? 0 : 1); } }" > /tmp/HealthCheck.java && java /tmp/HealthCheck.java http://127.0.0.1:9000/health/live']
+      test:
+      - CMD-SHELL
+      - '[ -f /tmp/HealthCheck.java ] || echo "public class HealthCheck { public static void main(String[] args) throws java.lang.Throwable { java.net.URI uri = java.net.URI.create(args[0]); System.exit(java.net.HttpURLConnection.HTTP_OK == ((java.net.HttpURLConnection)uri.toURL().openConnection()).getResponseCode() ? 0 : 1); } }" > /tmp/HealthCheck.java && java /tmp/HealthCheck.java http://127.0.0.1:9000/health/live'
       interval: 15s
       timeout: 5s
       retries: 10
     deploy:
       resources:
         limits:
-          cpus: "2.0"
+          cpus: '2.0'
           memory: 1G
-          pids_limit: 100
+          pids: 100
         reservations:
           cpus: '0.25'
           memory: 256M
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
 networks:
   traefik_net:
     external: true

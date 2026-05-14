@@ -17,8 +17,8 @@ Webhook (Cloudflare Tunnel) ──▶ TrueNAS SCALE
                               Ansible (site.yml)
                                   │
                                   ├── SOPS decrypt → template expansion
-                                   ├── docker compose up (16 stacks)
-                                   ├── health check (42 containers)
+                                   ├── docker compose up (20 stacks)
+                                   ├── health check (74 containers (including init containers))
                                   └── SOPS cleanup
 ```
 
@@ -37,7 +37,8 @@ TrueNAS SCALE Host
   │                    └── Socket-Proxy ──▶ Docker API (restricted read-only)
   │
   ├── [traefik_net]   Public-facing services (Traefik labels)
-  └── [backend_net]   Internal service communication (databases, monitoring)
+  ├── [backend_net]   Internal service communication (databases, monitoring)
+  └── [data_net]      Databases only (PostgreSQL, MariaDB, Redis, Valkey)
 ```
 
 ### Security
@@ -46,8 +47,8 @@ TrueNAS SCALE Host
 |-------|---------------|
 | TLS | Automatic Let's Encrypt via Cloudflare DNS-01 challenge |
 | Authentication | Centralized Keycloak SSO via OAuth2-Proxy forward auth |
-| Container Isolation | `no-new-privileges:true` on all services (except Collabora) |
-| Network Segmentation | 2 isolated networks: public (`traefik_net`), internal (`backend_net`) |
+| Container Isolation | `no-new-privileges:true` on all services (except Collabora, WireGuard, Taiga) |
+| Network Segmentation | 3 isolated networks: public (`traefik_net`), application (`backend_net`), database (`data_net`) |
 | CI/CD Security | Pull-based webhook via Cloudflare Tunnel, no SSH keys exposed |
 | Secrets | SOPS age-encrypted `.env.encrypted` files, decrypted only at deploy time |
 | Image Integrity | All images pinned to specific versions, enforced by OPA policy |
@@ -57,7 +58,7 @@ TrueNAS SCALE Host
 
 | Stack | Services | Purpose |
 |-------|----------|---------|
-| `proxy` | Traefik, OAuth2-Proxy, Cloudflare DDNS, Socket-Proxy, Well-Known | Gateway, TLS, SSO |
+| `proxy` | Traefik, OAuth2-Proxy, Cloudflare DDNS, Socket-Proxy | Gateway, TLS, SSO |
 | `iam` | Keycloak, PostgreSQL | Identity management |
 | `operations` | Forgejo, Forgejo Runner, PostgreSQL | Git hosting, CI/CD |
 | `collaboration` | Synapse, Element Web, Hookshot, PostgreSQL | Matrix chat, GitHub bridge |
@@ -72,6 +73,10 @@ TrueNAS SCALE Host
 | `documents` | Paperless-ngx, PostgreSQL, Redis | Document management |
 | `vpn` | WireGuard | VPN access |
 | `updater` | Watchtower (monitor-only) | Update notifications |
+| `security` | CrowdSec, CF Workers Bouncer | Intrusion detection and blocking |
+| `webhook` | infra-webhook | Deploy webhook receiver |
+| `books` | Calibre-Web | E-book library |
+| `project-management` | Taiga (back, front, async, events, gateway, protected, PostgreSQL, RabbitMQ) | Project management |
 
 ## Deployment
 
@@ -87,7 +92,7 @@ TrueNAS SCALE Host
 2. **CI validates**: yamllint, docker compose config, conftest OPA policies, ansible syntax
 3. **On success**: GitHub Actions POSTs to the webhook URL
 4. **Webhook container** on TrueNAS receives the payload, verifies HMAC
-5. **Ansible pipeline** runs: git pull → SOPS decrypt → template expansion → `docker compose up` → health checks → SOPS cleanup
+5. **Ansible pipeline** runs: git pull → SOPS decrypt → template expansion → terraform apply → docker compose up → health checks → SOPS cleanup
 6. **Health check** verifies all containers are healthy; deploy reports any unhealthy containers
 
 ### Manual Deploy
@@ -104,7 +109,11 @@ GitHub Actions runs on every push to `main` and on PRs:
 | Job | Checks |
 |-----|--------|
 | Compose Validation | yamllint, docker compose config, conftest OPA policies |
-| Ansible Syntax | Playbook syntax check, inventory validation |
+| Ansible Syntax | ansible-playbook --syntax-check, inventory validation, ansible-lint |
+| Terraform Validation | terraform fmt, terraform validate |
+| Trivy Security Scan | Dockerfile fs scan + compose config scan |
+| Secret Scanning | gitleaks |
+| Shell Linting | shellcheck |
 
 ## Secrets Management
 

@@ -1,21 +1,19 @@
----
 services:
   immich-server:
     image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION}
     container_name: photos-server
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_add:
-      - IPC_LOCK
-      - CHOWN
-      - DAC_OVERRIDE
-      - FOWNER
-      - SETGID
-      - SETUID
+    - IPC_LOCK
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
     cap_drop:
-      - ALL
-
+    - ALL
     command: start.sh
     depends_on:
       immich-postgres:
@@ -23,36 +21,36 @@ services:
       immich-valkey:
         condition: service_healthy
     volumes:
-      - ${DATA_BASE_PATH}/photos/upload:/usr/src/app/upload
-      - ${DATA_BASE_PATH}/photos/db:/var/lib/postgresql/data
-      - /etc/localtime:/etc/localtime:ro
+    - ${DATA_BASE_PATH}/photos/upload:/usr/src/app/upload
+    - ${DATA_BASE_PATH}/photos/db:/var/lib/postgresql/data
+    - /etc/localtime:/etc/localtime:ro
     environment:
-      - DB_HOSTNAME=immich-postgres
-      - DB_USERNAME=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_DATABASE_NAME=${POSTGRES_DB}
-      - REDIS_HOSTNAME=immich-valkey
-      - IMMICH_PORT=2283
-      - IMMICH_METRICS=true
-      - MACHINE_LEARNING_HOST=http://immich-ml:3003
-      - MACHINE_LEARNING_URL=http://immich-ml:3003
+    - DB_HOSTNAME=immich-postgres
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASSWORD}
+    - DB_DATABASE_NAME=${POSTGRES_DB}
+    - REDIS_HOSTNAME=immich-valkey
+    - IMMICH_PORT=2283
+    - IMMICH_METRICS=true
+    - MACHINE_LEARNING_HOST=http://immich-ml:3003
+    - MACHINE_LEARNING_URL=http://immich-ml:3003
     networks:
-      - traefik_net
-      - backend_net
-      - data_net
+    - traefik_net
+    - backend_net
+    - data_net
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.immich.rule=Host(`${PHOTOS_SUBDOMAIN}.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.immich.entrypoints=websecure"
-      # No keycloak-auth middleware: Immich has its own authentication.
-      # Mobile apps and CLI tools cannot handle OAuth2 redirects.
-      - "traefik.http.routers.immich.tls.certresolver=cloudflare"
-      - "traefik.http.routers.immich.middlewares=global-rate-limit"
-      - "traefik.http.services.immich.loadbalancer.server.port=2283"
-      - "traefik.http.services.immich.loadbalancer.server.scheme=http"
+    - traefik.enable=true
+    - traefik.docker.network=traefik_net
+    - traefik.http.routers.immich.rule=Host(`${PHOTOS_SUBDOMAIN}.${DOMAIN_NAME}`)
+    - traefik.http.routers.immich.entrypoints=websecure
+    - traefik.http.routers.immich.tls.certresolver=cloudflare
+    - traefik.http.routers.immich.middlewares=global-rate-limit
+    - traefik.http.services.immich.loadbalancer.server.port=2283
+    - traefik.http.services.immich.loadbalancer.server.scheme=http
     healthcheck:
-      test: ["CMD-SHELL", "curl -fSs http://127.0.0.1:2283/ || exit 1"]
+      test:
+      - CMD-SHELL
+      - curl -fSs http://127.0.0.1:2283/ || exit 1
       interval: 30s
       timeout: 10s
       start_period: 60s
@@ -60,134 +58,125 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "2.0"
+          cpus: '2.0'
           memory: 1G
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   immich-ml:
     image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_ML_VERSION}
     container_name: photos-ml
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-    # Required by immich-ml entrypoint: chown /cache dir
+    - ALL
     cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - FOWNER
-
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
     depends_on:
       immich-postgres:
         condition: service_healthy
     volumes:
-      - ${DATA_BASE_PATH}/photos/model-cache:/cache
+    - ${DATA_BASE_PATH}/photos/model-cache:/cache
     environment:
-      - MACHINE_LEARNING_HOST=0.0.0.0
-      - MACHINE_LEARNING_PORT=3003
-      - DB_HOSTNAME=immich-postgres
-      - DB_USERNAME=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_DATABASE_NAME=${POSTGRES_DB}
+    - MACHINE_LEARNING_HOST=0.0.0.0
+    - MACHINE_LEARNING_PORT=3003
+    - DB_HOSTNAME=immich-postgres
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASSWORD}
+    - DB_DATABASE_NAME=${POSTGRES_DB}
     networks:
-      - backend_net
-      - data_net
-    # immich-ml is a Python image — no wget/curl/nc available.
-    # Relies on Traefik health checking and Immich server-to-server checks.
-    # distroless_no_shell exemption covers this in OPA policy.
+    - backend_net
+    - data_net
     deploy:
       resources:
         limits:
-          cpus: "2.0"
+          cpus: '2.0'
           memory: 1G
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   immich-postgres:
     image: ghcr.io/immich-app/postgres:${IMMICH_POSTGRES_VERSION}
     container_name: photos-postgres
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-    # Required by postgres entrypoint: chown data dir, gosu/su-exec to drop to postgres user
+    - ALL
     cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - FOWNER
-      - SETGID
-      - SETUID
-
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
     volumes:
-      - ${DATA_BASE_PATH}/photos/db:/var/lib/postgresql/data
+    - ${DATA_BASE_PATH}/photos/db:/var/lib/postgresql/data
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      # Hardening: limit max connections (Immich has built-in connection pooling)
-      - POSTGRES_INITDB_ARGS=--max-connections=40
+    - POSTGRES_USER=${POSTGRES_USER}
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    - POSTGRES_DB=${POSTGRES_DB}
+    - POSTGRES_INITDB_ARGS=--max-connections=40
     networks:
-      - data_net
+    - data_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test:
+      - CMD-SHELL
+      - pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
       interval: 10s
       timeout: 5s
       retries: 5
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 512M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   immich-valkey:
     image: valkey/valkey:${VALKEY_VERSION}
     container_name: photos-valkey
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-    # Required by valkey entrypoint: setpriv to drop to valkey user
+    - ALL
     cap_add:
-      - SETUID
-      - SETGID
-
+    - SETUID
+    - SETGID
     networks:
-      - data_net
+    - data_net
     healthcheck:
-      test: ["CMD", "valkey-cli", "ping"]
+      test:
+      - CMD
+      - valkey-cli
+      - ping
       interval: 10s
       timeout: 5s
       retries: 5
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 256M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
 networks:
   traefik_net:
     external: true

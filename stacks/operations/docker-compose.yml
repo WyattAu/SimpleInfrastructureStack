@@ -1,156 +1,117 @@
----
-
 services:
   postgres-forgejo:
     image: postgres:${POSTGRES_FORGEJO_VERSION}
     container_name: operations-postgres-forgejo
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-    # Required by postgres entrypoint: chown data dir, gosu/su-exec to drop to postgres user
+    - ALL
     cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - FOWNER
-      - SETGID
-      - SETUID
-
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
     volumes:
-      - ${DATA_BASE_PATH}/operations/postgres-forgejo:/var/lib/postgresql/data
+    - ${DATA_BASE_PATH}/operations/postgres-forgejo:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=${POSTGRES_DB_FORGEJO}
-      - POSTGRES_USER=${POSTGRES_USER_FORGEJO}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_FORGEJO}
-      # Hardening: limit max connections (Forgejo is single-app, moderate concurrency)
-      - POSTGRES_INITDB_ARGS=--max-connections=30
+    - POSTGRES_DB=${POSTGRES_DB_FORGEJO}
+    - POSTGRES_USER=${POSTGRES_USER_FORGEJO}
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_FORGEJO}
+    - POSTGRES_INITDB_ARGS=--max-connections=30
     networks:
-      - data_net
+    - data_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER_FORGEJO} -d ${POSTGRES_DB_FORGEJO}"]
+      test:
+      - CMD-SHELL
+      - pg_isready -U ${POSTGRES_USER_FORGEJO} -d ${POSTGRES_DB_FORGEJO}
       interval: 10s
       timeout: 5s
       retries: 5
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 512M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   forgejo:
     image: code.forgejo.org/forgejo/forgejo:${FORGEJO_VERSION}
     container_name: operations-forgejo
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-    # Required by Forgejo entrypoint (s6-overlay): chown/chmod data dirs,
-    # su-exec to drop privileges, create /data/git/.ssh/environment
+    - ALL
     cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - FOWNER
-      - SETGID
-      - SETUID
-
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
     ports:
-      - "127.0.0.1:2222:2522"
+    - 127.0.0.1:2222:2522
     depends_on:
       postgres-forgejo:
         condition: service_healthy
     volumes:
-      - ${DATA_BASE_PATH}/operations/forgejo:/data
-    # user: "${PUID}:${PGID}"
+    - ${DATA_BASE_PATH}/operations/forgejo:/data
     environment:
-      # --- System Settings ---
-      - USER=git
-      # official documentation prefer USER_UID and USER_GID https://forgejo.org/docs/v1.21/admin/installation-docker/
-      - USER_UID=${PUID}
-      - USER_GID=${PGID}
-      # - PUID=${PUID}
-      # - PGID=${PGID}
-      - TZ=${TZ}
-
-      # --- Database Settings ---
-      - FORGEJO__database__DB_TYPE=postgres
-      - FORGEJO__database__HOST=operations-postgres-forgejo:5432
-      - FORGEJO__database__NAME=${POSTGRES_DB_FORGEJO}
-      - FORGEJO__database__USER=${POSTGRES_USER_FORGEJO}
-      - FORGEJO__database__PASSWD=${POSTGRES_PASSWORD_FORGEJO}
-
-      # --- Server Settings ---
-      - FORGEJO__server__DOMAIN=${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
-      - FORGEJO__server__ROOT_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
-
-      # --- SSH ---
-      - FORGEJO__server__SSH_DOMAIN=ssh.wyattau.com
-      - FORGEJO__server__SSH_PORT=2222
-      - FORGEJO__server__START_SSH_SERVER=true
-
-      # --- Native OIDC Authentication Settings ---
-      - FORGEJO__oauth2_client__ENABLED=true
-      - FORGEJO__oauth2_client__PROVIDERS=keycloak
-      - FORGEJO__oauth2_client__keycloak__PROVIDER=openidConnect
-      - FORGEJO__oauth2_client__keycloak__CLIENT_ID=forgejo
-      - FORGEJO__oauth2_client__keycloak__CLIENT_SECRET=${FORGEJO_OIDC_CLIENT_SECRET}
-      - FORGEJO__oauth2_client__keycloak__AUTO_DISCOVER_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/.well-known/openid-configuration
-
-      # --- UI/Service Settings ---
-      # - FORGEJO__service__DISABLE_REGISTRATION=false
-      - FORGEJO__service__SHOW_REGISTRATION_BUTTON=false
-
-      # --- Email Settings ---
-      - FORGEJO__mailer__ENABLED=true
-      - FORGEJO__mailer__SMTP_ADDR=${SMTP_HOST}:${SMTP_PORT}
-      - FORGEJO__mailer__FROM=noreply@${DOMAIN_NAME}
-      - FORGEJO__mailer__USER=${SMTP_USERNAME}
-      - FORGEJO__mailer__PASSWD=${SMTP_PASSWORD}
-
-      # --- Other Settings ---
-      - FORGEJO__actions__ENABLED=true
-      - FORGEJO__container__ENABLE=true
-      - FORGEJO__container__REGISTRY_HOST=${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}
-    # - FORGEJO__metrics__ENABLED=true
+    - USER=git
+    - USER_UID=${PUID}
+    - USER_GID=${PGID}
+    - TZ=${TZ}
+    - FORGEJO__database__DB_TYPE=postgres
+    - FORGEJO__database__HOST=operations-postgres-forgejo:5432
+    - FORGEJO__database__NAME=${POSTGRES_DB_FORGEJO}
+    - FORGEJO__database__USER=${POSTGRES_USER_FORGEJO}
+    - FORGEJO__database__PASSWD=${POSTGRES_PASSWORD_FORGEJO}
+    - FORGEJO__server__DOMAIN=${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
+    - FORGEJO__server__ROOT_URL=https://${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}
+    - FORGEJO__server__SSH_DOMAIN=ssh.wyattau.com
+    - FORGEJO__server__SSH_PORT=2222
+    - FORGEJO__server__START_SSH_SERVER=true
+    - FORGEJO__oauth2_client__ENABLED=true
+    - FORGEJO__oauth2_client__PROVIDERS=keycloak
+    - FORGEJO__oauth2_client__keycloak__PROVIDER=openidConnect
+    - FORGEJO__oauth2_client__keycloak__CLIENT_ID=forgejo
+    - FORGEJO__oauth2_client__keycloak__CLIENT_SECRET=${FORGEJO_OIDC_CLIENT_SECRET}
+    - FORGEJO__oauth2_client__keycloak__AUTO_DISCOVER_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/.well-known/openid-configuration
+    - FORGEJO__service__SHOW_REGISTRATION_BUTTON=false
+    - FORGEJO__mailer__ENABLED=true
+    - FORGEJO__mailer__SMTP_ADDR=${SMTP_HOST}:${SMTP_PORT}
+    - FORGEJO__mailer__FROM=noreply@${DOMAIN_NAME}
+    - FORGEJO__mailer__USER=${SMTP_USERNAME}
+    - FORGEJO__mailer__PASSWD=${SMTP_PASSWORD}
+    - FORGEJO__actions__ENABLED=true
+    - FORGEJO__container__ENABLE=true
+    - FORGEJO__container__REGISTRY_HOST=${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}
     networks:
-      - traefik_net
-      - backend_net
-      - data_net
+    - traefik_net
+    - backend_net
+    - data_net
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik_net"
-
-      # --- 1. DEFINE A SINGLE SERVICE for the Forgejo container ---
-      - "traefik.http.services.forgejo-svc.loadbalancer.server.port=3000"
-
-      # --- 2. CONFIGURE THE ROUTER for the Forgejo Web UI ---
-      - "traefik.http.routers.forgejo-web.rule=Host(`${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.forgejo-web.entrypoints=websecure"
-      - "traefik.http.routers.forgejo-web.tls.certresolver=cloudflare"
-      - "traefik.http.routers.forgejo-web.middlewares=keycloak-auth"
-      - "traefik.http.routers.forgejo-web.service=forgejo-svc"
-
-      # --- 3. CONFIGURE THE ROUTER for the Forgejo Container Registry ---
-      # NOTE: keycloak-auth middleware CANNOT be applied here because Docker's
-      # registry client (docker pull/push) does not follow HTTP redirects.
-      # The OAuth2 forwardAuth middleware returns 302 for unauthenticated requests,
-      # which Docker's registry v2 client interprets as a server error.
-      # Registry auth is handled by Forgejo's built-in token-based authentication
-      # (docker login registry-forgejo.wyattau.com with a Forgejo access token).
-      - "traefik.http.routers.forgejo-registry.rule=Host(`${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.forgejo-registry.entrypoints=websecure"
-      - "traefik.http.routers.forgejo-registry.tls.certresolver=cloudflare"
-      - "traefik.http.routers.forgejo-registry.service=forgejo-svc"
+    - traefik.enable=true
+    - traefik.docker.network=traefik_net
+    - traefik.http.services.forgejo-svc.loadbalancer.server.port=3000
+    - traefik.http.routers.forgejo-web.rule=Host(`${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}`)
+    - traefik.http.routers.forgejo-web.entrypoints=websecure
+    - traefik.http.routers.forgejo-web.tls.certresolver=cloudflare
+    - traefik.http.routers.forgejo-web.middlewares=keycloak-auth
+    - traefik.http.routers.forgejo-web.service=forgejo-svc
+    - traefik.http.routers.forgejo-registry.rule=Host(`${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}`)
+    - traefik.http.routers.forgejo-registry.entrypoints=websecure
+    - traefik.http.routers.forgejo-registry.tls.certresolver=cloudflare
+    - traefik.http.routers.forgejo-registry.service=forgejo-svc
     healthcheck:
-      # test: ["CMD-SHELL", "su-exec git /usr/local/bin/forgejo doctor check-database"]
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/ || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/ || exit 1
       interval: 60s
       timeout: 15s
       retries: 5
@@ -160,46 +121,41 @@ services:
         limits:
           cpus: '1.0'
           memory: 1G
-          pids_limit: 100
+          pids: 100
         reservations:
           cpus: '0.25'
           memory: 256M
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   forgejo-runner:
     image: data.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
     container_name: operations-forgejo-runner
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-    # NOTE: Runner needs access to host Docker socket via group_add: docker (GID 999).
-    # All other capabilities are dropped; the socket access is via filesystem group, not capability.
-    user: "1001:1001"
+    - ALL
+    user: 1001:1001
     group_add:
-      - "999"  # docker group for host socket access
+    - '999'
     environment:
-      # Docker socket mount replaces docker-in-dind service.
-      # The runner auto-discovers the socket; DOCKER_HOST is set explicitly for clarity.
       DOCKER_HOST: unix:///var/run/docker.sock
     volumes:
-      - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
-      - ./forgejo-runner/config.yaml:/data/config.yaml:ro
-      # REQUIRED: Docker socket access needed for Forgejo CI to spawn
-      # ephemeral job containers. Runner acts as Docker-in-Docker.
-      - /var/run/docker.sock:/var/run/docker.sock
+    - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
+    - ./forgejo-runner/config.yaml:/data/config.yaml:ro
+    - /var/run/docker.sock:/var/run/docker.sock
     networks:
-      - traefik_net
-      - backend_net
-      - data_net
-    command: '/bin/sh -c "sleep 5; forgejo-runner --config /data/config.yaml daemon"'
+    - traefik_net
+    - backend_net
+    - data_net
+    command: /bin/sh -c "sleep 5; forgejo-runner --config /data/config.yaml daemon"
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f 'forgejo-runner' || exit 1"]
+      test:
+      - CMD-SHELL
+      - pgrep -f 'forgejo-runner' || exit 1
       interval: 30s
       timeout: 5s
       retries: 3
@@ -207,15 +163,14 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 512M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
 networks:
   traefik_net:
     external: true

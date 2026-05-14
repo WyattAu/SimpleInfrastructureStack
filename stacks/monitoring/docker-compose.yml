@@ -1,92 +1,95 @@
----
 services:
   victoriametrics-init:
     image: busybox:1.37.0
     container_name: monitoring-victoriametrics-init
-    # VictoriaMetrics runs as the user specified by the image (root by default).
-    # Data directory ownership doesn't require special chown like Prometheus.
     command: mkdir -p /victoria-metrics-data
     volumes:
-      - ${DATA_BASE_PATH}/monitoring/victoriametrics:/victoria-metrics-data
+    - ${DATA_BASE_PATH}/monitoring/victoriametrics:/victoria-metrics-data
     networks: []
-
   victoriametrics:
     image: victoriametrics/victoria-metrics:${VICTORIAMETRICS_VERSION}
     container_name: monitoring-victoriametrics
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-
+    - ALL
     depends_on:
       victoriametrics-init:
         condition: service_completed_successfully
     volumes:
-      - ./victoriametrics/scrape.yml:/etc/victoriametrics/scrape.yml:ro
-      - ${DATA_BASE_PATH}/monitoring/victoriametrics:/victoria-metrics-data
+    - ./victoriametrics/scrape.yml:/etc/victoriametrics/scrape.yml:ro
+    - ${DATA_BASE_PATH}/monitoring/victoriametrics:/victoria-metrics-data
     command:
-      - '--promscrape.config=/etc/victoriametrics/scrape.yml'
-      - '--promscrape.config.strictParse=false'
-      - '--storageDataPath=/victoria-metrics-data'
-      - '--retentionPeriod=30d'
-      - '--httpListenAddr=:8428'
+    - --promscrape.config=/etc/victoriametrics/scrape.yml
+    - --promscrape.config.strictParse=false
+    - --storageDataPath=/victoria-metrics-data
+    - --retentionPeriod=30d
+    - --httpListenAddr=:8428
     networks:
-      - traefik_net
-      - backend_net
+    - traefik_net
+    - backend_net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8428/health"]
+      test:
+      - CMD
+      - wget
+      - --spider
+      - -q
+      - http://127.0.0.1:8428/health
       interval: 30s
       timeout: 10s
       start_period: 30s
       retries: 3
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.prometheus.rule=Host(`${PROMETHEUS_SUBDOMAIN}.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.prometheus.entrypoints=websecure"
-      - "traefik.http.routers.prometheus.middlewares=keycloak-auth"
-      - "traefik.http.routers.prometheus.tls.certresolver=cloudflare"
-      - "traefik.http.services.prometheus.loadbalancer.server.port=8428"
-      - "traefik.http.services.prometheus.loadbalancer.server.scheme=http"
+    - traefik.enable=true
+    - traefik.docker.network=traefik_net
+    - traefik.http.routers.prometheus.rule=Host(`${PROMETHEUS_SUBDOMAIN}.${DOMAIN_NAME}`)
+    - traefik.http.routers.prometheus.entrypoints=websecure
+    - traefik.http.routers.prometheus.middlewares=keycloak-auth
+    - traefik.http.routers.prometheus.tls.certresolver=cloudflare
+    - traefik.http.services.prometheus.loadbalancer.server.port=8428
+    - traefik.http.services.prometheus.loadbalancer.server.scheme=http
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 512M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   vmalert:
     image: victoriametrics/vmalert:${VMALERT_VERSION}
     container_name: monitoring-vmalert
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-
+    - ALL
     depends_on:
       victoriametrics:
         condition: service_healthy
     volumes:
-      - ./prometheus/alert_rules.yml:/etc/vmalert/alert_rules.yml:ro
-      - ./prometheus/recording_rules.yml:/etc/vmalert/recording_rules.yml:ro
+    - ./prometheus/alert_rules.yml:/etc/vmalert/alert_rules.yml:ro
+    - ./prometheus/recording_rules.yml:/etc/vmalert/recording_rules.yml:ro
     command:
-      - '--rule=/etc/vmalert/alert_rules.yml'
-      - '--rule=/etc/vmalert/recording_rules.yml'
-      - '--datasource.url=http://monitoring-victoriametrics:8428'
-      - '--notifier.url=http://monitoring-alertmanager:9093'
-      - '--remoteWrite.url=http://monitoring-victoriametrics:8428'
-      - '--httpListenAddr=:8880'
+    - --rule=/etc/vmalert/alert_rules.yml
+    - --rule=/etc/vmalert/recording_rules.yml
+    - --datasource.url=http://monitoring-victoriametrics:8428
+    - --notifier.url=http://monitoring-alertmanager:9093
+    - --remoteWrite.url=http://monitoring-victoriametrics:8428
+    - --httpListenAddr=:8880
     networks:
-      - backend_net
+    - backend_net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8880/health"]
+      test:
+      - CMD
+      - wget
+      - --spider
+      - -q
+      - http://127.0.0.1:8880/health
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -94,111 +97,108 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 128M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   grafana-init:
     image: busybox:1.37.0
     container_name: monitoring-grafana-init
-    # The Grafana process runs as UID 472 and GID 472.
-    # This command changes the ownership of the mounted volume to match.
     command: chown -R 472:472 /var/lib/grafana
     volumes:
-      - ${DATA_BASE_PATH}/monitoring/grafana:/var/lib/grafana
+    - ${DATA_BASE_PATH}/monitoring/grafana:/var/lib/grafana
     networks: []
-
   grafana:
     image: grafana/grafana:${GRAFANA_VERSION}
     container_name: monitoring-grafana
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-
+    - ALL
     depends_on:
       grafana-init:
         condition: service_completed_successfully
     volumes:
-      - ${DATA_BASE_PATH}/monitoring/grafana:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
+    - ${DATA_BASE_PATH}/monitoring/grafana:/var/lib/grafana
+    - ./grafana/provisioning:/etc/grafana/provisioning
     environment:
-      - TZ=${TZ}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
-      - GF_SERVER_ROOT_URL=https://${GRAFANA_SUBDOMAIN}.${DOMAIN_NAME}
-      # VictoriaMetrics + VictoriaLogs datasource plugins (not built-in in Grafana 12.x)
-      - GF_INSTALL_PLUGINS=victoriametrics-metrics-datasource,victoriametrics-logs-datasource
-      # --- OIDC / Keycloak Configuration ---
-      - GF_AUTH_GENERIC_OAUTH_ENABLED=true
-      - GF_AUTH_GENERIC_OAUTH_NAME=Keycloak
-      - GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP=true
-      - GF_AUTH_GENERIC_OAUTH_CLIENT_ID=${GRAFANA_OIDC_CLIENT_ID}
-      - GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET=${GRAFANA_OIDC_CLIENT_SECRET}
-      - GF_AUTH_GENERIC_OAUTH_SCOPES=openid profile email roles
-      - GF_AUTH_GENERIC_OAUTH_AUTH_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/protocol/openid-connect/auth
-      - GF_AUTH_GENERIC_OAUTH_TOKEN_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/protocol/openid-connect/token
-      - GF_AUTH_GENERIC_OAUTH_API_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/protocol/openid-connect/userinfo
-
-      # --- Attribute and Role Mapping ---
-      - GF_AUTH_GENERIC_OAUTH_LOGIN_ATTRIBUTE_PATH=preferred_username
-      - GF_AUTH_GENERIC_OAUTH_EMAIL_ATTRIBUTE_PATH=email
-      - GF_AUTH_GENERIC_OAUTH_NAME_ATTRIBUTE_PATH=name
-
-      # --- Grafana-Specific Role Mapping ---
-      - GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH=contains(resource_access['${GRAFANA_OIDC_CLIENT_ID}'].roles[*], 'grafana-admin') && 'Admin' || contains(resource_access['${GRAFANA_OIDC_CLIENT_ID}'].roles[*], 'grafana-editor') && 'Editor' || 'Viewer'
+    - TZ=${TZ}
+    - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+    - GF_SERVER_ROOT_URL=https://${GRAFANA_SUBDOMAIN}.${DOMAIN_NAME}
+    - GF_INSTALL_PLUGINS=victoriametrics-metrics-datasource,victoriametrics-logs-datasource
+    - GF_AUTH_GENERIC_OAUTH_ENABLED=true
+    - GF_AUTH_GENERIC_OAUTH_NAME=Keycloak
+    - GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP=true
+    - GF_AUTH_GENERIC_OAUTH_CLIENT_ID=${GRAFANA_OIDC_CLIENT_ID}
+    - GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET=${GRAFANA_OIDC_CLIENT_SECRET}
+    - GF_AUTH_GENERIC_OAUTH_SCOPES=openid profile email roles
+    - GF_AUTH_GENERIC_OAUTH_AUTH_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/protocol/openid-connect/auth
+    - GF_AUTH_GENERIC_OAUTH_TOKEN_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/protocol/openid-connect/token
+    - GF_AUTH_GENERIC_OAUTH_API_URL=https://auth.${DOMAIN_NAME}/realms/company-realm/protocol/openid-connect/userinfo
+    - GF_AUTH_GENERIC_OAUTH_LOGIN_ATTRIBUTE_PATH=preferred_username
+    - GF_AUTH_GENERIC_OAUTH_EMAIL_ATTRIBUTE_PATH=email
+    - GF_AUTH_GENERIC_OAUTH_NAME_ATTRIBUTE_PATH=name
+    - GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH=contains(resource_access['${GRAFANA_OIDC_CLIENT_ID}'].roles[*], 'grafana-admin') && 'Admin' || contains(resource_access['${GRAFANA_OIDC_CLIENT_ID}'].roles[*], 'grafana-editor') && 'Editor' || 'Viewer'
     networks:
-      - traefik_net
-      - backend_net
+    - traefik_net
+    - backend_net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3000/api/health"]
+      test:
+      - CMD
+      - wget
+      - --spider
+      - -q
+      - http://127.0.0.1:3000/api/health
       interval: 30s
       timeout: 10s
       start_period: 30s
       retries: 3
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.grafana.rule=Host(`${GRAFANA_SUBDOMAIN}.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.grafana.entrypoints=websecure"
-      - "traefik.http.routers.grafana.tls.certresolver=cloudflare"
-      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    - traefik.enable=true
+    - traefik.docker.network=traefik_net
+    - traefik.http.routers.grafana.rule=Host(`${GRAFANA_SUBDOMAIN}.${DOMAIN_NAME}`)
+    - traefik.http.routers.grafana.entrypoints=websecure
+    - traefik.http.routers.grafana.tls.certresolver=cloudflare
+    - traefik.http.services.grafana.loadbalancer.server.port=3000
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 512M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   victorialogs:
     image: victoriametrics/victoria-logs:${VICTORIALOGS_VERSION}
     container_name: monitoring-victorialogs
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-
+    - ALL
     volumes:
-      - ${DATA_BASE_PATH}/monitoring/victorialogs:/victoria-logs-data
+    - ${DATA_BASE_PATH}/monitoring/victorialogs:/victoria-logs-data
     command:
-      - '--storageDataPath=/victoria-logs-data'
-      - '--retentionPeriod=30d'
-      - '--httpListenAddr=:9428'
+    - --storageDataPath=/victoria-logs-data
+    - --retentionPeriod=30d
+    - --httpListenAddr=:9428
     networks:
-      - backend_net
+    - backend_net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:9428/health"]
+      test:
+      - CMD
+      - wget
+      - --spider
+      - -q
+      - http://127.0.0.1:9428/health
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -206,72 +206,68 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 128M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   promtail:
     image: grafana/promtail:${PROMTAIL_VERSION}
     container_name: monitoring-promtail
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-
+    - ALL
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - ./promtail/config.yml:/etc/promtail/config.yml:ro
     command: -config.file=/etc/promtail/config.yml
     networks:
-      - backend_net
-    # No Docker healthcheck: image has no wget binary.
-    # Container is verified via Ansible health check (running status).
+    - backend_net
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 256M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   uptime-kuma:
     image: louislam/uptime-kuma:${KUMA_VERSION}
     container_name: monitoring-kuma
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-    # Required by entrypoint: setpriv uses setgroups(2) to drop supplementary groups
+    - ALL
     cap_add:
-      - SETGID
-
+    - SETGID
     volumes:
-      - ${DATA_BASE_PATH}/monitoring/kuma:/app/data
+    - ${DATA_BASE_PATH}/monitoring/kuma:/app/data
     networks:
-      - traefik_net
-      - backend_net
+    - traefik_net
+    - backend_net
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.kuma.rule=Host(`${KUMA_SUBDOMAIN}.${DOMAIN_NAME}`)"
-      - "traefik.http.routers.kuma.entrypoints=websecure"
-      - "traefik.http.routers.kuma.middlewares=keycloak-auth"
-      - "traefik.http.routers.kuma.tls.certresolver=cloudflare"
-      - "traefik.http.services.kuma.loadbalancer.server.port=3001"
-    # Internal health check
+    - traefik.enable=true
+    - traefik.docker.network=traefik_net
+    - traefik.http.routers.kuma.rule=Host(`${KUMA_SUBDOMAIN}.${DOMAIN_NAME}`)
+    - traefik.http.routers.kuma.entrypoints=websecure
+    - traefik.http.routers.kuma.middlewares=keycloak-auth
+    - traefik.http.routers.kuma.tls.certresolver=cloudflare
+    - traefik.http.services.kuma.loadbalancer.server.port=3001
     healthcheck:
-      test: ["CMD", "curl", "-fSs", "http://127.0.0.1:3001/"]
+      test:
+      - CMD
+      - curl
+      - -fSs
+      - http://127.0.0.1:3001/
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -279,54 +275,40 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 512M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION}
     container_name: monitoring-cadvisor
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
+    - ALL
     devices:
-      - /dev/kmsg:/dev/kmsg:ro
+    - /dev/kmsg:/dev/kmsg:ro
     volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    # --- HDD Performance Tuning ---
-    # Default housekeeping_interval=1s causes 168% CPU spikes on HDD-backed
-    # ZFS pools (du on large overlay2 layers takes 5-10s each). Increase to
-    # 60s to reduce I/O pressure while retaining all container metrics.
-    # --docker_only skips non-Docker filesystems (100+ ZFS mounts on TrueNAS).
-    # --disable_metrics=disk,diskIO eliminates the per-container du calls
-    # that cause /metrics to hang for 300+ seconds. Container disk usage is
-    # already available via node_exporter's host-level disk metrics.
-    # NOTE: pid:host removed — TrueNAS kernel.yama.ptrace_scope=1 blocks smaps
-    # reading, causing /metrics Prometheus handler to deadlock. cAdvisor gets
-    # all container metrics via Docker socket + cgroup (no ptrace needed).
-    # v0.53.0 /metrics deadlocks regardless; using gcr.io/cadvisor/cadvisor:v0.49.1.
+    - /:/rootfs:ro
+    - /var/run:/var/run:ro
+    - /sys:/sys:ro
+    - /var/lib/docker/:/var/lib/docker:ro
+    - /dev/disk/:/dev/disk:ro
     command:
-      - '--housekeeping_interval=120s'
-      - '--docker_only=true'
-      - '--disable_metrics=disk,diskIO,referenced_memory'
-    # --max_metrics_per_container reduces per-container metric cardinality
-    # on HDD-backed storage where metric collection for 60+ containers can
-    # cause /metrics to timeout or return EOF.
+    - --housekeeping_interval=120s
+    - --docker_only=true
+    - --disable_metrics=disk,diskIO,referenced_memory
     networks:
-      - backend_net
+    - backend_net
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/healthz || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget -qO- http://127.0.0.1:8080/healthz || exit 1
       interval: 60s
       timeout: 30s
       start_period: 120s
@@ -334,22 +316,20 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 256M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   textfile-init:
     image: busybox:1.37.0
     container_name: monitoring-textfile-init
     command: sh -c "mkdir -p /textfile-collector && printf '# HELP sis_backup_last_success Unix timestamp of last successful backup\\n# TYPE sis_backup_last_success gauge\\nsis_backup_last_success 0\\n# HELP sis_backup_last_run Unix timestamp of last backup attempt\\n# TYPE sis_backup_last_run gauge\\nsis_backup_last_run 0\\n# HELP sis_backup_offsite_last_success Unix timestamp of last successful offsite sync\\n# TYPE sis_backup_offsite_last_success gauge\\nsis_backup_offsite_last_success 0\\n' > /textfile-collector/backup.prom"
     volumes:
-      - ${DATA_BASE_PATH}/monitoring/textfile-collector:/textfile-collector
-
+    - ${DATA_BASE_PATH}/monitoring/textfile-collector:/textfile-collector
   node-exporter:
     image: prom/node-exporter:${NODE_EXPORTER_VERSION}
     container_name: monitoring-node-exporter
@@ -358,29 +338,26 @@ services:
       textfile-init:
         condition: service_completed_successfully
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-
+    - ALL
     volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-      - ${DATA_BASE_PATH}/monitoring/textfile-collector:/textfile-collector:ro
+    - /proc:/host/proc:ro
+    - /sys:/host/sys:ro
+    - /:/rootfs:ro
+    - ${DATA_BASE_PATH}/monitoring/textfile-collector:/textfile-collector:ro
     command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--path.rootfs=/rootfs'
-      - '--collector.textfile.directory=/textfile-collector'
-      # Exclude virtual/pseudo filesystems and ZFS child datasets.
-      # Without rootfs, node-exporter reported boot-pool mounts as /, /home, etc.
-      # With rootfs, it resolves all ~100 ZFS mounts including data pool children.
-      # We keep only the two pool roots: / (boot-pool) and /mnt/pool_HDD_x2 (data pool).
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|var|tmp|home|root|usr|run|opt|boot|mnt/pool_HDD_x2/(.+)|mnt/.ix-apps|audit|conf|data)($$|/)'
+    - --path.procfs=/host/proc
+    - --path.sysfs=/host/sys
+    - --path.rootfs=/rootfs
+    - --collector.textfile.directory=/textfile-collector
+    - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|var|tmp|home|root|usr|run|opt|boot|mnt/pool_HDD_x2/(.+)|mnt/.ix-apps|audit|conf|data)($$|/)
     networks:
-      - backend_net
+    - backend_net
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9100/metrics || exit 1"]
+      test:
+      - CMD-SHELL
+      - wget -qO- http://127.0.0.1:9100/metrics || exit 1
       interval: 30s
       timeout: 10s
       start_period: 15s
@@ -388,39 +365,43 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 128M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   alertmanager:
     image: prom/alertmanager:${ALERTMANAGER_VERSION}
     container_name: monitoring-alertmanager
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-
+    - ALL
     volumes:
-      - ./alertmanager/alertmanager.yml.tpl:/etc/alertmanager/alertmanager.yml.tpl:ro
-      - ./alertmanager/entrypoint.sh:/entrypoint.sh:ro
-    entrypoint: ["/entrypoint.sh"]
+    - ./alertmanager/alertmanager.yml.tpl:/etc/alertmanager/alertmanager.yml.tpl:ro
+    - ./alertmanager/entrypoint.sh:/entrypoint.sh:ro
+    entrypoint:
+    - /entrypoint.sh
     environment:
-      - NTFY_TOPIC_CRITICAL_URL=${NTFY_TOPIC_CRITICAL_URL}
-      - NTFY_TOPIC_INFO_URL=${NTFY_TOPIC_INFO_URL}
+    - NTFY_TOPIC_CRITICAL_URL=${NTFY_TOPIC_CRITICAL_URL}
+    - NTFY_TOPIC_INFO_URL=${NTFY_TOPIC_INFO_URL}
     command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
-      - '--web.external-url=https://${PROMETHEUS_SUBDOMAIN}.${DOMAIN_NAME}'
+    - --config.file=/etc/alertmanager/alertmanager.yml
+    - --storage.path=/alertmanager
+    - --web.external-url=https://${PROMETHEUS_SUBDOMAIN}.${DOMAIN_NAME}
     networks:
-      - backend_net
+    - backend_net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:9093/-/healthy"]
+      test:
+      - CMD
+      - wget
+      - --spider
+      - -q
+      - http://127.0.0.1:9093/-/healthy
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -428,61 +409,31 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 256M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   postgres-exporter-init:
     image: busybox:1.37.0
     container_name: monitoring-postgres-exporter-init
-    # Creates .pgpass file from env vars for the postgres-exporter.
-    # Required because several PG passwords contain URL-special characters
-    # (& $ % ! # * / ^) that break DATA_SOURCE_NAME connection strings.
-    # The exporter's lib/pq driver falls back to .pgpass when no password
-    # is provided in the connection URL.
-    # The exporter runs as nobody (UID 65534), so we chown accordingly.
-    #
-    # Strategy: write passwords to temp files via printenv (zero shell
-    # expansion), then build .pgpass using printf with $(cat tmp) in double
-    # quotes. The outer $$ escapes Docker Compose variable interpolation.
-    # .pgpass format: hostname:port:database:username:password
     command:
-      - "/bin/sh"
-      - "-c"
-      - |
-        printenv PG_EXPORTER_FORGEJO_PASSWORD > /tmp/pw1
-        printenv PG_EXPORTER_KEYCLOAK_PASSWORD > /tmp/pw2
-        printenv PG_EXPORTER_SYNAPSE_PASSWORD > /tmp/pw3
-        printenv PG_EXPORTER_RSS_PASSWORD > /tmp/pw4
-        printenv PG_EXPORTER_PHOTOS_PASSWORD > /tmp/pw5
-        printenv PG_EXPORTER_DOCUMENTS_PASSWORD > /tmp/pw6
-        {
-          printf 'operations-postgres-forgejo:5432:forgejo:forgejo:%s\n' "$$(cat /tmp/pw1)"
-          printf 'iam-postgres:5432:keycloak:keycloak:%s\n' "$$(cat /tmp/pw2)"
-          printf 'collaboration-postgres:5432:synapse:synapse:%s\n' "$$(cat /tmp/pw3)"
-          printf 'rss-postgres:5432:freshrss:freshrss:%s\n' "$$(cat /tmp/pw4)"
-          printf 'photos-postgres:5432:immich:immich:%s\n' "$$(cat /tmp/pw5)"
-          printf 'documents-postgres:5432:paperless:paperless:%s\n' "$$(cat /tmp/pw6)"
-        } > /pgpass/.pgpass
-        chmod 600 /pgpass/.pgpass
-        chown 65534:65534 /pgpass/.pgpass
-        rm -f /tmp/pw1 /tmp/pw2 /tmp/pw3 /tmp/pw4 /tmp/pw5 /tmp/pw6
+    - /bin/sh
+    - -c
+    - "printenv PG_EXPORTER_FORGEJO_PASSWORD > /tmp/pw1\nprintenv PG_EXPORTER_KEYCLOAK_PASSWORD > /tmp/pw2\nprintenv PG_EXPORTER_SYNAPSE_PASSWORD > /tmp/pw3\nprintenv PG_EXPORTER_RSS_PASSWORD > /tmp/pw4\nprintenv PG_EXPORTER_PHOTOS_PASSWORD > /tmp/pw5\nprintenv PG_EXPORTER_DOCUMENTS_PASSWORD > /tmp/pw6\n{\n  printf 'operations-postgres-forgejo:5432:forgejo:forgejo:%s\\n' \"$$(cat /tmp/pw1)\"\n  printf 'iam-postgres:5432:keycloak:keycloak:%s\\n' \"$$(cat /tmp/pw2)\"\n  printf 'collaboration-postgres:5432:synapse:synapse:%s\\n' \"$$(cat /tmp/pw3)\"\n  printf 'rss-postgres:5432:freshrss:freshrss:%s\\n' \"$$(cat /tmp/pw4)\"\n  printf 'photos-postgres:5432:immich:immich:%s\\n' \"$$(cat /tmp/pw5)\"\n  printf 'documents-postgres:5432:paperless:paperless:%s\\n' \"$$(cat /tmp/pw6)\"\n} > /pgpass/.pgpass\nchmod 600 /pgpass/.pgpass\nchown 65534:65534 /pgpass/.pgpass\nrm -f /tmp/pw1 /tmp/pw2 /tmp/pw3 /tmp/pw4 /tmp/pw5 /tmp/pw6\n"
     environment:
-      - PG_EXPORTER_FORGEJO_PASSWORD=${PG_EXPORTER_FORGEJO_PASSWORD}
-      - PG_EXPORTER_KEYCLOAK_PASSWORD=${PG_EXPORTER_KEYCLOAK_PASSWORD}
-      - PG_EXPORTER_SYNAPSE_PASSWORD=${PG_EXPORTER_SYNAPSE_PASSWORD}
-      - PG_EXPORTER_RSS_PASSWORD=${PG_EXPORTER_RSS_PASSWORD}
-      - PG_EXPORTER_PHOTOS_PASSWORD=${PG_EXPORTER_PHOTOS_PASSWORD}
-      - PG_EXPORTER_DOCUMENTS_PASSWORD=${PG_EXPORTER_DOCUMENTS_PASSWORD}
+    - PG_EXPORTER_FORGEJO_PASSWORD=${PG_EXPORTER_FORGEJO_PASSWORD}
+    - PG_EXPORTER_KEYCLOAK_PASSWORD=${PG_EXPORTER_KEYCLOAK_PASSWORD}
+    - PG_EXPORTER_SYNAPSE_PASSWORD=${PG_EXPORTER_SYNAPSE_PASSWORD}
+    - PG_EXPORTER_RSS_PASSWORD=${PG_EXPORTER_RSS_PASSWORD}
+    - PG_EXPORTER_PHOTOS_PASSWORD=${PG_EXPORTER_PHOTOS_PASSWORD}
+    - PG_EXPORTER_DOCUMENTS_PASSWORD=${PG_EXPORTER_DOCUMENTS_PASSWORD}
     volumes:
-      - ${DATA_BASE_PATH}/monitoring/pgpass:/pgpass
+    - ${DATA_BASE_PATH}/monitoring/pgpass:/pgpass
     networks: []
-
   postgres-exporter:
     image: quay.io/prometheuscommunity/postgres-exporter:${POSTGRES_EXPORTER_VERSION}
     container_name: monitoring-postgres-exporter
@@ -491,29 +442,30 @@ services:
       postgres-exporter-init:
         condition: service_completed_successfully
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
-    # Multi-target mode: each DATA_SOURCE_NAME_N connects to a different PG instance.
-    # Passwords are NOT embedded in URLs — they contain special characters that
-    # break URL parsing. Instead, the lib/pq driver reads .pgpass (PGPASSFILE).
-    # Each PG user needs pg_read_all_stats role granted.
+    - ALL
     environment:
-      - PGPASSFILE=/pgpass/.pgpass
-      - DATA_SOURCE_NAME=postgresql://forgejo@operations-postgres-forgejo:5432/forgejo?sslmode=disable
-      - DATA_SOURCE_NAME_2=postgresql://keycloak@iam-postgres:5432/keycloak?sslmode=disable
-      - DATA_SOURCE_NAME_3=postgresql://synapse@collaboration-postgres:5432/synapse?sslmode=disable
-      - DATA_SOURCE_NAME_4=postgresql://freshrss@rss-postgres:5432/freshrss?sslmode=disable
-      - DATA_SOURCE_NAME_5=postgresql://immich@photos-postgres:5432/immich?sslmode=disable
-      - DATA_SOURCE_NAME_6=postgresql://paperless@documents-postgres:5432/paperless?sslmode=disable
-      - PG_EXPORTER_AUTO_DISCOVER_DATABASES=false
+    - PGPASSFILE=/pgpass/.pgpass
+    - DATA_SOURCE_NAME=postgresql://forgejo@operations-postgres-forgejo:5432/forgejo?sslmode=disable
+    - DATA_SOURCE_NAME_2=postgresql://keycloak@iam-postgres:5432/keycloak?sslmode=disable
+    - DATA_SOURCE_NAME_3=postgresql://synapse@collaboration-postgres:5432/synapse?sslmode=disable
+    - DATA_SOURCE_NAME_4=postgresql://freshrss@rss-postgres:5432/freshrss?sslmode=disable
+    - DATA_SOURCE_NAME_5=postgresql://immich@photos-postgres:5432/immich?sslmode=disable
+    - DATA_SOURCE_NAME_6=postgresql://paperless@documents-postgres:5432/paperless?sslmode=disable
+    - PG_EXPORTER_AUTO_DISCOVER_DATABASES=false
     volumes:
-      - ${DATA_BASE_PATH}/monitoring/pgpass:/pgpass:ro
+    - ${DATA_BASE_PATH}/monitoring/pgpass:/pgpass:ro
     networks:
-      - backend_net
-      - data_net
+    - backend_net
+    - data_net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:9187/metrics"]
+      test:
+      - CMD
+      - wget
+      - --spider
+      - -q
+      - http://127.0.0.1:9187/metrics
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -521,63 +473,60 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 128M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   redis-exporter:
     image: oliver006/redis_exporter:${REDIS_EXPORTER_VERSION}
     container_name: monitoring-redis-exporter
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
+    - ALL
     environment:
-      - REDIS_EXPORTER_WEB_LISTEN_ADDRESS=:9121
-      - REDIS_ADDR=documents-redis:6379
+    - REDIS_EXPORTER_WEB_LISTEN_ADDRESS=:9121
+    - REDIS_ADDR=documents-redis:6379
     networks:
-      - backend_net
-      - data_net
-    # Distroless image — no /bin/sh for CMD-SHELL healthcheck.
-    # Monitored via VictoriaMetrics scrape target (port 9121).
-    # distroless_no_shell exemption covers this in OPA policy.
+    - backend_net
+    - data_net
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 128M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   tempo:
     image: grafana/tempo:${TEMPO_VERSION}
     container_name: monitoring-tempo
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
+    - ALL
     volumes:
-      - ${DATA_BASE_PATH}/monitoring/tempo:/var/tempo
-      - ./tempo/config.yml:/etc/tempo/config.yml:ro
+    - ${DATA_BASE_PATH}/monitoring/tempo:/var/tempo
+    - ./tempo/config.yml:/etc/tempo/config.yml:ro
     command: -config.file=/etc/tempo/config.yml
     networks:
-      - backend_net
+    - backend_net
     healthcheck:
-      # Tempo /ready returns 503 until the ingester ring is ACTIVE.
-      # WAL replay on HDD-backed ZFS with 1.2 GB of trace blocks
-      # can spike memory above 512 MB. Allow generous start_period.
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3200/ready"]
+      test:
+      - CMD
+      - wget
+      - --spider
+      - -q
+      - http://127.0.0.1:3200/ready
       interval: 30s
       timeout: 10s
       start_period: 120s
@@ -585,34 +534,38 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "2.0"
+          cpus: '2.0'
           memory: 1G
-          pids_limit: 100
+          pids: 100
         reservations:
           memory: 128M
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
   blackbox-exporter:
     image: quay.io/prometheus/blackbox-exporter:${BLACKBOX_EXPORTER_VERSION}
     container_name: monitoring-blackbox-exporter
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
+    - ALL
     volumes:
-      - ./blackbox/config.yml:/etc/blackbox_exporter/config.yml:ro
+    - ./blackbox/config.yml:/etc/blackbox_exporter/config.yml:ro
     command:
-      - '--config.file=/etc/blackbox_exporter/config.yml'
+    - --config.file=/etc/blackbox_exporter/config.yml
     networks:
-      - backend_net
-      - data_net
+    - backend_net
+    - data_net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:9115"]
+      test:
+      - CMD
+      - wget
+      - --spider
+      - -q
+      - http://127.0.0.1:9115
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -620,15 +573,14 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: '1.0'
           memory: 128M
-          pids_limit: 100
+          pids: 100
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
-
+        max-size: 10m
+        max-file: '3'
 networks:
   traefik_net:
     external: true

@@ -21,7 +21,7 @@ Cloudflare Tunnel ──► deploy.wyattau.com ──► infra-webhook:9001
                                    decrypt   expand     up -d
                                      │          │          │
                                      ▼          ▼          ▼
-                               .secrets.tmp/   Jinja2   16 stacks
+                                .secrets.tmp/   Jinja2   20 stacks
                                (cleaned up)             │
                                                         ▼
                                                    Health checks
@@ -38,7 +38,7 @@ Cloudflare Tunnel ──► deploy.wyattau.com ──► infra-webhook:9001
 | tunnel | cloudflared | host | Cloudflare Tunnel (independent) |
 | proxy | traefik, oauth2-proxy, socket-proxy, ddns, well-known | traefik_net, backend_net | Reverse proxy + auth |
 | iam | keycloak, postgres | backend_net | Identity (Keycloak) |
-| monitoring | victoriametrics, vmalert, grafana, victorialogs, promtail, kuma, cadvisor, node-exporter, alertmanager | traefik_net, backend_net | Observability |
+| monitoring | victoriametrics, vmalert, grafana, victorialogs, promtail, kuma, cadvisor, node-exporter, alertmanager, tempo, blackbox-exporter, postgres-exporter, redis-exporter, crowdsec | traefik_net, backend_net | Observability |
 | operations | forgejo, forgejo-runner, postgres | traefik_net, backend_net | Git hosting + CI |
 | collaboration | synapse, element, hookshot, postgres | traefik_net, backend_net | Matrix chat + GitHub bridge |
 | storage | ocis, collabora | traefik_net, backend_net | Files + office |
@@ -50,6 +50,10 @@ Cloudflare Tunnel ──► deploy.wyattau.com ──► infra-webhook:9001
 | photos | immich (server + ml), postgres, valkey | traefik_net, backend_net | Photo management |
 | documents | paperless-ngx, postgres, redis | traefik_net, backend_net | Document management |
 | vpn | wireguard | host | VPN access |
+| security | crowdsec, workers-bouncer | backend_net | Intrusion detection |
+| webhook | infra-webhook | host | Deploy webhook |
+| books | calibre-web | traefik_net | E-book library |
+| project-management | taiga-back, taiga-front, taiga-async, taiga-events, taiga-gateway, taiga-protected, postgres, rabbitmq | traefik_net, backend_net | Project management |
 | updater | watchtower | none | Update notifications |
 
 ### DNS Records
@@ -57,7 +61,7 @@ Cloudflare Tunnel ──► deploy.wyattau.com ──► infra-webhook:9001
 | Subdomain | Service | Auth |
 |-----------|---------|------|
 | traefik.wyattau.com | Traefik dashboard | OAuth2 |
-| auth.wyattau.com | Keycloak | Public |
+| auth.wyattau.com | Keycloak | Self-managed |
 | forgejo.wyattau.com | Forgejo | OAuth2 |
 | registry-forgejo.wyattau.com | Forgejo container registry | Token |
 | grafana.wyattau.com | Grafana | OIDC (Keycloak) |
@@ -328,7 +332,7 @@ git push origin main
     → SOPS decrypt all secrets
     → Ansible site.yml
       → git sync, decrypt, expand templates
-      → docker compose up -d (16 stacks)
+      → docker compose up -d (20 stacks)
       → bind-mount container restarts
       → health checks (60s timeout × 60 retries)
     → ntfy notification (success/failure)
@@ -465,6 +469,13 @@ sudo docker restart monitoring-vmalert
 │  ── PostgreSQL databases                            │
 │  ── VictoriaMetrics, VictoriaLogs, Alertmanager           │
 │  ── VictoriaMetrics scrape targets                        │
+└─────────────────────────────────────────────────────┘
+                      │
+┌─────────────────────┴───────────────────────────────┐
+│  data_net (172.16.8.0/24)                           │
+│  ── PostgreSQL databases                            │
+│  ── MariaDB, Redis, Valkey                          │
+│  ── Postgres-exporter, redis-exporter, mariadb-exporter │
 └─────────────────────────────────────────────────────┘
 ```
 

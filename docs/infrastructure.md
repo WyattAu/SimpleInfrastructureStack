@@ -1,6 +1,6 @@
 # SimpleInfrastructureStack — Infrastructure Documentation
 
-Self-hosted homelab on TrueNAS SCALE (wyattau.com). ~62 containers across 21 stacks,
+Self-hosted homelab on TrueNAS SCALE (wyattau.com). 74 containers across 20 stacks,
 managed entirely from a single Git repository with automated CI/CD.
 
 ---
@@ -61,7 +61,6 @@ GitHub push → validate.yml (CI) → webhook (POST) → deploy.sh
 | — | proxy-socket-proxy | tecnativa/docker-socket-proxy | — | proxy | Docker socket proxy for Traefik |
 | — | proxy-oauth2-proxy | quay.io/oauth2-proxy/oauth2-proxy | 4180 | proxy | Keycloak forwardAuth middleware |
 | — | proxy-cloudflare-ddns | favonia/cloudflare-ddns | — | proxy | Dynamic DNS updates (*/5 min) |
-| — | proxy-well-known-server | nginx | 80 | proxy | Matrix .well-known/server |
 | `auth` | iam-keycloak | quay.io/keycloak/keycloak | 8080, 9000 | iam | SSO identity provider |
 | — | iam-postgres | postgres | 5432 | iam | Keycloak database |
 | `prometheus` | monitoring-victoriametrics | victoriametrics/victoria-metrics | 8428 | monitoring | Metrics collection (Prometheus-compatible) |
@@ -74,10 +73,11 @@ GitHub push → validate.yml (CI) → webhook (POST) → deploy.sh
 | — | monitoring-node-exporter | prom/node-exporter | 9100 | monitoring | Host metrics |
 | — | monitoring-cadvisor | ghcr.io/google/cadvisor | 8080 | monitoring | Container metrics |
 | — | monitoring-postgres-exporter | quay.io/prometheuscommunity/postgres-exporter | 9187 | monitoring | 6x PostgreSQL instances |
-| — | monitoring-redis-exporter | oliver006/redis_exporter | 9121 | monitoring | 2x Redis/Valkey instances |
+| — | monitoring-redis-exporter | oliver006/redis_exporter | 9121 | monitoring | 2 Redis/Valkey instances (Paperless Redis, Immich Valkey) |
 | — | monitoring-tempo | grafana/tempo | 3200, 4318 | monitoring | Distributed tracing |
 | — | monitoring-blackbox-exporter | prom/blackbox_exporter | 9115 | monitoring | Synthetic probes |
 | — | security-crowdsec | crowdsecurity/crowdsec | 8080 | security | Intrusion detection |
+| — | security-cf-workers-bouncer | crowdsecurity/cf-workers-bouncer | — | security | Cloudflare WAF bouncer |
 | `forgejo` | operations-forgejo | code.forgejo.org/forgejo/forgejo | 3000 | operations | Git hosting + CI |
 | — | operations-postgres-forgejo | postgres | 5432 | operations | Forgejo database |
 | — | operations-forgejo-runner | data.forgejo.org/forgejo/runner | — | operations | CI/CD runner |
@@ -94,6 +94,7 @@ GitHub push → validate.yml (CI) → webhook (POST) → deploy.sh
 | — | accounting-mariadb-exporter | prom/mysqld-exporter | 9104 | accounting | MariaDB metrics |
 | `homepage` | utility-homepage | ghcr.io/gethomepage/homepage | 3000 | utility | Personal dashboard |
 | `vault` | vaultwarden-server | vaultwarden/server | 80 | vaultwarden | Password manager |
+| `books` | books-calibre-web | lscr.io/linuxserver/calibre-web | 80 | books | E-book library |
 | `rss` | rss-freshrss | freshrss/freshrss | 80 | rss | Feed reader |
 | — | rss-postgres | postgres | 5432 | rss | FreshRSS database |
 | `photos` | photos-server | ghcr.io/immich-app/immich-server | 2283, 8081 | photos | Photo management |
@@ -109,6 +110,7 @@ GitHub push → validate.yml (CI) → webhook (POST) → deploy.sh
 | — | backup-restic | restic/restic | — | backup | Backup container |
 | — | backup-cron-trigger | (build) | — | backup | Cron scheduler |
 | — | updater-watchtower | containrrr/watchtower | — | updater | Update monitor (notify only) |
+| — | project-management-* | (multiple taiga images) | — | project-management | Project management |
 
 Plus init containers: `monitoring-victoriametrics-init`, `monitoring-grafana-init`, `monitoring-postgres-exporter-init`,
 `monitoring-textfile-init`, `collaboration-postgres-init`, `collaboration-synapse-init`,
@@ -255,11 +257,11 @@ and forwards alerts to Alertmanager → ntfy.sh.
 | Alertmanager | monitoring-alertmanager | Routes alerts → ntfy.sh |
 | Tempo | monitoring-tempo | Distributed tracing (Traefik OTLP export) |
 | Blackbox Exporter | monitoring-blackbox-exporter | Synthetic HTTP/TCP/DNS probes |
-| CrowdSec | security-crowdsec | Collaborative intrusion detection (detection-only mode) |
+| CrowdSec | security-crowdsec | Collaborative intrusion detection and blocking (detection + active bouncer) |
 | Node Exporter | monitoring-node-exporter | Host CPU/memory/disk/network |
 | cAdvisor | monitoring-cadvisor | Container resource metrics |
 | PostgreSQL Exporter | monitoring-postgres-exporter | 6 PG instances (Forgejo, Keycloak, Synapse, FreshRSS, Immich, Paperless) |
-| Redis Exporter | monitoring-redis-exporter | 2 instances (Immich Valkey, Paperless Redis) |
+| Redis Exporter | monitoring-redis-exporter | 2 instances (Paperless Redis, Immich Valkey) |
 | MariaDB Exporter | accounting-mariadb-exporter | 1 MariaDB instance (Akaunting) |
 
 ---
@@ -277,7 +279,7 @@ and forwards alerts to Alertmanager → ntfy.sh.
 
 - **OAuth2-Proxy:** Keycloak forwardAuth middleware on protected services
 - **Rate limiting:** 100 req/s average, 50 burst (global-rate-limit middleware)
-- **CrowdSec:** Collaborative intrusion detection (detection-only, no active bouncer yet)
+- **CrowdSec:** Collaborative intrusion detection and blocking
 - **Network segmentation:** data_net isolates databases from application containers
 
 ### Container Hardening
@@ -285,7 +287,7 @@ and forwards alerts to Alertmanager → ntfy.sh.
 - `no-new-privileges: true` on all containers (except Collabora, VPN)
 - `cap_drop: ALL` on all containers (46 services)
 - Healthchecks on 18 services with `depends_on: condition: service_healthy` where applicable
-- `read_only: true` on backup-restic and proxy-well-known-server
+- `read_only: true` on backup-restic
 - Resource memory/CPU limits on all containers
 - Docker socket mounted `:ro` everywhere
 - Log rotation: `max-size: 10m`, `max-file: 3` on all containers
@@ -365,17 +367,17 @@ GitHub push → webhook (POST to deploy.wyattau.com)
     → terraform:     init + plan + apply (if changes)
     → expand:        Jinja2 template rendering (hookshot config, etc.)
     → detect:        identify bind-mount config changes
-    → deploy:        docker compose up -d for each stack (17 stacks)
+    → deploy:        docker compose up -d for each stack (20 stacks)
     → handlers:      restart containers with changed configs
     → configure:     Keycloak SMTP via API, Hookshot bridge setup
-    → health:        poll 37 health-check containers until healthy
+    → health:        poll all health-check containers until healthy
     → rescue:        git reset --hard to previous commit + redeploy
     → cleanup:       rm -rf .secrets.tmp/*
 ```
 
 **Stack deployment order:** tunnel → security → proxy → iam → monitoring → operations →
 collaboration → storage → accounting → utility → backup → vaultwarden → rss → photos →
-documents → vpn → updater
+documents → vpn → updater → webhook → books → project-management
 
 **Rollback:** Automatic. On failure, Ansible resets git to the pre-deploy SHA and redeploys.
 
@@ -397,9 +399,9 @@ documents → vpn → updater
 
 ## Secrets Management
 
-- **17 SOPS-encrypted files** in `secrets/` (one per stack + backup):
+- **20 SOPS-encrypted files** in `secrets/` (one per stack + backup):
   security, iam, accounting, collaboration, backup, monitoring, proxy, storage, utility,
-  operations, documents, photos, rss, updater, vpn, vaultwarden, tunnel
+  operations, documents, photos, rss, updater, vpn, vaultwarden, tunnel, webhook, books, project-management
 - **Encryption:** age (single key)
 - **Public key:** `age13kqew6kglat9hlswcstcxpdtvfh8v7pckr0wt3qvqkn7u2cj3e6qnm03uc`
 - **Config:** `.sops.yaml` — matches `^secrets/.*\.env\.encrypted$`

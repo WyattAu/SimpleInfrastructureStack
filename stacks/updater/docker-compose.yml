@@ -1,34 +1,30 @@
----
 services:
   watchtower:
     image: containrrr/watchtower:${WATCHTOWER_VERSION}
     container_name: updater-watchtower
     restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
+    - no-new-privileges:true
     cap_drop:
-      - ALL
+    - ALL
     command: --interval 86400 --cleanup --label-enable --monitor-only
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
-      # shoutrrr format: ntfy://ntfy.sh/TOPIC?title=Watchtower
-      - WATCHTOWER_NOTIFICATIONS=shoutrrr
-      - WATCHTOWER_NOTIFICATION_URL=ntfy://${NTFY_URL}/${NTFY_TOPIC}?title=Watchtower+Update+Available
-      - WATCHTOWER_LABEL_ENABLE=true
-      - TZ=${TZ}
+    - WATCHTOWER_NOTIFICATIONS=shoutrrr
+    - WATCHTOWER_NOTIFICATION_URL=ntfy://${NTFY_URL}/${NTFY_TOPIC}?title=Watchtower+Update+Available
+    - WATCHTOWER_LABEL_ENABLE=true
+    - TZ=${TZ}
     networks: []
-    # Distroless image — no /bin/sh for CMD-SHELL healthcheck.
-    # Watchtower logs daily scan results; monitored via log scraping.
-    # distroless_no_shell exemption covers this in OPA policy.
     deploy:
       resources:
         limits:
           memory: 64M
+          pids: 100
         reservations:
           memory: 16M
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: 10m
+        max-file: '3'
