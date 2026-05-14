@@ -1,6 +1,7 @@
 #!/bin/sh
 # Alertmanager entrypoint wrapper.
-# Renders alertmanager.yml template with environment variables via envsubst,
+# Renders alertmanager.yml template with environment variables using sed
+# (envsubst is not available in the Chainguard-based alertmanager image),
 # then execs the original Alertmanager entrypoint.
 set -eu
 
@@ -8,7 +9,10 @@ TEMPLATE="/etc/alertmanager/alertmanager.yml.tpl"
 OUTPUT="/etc/alertmanager/alertmanager.yml"
 
 if [ -f "$TEMPLATE" ]; then
-  envsubst < "$TEMPLATE" > "$OUTPUT"
+  sed \
+    -e "s|\${NTFY_TOPIC_CRITICAL_URL}|${NTFY_TOPIC_CRITICAL_URL}|g" \
+    -e "s|\${NTFY_TOPIC_INFO_URL}|${NTFY_TOPIC_INFO_URL}|g" \
+    "$TEMPLATE" > "$OUTPUT"
 fi
 
 exec alertmanager "$@"
