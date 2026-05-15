@@ -93,18 +93,17 @@ services:
     - traefik.http.services.keycloak-svc.loadbalancer.server.port=8080
     - traefik.http.routers.keycloak.tls.certresolver=cloudflare
     healthcheck:
-      test:
-      - CMD-SHELL
-      - '[ -f /tmp/HealthCheck.java ] || echo "public class HealthCheck { public static void main(String[] args) throws java.lang.Throwable { java.net.URI uri = java.net.URI.create(args[0]); System.exit(java.net.HttpURLConnection.HTTP_OK == ((java.net.HttpURLConnection)uri.toURL().openConnection()).getResponseCode() ? 0 : 1); } }" > /tmp/HealthCheck.java && java /tmp/HealthCheck.java http://127.0.0.1:9000/health/live'
-      interval: 15s
-      timeout: 5s
-      retries: 10
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'GET /health/live HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3; timeout 2 cat <&3 | grep -q '200 OK'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
     deploy:
       resources:
         limits:
           cpus: '2.0'
           memory: 1G
-          pids: 100
+          pids: 512
         reservations:
           cpus: '0.25'
           memory: 256M
