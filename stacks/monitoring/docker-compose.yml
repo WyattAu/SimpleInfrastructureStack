@@ -290,7 +290,7 @@ services:
     volumes:
     - ${DATA_BASE_PATH}/monitoring/textfile-collector:/textfile-collector
   monitoring-zfs-exporter:
-    image: fberning/zfs-exporter:0.0.12
+    image: frebib/zfs-exporter:latest
     container_name: monitoring-zfs-exporter
     restart: unless-stopped
     security_opt:

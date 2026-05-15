@@ -26,7 +26,7 @@ scrape_configs:
   - job_name: 'zfs-exporter'
     scrape_interval: 60s
     static_configs:
-      - targets: ['monitoring-zfs-exporter:9854']
+      - targets: ['monitoring-zfs-exporter:9254']
   - job_name: 'traefik'
     metrics_path: /metrics
     static_configs:
