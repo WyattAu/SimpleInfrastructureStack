@@ -81,11 +81,6 @@ services:
     - --tracing.otlp=true
     - --tracing.otlp.http.endpoint=http://monitoring-tempo:4318
     labels:
-    - traefik.http.middlewares.keycloak-auth.forwardauth.address=http://oauth2-proxy:4180
-    - traefik.http.middlewares.keycloak-auth.forwardauth.authResponseHeaders=X-Auth-Request-Email,X-Auth-Request-User
-    - traefik.http.middlewares.keycloak-auth.forwardauth.trustForwardHeader=true
-    - traefik.http.middlewares.global-rate-limit.ratelimit.average=100
-    - traefik.http.middlewares.global-rate-limit.ratelimit.burst=50
     - traefik.enable=true
     - traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN_NAME}`)
     - traefik.http.routers.traefik-dashboard.entrypoints=websecure
@@ -186,6 +181,11 @@ services:
     labels:
     - traefik.enable=true
     - traefik.docker.network=traefik_net
+    - traefik.http.middlewares.keycloak-auth.forwardauth.address=http://oauth2-proxy:4180
+    - traefik.http.middlewares.keycloak-auth.forwardauth.authResponseHeaders=X-Auth-Request-Email,X-Auth-Request-User
+    - traefik.http.middlewares.keycloak-auth.forwardauth.trustForwardHeader=true
+    - traefik.http.middlewares.global-rate-limit.ratelimit.average=100
+    - traefik.http.middlewares.global-rate-limit.ratelimit.burst=50
     - traefik.http.routers.oauth2-proxy.rule=(Host(`homepage.${DOMAIN_NAME}`) || Host(`traefik.${DOMAIN_NAME}`) || Host(`kuma.${DOMAIN_NAME}`) || Host(`prometheus.${DOMAIN_NAME}`) || Host(`akaunting.${DOMAIN_NAME}`) || Host(`forgejo.${DOMAIN_NAME}`) || Host(`taiga.${DOMAIN_NAME}`) || Host(`books.${DOMAIN_NAME}`)) && PathPrefix(`/oauth2`)
     - traefik.http.routers.oauth2-proxy.entrypoints=websecure
     - traefik.http.routers.oauth2-proxy.tls.certresolver=cloudflare
