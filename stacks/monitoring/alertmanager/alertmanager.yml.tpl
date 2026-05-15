@@ -30,6 +30,10 @@ receivers:
     webhook_configs:
       - url: 'https://ntfy.sh/${NTFY_TOPIC}'
         send_resolved: true
+  - name: 'ntfy-info'
+    webhook_configs:
+      - url: 'https://ntfy.sh/${NTFY_TOPIC}'
+        send_resolved: true
 
 inhibit_rules:
   # Don't warn about high memory if the container is already down
