@@ -19,7 +19,7 @@ services:
     - POSTGRES_DB=${KEYCLOAK_DATABASE_NAME}
     - POSTGRES_USER=${KEYCLOAK_DATABASE_USER}
     - POSTGRES_PASSWORD=${KEYCLOAK_DATABASE_PASSWORD}
-    - POSTGRES_INITDB_ARGS=--max-connections=30
+    - POSTGRES_INITDB_ARGS=-c max_connections=30
     networks:
     - data_net
     healthcheck:
