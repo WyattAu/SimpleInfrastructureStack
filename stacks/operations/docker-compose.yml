@@ -19,7 +19,7 @@ services:
     - POSTGRES_DB=${POSTGRES_DB_FORGEJO}
     - POSTGRES_USER=${POSTGRES_USER_FORGEJO}
     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_FORGEJO}
-    - POSTGRES_INITDB_ARGS=--max-connections=30
+    - POSTGRES_INITDB_ARGS=-c max_connections=30
     networks:
     - data_net
     healthcheck:
