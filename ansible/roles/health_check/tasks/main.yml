@@ -9,6 +9,7 @@
     - health_results.get('exists', false)
     - health_results.container.State.Running
     - >
+      health_results.container.State.Health is none or
       health_results.container.State.Health is not defined or
       health_results.container.State.Health.Status == "healthy"
   retries: 60
