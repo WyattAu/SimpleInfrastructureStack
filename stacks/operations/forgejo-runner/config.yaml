@@ -5,7 +5,7 @@ log:
 
 runner:
   file: .runner
-  capacity: 1
+  capacity: 4
   env_file: .env
   timeout: 3h
   shutdown_timeout: 3h

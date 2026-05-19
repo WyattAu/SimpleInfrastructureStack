@@ -163,13 +163,9 @@ services:
     deploy:
       resources:
         limits:
-          pids: 512
-    deploy:
-      resources:
-        limits:
           cpus: '1.0'
           memory: 512M
-          pids: 100
+          pids: 512
     logging:
       driver: json-file
       options:
