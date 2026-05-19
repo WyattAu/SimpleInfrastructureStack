@@ -328,7 +328,7 @@ services:
         max-size: 10m
         max-file: '3'
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION}
+    image: ghcr.io/google/cadvisor:${CADVISOR_VERSION}
     container_name: monitoring-cadvisor
     restart: unless-stopped
     security_opt:
