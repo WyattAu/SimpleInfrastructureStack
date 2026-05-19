@@ -215,7 +215,7 @@ services:
         max-size: 10m
         max-file: '3'
   matrix-hookshot:
-    image: halfshot/matrix-hookshot:${HOOKSHOT_VERSION}
+    image: ghcr.io/matrix-org/matrix-hookshot:${HOOKSHOT_VERSION}
     container_name: collaboration-hookshot
     restart: unless-stopped
     security_opt:

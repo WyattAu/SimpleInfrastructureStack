@@ -433,9 +433,9 @@ services:
 
   taiga-gateway:
     # Chainguard nginx: distroless, no shell, daily CVE rebuilds.
-    # Free tier only provides :latest tag — Renovate tracks digest only.
+    # Free tier only provides :latest tag — pinned to digest for reproducibility.
     # Default port is 8080 (not 80).
-    image: cgr.dev/chainguard/nginx:latest
+    image: cgr.dev/chainguard/nginx@sha256:ba4af37876bfa848405de10ed2170f66d72314805b91cd43166dcf171179db05
     container_name: project-management-gateway
     restart: unless-stopped
     security_opt:
