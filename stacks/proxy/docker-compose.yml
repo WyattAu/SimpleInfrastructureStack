@@ -3,8 +3,6 @@ services:
     image: ghcr.io/wyattau/docker-socket-proxy:${SOCKET_PROXY_VERSION}
     container_name: proxy-socket-proxy
     restart: unless-stopped
-    security_opt:
-    - no-new-privileges:true
     cap_drop:
     - ALL
     cap_add:
