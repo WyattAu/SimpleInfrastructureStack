@@ -3,11 +3,7 @@ services:
     image: ghcr.io/wyattau/docker-socket-proxy:${SOCKET_PROXY_VERSION}
     container_name: proxy-socket-proxy
     restart: unless-stopped
-    cap_drop:
-    - ALL
-    cap_add:
-    - NET_RAW
-    - NET_ADMIN
+    read_only: false
     healthcheck:
       test:
       - CMD-SHELL
