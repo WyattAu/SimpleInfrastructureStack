@@ -1,6 +1,6 @@
 services:
   watchtower:
-    image: containrrr/watchtower:${WATCHTOWER_VERSION}
+    image: ghcr.io/wyattau/evergreen/watchtower:${WATCHTOWER_VERSION}
     container_name: updater-watchtower
     restart: unless-stopped
     security_opt:

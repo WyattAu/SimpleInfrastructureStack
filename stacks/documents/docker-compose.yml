@@ -10,7 +10,7 @@ services:
     - -p
     - /data
   paperless-postgres:
-    image: postgres:${POSTGRES_VERSION}
+    image: ghcr.io/wyattau/evergreen/postgresql-16:${POSTGRES_VERSION}
     container_name: documents-postgres
     restart: unless-stopped
     security_opt:
@@ -54,7 +54,7 @@ services:
         max-size: 10m
         max-file: '3'
   paperless-redis:
-    image: redis:${REDIS_VERSION}
+    image: ghcr.io/wyattau/evergreen/redis:${REDIS_VERSION}
     container_name: documents-redis
     restart: unless-stopped
     security_opt:
@@ -92,7 +92,7 @@ services:
         max-size: 10m
         max-file: '3'
   paperless-webserver:
-    image: ghcr.io/paperless-ngx/paperless-ngx:${PAPERLESS_VERSION}
+    image: ghcr.io/wyattau/evergreen/paperless-ngx:${PAPERLESS_VERSION}
     container_name: documents-webserver
     restart: unless-stopped
     security_opt:

@@ -1,6 +1,6 @@
 services:
   postgres-forgejo:
-    image: postgres:${POSTGRES_FORGEJO_VERSION}
+    image: ghcr.io/wyattau/evergreen/postgresql-17:${POSTGRES_FORGEJO_VERSION}
     container_name: operations-postgres-forgejo
     restart: unless-stopped
     security_opt:
@@ -41,7 +41,7 @@ services:
         max-size: 10m
         max-file: '3'
   forgejo:
-    image: code.forgejo.org/forgejo/forgejo:${FORGEJO_VERSION}
+    image: ghcr.io/wyattau/evergreen/forgejo:${FORGEJO_VERSION}
     container_name: operations-forgejo
     restart: unless-stopped
     security_opt:
@@ -131,7 +131,7 @@ services:
         max-size: 10m
         max-file: '3'
   forgejo-runner:
-    image: data.forgejo.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
+    image: ghcr.io/wyattau/evergreen/forgejo-runner:${FORGEJO_RUNNER_VERSION}
     container_name: operations-forgejo-runner
     restart: unless-stopped
     security_opt:
