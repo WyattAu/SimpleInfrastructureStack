@@ -7,7 +7,7 @@ services:
     - ${DATA_BASE_PATH}/monitoring/victoriametrics:/victoria-metrics-data
     networks: []
   victoriametrics:
-    image: victoriametrics/victoria-metrics:${VICTORIAMETRICS_VERSION}
+    image: ghcr.io/wyattau/evergreen/victoriametrics:${VICTORIAMETRICS_VERSION}
     container_name: monitoring-victoriametrics
     restart: unless-stopped
     security_opt:
@@ -61,7 +61,7 @@ services:
         max-size: 10m
         max-file: '3'
   vmalert:
-    image: victoriametrics/vmalert:${VMALERT_VERSION}
+    image: ghcr.io/wyattau/evergreen/vmalert:${VMALERT_VERSION}
     container_name: monitoring-vmalert
     restart: unless-stopped
     security_opt:
@@ -113,7 +113,7 @@ services:
     - ${DATA_BASE_PATH}/monitoring/grafana:/var/lib/grafana
     networks: []
   grafana:
-    image: grafana/grafana:${GRAFANA_VERSION}
+    image: ghcr.io/wyattau/evergreen/grafana:${GRAFANA_VERSION}
     container_name: monitoring-grafana
     restart: unless-stopped
     security_opt:
@@ -177,7 +177,7 @@ services:
         max-size: 10m
         max-file: '3'
   victorialogs:
-    image: victoriametrics/victoria-logs:${VICTORIALOGS_VERSION}
+    image: ghcr.io/wyattau/evergreen/victoria-logs:${VICTORIALOGS_VERSION}
     container_name: monitoring-victorialogs
     restart: unless-stopped
     security_opt:
@@ -215,7 +215,7 @@ services:
         max-size: 10m
         max-file: '3'
   promtail:
-    image: grafana/promtail:${PROMTAIL_VERSION}
+    image: ghcr.io/wyattau/evergreen/promtail:${PROMTAIL_VERSION}
     container_name: monitoring-promtail
     restart: unless-stopped
     security_opt:
@@ -240,7 +240,7 @@ services:
         max-size: 10m
         max-file: '3'
   uptime-kuma:
-    image: louislam/uptime-kuma:${KUMA_VERSION}
+    image: ghcr.io/wyattau/evergreen/uptime-kuma:${KUMA_VERSION}
     container_name: monitoring-kuma
     restart: unless-stopped
     security_opt:
@@ -290,7 +290,7 @@ services:
     volumes:
     - ${DATA_BASE_PATH}/monitoring/textfile-collector:/textfile-collector
   monitoring-zfs-exporter:
-    image: frebib/zfs-exporter@sha256:f4dad11227e0e16b7752ec6047c078ed8c27b614dfe3ef8db84c2ec87031a86a
+    image: ghcr.io/wyattau/evergreen/zfs-exporter:latest
     container_name: monitoring-zfs-exporter
     restart: unless-stopped
     security_opt:
@@ -328,7 +328,7 @@ services:
         max-size: 10m
         max-file: '3'
   cadvisor:
-    image: ghcr.io/google/cadvisor:${CADVISOR_VERSION}
+    image: ghcr.io/wyattau/evergreen/cadvisor:${CADVISOR_VERSION}
     container_name: monitoring-cadvisor
     restart: unless-stopped
     security_opt:
@@ -369,7 +369,7 @@ services:
         max-size: 10m
         max-file: '3'
   node-exporter:
-    image: prom/node-exporter:${NODE_EXPORTER_VERSION}
+    image: ghcr.io/wyattau/evergreen/node-exporter:${NODE_EXPORTER_VERSION}
     container_name: monitoring-node-exporter
     restart: unless-stopped
     depends_on:
@@ -412,7 +412,7 @@ services:
         max-size: 10m
         max-file: '3'
   alertmanager:
-    image: prom/alertmanager:${ALERTMANAGER_VERSION}
+    image: ghcr.io/wyattau/evergreen/alertmanager:${ALERTMANAGER_VERSION}
     container_name: monitoring-alertmanager
     restart: unless-stopped
     security_opt:
@@ -472,7 +472,7 @@ services:
     - ${DATA_BASE_PATH}/monitoring/pgpass:/pgpass
     networks: []
   postgres-exporter:
-    image: quay.io/prometheuscommunity/postgres-exporter:${POSTGRES_EXPORTER_VERSION}
+    image: ghcr.io/wyattau/evergreen/postgres-exporter:${POSTGRES_EXPORTER_VERSION}
     container_name: monitoring-postgres-exporter
     restart: unless-stopped
     depends_on:
@@ -519,7 +519,7 @@ services:
         max-size: 10m
         max-file: '3'
   redis-exporter:
-    image: oliver006/redis_exporter:${REDIS_EXPORTER_VERSION}
+    image: ghcr.io/wyattau/evergreen/redis-exporter:${REDIS_EXPORTER_VERSION}
     container_name: monitoring-redis-exporter
     restart: unless-stopped
     security_opt:
@@ -544,7 +544,7 @@ services:
         max-size: 10m
         max-file: '3'
   tempo:
-    image: grafana/tempo:${TEMPO_VERSION}
+    image: ghcr.io/wyattau/evergreen/tempo:${TEMPO_VERSION}
     container_name: monitoring-tempo
     restart: unless-stopped
     security_opt:
@@ -573,7 +573,7 @@ services:
         max-size: 10m
         max-file: '3'
   blackbox-exporter:
-    image: quay.io/prometheus/blackbox-exporter:${BLACKBOX_EXPORTER_VERSION}
+    image: ghcr.io/wyattau/evergreen/blackbox-exporter:${BLACKBOX_EXPORTER_VERSION}
     container_name: monitoring-blackbox-exporter
     restart: unless-stopped
     security_opt:

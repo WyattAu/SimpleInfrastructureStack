@@ -1,6 +1,6 @@
 services:
   postgres-iam:
-    image: postgres:${POSTGRES_VERSION}
+    image: ghcr.io/wyattau/evergreen/postgresql-17:${POSTGRES_VERSION}
     container_name: iam-postgres
     restart: unless-stopped
     security_opt:
@@ -41,7 +41,7 @@ services:
         max-size: 10m
         max-file: '3'
   keycloak:
-    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
+    image: ghcr.io/wyattau/evergreen/keycloak:${KEYCLOAK_VERSION}
     container_name: iam-keycloak
     restart: unless-stopped
     security_opt:

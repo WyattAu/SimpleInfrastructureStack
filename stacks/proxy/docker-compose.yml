@@ -1,6 +1,6 @@
 services:
   socket-proxy:
-    image: tecnativa/docker-socket-proxy:${SOCKET_PROXY_VERSION}
+    image: ghcr.io/wyattau/evergreen/docker-socket-proxy:${SOCKET_PROXY_VERSION}
     container_name: proxy-socket-proxy
     restart: unless-stopped
     security_opt:
@@ -41,7 +41,7 @@ services:
         max-size: 10m
         max-file: '3'
   traefik:
-    image: traefik:${TRAEFIK_VERSION}
+    image: ghcr.io/wyattau/evergreen/traefik:${TRAEFIK_VERSION}
     container_name: proxy-traefik
     restart: unless-stopped
     depends_on:
@@ -114,7 +114,7 @@ services:
         max-size: 10m
         max-file: '3'
   cloudflare-ddns:
-    image: favonia/cloudflare-ddns:${CF_DDNS_VERSION}
+    image: ghcr.io/wyattau/evergreen/cloudflare-ddns:${CF_DDNS_VERSION}
     container_name: proxy-cloudflare-ddns
     restart: unless-stopped
     security_opt:
@@ -142,7 +142,7 @@ services:
         max-size: 10m
         max-file: '3'
   oauth2-proxy:
-    image: quay.io/oauth2-proxy/oauth2-proxy:${OAUTH2_PROXY_VERSION}
+    image: ghcr.io/wyattau/evergreen/oauth2-proxy:${OAUTH2_PROXY_VERSION}
     container_name: proxy-oauth2-proxy
     restart: unless-stopped
     depends_on:
