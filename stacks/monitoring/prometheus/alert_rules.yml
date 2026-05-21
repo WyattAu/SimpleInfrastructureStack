@@ -805,3 +805,16 @@ groups:
         annotations:
           summary: "PostgreSQL slow queries (p99 >5s) on {{ $labels.instance }}"
           description: "The 99th percentile query execution time on {{ $labels.instance }} has exceeded 5 seconds for 10 minutes."
+
+  - name: tunnel_health
+    rules:
+      - alert: CloudflaredTunnelDegraded
+        expr: cloudflared_tunnel_connections{state="open"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cloudflare tunnel has no open connections"
+          description: >-
+            The Cloudflare tunnel (infra-tunnel) has zero open connections for 5 minutes.
+            This may indicate a connectivity issue between TrueNAS and Cloudflare edge.
