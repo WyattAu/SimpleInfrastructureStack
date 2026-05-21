@@ -10,7 +10,7 @@ services:
     - -p
     - /data
   postgres-rss:
-    image: ghcr.io/wyattau/postgresql-16:${POSTGRES_VERSION}
+    image: postgres:${POSTGRES_VERSION}
     container_name: rss-postgres
     restart: unless-stopped
     security_opt:

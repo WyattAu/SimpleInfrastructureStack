@@ -146,7 +146,7 @@ services:
         max-size: 10m
         max-file: '3'
   immich-valkey:
-    image: ghcr.io/wyattau/valkey:${VALKEY_VERSION}
+    image: valkey:${VALKEY_VERSION}
     container_name: photos-valkey
     restart: unless-stopped
     security_opt:
