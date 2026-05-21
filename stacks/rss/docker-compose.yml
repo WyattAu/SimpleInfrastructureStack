@@ -54,7 +54,7 @@ services:
         max-size: 10m
         max-file: '3'
   freshrss:
-    image: ghcr.io/wyattau/freshrss:${FRESHRSS_VERSION}
+    image: freshrss/freshrss:${FRESHRSS_VERSION}
     container_name: rss-freshrss
     restart: unless-stopped
     security_opt:

@@ -1,6 +1,6 @@
 services:
   immich-server:
-    image: ghcr.io/wyattau/immich-server:${IMMICH_VERSION}
+    image: ghcr.io/immich-app/immich:${IMMICH_VERSION}
     container_name: photos-server
     restart: unless-stopped
     security_opt:
@@ -67,7 +67,7 @@ services:
         max-size: 10m
         max-file: '3'
   immich-ml:
-    image: ghcr.io/wyattau/immich-machine-learning:${IMMICH_ML_VERSION}
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_ML_VERSION}
     container_name: photos-ml
     restart: unless-stopped
     security_opt:

@@ -174,7 +174,7 @@ services:
     - backend_net
 
   taiga-back:
-    image: ghcr.io/wyattau/taiga:${TAIGA_VERSION}
+    image: taigaio/taiga-back:${TAIGA_VERSION}
     container_name: project-management-back
     restart: unless-stopped
     security_opt:
@@ -242,7 +242,7 @@ services:
         max-file: "3"
 
   taiga-async:
-    image: ghcr.io/wyattau/taiga:${TAIGA_VERSION}
+    image: taigaio/taiga-back:${TAIGA_VERSION}
     container_name: project-management-async
     restart: unless-stopped
     security_opt:
@@ -311,7 +311,7 @@ services:
         max-file: "3"
 
   taiga-front:
-    image: ghcr.io/wyattau/taiga-front:${TAIGA_VERSION}
+    image: taigaio/taiga-front:${TAIGA_VERSION}
     container_name: project-management-front
     restart: unless-stopped
     security_opt:
@@ -351,7 +351,7 @@ services:
         max-file: "3"
 
   taiga-events:
-    image: ghcr.io/wyattau/taiga-events:${TAIGA_VERSION}
+    image: taigaio/taiga-events:${TAIGA_VERSION}
     container_name: project-management-events
     restart: unless-stopped
     security_opt:
@@ -394,7 +394,7 @@ services:
         max-file: "3"
 
   taiga-protected:
-    image: ghcr.io/wyattau/taiga-protected:${TAIGA_VERSION}
+    image: taigaio/taiga-protected:${TAIGA_VERSION}
     container_name: project-management-protected
     restart: unless-stopped
     security_opt:
@@ -435,7 +435,7 @@ services:
     # Chainguard nginx: distroless, no shell, daily CVE rebuilds.
     # Free tier only provides :latest tag — pinned to digest for reproducibility.
     # Default port is 8080 (not 80).
-    image: ghcr.io/wyattau/nginx:1.27.1
+    image: nginx:1.27.1
     container_name: project-management-gateway
     restart: unless-stopped
     security_opt:
