@@ -303,7 +303,6 @@ services:
     command:
     - -web.listen-address=:9254
     volumes:
-    - /proc/spl:/proc/spl:ro
     devices:
     - /dev/zfs:/dev/zfs
     networks:
