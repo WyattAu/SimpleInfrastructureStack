@@ -322,3 +322,21 @@ These issues existed before the audit and are tracked for future resolution:
 | Keycloak healthcheck slow (Java compile) | Low | Functional despite unhealthy status; consider `/health/live` endpoint |
 | Forgejo runner healthcheck "can't fork" | Low | System PID limits; runner is operational |
 | CADVISOR_VERSION conflict | Low | `versions.env` has v0.49.1, encrypted env has v0.52.1; whichever sourced last wins |
+
+## Post-Roadmap Additions (2026-05-21)
+
+### Completed
+
+- [x] Pin zfs-exporter by digest (no version tags in upstream registry)
+- [x] Add `cap_drop: ALL` to collabora with documented justification
+- [x] Enhance OPA policy: `deny_logging_no_max_size`, `warn_logging_non_json_file`
+- [x] Add cloudflared to `distroless_no_shell_names` exemption list
+- [x] Add cloudflared tunnel metrics scrape job (host.docker.internal:4788)
+- [x] Add `CloudflaredTunnelDegraded` alert rule
+- [x] Investigated Immich, Immich-ML, OAuth2-Proxy metrics: none support
+  Prometheus format in current versions (removed non-functional scrape jobs)
+- [x] Fix Evergreen pre-push gate: cargo audit `--manifest-path` flag
+  not supported in v0.22.1, replaced with `cd evergreenctl && cargo audit`
+- [x] Fix 12 pre-existing MD031 markdownlint errors in Evergreen `.specs/`
+- [x] Add Evergreen docs: dockerfile-bugs-found.md, sis-deployment-lessons.md,
+  metrics endpoint standard (Section 16)
