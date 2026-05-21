@@ -50,7 +50,7 @@ services:
     healthcheck:
       test:
       - CMD-SHELL
-      - curl -fSs http://127.0.0.1:2283/ || exit 1
+      - curl -fSs http://127.0.0.1:2283/api/server/ping || exit 1
       interval: 30s
       timeout: 10s
       start_period: 60s
