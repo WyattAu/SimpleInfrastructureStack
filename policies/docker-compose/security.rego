@@ -116,6 +116,25 @@ deny_no_logging[msg] {
     msg := sprintf("Service '%s' has no logging configuration", [name])
 }
 
+# DENY: Logging must specify max-size to prevent disk exhaustion
+deny_logging_no_max_size[msg] {
+    svc := input.services[name]
+    not is_ephemeral(name)
+    svc.logging
+    not svc.logging.options.max_size
+    msg := sprintf("Service '%s' logging has no max-size option", [name])
+}
+
+# WARN: Logging driver should be json-file for consistency
+warn_logging_non_json_file[msg] {
+    svc := input.services[name]
+    not is_ephemeral(name)
+    svc.logging
+    svc.logging.driver
+    svc.logging.driver != "json-file"
+    msg := sprintf("Service '%s' uses logging driver '%s' instead of json-file", [name, svc.logging.driver])
+}
+
 # DENY: All long-running services should have resource limits
 deny_no_resource_limits[msg] {
     svc := input.services[name]
@@ -141,7 +160,7 @@ warn_no_healthcheck[msg] {
 # These rely on Traefik's own health checking via the reverse proxy,
 # VictoriaMetrics scrape targets, or log-based monitoring.
 distroless_no_shell_names := {"taiga-gateway", "redis-exporter", "cloudflare-ddns",
-  "watchtower", "matrix-hookshot", "immich-ml"}
+  "watchtower", "matrix-hookshot", "immich-ml", "cloudflared"}
 
 is_distroless_no_shell(name) {
     some n in distroless_no_shell_names

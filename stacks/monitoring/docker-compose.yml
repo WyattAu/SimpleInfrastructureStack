@@ -298,7 +298,9 @@ services:
     volumes:
     - ${DATA_BASE_PATH}/monitoring/textfile-collector:/textfile-collector
   monitoring-zfs-exporter:
-    image: ghcr.io/frebib/zfs-exporter:latest
+    # No version tags available -- pinned by digest (sha256:f4dad112...)
+    # Update digest after upstream rebuilds: docker pull ghcr.io/frebib/zfs-exporter:latest
+    image: ghcr.io/frebib/zfs-exporter@sha256:f4dad11227e0e16b7752ec6047c078ed8c27b614dfe3ef8db84c2ec87031a86a
     container_name: monitoring-zfs-exporter
     restart: unless-stopped
     security_opt:
