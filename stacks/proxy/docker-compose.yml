@@ -1,13 +1,18 @@
 services:
   socket-proxy:
-    image: ghcr.io/wyattau/docker-socket-proxy:${SOCKET_PROXY_VERSION}
+    image: docker.io/tecnativa/docker-socket-proxy:${SOCKET_PROXY_VERSION}
     container_name: proxy-socket-proxy
     restart: unless-stopped
-    read_only: false
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    cap_add:
+    - NET_RAW
     healthcheck:
       test:
       - CMD-SHELL
-      - wget -qO- http://127.0.0.1:2375/version || exit 1
+      - nc -z 127.0.0.1 2375 || exit 1
       interval: 30s
       timeout: 5s
       retries: 3
