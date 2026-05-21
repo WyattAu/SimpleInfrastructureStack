@@ -226,6 +226,14 @@ services:
     - /var/run/docker.sock:/var/run/docker.sock:ro
     - ./promtail/config.yml:/etc/promtail/config.yml:ro
     command: -config.file=/etc/promtail/config.yml
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - "echo > /dev/tcp/127.0.0.1/9080 || exit 1"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     networks:
     - backend_net
     deploy:
