@@ -1,6 +1,6 @@
 services:
   postgres-iam:
-    image: ghcr.io/wyattau/postgresql-17:${POSTGRES_VERSION}
+    image: postgres:${POSTGRES_VERSION}
     container_name: iam-postgres
     restart: unless-stopped
     security_opt:

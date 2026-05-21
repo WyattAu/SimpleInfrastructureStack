@@ -1,6 +1,6 @@
 services:
   mariadb-akaunting:
-    image: ghcr.io/wyattau/mariadb:${MARIADB_AKAUNTING_VERSION}
+    image: mariadb:${MARIADB_AKAUNTING_VERSION}
     container_name: accounting-mariadb-akaunting
     restart: unless-stopped
     security_opt:

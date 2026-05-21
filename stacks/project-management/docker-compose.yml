@@ -42,7 +42,7 @@ services:
     - backend_net
 
   postgres:
-    image: ghcr.io/wyattau/postgresql-16:${POSTGRES_VERSION}
+    image: postgres:${POSTGRES_VERSION}
     container_name: project-management-postgres
     restart: unless-stopped
     security_opt:
@@ -86,7 +86,7 @@ services:
         max-file: "3"
 
   rabbitmq-init:
-    image: ghcr.io/wyattau/rabbitmq:${RABBITMQ_VERSION}
+    image: rabbitmq:${RABBITMQ_VERSION}
     container_name: project-management-rabbitmq-init
     # Creates the 'taiga' vhost needed by Taiga async/events workers.
     # RabbitMQ only creates the default '/' vhost on first boot.
@@ -109,7 +109,7 @@ services:
     - backend_net
 
   rabbitmq:
-    image: ghcr.io/wyattau/rabbitmq:${RABBITMQ_VERSION}
+    image: rabbitmq:${RABBITMQ_VERSION}
     container_name: project-management-rabbitmq
     restart: unless-stopped
     security_opt:
