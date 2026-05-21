@@ -302,7 +302,6 @@ services:
     - SYS_PTRACE
     command:
     - -web.listen-address=:9254
-    volumes:
     devices:
     - /dev/zfs:/dev/zfs
     networks:
