@@ -41,7 +41,7 @@ services:
         max-size: 10m
         max-file: '3'
   forgejo:
-    image: codeberg.org/forgejo/forgejo:${FORGEJO_VERSION}
+    image: ghcr.io/wyattau/forgejo:${FORGEJO_VERSION}
     container_name: operations-forgejo
     restart: unless-stopped
     security_opt:
@@ -131,7 +131,7 @@ services:
         max-size: 10m
         max-file: '3'
   forgejo-runner:
-    image: codeberg.org/forgejo/runner:${FORGEJO_RUNNER_VERSION}
+    image: ghcr.io/wyattau/forgejo-runner:${FORGEJO_RUNNER_VERSION}
     container_name: operations-forgejo-runner
     restart: unless-stopped
     security_opt:
