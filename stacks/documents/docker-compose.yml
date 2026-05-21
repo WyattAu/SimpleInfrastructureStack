@@ -92,7 +92,7 @@ services:
         max-size: 10m
         max-file: '3'
   paperless-webserver:
-    image: ghcr.io/wyattau/paperless-ngx:${PAPERLESS_VERSION}
+    image: ghcr.io/paperless-ngx/paperless-ngx:${PAPERLESS_VERSION}
     container_name: documents-webserver
     restart: unless-stopped
     security_opt:

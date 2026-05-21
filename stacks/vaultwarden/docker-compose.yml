@@ -1,6 +1,6 @@
 services:
   vaultwarden:
-    image: ghcr.io/wyattau/vaultwarden:${VAULTWARDEN_VERSION}
+    image: vaultwarden/server:${VAULTWARDEN_VERSION}
     container_name: vaultwarden-server
     restart: unless-stopped
     security_opt:

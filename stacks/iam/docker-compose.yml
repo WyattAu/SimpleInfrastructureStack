@@ -41,7 +41,7 @@ services:
         max-size: 10m
         max-file: '3'
   keycloak:
-    image: ghcr.io/wyattau/keycloak:${KEYCLOAK_VERSION}
+    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
     container_name: iam-keycloak
     restart: unless-stopped
     security_opt:

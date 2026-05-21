@@ -7,7 +7,7 @@ services:
     - ${DATA_BASE_PATH}/monitoring/victoriametrics:/victoria-metrics-data
     networks: []
   victoriametrics:
-    image: ghcr.io/wyattau/victoriametrics:${VICTORIAMETRICS_VERSION}
+    image: victoriametrics/victoria-metrics:${VICTORIAMETRICS_VERSION}
     container_name: monitoring-victoriametrics
     restart: unless-stopped
     security_opt:
@@ -61,7 +61,7 @@ services:
         max-size: 10m
         max-file: '3'
   vmalert:
-    image: ghcr.io/wyattau/vmalert:${VMALERT_VERSION}
+    image: victoriametrics/vmalert:${VMALERT_VERSION}
     container_name: monitoring-vmalert
     restart: unless-stopped
     security_opt:
@@ -113,7 +113,7 @@ services:
     - ${DATA_BASE_PATH}/monitoring/grafana:/var/lib/grafana
     networks: []
   grafana:
-    image: ghcr.io/wyattau/grafana:${GRAFANA_VERSION}
+    image: grafana/grafana:${GRAFANA_VERSION}
     container_name: monitoring-grafana
     restart: unless-stopped
     security_opt:
@@ -177,7 +177,7 @@ services:
         max-size: 10m
         max-file: '3'
   victorialogs:
-    image: ghcr.io/wyattau/victoria-logs:${VICTORIALOGS_VERSION}
+    image: victoriametrics/victoria-logs:${VICTORIALOGS_VERSION}
     container_name: monitoring-victorialogs
     restart: unless-stopped
     security_opt:
@@ -215,7 +215,7 @@ services:
         max-size: 10m
         max-file: '3'
   promtail:
-    image: ghcr.io/wyattau/promtail:${PROMTAIL_VERSION}
+    image: grafana/promtail:${PROMTAIL_VERSION}
     container_name: monitoring-promtail
     restart: unless-stopped
     security_opt:
@@ -240,7 +240,7 @@ services:
         max-size: 10m
         max-file: '3'
   uptime-kuma:
-    image: ghcr.io/wyattau/uptime-kuma:${KUMA_VERSION}
+    image: louislam/uptime-kuma:${KUMA_VERSION}
     container_name: monitoring-kuma
     restart: unless-stopped
     security_opt:
@@ -328,7 +328,7 @@ services:
         max-size: 10m
         max-file: '3'
   cadvisor:
-    image: ghcr.io/wyattau/cadvisor:${CADVISOR_VERSION}
+    image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION}
     container_name: monitoring-cadvisor
     restart: unless-stopped
     security_opt:
@@ -369,7 +369,7 @@ services:
         max-size: 10m
         max-file: '3'
   node-exporter:
-    image: ghcr.io/wyattau/node-exporter:${NODE_EXPORTER_VERSION}
+    image: prom/node-exporter:${NODE_EXPORTER_VERSION}
     container_name: monitoring-node-exporter
     restart: unless-stopped
     depends_on:
@@ -412,7 +412,7 @@ services:
         max-size: 10m
         max-file: '3'
   alertmanager:
-    image: ghcr.io/wyattau/alertmanager:${ALERTMANAGER_VERSION}
+    image: prom/alertmanager:${ALERTMANAGER_VERSION}
     container_name: monitoring-alertmanager
     restart: unless-stopped
     security_opt:
@@ -472,7 +472,7 @@ services:
     - ${DATA_BASE_PATH}/monitoring/pgpass:/pgpass
     networks: []
   postgres-exporter:
-    image: ghcr.io/wyattau/postgres-exporter:${POSTGRES_EXPORTER_VERSION}
+    image: quay.io/prometheuscommunity/postgres-exporter:${POSTGRES_EXPORTER_VERSION}
     container_name: monitoring-postgres-exporter
     restart: unless-stopped
     depends_on:
@@ -519,7 +519,7 @@ services:
         max-size: 10m
         max-file: '3'
   redis-exporter:
-    image: ghcr.io/wyattau/redis-exporter:${REDIS_EXPORTER_VERSION}
+    image: oliver006/redis_exporter:${REDIS_EXPORTER_VERSION}
     container_name: monitoring-redis-exporter
     restart: unless-stopped
     security_opt:
@@ -544,7 +544,7 @@ services:
         max-size: 10m
         max-file: '3'
   tempo:
-    image: ghcr.io/wyattau/tempo:${TEMPO_VERSION}
+    image: grafana/tempo:${TEMPO_VERSION}
     container_name: monitoring-tempo
     restart: unless-stopped
     security_opt:
@@ -573,7 +573,7 @@ services:
         max-size: 10m
         max-file: '3'
   blackbox-exporter:
-    image: ghcr.io/wyattau/blackbox-exporter:${BLACKBOX_EXPORTER_VERSION}
+    image: prom/blackbox-exporter:${BLACKBOX_EXPORTER_VERSION}
     container_name: monitoring-blackbox-exporter
     restart: unless-stopped
     security_opt:

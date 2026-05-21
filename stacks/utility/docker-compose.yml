@@ -1,6 +1,6 @@
 services:
   homepage:
-    image: ghcr.io/wyattau/homepage:${HOMEPAGE_VERSION}
+    image: gethomepage/homepage:${HOMEPAGE_VERSION}
     container_name: utility-homepage
     restart: unless-stopped
     security_opt:
