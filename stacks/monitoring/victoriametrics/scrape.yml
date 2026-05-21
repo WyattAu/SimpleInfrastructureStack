@@ -145,29 +145,20 @@ scrape_configs:
   # not Prometheus exposition format. CrowdSec metrics are available via
   # `cscli metrics` CLI command only. No scrape job added.
 
-  # OAuth2-Proxy metrics (built-in /metrics on port 4180)
-  - job_name: 'oauth2-proxy'
-    scrape_interval: 30s
-    static_configs:
-      - targets: ['proxy-oauth2-proxy:4180']
+  # Immich v2.7.x does NOT support Prometheus metrics (IMMICH_METRICS=true
+  # was an Immich v1 feature). Immich is monitored via blackbox HTTP probe
+  # in blackbox-http-internal job. No dedicated scrape job.
 
-  # Immich server metrics (IMMICH_METRICS=true enables /metrics on port 2283)
-  - job_name: 'immich'
-    scrape_interval: 30s
-    static_configs:
-      - targets: ['photos-server:2283']
+  # Immich ML does NOT expose a Prometheus /metrics endpoint (404).
+  # Immich ML is monitored via container health status. No scrape job.
 
-  # Immich ML metrics (built-in /metrics on port 3003)
-  - job_name: 'immich-ml'
-    scrape_interval: 30s
-    static_configs:
-      - targets: ['photos-ml:3003']
-
-  # Cloudflared tunnel metrics (--metrics 0.0.0.0:4788)
+  # Cloudflared tunnel metrics (--metrics 0.0.0.0:4788).
+  # infra-tunnel uses network_mode: host, so scrape via Docker bridge
+  # gateway IP (host.docker.internal) instead of container DNS name.
   - job_name: 'cloudflared'
     scrape_interval: 30s
     static_configs:
-      - targets: ['infra-tunnel:4788']
+      - targets: ['host.docker.internal:4788']
 
   # =========================================================================
   # Blackbox Exporter — Synthetic Monitoring Probes
