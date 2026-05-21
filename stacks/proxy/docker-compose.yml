@@ -14,14 +14,18 @@ services:
       start_period: 15s
     volumes:
     - /var/run/docker.sock:/var/run/docker.sock:ro
-    environment:
-    - LOG_LEVEL=info
-    - CONTAINERS=1
-    - NETWORKS=1
-    - SERVICES=1
-    - TASKS=1
-    - NODES=1
-    - POST=0
+     environment:
+     - LOG_LEVEL=info
+     - CONTAINERS=1
+     - NETWORKS=1
+     - SERVICES=1
+     - TASKS=1
+     - NODES=1
+     - POST=0
+     - VERSION=1
+     - PING=1
+     - INFO=1
+     - IMAGES=1
     networks:
     - backend_net
     deploy:
