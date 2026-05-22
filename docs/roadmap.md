@@ -82,7 +82,7 @@ initial, 2026-05-14 follow-up). The audits covered: 20 Docker Compose stacks,
 ### Roadmap Implementation (2026-05-11)
 
 - [x] P0-1: Fix compose validation exit code bug in validate.yml
-- [x] P0-2: Document Cloudflare WAF geo-blocking as disabled
+- [x] P0-2: Deploy Cloudflare WAF geo-blocking (see 1.2)
 - [x] P0-3: Add recovery key placeholder to .sops.yaml
 - [x] P0-4: Fix DR runbook Restic path
 - [x] P0-5: Add conftest OPA policy check step to CI
@@ -141,12 +141,14 @@ Added to `.sops.yaml`. All 19 encrypted files re-encrypted with both keys. Recov
 key QR code generated for offline storage. Key deployed to server at
 `/root/.config/sops/age/keys.txt`.
 
-### 1.2 Re-enable Cloudflare WAF geo-blocking [BLOCKED]
+### 1.2 Re-enable Cloudflare WAF geo-blocking [DONE]
 
-Code changes done (uncommented `cloudflare_ruleset` in
-`terraform/cloudflare.tf:92-142`, blocked CN/RU/KP/IR/SY with Matrix and OIDC
-exceptions). Blocked on Cloudflare API token upgrade to include "Zone > Workers
-Rulesets > Edit" permission. Operator action required.
+Deployed via Cloudflare Rulesets API. Ruleset ID
+`55993910c753498b904b78e54efbd9bf`, phase `http_request_firewall_custom`.
+Blocks CN/RU/KP/IR/SY with exceptions for Matrix federation, OIDC discovery,
+ACME challenges, and Hookshot. API token upgraded to include "Zone > WAF > Edit"
+permission. Terraform code in `terraform/cloudflare.tf:92-140` matches deployed
+state.
 
 ### 1.3 Remove ansible-lint `|| true` [DONE]
 
@@ -279,8 +281,7 @@ Procedure in `docs/disaster-recovery-runbook.md` Scenario 4.
                   - ~3 GiB available memory for new services
 
 2026-Q3           Operational maintenance
-                  - Quarterly DR drill (6.1)
-                  - Cloudflare WAF apply (when token upgraded) (1.2)
+                   - Quarterly DR drill (6.1)
                   - Terraform backend migration (operator choice) (2.1)
                   - Container image signing re-evaluation (3.2)
 
@@ -301,7 +302,7 @@ Procedure in `docs/disaster-recovery-runbook.md` Scenario 4.
 | Risk | Likelihood | Impact | Mitigation | Status |
 |------|-----------|--------|------------|--------|
 | Age key loss | Low | Critical | Second key + QR code offline (1.1) | MITIGATED |
-| Unauthorized access via public services | Medium | High | WAF + Keycloak auth (1.2, 3.1) | PARTIAL |
+| Unauthorized access via public services | Medium | High | WAF geo-blocking + Keycloak auth (1.2, 3.1) | MITIGATED |
 | Terraform state corruption | Low | High | Remote backend (2.1) | DOCUMENTED |
 | Undetected application errors | Medium | Medium | Log alerts (2.2) | MITIGATED |
 | Database performance degradation | Low | Medium | pg_stat_statements on all 6 instances (2.3) | MITIGATED |

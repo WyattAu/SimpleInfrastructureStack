@@ -94,9 +94,9 @@ resource "cloudflare_record" "deploy" {
 # Blocks HTTP requests from high-risk countries with exceptions for
 # Matrix federation, OIDC discovery, ACME challenges, and Hookshot.
 #
-# REQUIRES: Cloudflare API token must include "Zone > Workers Rulesets > Edit"
-# permission. If you get error 10000, add the permission in the Cloudflare
-# dashboard (My Profile > API Tokens > edit the token).
+# REQUIRES: Cloudflare API token must include "Zone > WAF > Edit" permission.
+# The ruleset is deployed and managed via the Cloudflare Rulesets API.
+# Ruleset ID: 55993910c753498b904b78e54efbd9bf
 #
 # SECURITY NOTE: Without geo-blocking, all services accept traffic from
 # every country. Rate limiting (100 req/s, 50 burst) via Traefik
