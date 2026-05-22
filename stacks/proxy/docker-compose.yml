@@ -117,34 +117,6 @@ services:
       options:
         max-size: 10m
         max-file: '3'
-  cloudflare-ddns:
-    image: ghcr.io/wyattau/cloudflare-ddns:${CF_DDNS_VERSION}
-    container_name: proxy-cloudflare-ddns
-    restart: unless-stopped
-    security_opt:
-    - no-new-privileges:true
-    cap_drop:
-    - ALL
-    environment:
-    - CLOUDFLARE_API_TOKEN=${CF_API_TOKEN}
-    - CLOUDFLARE_ZONE_ID=${CF_ZONE_ID}
-    - DOMAINS=traefik.${DOMAIN_NAME},auth.${DOMAIN_NAME},forgejo.${DOMAIN_NAME},registry-forgejo.${DOMAIN_NAME},grafana.${DOMAIN_NAME},prometheus.${DOMAIN_NAME},kuma.${DOMAIN_NAME},homepage.${DOMAIN_NAME},matrix.${DOMAIN_NAME},element.${DOMAIN_NAME},ocis.${DOMAIN_NAME},collabora.${DOMAIN_NAME},akaunting.${DOMAIN_NAME},vault.${DOMAIN_NAME},rss.${DOMAIN_NAME},photos.${DOMAIN_NAME},docs.${DOMAIN_NAME},hookshot.${DOMAIN_NAME},vpn.${DOMAIN_NAME},taiga.${DOMAIN_NAME},books.${DOMAIN_NAME}
-    - IPV4_PROVIDER=all
-    - PROXIED=true
-    - RRTYPE=A
-    - DELETE_ON_STOP=false
-    - CRON=*/5 * * * *
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 256M
-          pids: 100
-    logging:
-      driver: json-file
-      options:
-        max-size: 10m
-        max-file: '3'
   oauth2-proxy:
     image: quay.io/oauth2-proxy/oauth2-proxy:${OAUTH2_PROXY_VERSION}
     container_name: proxy-oauth2-proxy
