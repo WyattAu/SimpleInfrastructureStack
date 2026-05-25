@@ -77,7 +77,7 @@ services:
       resources:
         limits:
           cpus: "1.0"
-          memory: 512M
+          memory: 128M
           pids: 100
     logging:
       driver: "json-file"
@@ -302,7 +302,7 @@ services:
       resources:
         limits:
           cpus: "1.0"
-          memory: 512M
+          memory: 384M
           pids: 100
     logging:
       driver: "json-file"

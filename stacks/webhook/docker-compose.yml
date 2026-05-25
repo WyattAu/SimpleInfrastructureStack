@@ -25,7 +25,7 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 256M
+          memory: 64M
           pids: 100
     healthcheck:
       test:
