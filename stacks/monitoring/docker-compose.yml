@@ -55,7 +55,7 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 1G
+          memory: 512M
           pids: 100
     logging:
       driver: json-file
@@ -171,7 +171,7 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 512M
+          memory: 256M
           pids: 100
     logging:
       driver: json-file
@@ -242,7 +242,7 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 256M
+          memory: 128M
           pids: 100
     logging:
       driver: json-file
@@ -375,7 +375,7 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 256M
+          memory: 384M
           pids: 100
     logging:
       driver: json-file
@@ -461,7 +461,7 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 256M
+          memory: 128M
           pids: 100
     logging:
       driver: json-file
@@ -577,7 +577,7 @@ services:
       resources:
         limits:
           cpus: '2.0'
-          memory: 1G
+          memory: 256M
           pids: 100
         reservations:
           memory: 128M
