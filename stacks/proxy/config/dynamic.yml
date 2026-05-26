@@ -30,7 +30,7 @@ http:
       middlewares:
         - keycloak-auth@file
     forgejo-registry:
-      rule: "Host(`registry-forgejo.${DOMAIN_NAME}`)"
+      rule: "Host(`registry.${DOMAIN_NAME}`) || Host(`registry-forgejo.${DOMAIN_NAME}`)"
       entrypoints:
         - websecure
       tls:
