@@ -18,7 +18,7 @@ groups:
             datasourceUid: P8E80F9AEF21F6940
             model:
               editorMode: code
-              expr: '{job="keycloak"} _time:5m ~"(?i)(ERROR|FATAL|exception)" | stats count() > 10'
+              expr: '{job="keycloak"} _time:5m ~"(?i)(ERROR|FATAL|exception)" | stats count() as c | filter c > 10'
               instant: true
               legendFormat: ""
               range: false
@@ -41,7 +41,7 @@ groups:
             datasourceUid: P8E80F9AEF21F6940
             model:
               editorMode: code
-              expr: '{job="synapse"} _time:5m ~"(?i)(ERROR|CRITICAL|exception|traceback)" | stats count() > 20'
+              expr: '{job="synapse"} _time:5m ~"(?i)(ERROR|CRITICAL|exception|traceback)" | stats count() as c | filter c > 20'
               instant: true
               legendFormat: ""
               range: false
@@ -64,7 +64,7 @@ groups:
             datasourceUid: P8E80F9AEF21F6940
             model:
               editorMode: code
-              expr: '{job="traefik"} _time:5m ~"(?i)(error|panic|fatal)" | stats count() > 10'
+              expr: '{job="traefik"} _time:5m ~"(?i)(error|panic|fatal)" | stats count() as c | filter c > 10'
               instant: true
               legendFormat: ""
               range: false
@@ -87,7 +87,7 @@ groups:
             datasourceUid: P8E80F9AEF21F6940
             model:
               editorMode: code
-              expr: '_time:10m ~"(?i)oom.killed|out of memory|memory exhausted" | stats count() > 0'
+              expr: '_time:10m ~"(?i)oom.killed|out of memory|memory exhausted" | stats count() as c | filter c > 0'
               instant: true
               legendFormat: ""
               range: false
@@ -110,7 +110,7 @@ groups:
             datasourceUid: P8E80F9AEF21F6940
             model:
               editorMode: code
-              expr: '{job="forgejo"} _time:5m ~"(?i)(error|panic|fatal|500)" | stats count() > 20'
+              expr: '{job="forgejo"} _time:5m ~"(?i)(error|panic|fatal|500)" | stats count() as c | filter c > 20'
               instant: true
               legendFormat: ""
               range: false
@@ -133,7 +133,7 @@ groups:
             datasourceUid: P8E80F9AEF21F6940
             model:
               editorMode: code
-              expr: '{app="vaultwarden"} _time:5m ~"(?i)(invalid.*password|username.*not.*found|failed.*auth)" | stats count() > 5'
+              expr: '{app="vaultwarden"} _time:5m ~"(?i)(invalid.*password|username.*not.*found|failed.*auth)" | stats count() as c | filter c > 5'
               instant: true
               legendFormat: ""
               range: false
@@ -156,7 +156,7 @@ groups:
             datasourceUid: P8E80F9AEF21F6940
             model:
               editorMode: code
-              expr: '{app="paperless"} _time:5m ~"(?i)(consumer.*error|ocr.*fail|document.*corrupt)" | stats count() > 10'
+              expr: '{app="paperless"} _time:5m ~"(?i)(consumer.*error|ocr.*fail|document.*corrupt)" | stats count() as c | filter c > 10'
               instant: true
               legendFormat: ""
               range: false
@@ -179,7 +179,7 @@ groups:
             datasourceUid: P8E80F9AEF21F6940
             model:
               editorMode: code
-              expr: '{app="crowdsec"} _time:5m ~"(?i)(scenario.*trigger|alert|blocked)" | stats count() > 50'
+              expr: '{app="crowdsec"} _time:5m ~"(?i)(scenario.*trigger|alert|blocked)" | stats count() as c | filter c > 50'
               instant: true
               legendFormat: ""
               range: false
@@ -202,7 +202,7 @@ groups:
             datasourceUid: P8E80F9AEF21F6940
             model:
               editorMode: code
-              expr: '{job="victorialogs"} _time:5m ~"(?i)(ingestion.*lag|write.*timeout|queue.*full)" | stats count() > 3'
+              expr: '{job="victorialogs"} _time:5m ~"(?i)(ingestion.*lag|write.*timeout|queue.*full)" | stats count() as c | filter c > 3'
               instant: true
               legendFormat: ""
               range: false
