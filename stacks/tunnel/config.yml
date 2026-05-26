@@ -1,5 +1,5 @@
 ---
-tunnel: 75ad59d3-5247-43f4-982a-48fe88c62247
+tunnel: 4efe9873-c53f-4415-9416-d57fa23fd34f
 credentials-file: /etc/cloudflared/credentials.json
 
 ingress:
@@ -23,6 +23,10 @@ ingress:
     originRequest:
       noTLSVerify: true
   - hostname: registry-forgejo.wyattau.com
+    service: https://127.0.0.1:443
+    originRequest:
+      noTLSVerify: true
+  - hostname: registry.wyattau.com
     service: https://127.0.0.1:443
     originRequest:
       noTLSVerify: true
