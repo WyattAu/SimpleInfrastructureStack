@@ -4,9 +4,9 @@ log:
   job_level: info
 
 runner:
-  file: .runner
+  file: /data/.runner
   capacity: 4
-  env_file: .env
+  env_file: /data/.env
   timeout: 3h
   shutdown_timeout: 3h
   insecure: true
@@ -18,6 +18,7 @@ runner:
     - "ubuntu-latest:docker://node:22-bookworm"
 
 cache:
+  dir: /data/.cache
   enabled: true
 
 container:
@@ -33,7 +34,7 @@ container:
   # Allow any volume mount in workflow jobs
   valid_volumes:
     - '**'
-  docker_host: "-"
+  docker_host: unix:///var/run/docker.sock
   force_pull: false
   force_rebuild: false
 

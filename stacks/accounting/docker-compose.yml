@@ -92,7 +92,7 @@ services:
     - traefik.http.routers.akaunting.rule=Host(`${AKAUNTING_SUBDOMAIN}.${DOMAIN_NAME}`)
     - traefik.http.routers.akaunting.entrypoints=websecure
     - traefik.http.routers.akaunting.tls.certresolver=cloudflare
-    - traefik.http.routers.akaunting.middlewares=keycloak-auth@docker
+    - traefik.http.routers.akaunting.middlewares=keycloak-auth@file
     - traefik.http.services.akaunting.loadbalancer.server.port=80
     deploy:
       resources:

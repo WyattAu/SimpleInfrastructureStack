@@ -44,7 +44,7 @@ services:
     - traefik.http.routers.immich.rule=Host(`${PHOTOS_SUBDOMAIN}.${DOMAIN_NAME}`)
     - traefik.http.routers.immich.entrypoints=websecure
     - traefik.http.routers.immich.tls.certresolver=cloudflare
-    - traefik.http.routers.immich.middlewares=global-rate-limit
+    - traefik.http.routers.immich.middlewares=global-rate-limit@file
     - traefik.http.services.immich.loadbalancer.server.port=2283
     - traefik.http.services.immich.loadbalancer.server.scheme=http
     healthcheck:

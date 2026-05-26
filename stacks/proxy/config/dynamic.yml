@@ -1,0 +1,43 @@
+# Traefik File Provider - Dynamic Configuration
+# This file defines middlewares and routes that Traefik's Docker provider
+# fails to discover reliably via socket-proxy (v3.7.1 race condition).
+#
+# IMPORTANT: Keep in sync with Docker label definitions in compose files.
+# All routes defined here use @file provider suffix.
+# All middleware references in compose stacks must use @file suffix.
+
+http:
+  middlewares:
+    keycloak-auth:
+      forwardAuth:
+        address: http://oauth2-proxy:4180
+        trustForwardHeader: true
+        authResponseHeaders:
+          - X-Auth-Request-Email
+          - X-Auth-Request-User
+    global-rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+  routers:
+    forgejo-web:
+      rule: "Host(`forgejo.${DOMAIN_NAME}`)"
+      entrypoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      service: forgejo-svc
+      middlewares:
+        - keycloak-auth@file
+    forgejo-registry:
+      rule: "Host(`registry-forgejo.${DOMAIN_NAME}`)"
+      entrypoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      service: forgejo-svc
+  services:
+    forgejo-svc:
+      loadBalancer:
+        servers:
+          - url: "http://forgejo:3000"

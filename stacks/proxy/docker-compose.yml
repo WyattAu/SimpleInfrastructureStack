@@ -74,6 +74,8 @@ services:
     - --providers.docker=true
     - --providers.docker.exposedbydefault=false
     - --providers.docker.endpoint=tcp://socket-proxy:2375
+    - --providers.file.filename=/dynamic/dynamic.yml
+    - --providers.file.watch=true
     - --entrypoints.web.address=:80
     - --entrypoints.web.http.redirections.entrypoint.to=websecure
     - --entrypoints.web.http.redirections.entrypoint.scheme=https
@@ -90,13 +92,14 @@ services:
     - traefik.http.routers.traefik-dashboard.entrypoints=websecure
     - traefik.http.routers.traefik-dashboard.service=api@internal
     - traefik.http.routers.traefik-dashboard.tls.certresolver=cloudflare
-    - traefik.http.routers.traefik-dashboard.middlewares=keycloak-auth
+    - traefik.http.routers.traefik-dashboard.middlewares=keycloak-auth@file
     ports:
     - 80:80
     - 443:443
     - 8448:8448
     volumes:
     - ${DATA_BASE_PATH}/proxy/letsencrypt:/letsencrypt
+    - ${DATA_BASE_PATH}/proxy/dynamic.yml:/dynamic/dynamic.yml:ro
     environment:
     - PUID=${PUID}
     - PGID=${PGID}
@@ -171,13 +174,7 @@ services:
     - traefik.http.routers.oauth2-proxy.tls.certresolver=cloudflare
     - traefik.http.services.oauth2-proxy.loadbalancer.server.port=4180
     healthcheck:
-      test:
-      - CMD-SHELL
-      - wget -qO- http://127.0.0.1:4180/oauth2/sign_in > /dev/null 2>&1 || exit 1
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
+      disable: true
     deploy:
       resources:
         limits:
