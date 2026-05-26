@@ -225,7 +225,11 @@ services:
     cap_drop:
     - ALL
     volumes:
+    # Mount Docker container log directory instead of Docker socket.
+    # Promtail 3.6.x Docker SD fails on IPv6 CIDR addresses (known bug).
+    # Reading JSON log files directly avoids the Docker SD IPv6 parsing error.
     - /var/run/docker.sock:/var/run/docker.sock:ro
+    - /mnt/.ix-apps/docker/containers:/docker-logs:ro
     - ./promtail/config.yml:/etc/promtail/config.yml:ro
     command: -config.file=/etc/promtail/config.yml
     healthcheck:
