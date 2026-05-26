@@ -39,7 +39,7 @@ services:
     - traefik.http.routers.calibre-web.rule=Host(`${CALIBRE_SUBDOMAIN}.${DOMAIN_NAME}`)
     - traefik.http.routers.calibre-web.entrypoints=websecure
     - traefik.http.routers.calibre-web.tls.certresolver=cloudflare
-    - traefik.http.routers.calibre-web.middlewares=keycloak-auth
+    - traefik.http.routers.calibre-web.middlewares=keycloak-auth@file
     - traefik.http.routers.calibre-web.service=calibre-web-svc
     - traefik.http.routers.calibre-web-opds.rule=Host(`${CALIBRE_SUBDOMAIN}.${DOMAIN_NAME}`) && PathPrefix(`/opds`)
     - traefik.http.routers.calibre-web-opds.entrypoints=websecure

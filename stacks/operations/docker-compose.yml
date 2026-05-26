@@ -102,7 +102,7 @@ services:
     - traefik.http.routers.forgejo-web.rule=Host(`${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}`)
     - traefik.http.routers.forgejo-web.entrypoints=websecure
     - traefik.http.routers.forgejo-web.tls.certresolver=cloudflare
-    - traefik.http.routers.forgejo-web.middlewares=keycloak-auth
+    - traefik.http.routers.forgejo-web.middlewares=keycloak-auth@file
     - traefik.http.routers.forgejo-web.service=forgejo-svc
     - traefik.http.routers.forgejo-registry.rule=Host(`${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}`)
     - traefik.http.routers.forgejo-registry.entrypoints=websecure
@@ -111,11 +111,10 @@ services:
     healthcheck:
       test:
       - CMD-SHELL
-      - wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/ || exit 1
+      - /bin/bash -c "echo > /dev/tcp/127.0.0.1/3000"
       interval: 60s
       timeout: 15s
       retries: 5
-      start_period: 30s
     deploy:
       resources:
         limits:
@@ -138,7 +137,7 @@ services:
     - no-new-privileges:true
     cap_drop:
     - ALL
-    user: 1001:1001
+    user: 1000:1000
     group_add:
     - '999'
     environment:
@@ -151,15 +150,12 @@ services:
     - traefik_net
     - backend_net
     - data_net
-    command: /bin/sh -c "sleep 5; forgejo-runner --config /data/config.yaml daemon"
+    command:
+      - --config
+      - /data/config.yaml
+      - daemon
     healthcheck:
-      test:
-      - CMD-SHELL
-      - pgrep -f 'forgejo-runner' || exit 1
-      interval: 60s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      disable: true
     deploy:
       resources:
         limits:

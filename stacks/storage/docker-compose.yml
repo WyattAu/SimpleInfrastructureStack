@@ -81,7 +81,7 @@ services:
     - traefik.http.routers.ocis.rule=Host(`${OCIS_SUBDOMAIN}.${DOMAIN_NAME}`)
     - traefik.http.routers.ocis.entrypoints=websecure
     - traefik.http.routers.ocis.tls.certresolver=cloudflare
-    - traefik.http.routers.ocis.middlewares=global-rate-limit
+    - traefik.http.routers.ocis.middlewares=global-rate-limit@file
     - traefik.http.services.ocis.loadbalancer.server.port=9200
     - traefik.http.services.ocis.loadbalancer.server.scheme=http
     deploy:
@@ -160,6 +160,16 @@ services:
     # not granted as a capability, so dropping ALL caps does not interfere.
     cap_drop:
     - ALL
+    cap_add:
+    - SYS_CHROOT
+    - SYS_ADMIN
+    - MKNOD
+    - SETUID
+    - SETGID
+    - CHOWN
+    - FOWNER
+    - DAC_OVERRIDE
+    - SETPCAP
     environment:
     - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:net.frame_ancestors=${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
     - domain=${OCIS_SUBDOMAIN}\.${DOMAIN_NAME}
