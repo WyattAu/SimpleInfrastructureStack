@@ -30,7 +30,11 @@ container:
   privileged: false
   # Docker socket is automatically mounted by the runner when docker_host
   # is set below. Do NOT add it here or Docker rejects duplicate mounts.
-  # options: ""  (keep empty - runner injects socket automatically)
+  # Mount host git binary into all job containers so the runner can clone
+  # action repos (e.g. oven-sh/setup-bun, actions/cache) before the user's
+  # steps run. This is needed because many workflow images (e.g.
+  # node:24-bookworm-slim) don't include git.
+  options: "--volume /usr/bin/git:/usr/bin/git:ro"
   # Allow any volume mount in workflow jobs
   valid_volumes:
     - '**'
