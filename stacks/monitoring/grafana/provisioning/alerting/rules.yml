@@ -133,7 +133,7 @@ groups:
             datasourceUid: P8E80F9AEF21F6940
             model:
               editorMode: code
-              expr: '{app="vaultwarden"} _time:5m ~"(?i)(invalid.*password|username.*not.*found|failed.*auth)" | stats count() as c | filter c > 5'
+              expr: '{job="vaultwarden"} _time:5m ~"(?i)(invalid.*password|username.*not.*found|failed.*auth)" | stats count() as c | filter c > 5'
               instant: true
               legendFormat: ""
               range: false
@@ -156,7 +156,7 @@ groups:
             datasourceUid: P8E80F9AEF21F6940
             model:
               editorMode: code
-              expr: '{app="paperless"} _time:5m ~"(?i)(consumer.*error|ocr.*fail|document.*corrupt)" | stats count() as c | filter c > 10'
+              expr: '{job="paperless-webserver"} _time:5m ~"(?i)(consumer.*error|ocr.*fail|document.*corrupt)" | stats count() as c | filter c > 10'
               instant: true
               legendFormat: ""
               range: false
@@ -179,7 +179,7 @@ groups:
             datasourceUid: P8E80F9AEF21F6940
             model:
               editorMode: code
-              expr: '{app="crowdsec"} _time:5m ~"(?i)(scenario.*trigger|alert|blocked)" | stats count() as c | filter c > 50'
+              expr: '{job="crowdsec"} _time:5m ~"(?i)(scenario.*trigger|alert|blocked)" | stats count() as c | filter c > 50'
               instant: true
               legendFormat: ""
               range: false
