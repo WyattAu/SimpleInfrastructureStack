@@ -28,9 +28,9 @@ container:
   network: backend_net
   enable_ipv6: false
   privileged: false
-  # Mount Docker socket into job containers so workflows can run Docker
-  # commands (docker build, docker run, etc.)
-  options: "--volume /var/run/docker.sock:/var/run/docker.sock"
+  # Docker socket is automatically mounted by the runner when docker_host
+  # is set below. Do NOT add it here or Docker rejects duplicate mounts.
+  # options: ""  (keep empty - runner injects socket automatically)
   # Allow any volume mount in workflow jobs
   valid_volumes:
     - '**'
