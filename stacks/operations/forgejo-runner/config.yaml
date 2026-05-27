@@ -14,8 +14,8 @@ runner:
   fetch_interval: 2s
   report_interval: 1s
   labels:
-    - "docker:docker://catthehacker/ubuntu:act-latest"
-    - "ubuntu-latest:docker://catthehacker/ubuntu:act-latest"
+    - "docker:docker://ghcr.io/wyattau/forgejo-runner-image:latest"
+    - "ubuntu-latest:docker://ghcr.io/wyattau/forgejo-runner-image:latest"
 
 cache:
   dir: /data/.cache
@@ -30,8 +30,7 @@ container:
   privileged: false
   # Docker socket is automatically mounted by the runner when docker_host
   # is set below. Do NOT add it here or Docker rejects duplicate mounts.
-  # No need to mount host git - catthehacker/ubuntu:act-latest includes
-  # git, docker CLI, jq, make, and all common CI tools.
+  # Custom wolfi-based runner image with all common CI tools.
   options: ""
   # Allow any volume mount in workflow jobs
   valid_volumes:
