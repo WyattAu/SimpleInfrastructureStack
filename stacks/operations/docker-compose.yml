@@ -120,7 +120,7 @@ services:
         limits:
           cpus: '1.0'
           memory: 512M
-          pids: 100
+          pids: 512
         reservations:
           cpus: '0.25'
           memory: 128M
@@ -142,10 +142,25 @@ services:
     - '999'
     environment:
       DOCKER_HOST: unix:///var/run/docker.sock
+      LD_LIBRARY_PATH: /usr/lib/git-deps
     volumes:
     - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
     - ./forgejo-runner/config.yaml:/data/config.yaml:ro
     - /var/run/docker.sock:/var/run/docker.sock
+    # Runner binary is distroless. Mount complete musl-linked git installation:
+    # - git binary, git-core (remote-https, http-fetch, templates),
+    # - all shared libs (ld-musl, libcurl, libssl, libcrypto, libpcre2, libz, etc)
+    # LD_LIBRARY_PATH points to git-deps so git-remote-https finds its transitive deps.
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git:/usr/bin/git:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git-core:/usr/libexec/git-core:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git-core/templates:/usr/share/git-core/templates:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/git/lib/ld-musl-x86_64.so.1:/lib/ld-musl-x86_64.so.1:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/git/lib:/usr/lib/git-deps:ro
+    # CA certificates for git HTTPS (distroless has none).
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/ssl/cert.pem:/etc/ssl/cert.pem:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/ssl/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
+    # Writable cache for runner internal action cloning (distroless rootfs is read-only).
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/act-cache:/.cache
     networks:
     - traefik_net
     - backend_net
