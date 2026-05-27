@@ -31,6 +31,9 @@ container:
   # Docker socket is automatically mounted by the runner when docker_host
   # is set below. Do NOT add it here or Docker rejects duplicate mounts.
   # Custom wolfi-based runner image with all common CI tools.
+  # NOTE: Do NOT mount git via container.options -- it conflicts with job
+  # containers that install their own git via apt. The runner binary gets
+  # git via dedicated volume mounts in docker-compose.yml instead.
   options: ""
   # Allow any volume mount in workflow jobs
   valid_volumes:
