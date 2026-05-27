@@ -14,8 +14,8 @@ runner:
   fetch_interval: 2s
   report_interval: 1s
   labels:
-    - "docker:docker://node:22-bookworm"
-    - "ubuntu-latest:docker://node:22-bookworm"
+    - "docker:docker://catthehacker/ubuntu:act-latest"
+    - "ubuntu-latest:docker://catthehacker/ubuntu:act-latest"
 
 cache:
   dir: /data/.cache
@@ -30,11 +30,9 @@ container:
   privileged: false
   # Docker socket is automatically mounted by the runner when docker_host
   # is set below. Do NOT add it here or Docker rejects duplicate mounts.
-  # Mount host git binary into all job containers so the runner can clone
-  # action repos (e.g. oven-sh/setup-bun, actions/cache) before the user's
-  # steps run. This is needed because many workflow images (e.g.
-  # node:24-bookworm-slim) don't include git.
-  options: "--volume /usr/bin/git:/usr/bin/git:ro"
+  # No need to mount host git - catthehacker/ubuntu:act-latest includes
+  # git, docker CLI, jq, make, and all common CI tools.
+  options: ""
   # Allow any volume mount in workflow jobs
   valid_volumes:
     - '**'
