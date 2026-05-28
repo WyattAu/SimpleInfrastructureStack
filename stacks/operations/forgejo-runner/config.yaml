@@ -5,7 +5,7 @@ log:
 
 runner:
   file: /data/.runner
-  capacity: 4
+  capacity: 8
   # Use GitHub as the default action source. The Forgejo runner defaults to
   # code.forgejo.org which maps actions/* -> forgejo/*, but forgejo/checkout
   # returns 404 there while actions/checkout exists. GitHub has the canonical
@@ -39,7 +39,11 @@ container:
   # NOTE: Do NOT mount git via container.options -- it conflicts with job
   # containers that install their own git via apt. The runner binary gets
   # git via dedicated volume mounts in docker-compose.yml instead.
-  options: ""
+  # Persist /nix/store across job runs via host volume mount.
+  # Without this, every CI run is a cold Nix build (20+ min).
+  # The docker socket group-add ensures job containers (UID 1000) can
+  # access the Docker API for deploy/release workflows.
+  options: "--volume /mnt/pool_HDD_x2/infra/runner-nix-store:/nix"
   # Allow any volume mount in workflow jobs
   valid_volumes:
     - '**'
