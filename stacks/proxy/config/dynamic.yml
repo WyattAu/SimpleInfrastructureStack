@@ -2,6 +2,9 @@
 # This file defines middlewares and routes that Traefik's Docker provider
 # fails to discover reliably via socket-proxy (v3.7.1 race condition).
 #
+# NOTE: Traefik's file provider does NOT support ${ENV_VAR} substitution
+# in Host matcher rules. Domain names must be literal.
+#
 # IMPORTANT: Keep in sync with Docker label definitions in compose files.
 # All routes defined here use @file provider suffix.
 # All middleware references in compose stacks must use @file suffix.
@@ -21,7 +24,7 @@ http:
         burst: 50
   routers:
     forgejo-web:
-      rule: "Host(`forgejo.${DOMAIN_NAME}`)"
+      rule: "Host(`forgejo.wyattau.com`) || Host(`git.wyattau.com`)"
       entrypoints:
         - websecure
       tls:
@@ -30,14 +33,65 @@ http:
       middlewares:
         - keycloak-auth@file
     forgejo-registry:
-      rule: "Host(`registry.${DOMAIN_NAME}`) || Host(`registry-forgejo.${DOMAIN_NAME}`)"
+      rule: "Host(`registry.wyattau.com`) || Host(`registry-forgejo.wyattau.com`)"
       entrypoints:
         - websecure
       tls:
         certResolver: cloudflare
       service: forgejo-svc
+    # Alias domain routers (point to same backends as Docker-discovered services)
+    cloud-alias:
+      rule: "Host(`cloud.wyattau.com`)"
+      entrypoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      service: ocis-alias-svc
+      middlewares:
+        - keycloak-auth@file
+    status-alias:
+      rule: "Host(`status.wyattau.com`)"
+      entrypoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      service: kuma-alias-svc
+      middlewares:
+        - keycloak-auth@file
+    accounting-alias:
+      rule: "Host(`accounting.wyattau.com`)"
+      entrypoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      service: akaunting-alias-svc
+      middlewares:
+        - keycloak-auth@file
+    office-alias:
+      rule: "Host(`office.wyattau.com`)"
+      entrypoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      service: collabora-alias-svc
   services:
     forgejo-svc:
       loadBalancer:
         servers:
           - url: "http://forgejo:3000"
+    ocis-alias-svc:
+      loadBalancer:
+        servers:
+          - url: "http://storage-ocis:9200"
+    kuma-alias-svc:
+      loadBalancer:
+        servers:
+          - url: "http://monitoring-kuma:3001"
+    akaunting-alias-svc:
+      loadBalancer:
+        servers:
+          - url: "http://accounting-akaunting:80"
+    collabora-alias-svc:
+      loadBalancer:
+        servers:
+          - url: "http://storage-collabora:9980"

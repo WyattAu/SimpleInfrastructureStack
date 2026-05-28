@@ -26,6 +26,8 @@ datasources:
     url: http://monitoring-victorialogs:9428
     # VictoriaLogs uses uint32 account IDs, not string tenant IDs.
     # No X-Scope-OrgID header needed — default account (0) is used.
+    jsonData:
+      timeout: 120
     editable: true
   - name: Tempo
     type: tempo
