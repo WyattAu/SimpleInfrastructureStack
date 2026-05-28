@@ -98,5 +98,26 @@ ingress:
     service: https://127.0.0.1:443
     originRequest:
       noTLSVerify: true
+  # Alias domains
+  - hostname: cloud.wyattau.com
+    service: https://127.0.0.1:443
+    originRequest:
+      noTLSVerify: true
+  - hostname: git.wyattau.com
+    service: https://127.0.0.1:443
+    originRequest:
+      noTLSVerify: true
+  - hostname: status.wyattau.com
+    service: https://127.0.0.1:443
+    originRequest:
+      noTLSVerify: true
+  - hostname: accounting.wyattau.com
+    service: https://127.0.0.1:443
+    originRequest:
+      noTLSVerify: true
+  - hostname: office.wyattau.com
+    service: https://127.0.0.1:443
+    originRequest:
+      noTLSVerify: true
   # Catch-all
   - service: http_status:404
