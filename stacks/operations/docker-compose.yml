@@ -159,12 +159,12 @@ services:
     # CA certificates for git HTTPS (distroless has none).
     - ${DATA_BASE_PATH}/operations/forgejo-runner/ssl/cert.pem:/etc/ssl/cert.pem:ro
     - ${DATA_BASE_PATH}/operations/forgejo-runner/ssl/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
-    # Writable cache for runner internal action cloning (distroless rootfs is read-only).
-    - ${DATA_BASE_PATH}/operations/forgejo-runner/act-cache:/.cache
-    tmpfs:
-    # Distroless runner image has no /tmp. Runner needs it for temp script files
-    # (/tmp/act<hash>) that are written before executing each workflow step.
-    - /tmp:rw,nosuid,nodev,exec,size=64m
+     # Writable cache for runner internal action cloning (distroless rootfs is read-only).
+     - ${DATA_BASE_PATH}/operations/forgejo-runner/act-cache:/.cache
+     # Runner needs /tmp for temp script files (/tmp/act<hash>) written before
+     # executing each workflow step. tmpfs caused intermittent "permission denied"
+     # errors in the Go runner binary; bind mount to host dir is reliable.
+     - ${DATA_BASE_PATH}/operations/forgejo-runner/tmp:/tmp
     networks:
     - traefik_net
     - backend_net
