@@ -6,6 +6,11 @@ log:
 runner:
   file: /data/.runner
   capacity: 4
+  # Use GitHub as the default action source. The Forgejo runner defaults to
+  # code.forgejo.org which maps actions/* -> forgejo/*, but forgejo/checkout
+  # returns 404 there while actions/checkout exists. GitHub has the canonical
+  # actions and is reachable from the runner container.
+  default_actions_url: https://github.com
   env_file: /data/.env
   timeout: 3h
   shutdown_timeout: 3h
