@@ -8,7 +8,7 @@ runner:
   capacity: 1
   default_actions_url: https://github.com
   env_file: /data/.env
-  timeout: 3h
+  timeout: 2h
   shutdown_timeout: 3h
   insecure: true
   fetch_timeout: 30s
