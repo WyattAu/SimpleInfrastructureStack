@@ -5,7 +5,7 @@ log:
 
 runner:
   file: /data/.runner
-  capacity: 2
+  capacity: 1
   default_actions_url: https://github.com
   env_file: /data/.env
   timeout: 3h
