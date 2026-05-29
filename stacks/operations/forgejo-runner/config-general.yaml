@@ -1,0 +1,36 @@
+---
+log:
+  level: info
+  job_level: info
+
+runner:
+  file: /data/.runner
+  capacity: 2
+  default_actions_url: https://github.com
+  env_file: /data/.env
+  timeout: 3h
+  shutdown_timeout: 3h
+  insecure: true
+  fetch_timeout: 30s
+  fetch_interval: 2s
+  report_interval: 1s
+  labels:
+    - "general:docker://ghcr.io/wyattau/forgejo-runner-image:latest"
+
+cache:
+  dir: /data/.cache
+  enabled: true
+
+container:
+  network: backend_net
+  enable_ipv6: false
+  privileged: false
+  options: ""
+  valid_volumes:
+    - '**'
+  docker_host: unix:///var/run/docker.sock
+  force_pull: false
+  force_rebuild: false
+
+host:
+  workdir_parent:

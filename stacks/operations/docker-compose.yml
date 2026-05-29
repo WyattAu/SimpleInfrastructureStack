@@ -129,9 +129,12 @@ services:
       options:
         max-size: 10m
         max-file: '3'
+  # Shared runner volumes (git, ssl, cache, tmp) used by all runner services.
+  # Each dedicated runner has its own data dir and config but shares these mounts.
+
   forgejo-runner:
     image: ghcr.io/wyattau/forgejo-runner:${FORGEJO_RUNNER_VERSION}
-    container_name: operations-forgejo-runner
+    container_name: runner-general
     restart: unless-stopped
     security_opt:
     - no-new-privileges:true
@@ -144,27 +147,18 @@ services:
       DOCKER_HOST: unix:///var/run/docker.sock
       LD_LIBRARY_PATH: /usr/lib/git-deps
     volumes:
-    - ${DATA_BASE_PATH}/operations/forgejo-runner:/data
-    - ./forgejo-runner/config.yaml:/data/config.yaml:ro
+    - ${DATA_BASE_PATH}/operations/runner-general:/data
+    - ./forgejo-runner/config-general.yaml:/data/config.yaml:ro
     - /var/run/docker.sock:/var/run/docker.sock
-    # Runner binary is distroless. Mount complete musl-linked git installation:
-    # - git binary, git-core (remote-https, http-fetch, templates),
-    # - all shared libs (ld-musl, libcurl, libssl, libcrypto, libpcre2, libz, etc)
-    # LD_LIBRARY_PATH points to git-deps so git-remote-https finds its transitive deps.
     - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git:/usr/bin/git:ro
     - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git-core:/usr/libexec/git-core:ro
     - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git-core/templates:/usr/share/git-core/templates:ro
     - ${DATA_BASE_PATH}/operations/forgejo-runner/git/lib/ld-musl-x86_64.so.1:/lib/ld-musl-x86_64.so.1:ro
     - ${DATA_BASE_PATH}/operations/forgejo-runner/git/lib:/usr/lib/git-deps:ro
-    # CA certificates for git HTTPS (distroless has none).
     - ${DATA_BASE_PATH}/operations/forgejo-runner/ssl/cert.pem:/etc/ssl/cert.pem:ro
     - ${DATA_BASE_PATH}/operations/forgejo-runner/ssl/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
-     # Writable cache for runner internal action cloning (distroless rootfs is read-only).
-     - ${DATA_BASE_PATH}/operations/forgejo-runner/act-cache:/.cache
-     # Runner needs /tmp for temp script files (/tmp/act<hash>) written before
-     # executing each workflow step. tmpfs caused intermittent "permission denied"
-     # errors in the Go runner binary; bind mount to host dir is reliable.
-     - ${DATA_BASE_PATH}/operations/forgejo-runner/tmp:/tmp
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/act-cache:/.cache
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/tmp:/tmp
     networks:
     - traefik_net
     - backend_net
@@ -178,9 +172,107 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 128M
-          pids: 512
+          cpus: '0.5'
+          memory: 64M
+          pids: 256
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  runner-peptide-web:
+    image: ghcr.io/wyattau/forgejo-runner:${FORGEJO_RUNNER_VERSION}
+    container_name: runner-peptide-web
+    restart: unless-stopped
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    user: 1000:1000
+    group_add:
+    - '999'
+    environment:
+      DOCKER_HOST: unix:///var/run/docker.sock
+      LD_LIBRARY_PATH: /usr/lib/git-deps
+    volumes:
+    - ${DATA_BASE_PATH}/operations/runner-peptide-web:/data
+    - ./forgejo-runner/config-peptide-web.yaml:/data/config.yaml:ro
+    - /var/run/docker.sock:/var/run/docker.sock
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git:/usr/bin/git:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git-core:/usr/libexec/git-core:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git-core/templates:/usr/share/git-core/templates:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/git/lib/ld-musl-x86_64.so.1:/lib/ld-musl-x86_64.so.1:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/git/lib:/usr/lib/git-deps:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/ssl/cert.pem:/etc/ssl/cert.pem:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/ssl/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/act-cache:/.cache
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/tmp:/tmp
+    networks:
+    - traefik_net
+    - backend_net
+    - data_net
+    command:
+      - --config
+      - /data/config.yaml
+      - daemon
+    healthcheck:
+      disable: true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 64M
+          pids: 256
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  runner-questhive:
+    image: ghcr.io/wyattau/forgejo-runner:${FORGEJO_RUNNER_VERSION}
+    container_name: runner-questhive
+    restart: unless-stopped
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    user: 1000:1000
+    group_add:
+    - '999'
+    environment:
+      DOCKER_HOST: unix:///var/run/docker.sock
+      LD_LIBRARY_PATH: /usr/lib/git-deps
+    volumes:
+    - ${DATA_BASE_PATH}/operations/runner-questhive:/data
+    - ./forgejo-runner/config-questhive.yaml:/data/config.yaml:ro
+    - /var/run/docker.sock:/var/run/docker.sock
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git:/usr/bin/git:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git-core:/usr/libexec/git-core:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git-core/templates:/usr/share/git-core/templates:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/git/lib/ld-musl-x86_64.so.1:/lib/ld-musl-x86_64.so.1:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/git/lib:/usr/lib/git-deps:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/ssl/cert.pem:/etc/ssl/cert.pem:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/ssl/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/act-cache:/.cache
+    - ${DATA_BASE_PATH}/operations/forgejo-runner/tmp:/tmp
+    networks:
+    - traefik_net
+    - backend_net
+    - data_net
+    command:
+      - --config
+      - /data/config.yaml
+      - daemon
+    healthcheck:
+      disable: true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 64M
+          pids: 256
     logging:
       driver: json-file
       options:
