@@ -16,6 +16,7 @@ runner:
   report_interval: 1s
   labels:
     - "general:docker://ghcr.io/wyattau/forgejo-runner-image:latest"
+    - "docker:docker://ghcr.io/wyattau/forgejo-runner-image:latest"
 
 cache:
   dir: /data/.cache
