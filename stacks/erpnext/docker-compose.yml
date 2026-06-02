@@ -1,0 +1,118 @@
+x-erpnext: &erpnext
+  image: frappe/erpnext:v16.0.0
+  restart: unless-stopped
+  volumes:
+    - erpnext-sites:/home/frappe/frappe-bench/sites
+  environment:
+    DB_HOST: erpnext-mariadb
+    DB_PORT: "3306"
+    REDIS_CACHE: erpnext-redis:6379
+    REDIS_QUEUE: erpnext-redis:6379
+
+services:
+  erpnext-configurator:
+    image: frappe/erpnext:v16.0.0
+    restart: on-failure
+    entrypoint: bash -c
+    command:
+      - |
+        ls -1 apps > sites/apps.txt
+        bench set-config -g db_host erpnext-mariadb
+        bench set-config -gp db_port 3306
+        bench set-config -g redis_cache redis://erpnext-redis:6379
+        bench set-config -g redis_queue redis://erpnext-redis:6379
+        bench set-config -gp socketio_port 9000
+        bench new-site erp.wyattau.com --mariadb-root-password erpnext123 --admin-password admin123 --db-host erpnext-mariadb || true
+        bench --site erp.wyattau.com install-app erpnext || true
+        bench use erp.wyattau.com
+    environment:
+      DB_HOST: erpnext-mariadb
+      DB_PORT: "3306"
+      REDIS_CACHE: erpnext-redis:6379
+      REDIS_QUEUE: erpnext-redis:6379
+    volumes:
+      - erpnext-sites:/home/frappe/frappe-bench/sites
+    depends_on:
+      erpnext-mariadb:
+        condition: service_healthy
+      erpnext-redis:
+        condition: service_started
+
+  erpnext-backend:
+    <<: *erpnext
+    container_name: erpnext-backend
+    environment:
+      GUNICORN_THREADS: "2"
+      GUNICORN_WORKERS: "1"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.erpnext.rule=Host(\`erp.wyattau.com\`)
+      - traefik.http.routers.erpnext.entrypoints=websecure
+      - traefik.http.routers.erpnext.tls.certresolver=cloudflare
+      - traefik.http.services.erpnext-svc.loadbalancer.server.port=8000
+    depends_on:
+      erpnext-mariadb:
+        condition: service_healthy
+      erpnext-redis:
+        condition: service_started
+      erpnext-configurator:
+        condition: service_completed_successfully
+
+  erpnext-scheduler:
+    <<: *erpnext
+    container_name: erpnext-scheduler
+    command: bench schedule
+    depends_on:
+      erpnext-mariadb:
+        condition: service_healthy
+      erpnext-redis:
+        condition: service_started
+      erpnext-configurator:
+        condition: service_completed_successfully
+
+  erpnext-queue-short:
+    <<: *erpnext
+    container_name: erpnext-queue-short
+    command: bench worker --queue short,default
+    depends_on:
+      erpnext-mariadb:
+        condition: service_healthy
+      erpnext-redis:
+        condition: service_started
+      erpnext-configurator:
+        condition: service_completed_successfully
+
+  erpnext-mariadb:
+    image: mariadb:11.8
+    container_name: erpnext-mariadb
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+      - --innodb-buffer-pool-size=128M
+      - --max-connections=20
+    environment:
+      MYSQL_ROOT_PASSWORD: erpnext123
+      MARIADB_AUTO_UPGRADE: "1"
+    volumes:
+      - erpnext-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  erpnext-redis:
+    image: redis:8.6-alpine
+    container_name: erpnext-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru --save ""
+    volumes:
+      - erpnext-redis-data:/data
+
+volumes:
+  erpnext-sites:
+  erpnext-db:
+  erpnext-redis-data:
