@@ -1,0 +1,8 @@
+log:
+  level: info
+runner:
+  file: /mnt/pool_HDD_x2/infra/act-runner/data/docker-host/.runner
+  capacity: 1
+  timeout: 2h
+  insecure: true
+  labels: ["docker"]
