@@ -62,14 +62,6 @@ ingress:
     service: https://127.0.0.1:443
     originRequest:
       noTLSVerify: true
-  - hostname: akaunting.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: vault.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
   - hostname: rss.wyattau.com
     service: https://127.0.0.1:443
     originRequest:
