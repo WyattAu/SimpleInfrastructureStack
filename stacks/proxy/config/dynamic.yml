@@ -1,14 +1,3 @@
-# Traefik File Provider - Dynamic Configuration
-# This file defines middlewares and routes that Traefik's Docker provider
-# fails to discover reliably via socket-proxy (v3.7.1 race condition).
-#
-# NOTE: Traefik's file provider does NOT support ${ENV_VAR} substitution
-# in Host matcher rules. Domain names must be literal.
-#
-# IMPORTANT: Keep in sync with Docker label definitions in compose files.
-# All routes defined here use @file provider suffix.
-# All middleware references in compose stacks must use @file suffix.
-
 http:
   middlewares:
     keycloak-auth:
@@ -16,62 +5,65 @@ http:
         address: http://oauth2-proxy:4180
         trustForwardHeader: true
         authResponseHeaders:
-          - X-Auth-Request-Email
-          - X-Auth-Request-User
+        - X-Auth-Request-Email
+        - X-Auth-Request-User
     global-rate-limit:
       rateLimit:
         average: 100
         burst: 50
   routers:
     forgejo-web:
-      rule: "Host(`forgejo.wyattau.com`) || Host(`git.wyattau.com`)"
+      rule: Host(`forgejo.wyattau.com`) || Host(`git.wyattau.com`)
       entrypoints:
-        - websecure
+      - websecure
       tls:
         certResolver: cloudflare
       service: forgejo-svc
       middlewares:
-        - keycloak-auth@file
+      - keycloak-auth@file
     forgejo-registry:
-      rule: "Host(`registry.wyattau.com`) || Host(`registry-forgejo.wyattau.com`)"
+      rule: Host(`registry.wyattau.com`) || Host(`registry-forgejo.wyattau.com`)
       entrypoints:
-        - websecure
+      - websecure
       tls:
         certResolver: cloudflare
       service: forgejo-svc
-    # Alias domain routers (point to same backends as Docker-discovered services)
     cloud-alias:
-      rule: "Host(`cloud.wyattau.com`)"
+      rule: Host(`cloud.wyattau.com`)
       entrypoints:
-        - websecure
+      - websecure
       tls:
         certResolver: cloudflare
       service: ocis-alias-svc
       middlewares:
-        - keycloak-auth@file
+      - keycloak-auth@file
     status-alias:
-      rule: "Host(`status.wyattau.com`)"
+      rule: Host(`status.wyattau.com`)
       entrypoints:
-        - websecure
+      - websecure
       tls:
         certResolver: cloudflare
       service: kuma-alias-svc
       middlewares:
-        - keycloak-auth@file
+      - keycloak-auth@file
+    erpnext-assets:
+      rule: Host(`erp.wyattau.com`) && PathPrefix(`/assets/`)
+      entrypoints:
+      - websecure
       tls:
         certResolver: cloudflare
       service: erpnext-assets-svc
     erpnext:
-      rule: "Host(`erp.wyattau.com`)"
+      rule: Host(`erp.wyattau.com`)
       entrypoints:
-        - websecure
+      - websecure
       tls:
         certResolver: cloudflare
       service: erpnext-svc
     office-alias:
-      rule: "Host(`office.wyattau.com`)"
+      rule: Host(`office.wyattau.com`)
       entrypoints:
-        - websecure
+      - websecure
       tls:
         certResolver: cloudflare
       service: collabora-alias-svc
@@ -79,19 +71,24 @@ http:
     forgejo-svc:
       loadBalancer:
         servers:
-          - url: "http://forgejo:3000"
+        - url: http://forgejo:3000
     ocis-alias-svc:
       loadBalancer:
         servers:
-          - url: "http://storage-ocis:9200"
+        - url: http://storage-ocis:9200
     kuma-alias-svc:
       loadBalancer:
         servers:
-          - url: "http://monitoring-kuma:3001"
+        - url: http://monitoring-kuma:3001
+    erpnext-assets-svc:
       loadBalancer:
         servers:
-          - url: "http://172.16.27.4:8000"
+        - url: http://erpnext-assets:80
+    erpnext-svc:
+      loadBalancer:
+        servers:
+        - url: http://172.16.27.4:8000
     collabora-alias-svc:
       loadBalancer:
         servers:
-          - url: "http://storage-collabora:9980"
+        - url: http://storage-collabora:9980
