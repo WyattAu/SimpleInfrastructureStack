@@ -1,120 +1,112 @@
----
 tunnel: 4efe9873-c53f-4415-9416-d57fa23fd34f
 credentials-file: /etc/cloudflared/credentials.json
-
 ingress:
-  # SSH access
-  - hostname: ssh.wyattau.com
-    service: ssh://127.0.0.1:2222
-  # Webhook receiver
-  - hostname: deploy.wyattau.com
-    service: http://127.0.0.1:9001
-  # All SIS web services via Traefik (HTTPS -> Traefik -> backend)
-  - hostname: traefik.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: auth.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: forgejo.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: registry-forgejo.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: registry.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: grafana.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: prometheus.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: kuma.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: homepage.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: matrix.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: element.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: ocis.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: collabora.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: rss.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: photos.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: docs.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: hookshot.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: vpn.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: taiga.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: books.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  # Alias domains
-  - hostname: cloud.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: git.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: status.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: accounting.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: office.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-  - hostname: erp.wyattau.com
-    service: https://127.0.0.1:443
-    originRequest:
-      noTLSVerify: true
-
-  # Catch-all
-  - service: http_status:404
+- hostname: ssh.wyattau.com
+  service: ssh://127.0.0.1:2222
+- hostname: deploy.wyattau.com
+  service: http://127.0.0.1:9001
+- hostname: traefik.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: auth.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: forgejo.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: registry-forgejo.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: registry.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: grafana.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: prometheus.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: kuma.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: homepage.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: matrix.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: element.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: ocis.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: collabora.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: rss.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: photos.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: docs.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: hookshot.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: vpn.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: taiga.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: books.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: cloud.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: git.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: status.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: accounting.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: office.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- hostname: erp.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+- service: http_status:404
