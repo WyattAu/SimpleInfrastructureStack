@@ -73,6 +73,7 @@ health_check_containers:
   - erpnext-socketio
   - erpnext-mariadb
   - erpnext-redis
+  - erpnext-assets
   - utility-homepage
   - vaultwarden-server
   - rss-postgres

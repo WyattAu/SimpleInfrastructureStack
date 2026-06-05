@@ -53,6 +53,13 @@ http:
       tls:
         certResolver: cloudflare
       service: erpnext-socketio-svc
+    erpnext-assets:
+      rule: Host(`erp.wyattau.com`) && (PathPrefix(`/assets/`) || PathPrefix(`/files/`))
+      entrypoints:
+      - websecure
+      tls:
+        certResolver: cloudflare
+      service: erpnext-assets-svc
     erpnext:
       rule: Host(`erp.wyattau.com`)
       entrypoints:
@@ -84,6 +91,10 @@ http:
       loadBalancer:
         servers:
         - url: http://erpnext-socketio:9000
+    erpnext-assets-svc:
+      loadBalancer:
+        servers:
+        - url: http://erpnext-assets:80
     erpnext-svc:
       loadBalancer:
         servers:
