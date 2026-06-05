@@ -46,13 +46,6 @@ http:
       service: kuma-alias-svc
       middlewares:
       - keycloak-auth@file
-    erpnext-assets:
-      rule: Host(`erp.wyattau.com`) && PathPrefix(`/assets/`)
-      entrypoints:
-      - websecure
-      tls:
-        certResolver: cloudflare
-      service: erpnext-assets-svc
     erpnext-socketio:
       rule: Host(`erp.wyattau.com`) && PathPrefix(`/socket.io/`)
       entrypoints:
@@ -87,10 +80,6 @@ http:
       loadBalancer:
         servers:
         - url: http://monitoring-kuma:3001
-    erpnext-assets-svc:
-      loadBalancer:
-        servers:
-        - url: http://erpnext-assets:80
     erpnext-socketio-svc:
       loadBalancer:
         servers:
