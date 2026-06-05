@@ -3,6 +3,8 @@ x-erpnext: &erpnext
   restart: unless-stopped
   volumes:
     - erpnext-sites:/home/frappe/frappe-bench/sites
+    - erpnext-assets:/home/frappe/frappe-bench/sites/assets
+    - erpnext-logs:/home/frappe/frappe-bench/logs
   environment:
     DB_HOST: erpnext-mariadb
     DB_PORT: "3306"
@@ -43,6 +45,33 @@ services:
       erpnext-redis:
         condition: service_healthy
 
+  erpnext-build-assets:
+    image: frappe/erpnext:v${ERPNEXT_VERSION}
+    restart: "no"
+    entrypoint: bash -c
+    command:
+      - |
+        cd /home/frappe/frappe-bench/sites/erp.wyattau.com
+        # Run bench build (creates symlinks to /apps/*/public)
+        bench build
+        # Dereference symlinks: tar with -h (follow symlinks) to temp, extract back
+        cd /home/frappe/frappe-bench/sites/assets
+        tar cf /tmp/assets.tar -h .
+        rm -rf /home/frappe/frappe-bench/sites/assets/*
+        tar xf /tmp/assets.tar -C /home/frappe/frappe-bench/sites/assets
+        echo "=== Assets built and dereferenced ==="
+    volumes:
+      - erpnext-sites:/home/frappe/frappe-bench/sites
+      - erpnext-assets:/home/frappe/frappe-bench/sites/assets
+      - erpnext-logs:/home/frappe/frappe-bench/logs
+    depends_on:
+      erpnext-mariadb:
+        condition: service_healthy
+      erpnext-redis:
+        condition: service_healthy
+      erpnext-configurator:
+        condition: service_completed_successfully
+
   erpnext-backend:
     <<: *erpnext
     container_name: erpnext-backend
@@ -61,6 +90,8 @@ services:
       erpnext-redis:
         condition: service_healthy
       erpnext-configurator:
+        condition: service_completed_successfully
+      erpnext-build-assets:
         condition: service_completed_successfully
 
   erpnext-socketio:
@@ -81,7 +112,7 @@ services:
     container_name: erpnext-assets
     restart: unless-stopped
     volumes:
-      - erpnext-sites:/sites:ro
+      - erpnext-assets:/sites:ro
       - ./nginx-assets.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - traefik_net
@@ -92,8 +123,8 @@ services:
       retries: 5
       start_period: 15s
     depends_on:
-      erpnext-backend:
-        condition: service_started
+      erpnext-build-assets:
+        condition: service_completed_successfully
 
   erpnext-scheduler:
     <<: *erpnext
@@ -157,6 +188,8 @@ services:
 
 volumes:
   erpnext-sites:
+  erpnext-assets:
+  erpnext-logs:
   erpnext-db:
   erpnext-redis-data:
 
