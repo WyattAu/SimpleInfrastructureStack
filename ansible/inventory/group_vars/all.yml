@@ -70,6 +70,7 @@ health_check_containers:
   - accounting-akaunting
   - accounting-mariadb-exporter
   - erpnext-backend
+  - erpnext-socketio
   - erpnext-mariadb
   - erpnext-redis
   - erpnext-assets
