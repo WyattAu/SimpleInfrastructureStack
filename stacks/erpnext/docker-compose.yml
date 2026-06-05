@@ -1,5 +1,5 @@
 x-erpnext: &erpnext
-  image: frappe/erpnext:${ERPNEXT_VERSION}
+  image: frappe/erpnext:v${ERPNEXT_VERSION}
   restart: unless-stopped
   volumes:
     - erpnext-sites:/home/frappe/frappe-bench/sites
@@ -11,7 +11,7 @@ x-erpnext: &erpnext
 
 services:
   erpnext-configurator:
-    image: frappe/erpnext:${ERPNEXT_VERSION}
+    image: frappe/erpnext:v${ERPNEXT_VERSION}
     restart: on-failure
     entrypoint: bash -c
     command:
