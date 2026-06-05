@@ -47,3 +47,4 @@ Thumbs.db
 /tmp/
 *.tmp
 .forgejo_token
+", d[k])\n"
