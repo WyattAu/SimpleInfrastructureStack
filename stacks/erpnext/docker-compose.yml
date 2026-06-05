@@ -73,11 +73,11 @@ services:
     networks:
       - traefik_net
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 5s
+      retries: 5
+      start_period: 15s
     depends_on:
       erpnext-backend:
         condition: service_started
