@@ -98,7 +98,7 @@ http:
     erpnext-svc:
       loadBalancer:
         servers:
-        - url: http://172.16.27.4:8000
+        - url: http://erpnext-backend:8000
     collabora-alias-svc:
       loadBalancer:
         servers:
