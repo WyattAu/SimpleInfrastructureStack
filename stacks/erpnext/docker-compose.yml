@@ -63,6 +63,19 @@ services:
       erpnext-configurator:
         condition: service_completed_successfully
 
+  erpnext-socketio:
+    <<: *erpnext
+    container_name: erpnext-socketio
+    command: node /home/frappe/frappe-bench/apps/frappe/socketio_server.js
+    restart: unless-stopped
+    depends_on:
+      erpnext-mariadb:
+        condition: service_healthy
+      erpnext-redis:
+        condition: service_healthy
+      erpnext-configurator:
+        condition: service_completed_successfully
+
   erpnext-assets:
     image: nginx:alpine
     container_name: erpnext-assets

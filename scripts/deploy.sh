@@ -155,7 +155,7 @@ HEALTH_CONTAINERS=(
     storage-ocis storage-collabora
     collaboration-synapse collaboration-element
     accounting-akaunting accounting-mariadb-exporter
-    erpnext-backend erpnext-mariadb erpnext-redis erpnext-assets
+    erpnext-backend erpnext-socketio erpnext-mariadb erpnext-redis erpnext-assets
     utility-homepage vaultwarden-server
     rss-postgres rss-freshrss
     photos-postgres photos-valkey photos-server
