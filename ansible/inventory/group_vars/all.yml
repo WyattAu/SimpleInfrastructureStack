@@ -27,6 +27,7 @@ stacks:
   - collaboration
   - storage
   - accounting
+  - erpnext
   - project-management
   - utility
   - backup
@@ -68,6 +69,10 @@ health_check_containers:
   - collaboration-element
   - accounting-akaunting
   - accounting-mariadb-exporter
+  - erpnext-backend
+  - erpnext-mariadb
+  - erpnext-redis
+  - erpnext-assets
   - utility-homepage
   - vaultwarden-server
   - rss-postgres

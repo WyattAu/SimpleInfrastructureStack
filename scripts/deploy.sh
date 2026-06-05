@@ -22,7 +22,7 @@
 #
 #   Phase 2: Deploy
 #     - Sync Homepage config from git to data directory (non-critical)
-#     - docker compose up for all 19 stacks
+#     - docker compose up for all 20 stacks
 #     - Fix tunnel credentials.json ownership (UID 65532)
 #     - Restart containers with changed bind-mounted configs
 #
@@ -138,7 +138,7 @@ SHA_FILE="/var/run/infra-deploy-sha"
 
 STACKS=(
     tunnel security proxy iam monitoring operations
-    collaboration storage accounting project-management utility
+    collaboration storage accounting erpnext project-management utility
     backup vaultwarden rss photos documents vpn books updater
 )
 
@@ -155,6 +155,7 @@ HEALTH_CONTAINERS=(
     storage-ocis storage-collabora
     collaboration-synapse collaboration-element
     accounting-akaunting accounting-mariadb-exporter
+    erpnext-backend erpnext-mariadb erpnext-redis erpnext-assets
     utility-homepage vaultwarden-server
     rss-postgres rss-freshrss
     photos-postgres photos-valkey photos-server
