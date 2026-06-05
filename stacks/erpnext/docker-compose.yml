@@ -1,5 +1,5 @@
 x-erpnext: &erpnext
-  image: frappe/erpnext:v16.0.0
+  image: frappe/erpnext:${ERPNEXT_VERSION}
   restart: unless-stopped
   volumes:
     - erpnext-sites:/home/frappe/frappe-bench/sites
@@ -11,7 +11,7 @@ x-erpnext: &erpnext
 
 services:
   erpnext-configurator:
-    image: frappe/erpnext:v16.0.0
+    image: frappe/erpnext:${ERPNEXT_VERSION}
     restart: on-failure
     entrypoint: bash -c
     command:
@@ -22,7 +22,10 @@ services:
         bench set-config -g redis_cache redis://erpnext-redis:6379
         bench set-config -g redis_queue redis://erpnext-redis:6379
         bench set-config -gp socketio_port 9000
-        bench new-site erp.wyattau.com --mariadb-root-password erpnext123 --admin-password admin123 --db-host erpnext-mariadb || true
+        bench new-site erp.wyattau.com \
+          --mariadb-root-password $${MYSQL_ROOT_PASSWORD} \
+          --admin-password $${ERPNEXT_ADMIN_PASSWORD} \
+          --db-host erpnext-mariadb || true
         bench --site erp.wyattau.com install-app erpnext || true
         bench use erp.wyattau.com
     environment:
@@ -30,13 +33,15 @@ services:
       DB_PORT: "3306"
       REDIS_CACHE: erpnext-redis:6379
       REDIS_QUEUE: erpnext-redis:6379
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      ERPNEXT_ADMIN_PASSWORD: ${ERPNEXT_ADMIN_PASSWORD}
     volumes:
       - erpnext-sites:/home/frappe/frappe-bench/sites
     depends_on:
       erpnext-mariadb:
         condition: service_healthy
       erpnext-redis:
-        condition: service_started
+        condition: service_healthy
 
   erpnext-backend:
     <<: *erpnext
@@ -44,19 +49,38 @@ services:
     environment:
       GUNICORN_THREADS: "2"
       GUNICORN_WORKERS: "1"
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.erpnext.rule=Host(\`erp.wyattau.com\`)
-      - traefik.http.routers.erpnext.entrypoints=websecure
-      - traefik.http.routers.erpnext.tls.certresolver=cloudflare
-      - traefik.http.services.erpnext-svc.loadbalancer.server.port=8000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/method/ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     depends_on:
       erpnext-mariadb:
         condition: service_healthy
       erpnext-redis:
-        condition: service_started
+        condition: service_healthy
       erpnext-configurator:
         condition: service_completed_successfully
+
+  erpnext-assets:
+    image: nginx:alpine
+    container_name: erpnext-assets
+    restart: unless-stopped
+    volumes:
+      - erpnext-sites:/assets:ro
+      - ./nginx-assets.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - traefik_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      erpnext-backend:
+        condition: service_started
 
   erpnext-scheduler:
     <<: *erpnext
@@ -66,7 +90,7 @@ services:
       erpnext-mariadb:
         condition: service_healthy
       erpnext-redis:
-        condition: service_started
+        condition: service_healthy
       erpnext-configurator:
         condition: service_completed_successfully
 
@@ -78,7 +102,7 @@ services:
       erpnext-mariadb:
         condition: service_healthy
       erpnext-redis:
-        condition: service_started
+        condition: service_healthy
       erpnext-configurator:
         condition: service_completed_successfully
 
@@ -93,7 +117,7 @@ services:
       - --innodb-buffer-pool-size=128M
       - --max-connections=20
     environment:
-      MYSQL_ROOT_PASSWORD: erpnext123
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MARIADB_AUTO_UPGRADE: "1"
     volumes:
       - erpnext-db:/var/lib/mysql
@@ -109,6 +133,12 @@ services:
     container_name: erpnext-redis
     restart: unless-stopped
     command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru --save ""
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     volumes:
       - erpnext-redis-data:/data
 
@@ -116,3 +146,7 @@ volumes:
   erpnext-sites:
   erpnext-db:
   erpnext-redis-data:
+
+networks:
+  traefik_net:
+    external: true
