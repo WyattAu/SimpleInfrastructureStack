@@ -435,7 +435,7 @@ services:
     # Chainguard nginx: distroless, no shell, daily CVE rebuilds.
     # Free tier only provides :latest tag — pinned to digest for reproducibility.
     # Default port is 8080 (not 80).
-    image: nginx:1.27.1
+    image: nginx:${NGINX_VERSION}
     container_name: project-management-gateway
     restart: unless-stopped
     security_opt:

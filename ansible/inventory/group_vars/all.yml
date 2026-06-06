@@ -19,6 +19,7 @@ infra_log_path: /var/log
 # If Traefik breaks, the tunnel must still deliver deploys.
 stacks:
   - tunnel
+  - webhook
   - security
   - proxy
   - iam
