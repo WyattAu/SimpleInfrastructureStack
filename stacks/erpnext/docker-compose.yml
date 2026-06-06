@@ -108,7 +108,7 @@ services:
         condition: service_completed_successfully
 
   erpnext-assets:
-    image: nginx:alpine
+    image: nginx:${NGINX_ALPINE_VERSION}
     container_name: erpnext-assets
     restart: unless-stopped
     volumes:
@@ -151,7 +151,7 @@ services:
         condition: service_completed_successfully
 
   erpnext-mariadb:
-    image: mariadb:11.8
+    image: mariadb:${MARIADB_ERPNEXT_VERSION}
     container_name: erpnext-mariadb
     restart: unless-stopped
     command:
@@ -173,7 +173,7 @@ services:
       retries: 10
 
   erpnext-redis:
-    image: redis:8.6-alpine
+    image: redis:${REDIS_ERPNEXT_VERSION}-alpine
     container_name: erpnext-redis
     restart: unless-stopped
     command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru --save ""
