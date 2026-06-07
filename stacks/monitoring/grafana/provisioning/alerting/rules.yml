@@ -10,12 +10,12 @@ groups:
     folder: Infrastructure
     interval: 60s
     rules:
-       - uid: log_keycloak_errors
-         title: Keycloak Error Logs
-         condition: A
-         noDataState: OK
-         execErrState: OK
-         data:
+      - uid: log_keycloak_errors
+        title: Keycloak Error Logs
+        condition: A
+        noDataState: OK
+        execErrState: OK
+        data:
           - refId: A
             datasourceUid: P8E80F9AEF21F6940
             model:
@@ -35,12 +35,12 @@ groups:
           summary: "Keycloak logging >10 errors in 5m"
           description: "Keycloak has logged {{ $values.A }} error-level messages in the last 5 minutes."
 
-       - uid: log_synapse_errors
-         title: Synapse Error Logs
-         condition: A
-         noDataState: OK
-         execErrState: OK
-         data:
+      - uid: log_synapse_errors
+        title: Synapse Error Logs
+        condition: A
+        noDataState: OK
+        execErrState: OK
+        data:
           - refId: A
             datasourceUid: P8E80F9AEF21F6940
             model:
@@ -60,12 +60,12 @@ groups:
           summary: "Synapse logging >20 errors in 5m"
           description: "Synapse has logged {{ $values.A }} error-level messages in the last 5 minutes."
 
-       - uid: log_traefik_errors
-         title: Traefik Error Logs
-         condition: A
-         noDataState: OK
-         execErrState: OK
-         data:
+      - uid: log_traefik_errors
+        title: Traefik Error Logs
+        condition: A
+        noDataState: OK
+        execErrState: OK
+        data:
           - refId: A
             datasourceUid: P8E80F9AEF21F6940
             model:
@@ -85,12 +85,12 @@ groups:
           summary: "Traefik logging >10 errors in 5m"
           description: "Traefik has logged {{ $values.A }} error-level messages in the last 5 minutes."
 
-       - uid: log_oom_kill
-         title: OOM Kill Detected in Logs
-         condition: A
-         noDataState: OK
-         execErrState: OK
-         data:
+      - uid: log_oom_kill
+        title: OOM Kill Detected in Logs
+        condition: A
+        noDataState: OK
+        execErrState: OK
+        data:
           - refId: A
             datasourceUid: P8E80F9AEF21F6940
             model:
@@ -110,12 +110,12 @@ groups:
           summary: "OOM kill detected in container logs"
           description: "A container has logged an OOM kill event in the last 10 minutes."
 
-       - uid: log_forgejo_errors
-         title: Forgejo Error Logs
-         condition: A
-         noDataState: OK
-         execErrState: OK
-         data:
+      - uid: log_forgejo_errors
+        title: Forgejo Error Logs
+        condition: A
+        noDataState: OK
+        execErrState: OK
+        data:
           - refId: A
             datasourceUid: P8E80F9AEF21F6940
             model:
@@ -135,12 +135,12 @@ groups:
           summary: "Forgejo logging >20 errors in 5m"
           description: "Forgejo has logged {{ $values.A }} error-level messages in the last 5 minutes."
 
-       - uid: log_vaultwarden_auth_failures
-         title: Vaultwarden Authentication Failures
-         condition: A
-         noDataState: OK
-         execErrState: OK
-         data:
+      - uid: log_vaultwarden_auth_failures
+        title: Vaultwarden Authentication Failures
+        condition: A
+        noDataState: OK
+        execErrState: OK
+        data:
           - refId: A
             datasourceUid: P8E80F9AEF21F6940
             model:
@@ -160,12 +160,12 @@ groups:
           summary: "Vaultwarden >5 auth failures in 5m"
           description: "Vaultwarden has logged {{ $values.A }} authentication failures in the last 5 minutes."
 
-       - uid: log_paperless_consumer_errors
-         title: Paperless Consumer Errors
-         condition: A
-         noDataState: OK
-         execErrState: OK
-         data:
+      - uid: log_paperless_consumer_errors
+        title: Paperless Consumer Errors
+        condition: A
+        noDataState: OK
+        execErrState: OK
+        data:
           - refId: A
             datasourceUid: P8E80F9AEF21F6940
             model:
@@ -185,12 +185,12 @@ groups:
           summary: "Paperless >10 consumer errors in 5m"
           description: "Paperless-ngx has logged {{ $values.A }} consumer/OCR errors in the last 5 minutes."
 
-       - uid: log_crowdsec_alerts
-         title: CrowdSec High Alert Rate
-         condition: A
-         noDataState: OK
-         execErrState: OK
-         data:
+      - uid: log_crowdsec_alerts
+        title: CrowdSec High Alert Rate
+        condition: A
+        noDataState: OK
+        execErrState: OK
+        data:
           - refId: A
             datasourceUid: P8E80F9AEF21F6940
             model:
@@ -210,12 +210,12 @@ groups:
           summary: "CrowdSec >50 alerts in 5m"
           description: "CrowdSec has triggered {{ $values.A }} scenarios in the last 5 minutes."
 
-       - uid: log_victorialogs_ingestion_lag
-         title: VictoriaLogs Ingestion Lag
-         condition: A
-         noDataState: OK
-         execErrState: OK
-         data:
+      - uid: log_victorialogs_ingestion_lag
+        title: VictoriaLogs Ingestion Lag
+        condition: A
+        noDataState: OK
+        execErrState: OK
+        data:
           - refId: A
             datasourceUid: P8E80F9AEF21F6940
             model:
