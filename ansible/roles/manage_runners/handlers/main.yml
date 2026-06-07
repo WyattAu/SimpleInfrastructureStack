@@ -1,0 +1,9 @@
+---
+- name: restart forgejo runners
+  ansible.builtin.systemd:
+    name: "forgejo-runner@{{ item.name }}"
+    state: restarted
+    daemon_reload: true
+  loop: "{{ forgejo_runner_runners }}"
+  loop_control:
+    label: "{{ item.name }}"

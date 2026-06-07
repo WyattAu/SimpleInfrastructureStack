@@ -1,0 +1,34 @@
+---
+# Create the directory structure for each Forgejo runner.
+# Each runner gets its own directory under forgejo_runner_base_path
+# containing daemon.yml, .runner, and a cache subdirectory.
+
+- name: Create runner base directory
+  ansible.builtin.file:
+    path: "{{ forgejo_runner_base_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Create runner directories
+  ansible.builtin.file:
+    path: "{{ forgejo_runner_base_path }}/{{ item.name }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ forgejo_runner_runners }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Create runner cache directories
+  ansible.builtin.file:
+    path: "{{ forgejo_runner_base_path }}/{{ item.name }}/cache"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ forgejo_runner_runners }}"
+  loop_control:
+    label: "{{ item.name }}"

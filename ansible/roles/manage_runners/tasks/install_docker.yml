@@ -1,0 +1,23 @@
+---
+# Ensure Docker is installed and enabled on the runner host.
+# CachyOS uses pacman; Docker is typically already installed but
+# we ensure it's present and the service is active.
+
+- name: Ensure Docker is installed
+  community.docker.docker_installed:
+    state: present
+
+- name: Ensure Docker service is enabled and started
+  ansible.builtin.systemd:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Ensure runner user is in the docker group
+  ansible.builtin.user:
+    name: "{{ forgejo_runner_user_name | default('runner') }}"
+    groups:
+      - docker
+    append: true
+  when: forgejo_runner_user_name is defined
+  ignore_errors: true

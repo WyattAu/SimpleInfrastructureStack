@@ -1,0 +1,30 @@
+# {{ ansible_managed }}
+#
+# Forgejo Runner daemon configuration for {{ item.name }}
+# Managed by Ansible — do not edit manually.
+#
+# This configuration tells the runner-daemon how to spawn work containers
+# for CI jobs. Each label maps to a Docker image that will be used when
+# a workflow job requests that label.
+
+log:
+  level: {{ forgejo_runner_log_level }}
+
+runner:
+  timeout: {{ forgejo_runner_timeout }}
+  update_timeout: {{ forgejo_runner_update_timeout }}
+
+container:
+  docker_host: unix:///var/run/docker.sock
+  workdir_parent:
+  network: ""
+  privileged: false
+
+cache:
+  enabled: true
+  dir: /cache
+
+labels:
+{% for label_name, label_image in item.labels.items() %}
+  {{ label_name }}: "{{ label_image }}"
+{% endfor %}
