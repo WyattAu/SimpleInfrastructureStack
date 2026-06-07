@@ -1,0 +1,29 @@
+---
+# Main task file for manage_runners role
+#
+# Manages Forgejo runners on CachyOS hosts.
+# Each runner runs as a Docker container (runner-daemon) that spawns
+# ephemeral work containers for CI jobs.
+
+- name: Install Docker
+  ansible.builtin.include_tasks: install_docker.yml
+
+- name: Create runner directories
+  ansible.builtin.include_tasks: create_runner_dirs.yml
+
+- name: Configure daemon files
+  ansible.builtin.include_tasks: configure_daemon.yml
+
+- name: Install systemd service
+  ansible.builtin.include_tasks: install_systemd.yml
+
+- name: Ensure runner services are running
+  ansible.builtin.systemd:
+    name: "forgejo-runner@{{ item.name }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+  loop: "{{ forgejo_runner_runners }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: restart forgejo runners

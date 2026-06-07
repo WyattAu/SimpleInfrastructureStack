@@ -1,0 +1,16 @@
+---
+# Template the daemon.yml configuration for each runner.
+# The daemon.yml tells the runner-daemon container how to spawn work
+# containers and which images to use for each label.
+
+- name: Template daemon.yml for each runner
+  ansible.builtin.template:
+    src: daemon.yml.j2
+    dest: "{{ forgejo_runner_base_path }}/{{ item.name }}/daemon.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ forgejo_runner_runners }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: restart forgejo runners

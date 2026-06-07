@@ -1,0 +1,41 @@
+# {{ ansible_managed }}
+#
+# Forgejo Runner systemd service (template unit)
+# Managed by Ansible — do not edit manually.
+#
+# Usage: systemctl start forgejo-runner@<runner-name>
+#   e.g. systemctl start forgejo-runner@general
+
+[Unit]
+Description=Forgejo Runner (%i)
+After=docker.service
+Requires=docker.service
+PartOf=docker.service
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=0
+
+ExecStartPre=-/usr/bin/docker stop forgejo-runner-%i
+ExecStartPre=-/usr/bin/docker rm forgejo-runner-%i
+
+ExecStart=/usr/bin/docker run \
+  --name forgejo-runner-%i \
+  --rm \
+  --init \
+  --pull always \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v {{ forgejo_runner_base_path }}/%i/.runner:/data/.runner \
+  -v {{ forgejo_runner_base_path }}/%i/daemon.yml:/data/config/daemon.yml \
+  -v {{ forgejo_runner_base_path }}/%i/cache:/cache \
+  --user {{ forgejo_runner_user_uid }}:{{ forgejo_runner_docker_gid }} \
+  {{ forgejo_runner_daemon_image }} \
+  daemon --config /data/config/daemon.yml
+
+ExecStop=/usr/bin/docker stop forgejo-runner-%i
+ExecStopPost=-/usr/bin/docker rm forgejo-runner-%i
+
+[Install]
+WantedBy=multi-user.target
