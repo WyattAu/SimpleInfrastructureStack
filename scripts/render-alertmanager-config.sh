@@ -2,7 +2,7 @@
 # Pre-render alertmanager.yml from template
 # Run this before docker compose up
 
-TEMPLATE="stacks/monitoring/alertmanager/alertmanager.yml.tpl"
+TEMPLATE="stacks/monitoring/alertmanager/alertmanager.yml.tmpl"
 OUTPUT="stacks/monitoring/alertmanager/alertmanager.yml"
 
 if [ -f "$TEMPLATE" ]; then

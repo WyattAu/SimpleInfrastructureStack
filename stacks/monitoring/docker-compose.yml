@@ -432,7 +432,7 @@ services:
         max-size: 10m
         max-file: '3'
   alertmanager:
-    image: prom/alertmanager:${ALERTMANAGER_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/alertmanager:${ALERTMANAGER_VERSION}
     container_name: monitoring-alertmanager
     restart: unless-stopped
     security_opt:
@@ -447,12 +447,7 @@ services:
     networks:
     - backend_net
     healthcheck:
-      test:
-      - CMD
-      - wget
-      - --spider
-      - -q
-      - http://127.0.0.1:9093/-/healthy
+      test: ["CMD", "/shim", "healthcheck", "--tcp", "127.0.0.1:9093"]
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -558,7 +553,7 @@ services:
         max-size: 10m
         max-file: '3'
   tempo:
-    image: grafana/tempo:${TEMPO_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/tempo:${TEMPO_VERSION}
     container_name: monitoring-tempo
     restart: unless-stopped
     security_opt:
@@ -568,7 +563,7 @@ services:
     volumes:
     - ${DATA_BASE_PATH}/monitoring/tempo:/var/tempo
     - ./tempo/config.yml:/etc/tempo/config.yml:ro
-    command: -config.file=/etc/tempo/config.yml
+    command: ["-config.file=/etc/tempo/config.yml"]
     networks:
     - backend_net
     # Tempo 2.10+ is distroless (no wget/curl); healthcheck removed
