@@ -45,7 +45,7 @@ services:
         max-size: 10m
         max-file: '3'
   traefik:
-    image: ghcr.io/wyattau/evergreenimageregistry/traefik:${TRAEFIK_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/traefik:latest
     container_name: proxy-traefik
     restart: unless-stopped
     depends_on:
@@ -55,7 +55,7 @@ services:
     cap_drop:
     - ALL
     healthcheck:
-      test: ["/traefik", "healthcheck", "--ping"]
+      test: ["CMD", "/shim", "healthcheck", "--tcp", "127.0.0.1:8080"]
       interval: 30s
       timeout: 10s
       retries: 3
