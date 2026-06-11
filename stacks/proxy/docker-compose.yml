@@ -117,7 +117,7 @@ services:
         max-size: 10m
         max-file: '3'
   oauth2-proxy:
-    image: quay.io/oauth2-proxy/oauth2-proxy:${OAUTH2_PROXY_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/oauth2-proxy:latest
     container_name: proxy-oauth2-proxy
     restart: unless-stopped
     depends_on:
@@ -127,6 +127,7 @@ services:
     - no-new-privileges:true
     cap_drop:
     - ALL
+    entrypoint: ["/shim", "run", "-c", "/oauth2-proxy"]
     networks:
     - traefik_net
     - backend_net
