@@ -146,25 +146,20 @@ services:
         max-size: 10m
         max-file: '3'
   immich-valkey:
-    image: valkey:${VALKEY_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/valkey:latest
     container_name: photos-valkey
     restart: unless-stopped
     security_opt:
     - no-new-privileges:true
     cap_drop:
     - ALL
-    cap_add:
-    - SETUID
-    - SETGID
     networks:
     - data_net
     healthcheck:
-      test:
-      - CMD
-      - valkey-cli
-      - ping
+      test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:6379"]
       interval: 10s
       timeout: 5s
+      start_period: 15s
       retries: 5
     deploy:
       resources:
