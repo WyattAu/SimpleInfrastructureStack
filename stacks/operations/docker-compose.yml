@@ -41,19 +41,13 @@ services:
         max-size: 10m
         max-file: '3'
   forgejo:
-    image: ghcr.io/wyattau/forgejo:${FORGEJO_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/forgejo:latest
     container_name: operations-forgejo
     restart: unless-stopped
     security_opt:
     - no-new-privileges:true
     cap_drop:
     - ALL
-    cap_add:
-    - CHOWN
-    - DAC_OVERRIDE
-    - FOWNER
-    - SETGID
-    - SETUID
     ports:
     - 127.0.0.1:2222:2522
     depends_on:
@@ -109,9 +103,7 @@ services:
     - traefik.http.routers.forgejo-registry.tls.certresolver=cloudflare
     - traefik.http.routers.forgejo-registry.service=forgejo-svc
     healthcheck:
-      test:
-      - CMD-SHELL
-      - /bin/bash -c "echo > /dev/tcp/127.0.0.1/3000"
+      test: ["CMD", "/shim", "healthcheck", "--tcp", "127.0.0.1:3000"]
       interval: 60s
       timeout: 15s
       retries: 5
