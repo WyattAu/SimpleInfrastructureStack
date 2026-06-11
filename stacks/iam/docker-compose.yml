@@ -41,24 +41,20 @@ services:
         max-size: 10m
         max-file: '3'
   keycloak:
-    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/keycloak:latest
     container_name: iam-keycloak
     restart: unless-stopped
     security_opt:
     - no-new-privileges:true
     cap_drop:
     - ALL
-    command:
-    - start
     depends_on:
       postgres-iam:
         condition: service_healthy
     environment:
-    - PUID=${PUID}
-    - PGID=${PGID}
     - TZ=${TZ}
-    - KC_BOOTSTRAP_ADMIN_USERNAME=${KEYCLOAK_ADMIN_USER}
-    - KC_BOOTSTRAP_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+    - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN_USER}
+    - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
     - KC_DB=postgres
     - KC_DB_URL=jdbc:postgresql://iam-postgres:5432/${KEYCLOAK_DATABASE_NAME}
     - KC_DB_USERNAME=${KEYCLOAK_DATABASE_USER}
@@ -70,7 +66,6 @@ services:
     - KC_METRICS_ENABLED=true
     - KC_HTTP_ENABLED=true
     - KC_CACHE=local
-    - JAVA_OPTS=-Xmx768m -XX:MaxMetaspaceSize=256m -XX:+UseG1GC
     - KC_DB_POOL_INITIAL_SIZE=5
     - KC_DB_POOL_MAX_SIZE=20
     - KC_SMTP_HOST=${SMTP_HOST}
@@ -93,7 +88,7 @@ services:
     - traefik.http.services.keycloak-svc.loadbalancer.server.port=8080
     - traefik.http.routers.keycloak.tls.certresolver=cloudflare
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'GET /health/live HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3; timeout 2 cat <&3 | grep -q '200 OK'"]
+      test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:8080"]
       interval: 30s
       timeout: 10s
       retries: 5
