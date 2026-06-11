@@ -103,7 +103,7 @@ services:
     - traefik.http.routers.forgejo-registry.tls.certresolver=cloudflare
     - traefik.http.routers.forgejo-registry.service=forgejo-svc
     healthcheck:
-      test: ["CMD", "/shim", "healthcheck", "--tcp", "127.0.0.1:3000"]
+      test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:3000"]
       interval: 60s
       timeout: 15s
       retries: 5

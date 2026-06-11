@@ -109,4 +109,8 @@ ingress:
   service: https://127.0.0.1:443
   originRequest:
     noTLSVerify: true
+- hostname: vault.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
 - service: http_status:404

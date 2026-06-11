@@ -1,6 +1,6 @@
 services:
   cloudflared:
-    image: ghcr.io/wyattau/evergreenimageregistry/cloudflared:${CLOUDFLARED_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/cloudflared:latest
     container_name: infra-tunnel
     restart: unless-stopped
     security_opt:

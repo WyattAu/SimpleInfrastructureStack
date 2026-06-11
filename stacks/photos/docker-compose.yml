@@ -156,7 +156,7 @@ services:
     networks:
     - data_net
     healthcheck:
-      test: ["CMD", "/shim", "healthcheck", "--tcp", "127.0.0.1:6379"]
+      test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:6379"]
       interval: 10s
       timeout: 5s
       start_period: 15s
