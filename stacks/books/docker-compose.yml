@@ -1,6 +1,6 @@
 services:
   calibre-web:
-    image: lscr.io/linuxserver/calibre-web:${CALIBRE_WEB_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/calibre-web:latest
     container_name: calibre-web
     restart: unless-stopped
     security_opt:

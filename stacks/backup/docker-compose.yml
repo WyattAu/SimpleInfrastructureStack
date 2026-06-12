@@ -1,6 +1,6 @@
 services:
   backup-restic:
-    image: restic/restic:${RESTIC_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/restic:latest
     container_name: backup-restic
     restart: unless-stopped
     security_opt:
