@@ -1,6 +1,6 @@
 services:
   wireguard:
-    image: linuxserver/wireguard:${WIREGUARD_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/wireguard:latest
     container_name: vpn-wireguard
     restart: unless-stopped
     security_opt:

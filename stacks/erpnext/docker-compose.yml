@@ -1,5 +1,5 @@
 x-erpnext: &erpnext
-  image: frappe/erpnext:v${ERPNEXT_VERSION}
+  image: ghcr.io/wyattau/evergreenimageregistry/erpnext:latest
   restart: unless-stopped
   volumes:
     - erpnext-sites:/home/frappe/frappe-bench/sites
@@ -13,7 +13,7 @@ x-erpnext: &erpnext
 
 services:
   erpnext-configurator:
-    image: frappe/erpnext:v${ERPNEXT_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/erpnext:latest
     restart: on-failure
     entrypoint: bash -c
     command:
@@ -46,7 +46,7 @@ services:
         condition: service_healthy
 
   erpnext-build-assets:
-    image: frappe/erpnext:v${ERPNEXT_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/erpnext:latest
     restart: "no"
     entrypoint: bash -c
     command:
@@ -108,7 +108,7 @@ services:
         condition: service_completed_successfully
 
   erpnext-assets:
-    image: nginx:${NGINX_ALPINE_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/nginx:latest
     container_name: erpnext-assets
     restart: unless-stopped
     volumes:
@@ -151,7 +151,7 @@ services:
         condition: service_completed_successfully
 
   erpnext-mariadb:
-    image: mariadb:${MARIADB_ERPNEXT_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/mariadb:latest
     container_name: erpnext-mariadb
     restart: unless-stopped
     command:
@@ -173,7 +173,7 @@ services:
       retries: 10
 
   erpnext-redis:
-    image: redis:${REDIS_ERPNEXT_VERSION}-alpine
+    image: ghcr.io/wyattau/evergreenimageregistry/redis:latest
     container_name: erpnext-redis
     restart: unless-stopped
     command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru --save ""

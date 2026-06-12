@@ -1,6 +1,6 @@
 services:
   postgres-forgejo:
-    image: postgres:${POSTGRES_FORGEJO_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/postgres:latest
     container_name: operations-postgres-forgejo
     restart: unless-stopped
     security_opt:

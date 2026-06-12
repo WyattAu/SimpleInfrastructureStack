@@ -10,7 +10,7 @@ services:
     - -p
     - /data
   postgres-rss:
-    image: postgres:${POSTGRES_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/postgres:latest
     container_name: rss-postgres
     restart: unless-stopped
     security_opt:
@@ -54,7 +54,7 @@ services:
         max-size: 10m
         max-file: '3'
   freshrss:
-    image: freshrss/freshrss:${FRESHRSS_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/freshrss:latest
     container_name: rss-freshrss
     restart: unless-stopped
     security_opt:
