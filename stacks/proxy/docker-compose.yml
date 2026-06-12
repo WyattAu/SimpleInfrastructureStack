@@ -9,10 +9,10 @@ services:
     - ALL
     cap_add:
     - NET_RAW
+    - NET_BIND_SERVICE
+    - NET_ADMIN
     healthcheck:
-      test:
-      - CMD-SHELL
-      - nc -z 127.0.0.1 2375 || exit 1
+      test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:2375"]
       interval: 30s
       timeout: 5s
       retries: 3
