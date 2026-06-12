@@ -145,10 +145,9 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/collabora:latest
     container_name: storage-collabora
     restart: unless-stopped
-    # Collabora requires CLONE_NEWUSER for document sandboxing (child
-    # process isolation).  no-new-privileges is exempted in security.rego.
-    # cap_drop ALL is safe here -- CLONE_NEWUSER is checked before exec,
-    # not granted as a capability, so dropping ALL caps does not interfere.
+    # Collabora requires mount namespaces for document sandboxing.
+    # EIR image runs coolwsd with --o:security.capabilities=false
+    # to use namespace-based isolation instead of chroot.
     cap_drop:
     - ALL
     cap_add:
@@ -162,7 +161,7 @@ services:
     - DAC_OVERRIDE
     - SETPCAP
     environment:
-    - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:net.frame_ancestors=${OCIS_SUBDOMAIN}.${DOMAIN_NAME}
+    - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:net.frame_ancestors=${OCIS_SUBDOMAIN}.${DOMAIN_NAME} --o:child_root_path=/tmp/jails --o:security.capabilities=false
     - domain=${OCIS_SUBDOMAIN}\.${DOMAIN_NAME}
     - server_name=collabora.${DOMAIN_NAME}
     - DONT_GEN_SSL_CERT=true

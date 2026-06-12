@@ -3,6 +3,8 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/docker-socket-proxy:latest
     container_name: proxy-socket-proxy
     restart: unless-stopped
+    # Must run as root to access Docker socket (root:999, mode 660)
+    user: "0:0"
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -11,6 +13,8 @@ services:
     - NET_RAW
     - NET_BIND_SERVICE
     - NET_ADMIN
+    - DAC_OVERRIDE
+    - DAC_READ_SEARCH
     healthcheck:
       test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:2375"]
       interval: 30s
@@ -28,6 +32,7 @@ services:
     - NODES=1
     - POST=0
     - VERSION=1
+    - EVENTS=1
     - PING=1
     - INFO=1
     - IMAGES=1
