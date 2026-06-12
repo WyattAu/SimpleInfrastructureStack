@@ -1,7 +1,6 @@
 services:
   webhook:
-    build: .
-    image: infra-webhook:latest
+    image: ghcr.io/wyattau/evergreenimageregistry/infra-webhook:latest
     container_name: infra-webhook
     restart: unless-stopped
     security_opt:
@@ -30,7 +29,7 @@ services:
     healthcheck:
       test:
       - CMD-SHELL
-      - 'wget --no-verbose --tries=1 --post-data='''' --header=''Content-Type: application/json'' -O /dev/null http://127.0.0.1:9000/hooks/deploy 2>&1 | grep -q ''403'''
+      - 'wget --no-verbose --tries=1 --post-data=''' --header=''Content-Type: application/json'' -O /dev/null http://127.0.0.1:9000/hooks/deploy 2>&1 | grep -q ''403'''
       interval: 120s
       timeout: 5s
       retries: 3

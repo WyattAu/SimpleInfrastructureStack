@@ -1,8 +1,36 @@
-# Watchtower is intentionally pinned to the upstream containrrr/watchtower image.
-# It requires Docker socket access (/var/run/docker.sock) to monitor and restart
-# containers, which inherently demands elevated privileges incompatible with our
-# hardened scratch/wolfi-base images. A hardened EIR image cannot substitute here.
+# Watchtower connects to Docker daemon via docker-socket-proxy (TCP).
+# This allows watchtower to run as non-root without direct socket access.
+# Defense in depth: proxy can filter Docker API calls.
 services:
+  docker-socket-proxy:
+    image: ghcr.io/wyattau/evergreenimageregistry/docker-socket-proxy:latest
+    container_name: updater-docker-socket-proxy
+    restart: unless-stopped
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+    - CONTAINERS=1
+    - POST=1
+    - INFO=1
+    - NETWORKS=0
+    - VOLUMES=0
+    networks:
+    - updater_net
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          pids: 100
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
   watchtower:
     image: containrrr/watchtower:${WATCHTOWER_VERSION}
     container_name: updater-watchtower
@@ -12,14 +40,16 @@ services:
     cap_drop:
     - ALL
     command: --interval 86400 --cleanup --label-enable --monitor-only
-    volumes:
-    - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
     - WATCHTOWER_NOTIFICATIONS=shoutrrr
     - WATCHTOWER_NOTIFICATION_URL=ntfy://${NTFY_URL}/${NTFY_TOPIC}?title=Watchtower+Update+Available
     - WATCHTOWER_LABEL_ENABLE=true
+    - DOCKER_HOST=tcp://updater-docker-socket-proxy:2375
     - TZ=${TZ}
-    networks: []
+    depends_on:
+    - docker-socket-proxy
+    networks:
+    - updater_net
     deploy:
       resources:
         limits:
@@ -32,3 +62,7 @@ services:
       options:
         max-size: 10m
         max-file: '3'
+
+networks:
+  updater_net:
+    driver: bridge

@@ -55,7 +55,7 @@ services:
     cap_drop:
     - ALL
     healthcheck:
-      test: ["CMD", "/shim", "healthcheck", "--tcp", "127.0.0.1:8080"]
+      test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:8080"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -127,7 +127,7 @@ services:
     - no-new-privileges:true
     cap_drop:
     - ALL
-    entrypoint: ["/shim", "run", "-c", "/oauth2-proxy"]
+    # entrypoint now in EIR Dockerfile — no compose override needed
     networks:
     - traefik_net
     - backend_net
