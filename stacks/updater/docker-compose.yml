@@ -1,3 +1,7 @@
+# Watchtower is intentionally pinned to the upstream containrrr/watchtower image.
+# It requires Docker socket access (/var/run/docker.sock) to monitor and restart
+# containers, which inherently demands elevated privileges incompatible with our
+# hardened scratch/wolfi-base images. A hardened EIR image cannot substitute here.
 services:
   watchtower:
     image: containrrr/watchtower:${WATCHTOWER_VERSION}
