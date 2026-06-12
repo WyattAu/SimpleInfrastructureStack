@@ -121,6 +121,38 @@ services:
       options:
         max-size: 10m
         max-file: '3'
+  # Shared docker-socket-proxy for all runners (defense in depth).
+  # Runners connect via TCP instead of mounting /var/run/docker.sock directly.
+  runner-docker-socket-proxy:
+    image: ghcr.io/wyattau/evergreenimageregistry/docker-socket-proxy:latest
+    container_name: operations-runner-docker-socket-proxy
+    restart: unless-stopped
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+    - CONTAINERS=1
+    - EXEC=1
+    - POST=1
+    - INFO=1
+    - NETWORKS=0
+    - VOLUMES=0
+    networks:
+    - data_net
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          pids: 100
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
   # Shared runner volumes (git, ssl, cache, tmp) used by all runner services.
   # Each dedicated runner has its own data dir and config but shares these mounts.
 
@@ -136,12 +168,13 @@ services:
     group_add:
     - '999'
     environment:
-      DOCKER_HOST: unix:///var/run/docker.sock
+      DOCKER_HOST: tcp://runner-docker-socket-proxy:2375
       LD_LIBRARY_PATH: /usr/lib/git-deps
+    depends_on:
+    - runner-docker-socket-proxy
     volumes:
     - ${DATA_BASE_PATH}/operations/runner-general:/data
     - ./forgejo-runner/config-general.yaml:/data/config.yaml:ro
-    - /var/run/docker.sock:/var/run/docker.sock
     - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git:/usr/bin/git:ro
     - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git-core:/usr/libexec/git-core:ro
     - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git-core/templates:/usr/share/git-core/templates:ro
@@ -185,12 +218,13 @@ services:
     group_add:
     - '999'
     environment:
-      DOCKER_HOST: unix:///var/run/docker.sock
+      DOCKER_HOST: tcp://runner-docker-socket-proxy:2375
       LD_LIBRARY_PATH: /usr/lib/git-deps
+    depends_on:
+    - runner-docker-socket-proxy
     volumes:
     - ${DATA_BASE_PATH}/operations/runner-peptide-web:/data
     - ./forgejo-runner/config-peptide-web.yaml:/data/config.yaml:ro
-    - /var/run/docker.sock:/var/run/docker.sock
     - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git:/usr/bin/git:ro
     - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git-core:/usr/libexec/git-core:ro
     - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git-core/templates:/usr/share/git-core/templates:ro
@@ -234,12 +268,13 @@ services:
     group_add:
     - '999'
     environment:
-      DOCKER_HOST: unix:///var/run/docker.sock
+      DOCKER_HOST: tcp://runner-docker-socket-proxy:2375
       LD_LIBRARY_PATH: /usr/lib/git-deps
+    depends_on:
+    - runner-docker-socket-proxy
     volumes:
     - ${DATA_BASE_PATH}/operations/runner-questhive:/data
     - ./forgejo-runner/config-questhive.yaml:/data/config.yaml:ro
-    - /var/run/docker.sock:/var/run/docker.sock
     - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git:/usr/bin/git:ro
     - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git-core:/usr/libexec/git-core:ro
     - ${DATA_BASE_PATH}/operations/forgejo-runner/git/git-core/templates:/usr/share/git-core/templates:ro
