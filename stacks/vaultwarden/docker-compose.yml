@@ -11,6 +11,7 @@ services:
     - ${DATA_BASE_PATH}/vaultwarden:/data
     environment:
     - DOMAIN=${VAULTWARDEN_DOMAIN}
+    - ROCKET_ADDRESS=0.0.0.0
     - SIGNUPS_ALLOWED=${SIGNUPS_ALLOWED:-false}
     - SIGNUPS_VERIFY=${SIGNUPS_VERIFY:-false}
     - INVITATIONS_ALLOWED=${INVITATIONS_ALLOWED:-true}
