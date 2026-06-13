@@ -20,7 +20,7 @@ scrape_configs:
   - job_name: 'cadvisor'
     scrape_interval: 120s
     scrape_timeout: 90s
-    max_scrape_size: 52428800  # 50MB (tuned metrics produce ~15MB)
+    max_scrape_size: 104857600  # 100MB (tuned metrics produce ~15MB, headroom for growth)
     static_configs:
       - targets: ['monitoring-cadvisor:8080']
   - job_name: 'zfs-exporter'
@@ -69,7 +69,6 @@ scrape_configs:
           - 'postgresql://forgejo@operations-postgres-forgejo:5432/forgejo?sslmode=disable'
           - 'postgresql://keycloak@iam-postgres:5432/keycloak?sslmode=disable'
           - 'postgresql://synapse@collaboration-postgres:5432/synapse?sslmode=disable'
-          - 'postgresql://freshrss@rss-postgres:5432/freshrss?sslmode=disable'
           - 'postgresql://immich@photos-postgres:5432/immich?sslmode=disable'
           - 'postgresql://paperless@documents-postgres:5432/paperless?sslmode=disable'
     relabel_configs:
@@ -112,12 +111,6 @@ scrape_configs:
       - target_label: __address__
         replacement: monitoring-redis-exporter:9121
 
-  # MariaDB exporter for Akaunting
-  - job_name: 'mariadb'
-    scrape_interval: 30s
-    static_configs:
-      - targets: ['accounting-mariadb-exporter:9104']
-
   # Uptime Kuma metrics (built-in /metrics on port 3001)
   - job_name: 'uptime-kuma'
     static_configs:
@@ -133,12 +126,6 @@ scrape_configs:
     scrape_interval: 30s
     static_configs:
       - targets: ['storage-ocis:9200']
-
-  # CrowdSec CF Workers Bouncer metrics (port 2112)
-  - job_name: 'crowdsec-workers-bouncer'
-    scrape_interval: 30s
-    static_configs:
-      - targets: ['security-cf-workers-bouncer:2112']
 
   # CrowdSec agent does NOT natively expose a Prometheus /metrics endpoint.
   # The LAPI on port 8080 serves CrowdSec's own REST API (v2/decisions, etc.),
@@ -176,19 +163,15 @@ scrape_configs:
       module: [http_2xx]
     static_configs:
       - targets:
-          - http://iam-keycloak:8080/health/ready       # Keycloak health
-          - http://iam-keycloak:8080/realms/company-realm  # Keycloak realm
+          - http://iam-keycloak:9000/health/ready        # Keycloak health (mgmt port 9000)
+          - http://iam-keycloak:8080/realms/company-realm # Keycloak realm
           - http://operations-forgejo:3000/               # Forgejo web UI
-          - http://monitoring-grafana:3000/api/health    # Grafana health
+          - http://monitoring-grafana:3000/api/health     # Grafana health
           - http://monitoring-kuma:3001/                  # Uptime Kuma
-          - http://monitoring-victorialogs:9428/health       # VictoriaLogs health
-          - http://rss-freshrss:80/                       # FreshRSS web UI
-          - http://utility-homepage:80/                   # Homepage
-          - http://accounting-akaunting:80/               # Akaunting
+          - http://monitoring-victorialogs:9428/health    # VictoriaLogs health
+          - http://utility-homepage:3000/                 # Homepage (port 3000)
           - http://vaultwarden-server:80/                 # Vaultwarden
           - http://photos-server:2283/                    # Immich
-          - http://project-management-gateway:9001/       # Taiga gateway
-          - http://project-management-back:8000/          # Taiga back API
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -211,9 +194,10 @@ scrape_configs:
     static_configs:
       - targets:
           - https://auth.wyattau.com/realms/company-realm
-          - https://forgejo.wyattau.com/
+          - https://forgejo.wyattau.com/api/v1/version    # API path (no auth required)
           - https://grafana.wyattau.com/api/health
-          - https://kuma.wyattau.com/
+          - https://vault.wyattau.com/api/config
+          - https://photos.wyattau.com/api/server/ping
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -237,10 +221,8 @@ scrape_configs:
           - iam-postgres:5432           # Keycloak PostgreSQL
           - operations-postgres-forgejo:5432  # Forgejo PostgreSQL
           - collaboration-postgres:5432  # Synapse PostgreSQL
-          - rss-postgres:5432            # FreshRSS PostgreSQL
           - photos-postgres:5432         # Immich PostgreSQL
           - documents-postgres:5432      # Paperless PostgreSQL
-          - project-management-postgres:5432  # Taiga PostgreSQL
           - photos-valkey:6379           # Immich Valkey
           - documents-redis:6379         # Paperless Redis
           - monitoring-victorialogs:9428     # VictoriaLogs

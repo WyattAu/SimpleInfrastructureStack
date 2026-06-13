@@ -1,5 +1,5 @@
 x-erpnext: &erpnext
-  image: ghcr.io/wyattau/evergreenimageregistry/erpnext:latest
+  image: frappe/erpnext:v${ERPNEXT_VERSION}
   restart: unless-stopped
   volumes:
     - erpnext-sites:/home/frappe/frappe-bench/sites
@@ -10,6 +10,9 @@ x-erpnext: &erpnext
     DB_PORT: "3306"
     REDIS_CACHE: erpnext-redis:6379
     REDIS_QUEUE: erpnext-redis:6379
+  networks:
+    - erpnext_default
+    - traefik_net
 
 services:
   erpnext-configurator:
@@ -108,7 +111,7 @@ services:
         condition: service_completed_successfully
 
   erpnext-assets:
-    image: ghcr.io/wyattau/evergreenimageregistry/nginx:latest
+    image: nginx:alpine
     container_name: erpnext-assets
     restart: unless-stopped
     volumes:
@@ -151,7 +154,7 @@ services:
         condition: service_completed_successfully
 
   erpnext-mariadb:
-    image: ghcr.io/wyattau/evergreenimageregistry/mariadb:latest
+    image: mariadb:11.8
     container_name: erpnext-mariadb
     restart: unless-stopped
     command:
@@ -173,7 +176,7 @@ services:
       retries: 10
 
   erpnext-redis:
-    image: ghcr.io/wyattau/evergreenimageregistry/redis:latest
+    image: redis:8.6-alpine
     container_name: erpnext-redis
     restart: unless-stopped
     command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru --save ""
@@ -194,5 +197,7 @@ volumes:
   erpnext-redis-data:
 
 networks:
+  erpnext_default:
+    name: erpnext_default
   traefik_net:
     external: true
