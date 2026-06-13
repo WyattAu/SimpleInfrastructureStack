@@ -171,7 +171,7 @@ services:
     - traefik.http.middlewares.keycloak-auth.forwardauth.trustForwardHeader=true
     - traefik.http.middlewares.global-rate-limit.ratelimit.average=100
     - traefik.http.middlewares.global-rate-limit.ratelimit.burst=50
-    - traefik.http.routers.oauth2-proxy.rule=(Host(`homepage.${DOMAIN_NAME}`) || Host(`traefik.${DOMAIN_NAME}`) || Host(`kuma.${DOMAIN_NAME}`) || Host(`prometheus.${DOMAIN_NAME}`) || Host(`akaunting.${DOMAIN_NAME}`) || Host(`forgejo.${DOMAIN_NAME}`) || Host(`taiga.${DOMAIN_NAME}`) || Host(`books.${DOMAIN_NAME}`)) && PathPrefix(`/oauth2`)
+    - traefik.http.routers.oauth2-proxy.rule=(Host(`homepage.${DOMAIN_NAME}`) || Host(`traefik.${DOMAIN_NAME}`) || Host(`kuma.${DOMAIN_NAME}`) || Host(`prometheus.${DOMAIN_NAME}`) || Host(`akaunting.${DOMAIN_NAME}`) || Host(`forgejo.${DOMAIN_NAME}`) || Host(`taiga.${DOMAIN_NAME}`) || Host(`books.${DOMAIN_NAME}`) || Host(`cloud.${DOMAIN_NAME}`) || Host(`status.${DOMAIN_NAME}`)) && PathPrefix(`/oauth2`)
     - traefik.http.routers.oauth2-proxy.entrypoints=websecure
     - traefik.http.routers.oauth2-proxy.tls.certresolver=cloudflare
     - traefik.http.services.oauth2-proxy.loadbalancer.server.port=4180
