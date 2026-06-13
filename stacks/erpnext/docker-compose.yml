@@ -11,12 +11,12 @@ x-erpnext: &erpnext
     REDIS_CACHE: erpnext-redis:6379
     REDIS_QUEUE: erpnext-redis:6379
   networks:
-    - erpnext_default
+    - default
     - traefik_net
 
 services:
   erpnext-configurator:
-    image: ghcr.io/wyattau/evergreenimageregistry/erpnext:latest
+    image: frappe/erpnext:v${ERPNEXT_VERSION}
     restart: on-failure
     entrypoint: bash -c
     command:
@@ -49,7 +49,7 @@ services:
         condition: service_healthy
 
   erpnext-build-assets:
-    image: ghcr.io/wyattau/evergreenimageregistry/erpnext:latest
+    image: frappe/erpnext:v${ERPNEXT_VERSION}
     restart: "no"
     entrypoint: bash -c
     command:
@@ -197,7 +197,8 @@ volumes:
   erpnext-redis-data:
 
 networks:
-  erpnext_default:
+  default:
     name: erpnext_default
+    external: true
   traefik_net:
     external: true
