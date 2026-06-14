@@ -142,12 +142,12 @@ services:
         max-size: 10m
         max-file: '3'
   collabora:
-    image: ghcr.io/wyattau/evergreenimageregistry/collabora:latest
+    image: collabora/code:${COLLABORA_VERSION}
     container_name: storage-collabora
     restart: unless-stopped
-    # Collabora requires mount namespaces for document sandboxing.
-    # EIR image runs coolwsd with --o:security.capabilities=false
-    # to use namespace-based isolation instead of chroot.
+    # Upstream Collabora CODE image — replaces EIR image that had ldconfig
+    # issues and missing coolforkit-ns/coolforkit-caps binaries.
+    # Uses namespace-based sandboxing (security.capabilities=false).
     cap_drop:
     - ALL
     cap_add:
