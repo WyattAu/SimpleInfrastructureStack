@@ -81,7 +81,7 @@ health_check_containers:
   - rss-freshrss
   - photos-postgres
   - photos-valkey
-  - photos-server
+  # - photos-server  # Disabled: VectorChord version mismatch (DB has 0.4.3, image has 0.3.0)
   - documents-postgres
   - documents-redis
   - documents-webserver
