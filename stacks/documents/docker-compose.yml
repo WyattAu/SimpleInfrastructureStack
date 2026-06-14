@@ -10,7 +10,7 @@ services:
     - -p
     - /data
   paperless-postgres:
-    image: postgres:17
+    image: postgres:16
     container_name: documents-postgres
     restart: unless-stopped
     security_opt:

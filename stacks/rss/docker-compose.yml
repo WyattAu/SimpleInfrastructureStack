@@ -10,7 +10,7 @@ services:
     - -p
     - /data
   postgres-rss:
-    image: postgres:17
+    image: postgres:16
     container_name: rss-postgres
     restart: unless-stopped
     security_opt:
