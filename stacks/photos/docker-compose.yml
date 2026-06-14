@@ -105,7 +105,7 @@ services:
         max-size: 10m
         max-file: '3'
   immich-postgres:
-    image: ghcr.io/wyattau/evergreenimageregistry/postgres:latest
+    image: postgres:17
     container_name: photos-postgres
     restart: unless-stopped
     security_opt:
