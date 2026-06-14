@@ -305,6 +305,8 @@ services:
     - -web.listen-address=:9254
     devices:
     - /dev/zfs:/dev/zfs
+    volumes:
+    - /dev/disk:/dev/disk:ro
     networks:
     - backend_net
     healthcheck:

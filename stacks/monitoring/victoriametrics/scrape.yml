@@ -121,11 +121,10 @@ scrape_configs:
     static_configs:
       - targets: ['monitoring-tempo:3200']
 
-  # oCIS metrics (Prometheus-compatible on port 9200)
-  - job_name: 'ocis'
-    scrape_interval: 30s
-    static_configs:
-      - targets: ['storage-ocis:9200']
+  # oCIS does NOT expose native Prometheus metrics. Port 9200 serves the web
+  # UI (HTML), and the EIR shim on port 9101 returns JSON health metrics.
+  # OCIS is monitored via blackbox HTTP probe and container health status.
+  # No dedicated scrape job.
 
   # CrowdSec agent does NOT natively expose a Prometheus /metrics endpoint.
   # The LAPI on port 8080 serves CrowdSec's own REST API (v2/decisions, etc.),
