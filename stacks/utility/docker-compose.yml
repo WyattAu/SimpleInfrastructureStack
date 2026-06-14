@@ -1,6 +1,6 @@
 services:
   homepage:
-    image: ghcr.io/wyattau/evergreenimageregistry/homepage:latest
+    image: gethomepage/homepage:v1.13.1
     container_name: utility-homepage
     restart: unless-stopped
     security_opt:
