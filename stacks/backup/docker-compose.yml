@@ -18,6 +18,9 @@ services:
     environment:
     - RESTIC_REPOSITORY=/restic-repo
     - RESTIC_PASSWORD=${RESTIC_PASSWORD}
+    dns:
+    - 1.1.1.1
+    - 1.0.0.1
     entrypoint:
     - tail
     - -f
