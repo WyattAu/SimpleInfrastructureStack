@@ -28,7 +28,7 @@ container:
   options: "--volume /mnt/pool_HDD_x2/infra/runner-nix-store:/nix"
   valid_volumes:
     - '**'
-  docker_host: unix:///var/run/docker.sock
+  docker_host: tcp://runner-docker-socket-proxy:2375
   force_pull: false
   force_rebuild: false
 
