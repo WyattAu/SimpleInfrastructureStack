@@ -34,7 +34,7 @@
     # are exiting/restarting. Non-blocking — full health check runs
     # at end of pipeline. This catches obvious failures early per-stack.
     sleep 5
-    ISSUES=$(docker compose ps --format '{{.Name}}: {{.Status}}' 2>/dev/null | grep -iE 'exited|restarting|dead' || true)
+    ISSUES=$(docker compose ps 2>/dev/null | grep -iE 'Exit|restart|dead' || true)
     if [ -n "$ISSUES" ]; then
       echo "CANARY_WARNING: {{ item }} has unhealthy containers:"
       echo "$ISSUES"
