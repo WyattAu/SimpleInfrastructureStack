@@ -15,6 +15,7 @@ services:
     - ${DATA_BASE_PATH}:/data:ro
     - /mnt/pool_HDD_x2/infra/stacks/terraform:/terraform:ro
     - ${BACKUP_BASE_PATH}/restic-repo:/restic-repo
+    - ${BACKUP_BASE_PATH}/restic-repo-new:/restic-repo-new
     environment:
     - RESTIC_REPOSITORY=/restic-repo
     - RESTIC_PASSWORD=${RESTIC_PASSWORD}
