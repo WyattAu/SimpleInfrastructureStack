@@ -16,14 +16,12 @@ services:
     volumes:
     - ${DATA_BASE_PATH}/utility/homepage/config:/app/config
     - /var/run/docker.sock:/var/run/docker.sock:ro
+    - ./resolv.conf:/etc/resolv.conf:ro
     environment:
     - HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_SUBDOMAIN}.${DOMAIN_NAME}
     - PUID=${PUID}
     - PGID=${PGID}
     - TZ=${TZ}
-    dns:
-    - 1.1.1.1
-    - 1.0.0.1
     networks:
     - traefik_net
     healthcheck:
