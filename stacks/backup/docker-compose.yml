@@ -1,6 +1,6 @@
 services:
   backup-restic:
-    image: restic/restic:0.17.3
+    image: alpine:3.21
     container_name: backup-restic
     restart: unless-stopped
     security_opt:
@@ -19,9 +19,9 @@ services:
     - 1.0.0.1
     dns_search: []
     entrypoint:
-    - tail
-    - -f
-    - /dev/null
+    - sh
+    - -c
+    - 'apk add --no-cache restic && tail -f /dev/null'
     deploy:
       resources:
         limits:
