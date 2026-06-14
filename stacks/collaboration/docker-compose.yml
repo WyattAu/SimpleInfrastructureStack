@@ -10,7 +10,7 @@ services:
     - -p
     - /data/postgres
   postgres-collab:
-    image: postgres:16
+    image: postgres:18
     container_name: collaboration-postgres
     restart: unless-stopped
     security_opt:
