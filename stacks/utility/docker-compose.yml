@@ -27,8 +27,6 @@ services:
     - PUID=${PUID}
     - PGID=${PGID}
     - TZ=${TZ}
-    networks:
-    - traefik_net
     healthcheck:
       test:
       - CMD
