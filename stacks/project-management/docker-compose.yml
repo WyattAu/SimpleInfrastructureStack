@@ -86,7 +86,7 @@ services:
         max-file: "3"
 
   rabbitmq-init:
-    image: ghcr.io/wyattau/evergreenimageregistry/rabbitmq:latest
+    image: rabbitmq:3.13-management
     container_name: project-management-rabbitmq-init
     # Creates the 'taiga' vhost needed by Taiga async/events workers.
     # RabbitMQ only creates the default '/' vhost on first boot.
@@ -109,7 +109,7 @@ services:
     - backend_net
 
   rabbitmq:
-    image: ghcr.io/wyattau/evergreenimageregistry/rabbitmq:latest
+    image: rabbitmq:3.13-management
     container_name: project-management-rabbitmq
     restart: unless-stopped
     security_opt:
@@ -174,7 +174,7 @@ services:
     - backend_net
 
   taiga-back:
-    image: ghcr.io/wyattau/evergreenimageregistry/taiga-back:latest
+    image: ghcr.io/taigaio/taiga-back:latest
     container_name: project-management-back
     restart: unless-stopped
     security_opt:
@@ -242,7 +242,7 @@ services:
         max-file: "3"
 
   taiga-async:
-    image: ghcr.io/wyattau/evergreenimageregistry/taiga-back:latest
+    image: ghcr.io/taigaio/taiga-back:latest
     container_name: project-management-async
     restart: unless-stopped
     security_opt:
@@ -311,7 +311,7 @@ services:
         max-file: "3"
 
   taiga-front:
-    image: ghcr.io/wyattau/evergreenimageregistry/taiga-front:latest
+    image: ghcr.io/taigaio/taiga-front:latest
     container_name: project-management-front
     restart: unless-stopped
     security_opt:
@@ -351,7 +351,7 @@ services:
         max-file: "3"
 
   taiga-events:
-    image: ghcr.io/wyattau/evergreenimageregistry/taiga-events:latest
+    image: ghcr.io/taigaio/taiga-events:latest
     container_name: project-management-events
     restart: unless-stopped
     security_opt:
@@ -394,7 +394,7 @@ services:
         max-file: "3"
 
   taiga-protected:
-    image: ghcr.io/wyattau/evergreenimageregistry/taiga-protected:latest
+    image: ghcr.io/taigaio/taiga-protected:latest
     container_name: project-management-protected
     restart: unless-stopped
     security_opt:
@@ -435,7 +435,7 @@ services:
     # Chainguard nginx: distroless, no shell, daily CVE rebuilds.
     # Free tier only provides :latest tag — pinned to digest for reproducibility.
     # Default port is 8080 (not 80).
-    image: ghcr.io/wyattau/evergreenimageregistry/nginx:latest
+    image: nginx:alpine
     container_name: project-management-gateway
     restart: unless-stopped
     security_opt:

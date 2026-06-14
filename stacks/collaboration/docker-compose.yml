@@ -54,7 +54,7 @@ services:
         max-size: 10m
         max-file: '3'
   synapse-init:
-    image: ghcr.io/wyattau/evergreenimageregistry/synapse:latest
+    image: matrixdotorg/synapse:v1.152.1
     container_name: collaboration-synapse-init
     depends_on:
       postgres-collab:
@@ -95,7 +95,7 @@ services:
     - PGID=${PGID}
     command: sh -c "chown -R ${PUID}:${PGID} /data"
   synapse:
-    image: ghcr.io/wyattau/evergreenimageregistry/synapse:latest
+    image: matrixdotorg/synapse:v1.152.1
     container_name: collaboration-synapse
     restart: unless-stopped
     security_opt:
@@ -174,7 +174,7 @@ services:
     - -c
     - "if [ ! -f /config/config.json ]; then\n  echo \"Creating Element config file...\";\n  cat << EOF > /config/config.json\n{\n    \"default_server_config\": {\n        \"m.homeserver\": {\n            \"base_url\": \"https://'${MATRIX_SUBDOMAIN}.${DOMAIN_NAME}'\",\n            \"server_name\": \"'${DOMAIN_NAME}'\"\n        }\n    },\n    \"disable_custom_urls\": true,\n    \"disable_guests\": true,\n    \"disable_3pid_login\": true,\n    \"brand\": \"${ELEMENT_ROOM_NAME}\"\n}\nEOF\nelse\n  echo \"Element config already exists.\";\nfi\n"
   element-web:
-    image: ghcr.io/wyattau/evergreenimageregistry/element-web:latest
+    image: vectorim/element-web:v1.12.18
     container_name: collaboration-element
     restart: unless-stopped
     security_opt:
@@ -215,7 +215,7 @@ services:
         max-size: 10m
         max-file: '3'
   matrix-hookshot:
-    image: ghcr.io/wyattau/evergreenimageregistry/matrix-hookshot:latest
+    image: ghcr.io/wyattau/matrix-hookshot:7.3.3
     container_name: collaboration-hookshot
     working_dir: /data
     restart: unless-stopped

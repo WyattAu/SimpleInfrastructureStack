@@ -157,7 +157,7 @@ services:
   # Each dedicated runner has its own data dir and config but shares these mounts.
 
   forgejo-runner:
-    image: ghcr.io/wyattau/evergreenimageregistry/forgejo-runner:latest
+    image: code.forgejo.org/forgejo/runner:6.3.1
     container_name: runner-general
     restart: unless-stopped
     security_opt:
@@ -207,7 +207,7 @@ services:
         max-file: '3'
 
   runner-peptide-web:
-    image: ghcr.io/wyattau/evergreenimageregistry/forgejo-runner:latest
+    image: code.forgejo.org/forgejo/runner:6.3.1
     container_name: runner-peptide-web
     restart: unless-stopped
     security_opt:
@@ -257,7 +257,7 @@ services:
         max-file: '3'
 
   runner-questhive:
-    image: ghcr.io/wyattau/evergreenimageregistry/forgejo-runner:latest
+    image: code.forgejo.org/forgejo/runner:6.3.1
     container_name: runner-questhive
     restart: unless-stopped
     security_opt:

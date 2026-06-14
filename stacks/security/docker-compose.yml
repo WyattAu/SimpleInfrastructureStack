@@ -22,7 +22,7 @@
 
 services:
   crowdsec:
-    image: ghcr.io/wyattau/evergreenimageregistry/crowdsec:latest
+    image: crowdsecurity/crowdsec:v1.7.8
     container_name: security-crowdsec
     restart: unless-stopped
     security_opt:
