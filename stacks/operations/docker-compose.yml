@@ -96,7 +96,6 @@ services:
     - traefik.http.routers.forgejo-web.rule=Host(`${FORGEJO_SUBDOMAIN}.${DOMAIN_NAME}`)
     - traefik.http.routers.forgejo-web.entrypoints=websecure
     - traefik.http.routers.forgejo-web.tls.certresolver=cloudflare
-    - traefik.http.routers.forgejo-web.middlewares=keycloak-auth@file
     - traefik.http.routers.forgejo-web.service=forgejo-svc
     - traefik.http.routers.forgejo-registry.rule=Host(`${REGISTRY_SUBDOMAIN}.${DOMAIN_NAME}`)
     - traefik.http.routers.forgejo-registry.entrypoints=websecure
