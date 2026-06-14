@@ -58,8 +58,10 @@
     group: "65532"
     mode: "0400"
   when: "'tunnel' in stacks"
+  ignore_errors: true
   # Cloudflared 2026.3.0 runs as non-root (UID 65532).
   # The credentials.json bind-mount must match or the tunnel fails to start.
+  # ZFS may reject mode changes (EPERM) — ownership is what matters.
 
 - name: Reconnect Homepage to traefik_net after bridge deploy
   ansible.builtin.shell: |
