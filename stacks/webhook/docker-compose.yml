@@ -1,6 +1,6 @@
 services:
   webhook:
-    image: ghcr.io/wyattau/evergreenimageregistry/infra-webhook:latest
+    image: almir/webhook:latest
     container_name: infra-webhook
     restart: unless-stopped
     security_opt:

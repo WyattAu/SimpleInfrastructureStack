@@ -54,7 +54,7 @@ services:
         max-size: 10m
         max-file: '3'
   freshrss:
-    image: ghcr.io/wyattau/evergreenimageregistry/freshrss:latest
+    image: freshrss/freshrss:1.26.1
     container_name: rss-freshrss
     restart: unless-stopped
     security_opt:

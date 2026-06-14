@@ -1,6 +1,6 @@
 services:
   immich-server:
-    image: ghcr.io/wyattau/evergreenimageregistry/immich:latest
+    image: ghcr.io/immich-app/immich:v2.7.5
     container_name: photos-server
     restart: unless-stopped
     security_opt:
@@ -67,7 +67,7 @@ services:
         max-size: 10m
         max-file: '3'
   immich-ml:
-    image: ghcr.io/wyattau/evergreenimageregistry/immich-machine-learning:latest
+    image: ghcr.io/immich-app/immich-machine-learning:v2.7.5
     container_name: photos-ml
     restart: unless-stopped
     security_opt:

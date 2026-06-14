@@ -1,6 +1,6 @@
 services:
   mariadb-akaunting:
-    image: ghcr.io/wyattau/evergreenimageregistry/mariadb:latest
+    image: mariadb:11.8
     container_name: accounting-mariadb-akaunting
     restart: unless-stopped
     security_opt:
@@ -43,7 +43,7 @@ services:
         max-size: 10m
         max-file: '3'
   akaunting:
-    image: ghcr.io/wyattau/evergreenimageregistry/akaunting:latest
+    image: akaunting/akaunting:latest
     container_name: accounting-akaunting
     restart: unless-stopped
     security_opt:
@@ -106,7 +106,7 @@ services:
         max-size: 10m
         max-file: '3'
   mariadb-exporter:
-    image: ghcr.io/wyattau/evergreenimageregistry/mysqld-exporter:latest
+    image: prom/mysqld-exporter:latest
     container_name: accounting-mariadb-exporter
     restart: unless-stopped
     security_opt:

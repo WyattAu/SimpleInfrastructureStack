@@ -54,7 +54,7 @@ services:
         max-size: 10m
         max-file: '3'
   paperless-redis:
-    image: ghcr.io/wyattau/evergreenimageregistry/redis:latest
+    image: redis:7.4.9-alpine
     container_name: documents-redis
     restart: unless-stopped
     security_opt:
@@ -92,7 +92,7 @@ services:
         max-size: 10m
         max-file: '3'
   paperless-webserver:
-    image: ghcr.io/wyattau/evergreenimageregistry/paperless-ngx:latest
+    image: ghcr.io/paperless-ngx/paperless-ngx:2.20.15
     container_name: documents-webserver
     restart: unless-stopped
     security_opt:
