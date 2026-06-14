@@ -1,12 +1,16 @@
 services:
   backup-restic:
-    image: alpine:3.21
+    image: restic/restic:0.17.3
     container_name: backup-restic
     restart: unless-stopped
     security_opt:
     - no-new-privileges:true
     cap_drop:
     - ALL
+    # Use default bridge network — Docker embedded DNS (127.0.0.11) is broken
+    # on TrueNAS user-defined networks. The default bridge copies the host's
+    # /etc/resolv.conf directly, bypassing the broken embedded DNS.
+    network_mode: bridge
     volumes:
     - ${DATA_BASE_PATH}:/data:ro
     - /mnt/pool_HDD_x2/infra/stacks/terraform:/terraform:ro
@@ -14,14 +18,10 @@ services:
     environment:
     - RESTIC_REPOSITORY=/restic-repo
     - RESTIC_PASSWORD=${RESTIC_PASSWORD}
-    dns:
-    - 1.1.1.1
-    - 1.0.0.1
-    dns_search: []
     entrypoint:
-    - sh
-    - -c
-    - 'apk add --no-cache restic && tail -f /dev/null'
+    - tail
+    - -f
+    - /dev/null
     deploy:
       resources:
         limits:
@@ -81,7 +81,7 @@ services:
       crond -f /etc/crontabs/root
 
       '
-    networks: []
+    network_mode: bridge
     healthcheck:
       disable: true
     deploy:
@@ -97,4 +97,3 @@ services:
       options:
         max-size: 10m
         max-file: '3'
-networks: {}
