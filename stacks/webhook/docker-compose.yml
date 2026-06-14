@@ -28,6 +28,8 @@ services:
     - /var/log/infra-deploy.log:/var/log/infra-deploy.log
     env_file:
     - .env
+    environment:
+    - SOPS_AGE_KEY_FILE=/root/.config/sops/age/keys.txt
     healthcheck:
       test:
       - CMD-SHELL
