@@ -44,3 +44,11 @@
   when: "'tunnel' in stacks"
   # Cloudflared 2026.3.0 runs as non-root (UID 65532).
   # The credentials.json bind-mount must match or the tunnel fails to start.
+
+- name: Reconnect Homepage to traefik_net after bridge deploy
+  ansible.builtin.shell: |
+    docker network connect traefik_net utility-homepage 2>/dev/null || true
+  when: "'utility' in stacks"
+  # Homepage uses network_mode: bridge to work around TrueNAS broken
+  # embedded DNS. After compose up, it needs traefik_net for routing.
+  # Non-fatal: if already connected, Docker exits 1 but we ignore it.
