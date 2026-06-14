@@ -13,10 +13,15 @@ services:
     - FOWNER
     - SETGID
     - SETUID
+    # Use default bridge network — Docker embedded DNS (127.0.0.11) is broken
+    # on TrueNAS user-defined networks. The default bridge copies the host's
+    # /etc/resolv.conf directly. After startup, run:
+    #   docker network connect traefik_net utility-homepage
+    # to add the container to Traefik's network for routing.
+    network_mode: bridge
     volumes:
     - ${DATA_BASE_PATH}/utility/homepage/config:/app/config
     - /var/run/docker.sock:/var/run/docker.sock:ro
-    - ./resolv.conf:/etc/resolv.conf:ro
     environment:
     - HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_SUBDOMAIN}.${DOMAIN_NAME}
     - PUID=${PUID}
@@ -55,6 +60,3 @@ services:
       options:
         max-size: 10m
         max-file: '3'
-networks:
-  traefik_net:
-    external: true
