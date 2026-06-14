@@ -89,7 +89,7 @@ health_check_containers:
   - project-management-rabbitmq
   - infra-tunnel
   - vpn-wireguard
-  - operations-forgejo-runner
+  - operations-runner-docker-socket-proxy
 
 # Terraform
 terraform_bin_path: /mnt/pool_HDD_x2/infra/bin/terraform
