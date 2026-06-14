@@ -22,32 +22,34 @@
   when: "'utility' in stacks"
 
 - name: Deploy stack
-  ansible.builtin.shell: |
-    set -e
-    docker compose \
-      --env-file {{ infra_base_path }}/{{ item }}/.env \
-      --env-file {{ infra_secrets_path }}/{{ item }}.env \
-      --env-file {{ infra_repo_path }}/stacks/{{ item }}/versions.env \
+  ansible.builtin.shell:
+    cmd: >
+      docker compose
+      --env-file {{ infra_base_path }}/{{ item }}/.env
+      --env-file {{ infra_secrets_path }}/{{ item }}.env
+      --env-file {{ infra_repo_path }}/stacks/{{ item }}/versions.env
       up --detach --pull missing --remove-orphans
-
-    # Canary health check: wait briefly, then verify no containers
-    # are exiting/restarting. Non-blocking — full health check runs
-    # at end of pipeline. This catches obvious failures early per-stack.
-    sleep 5
-    ISSUES=$(docker compose ps 2>/dev/null | grep -iE 'Exit|restart|dead' || true)
-    if [ -n "$ISSUES" ]; then
-      echo "CANARY_WARNING: {{ item }} has unhealthy containers:"
-      echo "$ISSUES"
-    else
-      echo "CANARY_OK: {{ item }} all containers running"
-    fi
-  args:
     chdir: "{{ infra_base_path }}/{{ item }}"
   loop: "{{ stacks }}"
   register: deploy_result
-  changed_when: "'Recreated\\|Created\\|Started\\|CANARY' in (deploy_result.stdout | default(''))"
+  changed_when: "'Recreated' in (deploy_result.stdout | default(''))"
   failed_when: deploy_result.rc != 0
   notify: Display deploy results
+
+- name: Canary health check per stack
+  ansible.builtin.shell: "sleep 5 && docker compose ps 2>/dev/null | grep -iE 'Exit|restart|dead' || true"
+  args:
+    chdir: "{{ infra_base_path }}/{{ item }}"
+  loop: "{{ stacks }}"
+  register: canary_result
+  changed_when: false
+  failed_when: false
+
+- name: Report canary warnings
+  ansible.builtin.debug:
+    msg: "CANARY_WARNING: {{ item.item }} may have issues: {{ item.stdout }}"
+  loop: "{{ canary_result.results }}"
+  when: item.stdout | default('') | trim | length > 0
 
 - name: Fix tunnel credentials.json ownership
   ansible.builtin.file:
