@@ -7,10 +7,6 @@ services:
     - no-new-privileges:true
     cap_drop:
     - ALL
-    read_only: true
-    tmpfs:
-    - /tmp
-    - /root/.cache/restic
     volumes:
     - ${DATA_BASE_PATH}:/data:ro
     - /mnt/pool_HDD_x2/infra/stacks/terraform:/terraform:ro
