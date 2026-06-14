@@ -19,8 +19,6 @@ http:
       tls:
         certResolver: cloudflare
       service: forgejo-svc
-      middlewares:
-      - keycloak-auth@file
     forgejo-registry:
       rule: Host(`registry.wyattau.com`) || Host(`registry-forgejo.wyattau.com`)
       entrypoints:
