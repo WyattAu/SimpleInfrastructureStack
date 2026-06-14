@@ -13,16 +13,21 @@ services:
     - FOWNER
     - SETGID
     - SETUID
+    # Docker embedded DNS (127.0.0.11) is broken on TrueNAS user-defined
+    # networks. Using network_mode: bridge gets working DNS from host
+    # resolv.conf. Traefik routing requires manual network connect:
+    #   docker network connect traefik_net utility-homepage
+    # See: deploy.sh (auto-connects after compose up)
+    network_mode: bridge
     volumes:
     - ${DATA_BASE_PATH}/utility/homepage/config:/app/config
     - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
     - HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_SUBDOMAIN}.${DOMAIN_NAME}
-    - PUID=${PUID}
-    - PGID=${PGID}
+    # PUID=0 skips slow chown on ZFS overlayfs
+    - PUID=0
+    - PGID=0
     - TZ=${TZ}
-    networks:
-    - traefik_net
     healthcheck:
       test:
       - CMD
@@ -54,6 +59,3 @@ services:
       options:
         max-size: 10m
         max-file: '3'
-networks:
-  traefik_net:
-    external: true
