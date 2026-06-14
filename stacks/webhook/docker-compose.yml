@@ -1,38 +1,46 @@
 services:
   webhook:
-    image: almir/webhook:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: infra-webhook:latest
     container_name: infra-webhook
     restart: unless-stopped
     security_opt:
     - no-new-privileges:true
     cap_drop:
     - ALL
+    # network_mode: bridge for working DNS (Docker embedded DNS broken on TrueNAS)
+    # Post-start: docker network connect traefik_net infra-webhook (for Traefik routing)
+    # Cloudflared tunnel routes deploy.wyattau.com directly to 127.0.0.1:9001
+    # so Traefik routing is not needed — tunnel connects directly.
+    network_mode: bridge
     ports:
     - 127.0.0.1:9001:9000
     volumes:
     - ${REPO_DIR:-/mnt/pool_HDD_x2/infra/stacks}:/mnt/pool_HDD_x2/infra/stacks
     - /mnt/pool_HDD_x2/infra/bin:/mnt/pool_HDD_x2/infra/bin:ro
-    - /var/run/docker.sock:/var/run/docker.sock:ro
-    - ${SOPS_AGE_KEY_DIR:-/root/.config/sops/age}:/root/.config/sops/age:ro
+    - /var/run/docker.sock:/var/run/docker.sock
+    - /root/.config/sops/age:/root/.config/sops/age:ro
     - ./ssh:/root/.ssh:ro
     - ./deploy.sh:/opt/webhook/deploy.sh:ro
     - ./hooks.yaml.tmpl:/opt/webhook/hooks.yaml.tmpl:ro
     - /var/log/infra-deploy.log:/var/log/infra-deploy.log
     env_file:
     - .env
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - 'wget --no-verbose --tries=1 --post-data='' --header=''Content-Type: application/json'' -O /dev/null http://127.0.0.1:9000/hooks/deploy 2>&1 | grep -q ''403'''
+      interval: 120s
+      timeout: 5s
+      retries: 3
     deploy:
       resources:
         limits:
           cpus: '1.0'
-          memory: 64M
+          memory: 256M
           pids: 100
-    healthcheck:
-      test:
-      - CMD-SHELL
-      - 'wget --no-verbose --tries=1 --post-data=''' --header=''Content-Type: application/json'' -O /dev/null http://127.0.0.1:9000/hooks/deploy 2>&1 | grep -q ''403'''
-      interval: 120s
-      timeout: 5s
-      retries: 3
     logging:
       driver: json-file
       options:
