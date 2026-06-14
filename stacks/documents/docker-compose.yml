@@ -10,7 +10,7 @@ services:
     - -p
     - /data
   paperless-postgres:
-    image: ghcr.io/wyattau/evergreenimageregistry/postgres:latest
+    image: postgres:17
     container_name: documents-postgres
     restart: unless-stopped
     security_opt:

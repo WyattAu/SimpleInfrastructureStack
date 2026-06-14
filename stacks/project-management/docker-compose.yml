@@ -42,7 +42,7 @@ services:
     - backend_net
 
   postgres:
-    image: ghcr.io/wyattau/evergreenimageregistry/postgres:latest
+    image: postgres:17
     container_name: project-management-postgres
     restart: unless-stopped
     security_opt:
