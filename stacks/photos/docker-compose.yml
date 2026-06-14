@@ -105,7 +105,8 @@ services:
         max-size: 10m
         max-file: '3'
   immich-postgres:
-    image: postgres:14
+    image: ghcr.io/wyattau/evergreenimageregistry/postgres:latest
+    entrypoint: ["/usr/local/bin/shim", "run", "-c", "postgres"]
     container_name: photos-postgres
     restart: unless-stopped
     security_opt:
