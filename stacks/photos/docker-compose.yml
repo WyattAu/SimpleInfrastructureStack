@@ -105,7 +105,7 @@ services:
         max-size: 10m
         max-file: '3'
   immich-postgres:
-    image: postgres:16
+    image: postgres:14
     container_name: photos-postgres
     restart: unless-stopped
     security_opt:
