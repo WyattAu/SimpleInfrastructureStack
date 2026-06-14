@@ -29,7 +29,7 @@ stacks:
   - storage
   - accounting
   - erpnext
-  - project-management
+  # - project-management  # Taiga — disabled: GHCR images need auth, not yet deployed
   - utility
   - backup
   - vaultwarden
