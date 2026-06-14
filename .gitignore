@@ -48,3 +48,8 @@ Thumbs.db
 *.tmp
 .forgejo_token
 ", d[k])\n"
+stacks/webhook/ssh/
+stacks/webhook/.env
+stacks/blocmarket/
+tf_import.sh
+tunnel/
