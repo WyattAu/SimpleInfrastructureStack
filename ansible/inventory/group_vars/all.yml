@@ -85,8 +85,8 @@ health_check_containers:
   - documents-postgres
   - documents-redis
   - documents-webserver
-  - project-management-postgres
-  - project-management-rabbitmq
+  # - project-management-postgres  # Disabled: Taiga not deployed
+  # - project-management-rabbitmq  # Disabled: Taiga not deployed
   - infra-tunnel
   - vpn-wireguard
   - operations-runner-docker-socket-proxy
