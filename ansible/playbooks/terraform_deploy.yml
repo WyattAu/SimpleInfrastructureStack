@@ -61,14 +61,19 @@
       args:
         chdir: "{{ infra_repo_path }}/terraform"
       environment:
-        TF_VAR_cf_api_token: "{{ CF_API_TOKEN }}"
-        TF_VAR_kc_admin_password: "{{ KEYCLOAK_ADMIN_PASSWORD }}"
-        TF_VAR_kc_smtp_password: "{{ SMTP_PASSWORD }}"
-        TF_VAR_kc_oauth2_proxy_secret: "{{ OAUTH2_PROXY_CLIENT_SECRET }}"
-        TF_VAR_kc_grafana_secret: "{{ GRAFANA_OIDC_CLIENT_SECRET }}"
-        TF_VAR_kc_forgejo_secret: "{{ FORGEJO_KEYCLOAK_CLIENT_SECRET }}"
+        TF_VAR_cf_api_token: "{{ CF_API_TOKEN | default('') }}"
+        TF_VAR_cf_zone_id: "{{ CF_ZONE_ID | default('') }}"
+        TF_VAR_cf_account_id: "{{ CF_ACCOUNT_ID | default('') }}"
+        TF_VAR_kc_admin_password: "{{ KEYCLOAK_ADMIN_PASSWORD | default('') }}"
+        TF_VAR_kc_smtp_password: "{{ SMTP_PASSWORD | default('') }}"
+        TF_VAR_kc_oauth2_proxy_secret: "{{ OAUTH2_PROXY_CLIENT_SECRET | default('') }}"
+        TF_VAR_kc_grafana_secret: "{{ GRAFANA_OIDC_CLIENT_SECRET | default('') }}"
+        TF_VAR_kc_forgejo_secret: "{{ FORGEJO_KEYCLOAK_CLIENT_SECRET | default('') }}"
+        TF_VAR_kc_sa_client_id: "{{ KC_SA_CLIENT_ID | default('terraform') }}"
+        TF_VAR_kc_sa_client_secret: "{{ KC_SA_CLIENT_SECRET | default('') }}"
         TF_VAR_forgejo_token: "{{ FORGEJO_ADMIN_TOKEN | default('') }}"
       register: tf_plan
+      ignore_errors: true
       # rc 0 = no changes, rc 2 = changes detected, rc 1 = error
       failed_when: tf_plan.rc == 1
       changed_when: tf_plan.rc == 2

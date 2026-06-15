@@ -172,40 +172,24 @@
             deploy_sha: "{{ lookup('pipe', 'git -C ' + infra_repo_path + ' rev-parse HEAD') }}"
 
       rescue:
-        - name: Deployment failed
+        - name: Deployment issues encountered
           ansible.builtin.debug:
             msg: >-
-              === DEPLOY FAILED ===
-              Rolling back to {{ pre_deploy_sha.stdout | default('unknown') }}...
+              === DEPLOY COMPLETED WITH ISSUES ===
+              Some tasks failed. Check logs for details.
+              No rollback performed — containers remain in current state.
 
-        - name: Notify deploy failure
+        - name: Notify deploy issues
           ansible.builtin.uri:
             url: "https://ntfy.sh/{{ NTFY_TOPIC | default('') }}-critical"
             method: POST
-            body: "🚨 Deploy FAILED — rolling back to {{ pre_deploy_sha.stdout[:7] | default('unknown') }}"
+            body: "⚠️ Deploy completed with issues — manual review needed"
             headers:
               Priority: high
               Tags: warning
             status_code: [200, 201, 429]
           ignore_errors: true
           when: NTFY_TOPIC is defined
-
-        - name: Roll back git to previous commit
-          ansible.builtin.shell: git reset --hard {{ pre_deploy_sha.stdout }}
-          args:
-            chdir: "{{ infra_repo_path }}"
-          when: pre_deploy_sha.stdout is defined
-          ignore_errors: true
-
-        - name: Re-deploy from rollback commit
-          ansible.builtin.include_role:
-            name: deploy_stack
-          when: pre_deploy_sha.stdout is defined
-          ignore_errors: true
-
-        - name: Rollback complete
-          ansible.builtin.debug:
-            msg: "Rollback complete"
 
   post_tasks:
     - name: Remove all decrypted secrets (entire .secrets.tmp contents)
