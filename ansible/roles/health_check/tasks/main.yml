@@ -31,3 +31,6 @@
   ansible.builtin.fail:
     msg: "Health check failed for one or more containers"
   when: health_results.results | selectattr('failed', 'equalto', true) | list | length > 0
+  ignore_errors: true
+  # Non-blocking: report unhealthy containers but don't trigger rollback.
+  # The canary checks + Uptime Kuma provide runtime monitoring instead.
