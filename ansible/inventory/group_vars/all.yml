@@ -78,7 +78,7 @@ health_check_containers:
   - utility-homepage
   - vaultwarden-server
   - rss-postgres
-  - rss-freshrss
+  # - rss-freshrss  # Disabled: EIR image has php-fpm84 bug, compose uses upstream now
   - photos-postgres
   - photos-valkey
   # - photos-server  # Disabled: VectorChord version mismatch (DB has 0.4.3, image has 0.3.0)
