@@ -61,7 +61,7 @@ services:
         max-file: "3"
 
   immich-ml:
-    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_ML_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/immich-ml:latest
     container_name: photos-ml
     restart: unless-stopped
     security_opt:

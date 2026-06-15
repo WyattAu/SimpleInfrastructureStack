@@ -41,7 +41,7 @@ services:
         max-file: "3"
 
   freshrss:
-    image: freshrss/freshrss:${FRESHRSS_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/freshrss:latest
     container_name: rss-freshrss
     restart: unless-stopped
     security_opt:

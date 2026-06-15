@@ -43,7 +43,7 @@ services:
         max-file: "3"
 
   synapse-init:
-    image: matrixdotorg/synapse:${SYNAPSE_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/synapse:latest
     container_name: collaboration-synapse-init
     depends_on:
       postgres-collab:
@@ -149,7 +149,7 @@ services:
     command: sh -c "chown -R ${PUID}:${PGID} /data"
 
   synapse:
-    image: matrixdotorg/synapse:${SYNAPSE_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/synapse:latest
     container_name: collaboration-synapse
     restart: unless-stopped
     security_opt:
@@ -243,7 +243,7 @@ services:
         fi
 
   element-web:
-    image: vectorim/element-web:${ELEMENT_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/element-web:latest
     container_name: collaboration-element
     restart: unless-stopped
     security_opt:

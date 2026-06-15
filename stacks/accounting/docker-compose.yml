@@ -1,6 +1,6 @@
 services:
   mariadb-akaunting:
-    image: mariadb:${MARIADB_AKAUNTING_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/mariadb:latest
     container_name: accounting-mariadb-akaunting
     restart: unless-stopped
     security_opt:
@@ -31,7 +31,7 @@ services:
         max-file: "3"
 
   akaunting:
-    image: akaunting/akaunting:${AKAUNTING_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/akaunting:latest
     container_name: accounting-akaunting
     restart: unless-stopped
     security_opt:

@@ -41,13 +41,13 @@ services:
         max-file: "3"
 
   paperless-redis:
-    image: redis:${REDIS_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/redis:latest
     container_name: documents-redis
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
 
-    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    command: ["--dir", "/data", "--appendonly", "yes", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
     volumes:
       - ${DATA_BASE_PATH}/documents/redis:/data
     networks:
@@ -68,7 +68,7 @@ services:
         max-file: "3"
 
   paperless-webserver:
-    image: ghcr.io/paperless-ngx/paperless-ngx:${PAPERLESS_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/paperless-ngx:latest
     container_name: documents-webserver
     restart: unless-stopped
     security_opt:
