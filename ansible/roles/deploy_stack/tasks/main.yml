@@ -51,6 +51,26 @@
   loop: "{{ canary_result.results }}"
   when: item.stdout | default('') | trim | length > 0
 
+- name: Post-deploy smoke test
+  ansible.builtin.shell: |
+    FAIL=0
+    for endpoint in "https://forgejo.wyattau.com/" "https://homepage.wyattau.com/" "https://auth.wyattau.com/realms/company-realm/.well-known/openid-configuration"; do
+      CODE=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$endpoint" 2>/dev/null || echo "000")
+      if [ "$CODE" = "000" ] || [ "$CODE" -ge 500 ]; then
+        echo "FAIL: $endpoint -> $CODE"
+        FAIL=$((FAIL+1))
+      else
+        echo "OK: $endpoint -> $CODE"
+      fi
+    done
+    echo "Smoke test: $FAIL failures"
+    exit 0
+  register: smoke_result
+  changed_when: false
+  failed_when: false
+  # Non-blocking: reports status but doesn't fail the deploy.
+  # Run via TrueNAS host network (not container) for external URL access.
+
 - name: Fix tunnel credentials.json ownership
   ansible.builtin.file:
     path: "{{ infra_base_path }}/tunnel/credentials.json"
@@ -70,3 +90,11 @@
   # Homepage uses network_mode: bridge to work around TrueNAS broken
   # embedded DNS. After compose up, it needs traefik_net for routing.
   # Non-fatal: if already connected, Docker exits 1 but we ignore it.
+
+- name: Record deploy timestamp
+  ansible.builtin.copy:
+    content: "{{ ansible_date_time.iso8601 }}"
+    dest: "/var/run/infra-deploy-timestamp"
+    mode: '0644'
+  changed_when: false
+  # Records deploy time for monitoring/alerting.
