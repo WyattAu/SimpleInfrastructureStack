@@ -5,7 +5,7 @@
 # Usage: backup-verify.sh
 
 RESTIC_REPO="/mnt/pool_HDD_x2/tank/datasources/sis/backups/restic-repo-new"
-RESTIC_PASSWORD="Ki/+lLYMLu0/0sCBsKpxpISjOY2tBjcIBaFL31Moi+4="
+RESTIC_PASSWORD="***REMOVED_RESTIC_PASSWORD***="
 METRICS_FILE="/mnt/pool_HDD_x2/tank/datasources/sis/backups/backup.prom"
 MAX_AGE_HOURS=25
 
