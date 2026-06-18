@@ -142,6 +142,7 @@ services:
     - EXEC=1
     - POST=1
     - INFO=1
+    - IMAGES=1
     - NETWORKS=0
     - VOLUMES=0
     networks:
