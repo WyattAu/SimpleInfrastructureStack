@@ -3,6 +3,8 @@ credentials-file: /etc/cloudflared/credentials.json
 ingress:
 - hostname: ssh.wyattau.com
   service: ssh://127.0.0.1:2222
+- hostname: git.wyattau.com
+  service: ssh://127.0.0.1:2222
 - hostname: traefik.wyattau.com
   service: https://127.0.0.1:443
   originRequest:
