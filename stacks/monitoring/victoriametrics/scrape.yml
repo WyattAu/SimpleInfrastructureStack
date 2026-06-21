@@ -147,6 +147,22 @@ scrape_configs:
       - targets: ['host.docker.internal:4788']
 
   # =========================================================================
+  # CachyOS CI Runner Server (192.168.1.191)
+  # =========================================================================
+  - job_name: 'cachyos-node-exporter'
+    static_configs:
+      - targets: ['192.168.1.191:9100']
+        labels:
+          host: 'cachyos'
+  - job_name: 'cachyos-cadvisor'
+    scrape_interval: 120s
+    scrape_timeout: 90s
+    static_configs:
+      - targets: ['192.168.1.191:9090']
+        labels:
+          host: 'cachyos'
+
+  # =========================================================================
   # Blackbox Exporter — Synthetic Monitoring Probes
   # =========================================================================
   # Probes services from inside the network to verify they actually respond.
