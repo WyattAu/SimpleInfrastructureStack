@@ -235,11 +235,11 @@
       },
       "targets": [
         {
-          "expr": "rate(node_network_receive_bytes_total{device=~\"eth.*\"}[5m])",
+          "expr": "rate(node_network_receive_bytes_total{device=~\"enp.*|eth.*\"}[5m])",
           "legendFormat": "{{device}} rx"
         },
         {
-          "expr": "rate(node_network_transmit_bytes_total{device=~\"eth.*\"}[5m])",
+          "expr": "rate(node_network_transmit_bytes_total{device=~\"enp.*|eth.*\"}[5m])",
           "legendFormat": "{{device}} tx"
         }
       ],
@@ -342,5 +342,26 @@
     "to": "now"
   },
   "title": "Host Overview",
-  "uid": "host-overview"
+  "uid": "host-overview",
+  "templating": {
+    "list": [
+      {
+        "name": "instance",
+        "type": "query",
+        "datasource": {
+          "type": "victoriametrics-metrics-datasource",
+          "uid": "VictoriaMetrics"
+        },
+        "query": "label_values(node_cpu_seconds_total, instance)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        }
+      }
+    ]
+  }
 }

@@ -1,0 +1,137 @@
+{
+  "uid": "cachyos-overview",
+  "title": "CachyOS CI Runner",
+  "tags": ["cachyos", "ci"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": {"from": "now-1h", "to": "now"},
+  "templating": {"list": []},
+  "panels": [
+    {
+      "id": 1,
+      "title": "CPU Usage %",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "datasource": {"type": "victoriametrics-metrics-datasource", "uid": "VictoriaMetrics"},
+      "targets": [{"expr": "100 - (avg(rate(node_cpu_seconds_total{host=\"cachyos\",mode=\"idle\"}[5m])) * 100)", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "max": 100, "min": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green"}, {"color": "yellow", "value": 70}, {"color": "red", "value": 90}]}}}
+    },
+    {
+      "id": 2,
+      "title": "Memory Usage %",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "datasource": {"type": "victoriametrics-metrics-datasource", "uid": "VictoriaMetrics"},
+      "targets": [{"expr": "(1 - (node_memory_MemAvailable_bytes{host=\"cachyos\"} / node_memory_MemTotal_bytes{host=\"cachyos\"})) * 100", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "max": 100, "min": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green"}, {"color": "yellow", "value": 70}, {"color": "red", "value": 90}]}}}
+    },
+    {
+      "id": 3,
+      "title": "Disk Usage %",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "datasource": {"type": "victoriametrics-metrics-datasource", "uid": "VictoriaMetrics"},
+      "targets": [{"expr": "(1 - (node_filesystem_avail_bytes{host=\"cachyos\",mountpoint=\"/"} / node_filesystem_size_bytes{host=\"cachyos\",mountpoint=\"/"})) * 100", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "max": 100, "min": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green"}, {"color": "yellow", "value": 80}, {"color": "red", "value": 95}]}}}
+    },
+    {
+      "id": 4,
+      "title": "Docker Containers",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "datasource": {"type": "victoriametrics-metrics-datasource", "uid": "VictoriaMetrics"},
+      "targets": [{"expr": "count(container_last_seen{host=\"cachyos\",name!=\"\"})", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short"}}
+    },
+    {
+      "id": 5,
+      "title": "CPU Usage Over Time",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "datasource": {"type": "victoriametrics-metrics-datasource", "uid": "VictoriaMetrics"},
+      "targets": [{"expr": "100 - (avg by (cpu) (rate(node_cpu_seconds_total{host=\"cachyos\",mode=\"idle\"}[5m])) * 100)", "legendFormat": "CPU {{cpu}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent"}}
+    },
+    {
+      "id": 6,
+      "title": "Memory Usage",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "datasource": {"type": "victoriametrics-metrics-datasource", "uid": "VictoriaMetrics"},
+      "targets": [
+        {"expr": "node_memory_MemTotal_bytes{host=\"cachyos\"}", "legendFormat": "Total", "refId": "A"},
+        {"expr": "node_memory_MemAvailable_bytes{host=\"cachyos\"}", "legendFormat": "Available", "refId": "B"},
+        {"expr": "node_memory_MemTotal_bytes{host=\"cachyos\"} - node_memory_MemAvailable_bytes{host=\"cachyos\"}", "legendFormat": "Used", "refId": "C"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "bytes"}}
+    },
+    {
+      "id": 7,
+      "title": "Network Traffic",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "datasource": {"type": "victoriametrics-metrics-datasource", "uid": "VictoriaMetrics"},
+      "targets": [
+        {"expr": "rate(node_network_receive_bytes_total{host=\"cachyos\",device=~\"enp.*|eth.*\"}[5m])", "legendFormat": "RX {{device}}", "refId": "A"},
+        {"expr": "rate(node_network_transmit_bytes_total{host=\"cachyos\",device=~\"enp.*|eth.*\"}[5m])", "legendFormat": "TX {{device}}", "refId": "B"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "Bps"}}
+    },
+    {
+      "id": 8,
+      "title": "Disk I/O",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "datasource": {"type": "victoriametrics-metrics-datasource", "uid": "VictoriaMetrics"},
+      "targets": [
+        {"expr": "rate(node_disk_read_bytes_total{host=\"cachyos\"}[5m])", "legendFormat": "Read {{device}}", "refId": "A"},
+        {"expr": "rate(node_disk_written_bytes_total{host=\"cachyos\"}[5m])", "legendFormat": "Write {{device}}", "refId": "B"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "Bps"}}
+    },
+    {
+      "id": 9,
+      "title": "Top 10 Containers by CPU",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 20},
+      "datasource": {"type": "victoriametrics-metrics-datasource", "uid": "VictoriaMetrics"},
+      "targets": [{"expr": "topk(10, rate(container_cpu_usage_seconds_total{host=\"cachyos\",name!=\"\"}[5m]) * 100)", "legendFormat": "{{name}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent"}}
+    },
+    {
+      "id": 10,
+      "title": "Top 10 Containers by Memory",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 28},
+      "datasource": {"type": "victoriametrics-metrics-datasource", "uid": "VictoriaMetrics"},
+      "targets": [{"expr": "topk(10, container_memory_usage_bytes{host=\"cachyos\",name!=\"\"})", "legendFormat": "{{name}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "bytes"}}
+    },
+    {
+      "id": 11,
+      "title": "System Load",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 36},
+      "datasource": {"type": "victoriametrics-metrics-datasource", "uid": "VictoriaMetrics"},
+      "targets": [
+        {"expr": "node_load1{host=\"cachyos\"}", "legendFormat": "1m", "refId": "A"},
+        {"expr": "node_load5{host=\"cachyos\"}", "legendFormat": "5m", "refId": "B"},
+        {"expr": "node_load15{host=\"cachyos\"}", "legendFormat": "15m", "refId": "C"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "short"}}
+    },
+    {
+      "id": 12,
+      "title": "Disk Space",
+      "type": "piechart",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 36},
+      "datasource": {"type": "victoriametrics-metrics-datasource", "uid": "VictoriaMetrics"},
+      "targets": [
+        {"expr": "node_filesystem_avail_bytes{host=\"cachyos\",mountpoint=\"/\"}", "legendFormat": "Free", "refId": "A"},
+        {"expr": "node_filesystem_size_bytes{host=\"cachyos\",mountpoint=\"/\"} - node_filesystem_avail_bytes{host=\"cachyos\",mountpoint=\"/\"}", "legendFormat": "Used", "refId": "B"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "bytes"}}
+    }
+  ]
+}
