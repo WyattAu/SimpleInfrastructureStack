@@ -41,13 +41,19 @@ services:
         max-size: 10m
         max-file: '3'
   forgejo:
-    image: ghcr.io/wyattau/evergreenimageregistry/forgejo:latest
+    image: codeberg.org/forgejo/forgejo:15.0.2
     container_name: operations-forgejo
     restart: unless-stopped
     security_opt:
     - no-new-privileges:true
     cap_drop:
     - ALL
+    cap_add:
+    - CHOWN
+    - DAC_OVERRIDE
+    - SETGID
+    - SETUID
+    - FOWNER
     ports:
     - 2222:2522
     depends_on:
