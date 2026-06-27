@@ -1,6 +1,6 @@
 services:
   socket-proxy:
-    image: ghcr.io/wyattau/evergreenimageregistry/docker-socket-proxy:latest
+    image: ghcr.io/wyattau/evergreenimageregistry/docker-socket-proxy:v0.4.2
     container_name: proxy-socket-proxy
     restart: unless-stopped
     # Must run as root to access Docker socket (root:999, mode 660)
@@ -50,7 +50,7 @@ services:
         max-size: 10m
         max-file: '3'
   traefik:
-    image: ghcr.io/wyattau/evergreenimageregistry/traefik:latest
+    image: ghcr.io/wyattau/evergreenimageregistry/traefik:v3.7.3
     container_name: proxy-traefik
     restart: unless-stopped
     depends_on:
@@ -122,7 +122,7 @@ services:
         max-size: 10m
         max-file: '3'
   oauth2-proxy:
-    image: ghcr.io/wyattau/evergreenimageregistry/oauth2-proxy:latest
+    image: ghcr.io/wyattau/evergreenimageregistry/oauth2-proxy:v7.15.2
     container_name: proxy-oauth2-proxy
     restart: unless-stopped
     depends_on:

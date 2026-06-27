@@ -146,7 +146,7 @@ services:
         max-size: 10m
         max-file: '3'
   immich-valkey:
-    image: ghcr.io/wyattau/evergreenimageregistry/valkey:latest
+    image: ghcr.io/wyattau/evergreenimageregistry/valkey:9.0.4
     container_name: photos-valkey
     restart: unless-stopped
     security_opt:

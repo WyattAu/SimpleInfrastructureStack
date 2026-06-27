@@ -1,6 +1,6 @@
 services:
   vaultwarden:
-    image: ghcr.io/wyattau/evergreenimageregistry/vaultwarden:latest
+    image: ghcr.io/wyattau/evergreenimageregistry/vaultwarden:1.36.0
     container_name: vaultwarden-server
     restart: unless-stopped
     security_opt:

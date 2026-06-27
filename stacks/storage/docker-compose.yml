@@ -11,7 +11,7 @@ services:
     - PGID=65532
     networks: []
   ocis:
-    image: ghcr.io/wyattau/evergreenimageregistry/ocis:latest
+    image: ghcr.io/wyattau/evergreenimageregistry/ocis:8.0.4
     container_name: storage-ocis
     restart: unless-stopped
     security_opt:
@@ -89,7 +89,7 @@ services:
         max-size: 10m
         max-file: '3'
   collaboration:
-    image: ghcr.io/wyattau/evergreenimageregistry/ocis:latest
+    image: ghcr.io/wyattau/evergreenimageregistry/ocis:8.0.4
     container_name: storage-collaboration
     restart: unless-stopped
     security_opt:
