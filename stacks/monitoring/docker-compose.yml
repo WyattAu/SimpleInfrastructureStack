@@ -108,7 +108,7 @@ services:
         max-size: 10m
         max-file: '3'
   grafana:
-    image: ghcr.io/wyattau/evergreenimageregistry/grafana:latest
+    image: ghcr.io/wyattau/evergreenimageregistry/grafana:12.2.9
     container_name: monitoring-grafana
     restart: unless-stopped
     security_opt:
@@ -417,7 +417,7 @@ services:
         max-size: 10m
         max-file: '3'
   alertmanager:
-    image: ghcr.io/wyattau/evergreenimageregistry/alertmanager:latest
+    image: ghcr.io/wyattau/evergreenimageregistry/alertmanager:v0.32.1
     container_name: monitoring-alertmanager
     restart: unless-stopped
     security_opt:
@@ -538,7 +538,7 @@ services:
         max-size: 10m
         max-file: '3'
   tempo:
-    image: ghcr.io/wyattau/evergreenimageregistry/tempo:latest
+    image: ghcr.io/wyattau/evergreenimageregistry/tempo:2.10.5
     container_name: monitoring-tempo
     restart: unless-stopped
     security_opt:

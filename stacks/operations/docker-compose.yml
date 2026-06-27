@@ -41,7 +41,7 @@ services:
         max-size: 10m
         max-file: '3'
   forgejo:
-    image: ghcr.io/wyattau/evergreenimageregistry/forgejo:latest
+    image: ghcr.io/wyattau/evergreenimageregistry/forgejo:15.0.2
     container_name: operations-forgejo
     restart: unless-stopped
     security_opt:
