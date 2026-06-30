@@ -44,6 +44,7 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/forgejo:15.0.2
     container_name: operations-forgejo
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
