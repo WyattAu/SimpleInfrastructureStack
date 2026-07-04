@@ -38,6 +38,7 @@ stacks:
   - documents
   - vpn
   - books
+  - headscale
   - updater
 
 # Containers with health checks that must pass after deploy

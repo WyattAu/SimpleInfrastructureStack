@@ -1,0 +1,93 @@
+services:
+  headscale:
+    image: ghcr.io/wyattau/evergreenimageregistry/headscale:0.29.2
+    container_name: headscale-server
+    restart: unless-stopped
+    init: true
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    command: ["/ko-app/headscale", "serve"]
+    volumes:
+    - ./config/config.yaml:/etc/headscale/config.yaml:ro
+    - ./config/noise.private.key:/etc/headscale/noise.private.key:ro
+    - ${DATA_BASE_PATH}/headscale/data:/var/lib/headscale
+    environment:
+    - TZ=${TZ}
+    ports:
+    - 3478:3478/udp
+    networks:
+    - traefik_net
+    - backend_net
+    labels:
+    - traefik.enable=true
+    - traefik.docker.network=traefik_net
+    - traefik.http.services.headscale-svc.loadbalancer.server.port=8080
+    - traefik.http.routers.headscale.rule=Host(`headscale.${DOMAIN_NAME}`)
+    - traefik.http.routers.headscale.entrypoints=websecure
+    - traefik.http.routers.headscale.tls.certresolver=cloudflare
+    - traefik.http.routers.headscale.service=headscale-svc
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 128M
+          pids: 100
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  headscale-ui:
+    image: ghcr.io/gurucomputing/headscale-ui:2026.03.17
+    container_name: headscale-ui
+    restart: unless-stopped
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    environment:
+    - TZ=${TZ}
+    - HS_HEADSCALE_API=http://headscale-server:8080
+    networks:
+    - traefik_net
+    - backend_net
+    labels:
+    - traefik.enable=true
+    - traefik.docker.network=traefik_net
+    - traefik.http.services.headscale-ui-svc.loadbalancer.server.port=80
+    - traefik.http.routers.headscale-ui.rule=Host(`mesh.${DOMAIN_NAME}`)
+    - traefik.http.routers.headscale-ui.entrypoints=websecure
+    - traefik.http.routers.headscale-ui.tls.certresolver=cloudflare
+    - traefik.http.routers.headscale-ui.service=headscale-ui-svc
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 64M
+          pids: 50
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+networks:
+  traefik_net:
+    external: true
+  backend_net:
+    external: true
