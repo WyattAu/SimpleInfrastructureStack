@@ -114,9 +114,7 @@ ingress:
   originRequest:
     noTLSVerify: true
 - hostname: headscale.wyattau.com
-  service: https://127.0.0.1:443
-  originRequest:
-    noTLSVerify: true
+  service: http://127.0.0.1:8080
 - hostname: mesh.wyattau.com
   service: https://127.0.0.1:443
   originRequest:
