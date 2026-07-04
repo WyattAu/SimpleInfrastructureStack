@@ -14,6 +14,8 @@ services:
     - ./config/config.yaml:/etc/headscale/config.yaml:ro
     - ./config/noise.private.key:/etc/headscale/noise.private.key:ro
     - ${DATA_BASE_PATH}/headscale/data:/var/lib/headscale
+    tmpfs:
+    - /var/run/headscale
     environment:
     - TZ=${TZ}
     ports:
