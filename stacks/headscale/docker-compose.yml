@@ -68,13 +68,13 @@ services:
     labels:
     - traefik.enable=true
     - traefik.docker.network=traefik_net
-    - traefik.http.services.headscale-ui-svc.loadbalancer.server.port=80
+    - traefik.http.services.headscale-ui-svc.loadbalancer.server.port=8080
     - traefik.http.routers.headscale-ui.rule=Host(`mesh.${DOMAIN_NAME}`)
     - traefik.http.routers.headscale-ui.entrypoints=websecure
     - traefik.http.routers.headscale-ui.tls.certresolver=cloudflare
     - traefik.http.routers.headscale-ui.service=headscale-ui-svc
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
