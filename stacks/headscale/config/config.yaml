@@ -1,5 +1,5 @@
 # Headscale configuration v0.29.x format
-# https://github.com/juanfont/headscale/blob/main/config-example.yaml
+# https://github.com/juanfont/headscale/blob/v0.29.2/config-example.yaml
 
 server_url: https://headscale.wyattau.com
 listen_addr: 0.0.0.0:8080
@@ -24,9 +24,9 @@ derp:
   paths: []
   auto_update_enabled: false
 
-ip_prefixes:
-  - 100.64.0.0/10
-  - fd7a:115c:a1e0::/48
+prefixes:
+  v4: 100.64.0.0/10
+  v6: fd7a:115c:a1e0::/48
 
 dns:
   magic_dns: true
