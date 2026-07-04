@@ -19,11 +19,20 @@ services:
     environment:
     - TZ=${TZ}
     ports:
-    - 8080:8080
+    - 127.0.0.1:8080:8080
     - 3478:3478/udp
     networks:
     - traefik_net
     - backend_net
+    labels:
+    # TCP passthrough for Tailscale Noise protocol (SNI-based)
+    - traefik.enable=true
+    - traefik.docker.network=traefik_net
+    - traefik.tcp.routers.headscale-tcp.rule=HostSNI(`headscale.wyattau.com`)
+    - traefik.tcp.routers.headscale-tcp.tls.passthrough=true
+    - traefik.tcp.routers.headscale-tcp.service=headscale-tcp-svc
+    - traefik.tcp.routers.headscale-tcp.entrypoints=websecure
+    - traefik.tcp.services.headscale-tcp-svc.loadbalancer.server.port=8080
     healthcheck:
       test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:8080"]
       interval: 30s
