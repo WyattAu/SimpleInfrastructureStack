@@ -102,9 +102,3 @@ http:
         servers:
         - url: http://storage-collabora:9980
 
-
-# TLS certificates for direct HTTPS access (bypassing Cloudflare)
-tls:
-  certificates:
-  - certFile: /certs/headscale.crt
-    keyFile: /certs/headscale.key

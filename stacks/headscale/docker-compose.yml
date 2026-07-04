@@ -30,6 +30,7 @@ services:
     - traefik.http.services.headscale-svc.loadbalancer.server.port=8080
     - traefik.http.routers.headscale.rule=Host(`headscale.${DOMAIN_NAME}`)
     - traefik.http.routers.headscale.entrypoints=websecure
+    - traefik.http.routers.headscale.tls.certresolver=cloudflare
     - traefik.http.routers.headscale.service=headscale-svc
     healthcheck:
       test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:8080"]
