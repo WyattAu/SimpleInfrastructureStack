@@ -28,11 +28,11 @@ route:
 receivers:
   - name: 'ntfy'
     webhook_configs:
-      - url: 'https://ntfy.sh/{{ NTFY_TOPIC }}'
+      - url: 'https://ntfy.sh/${NTFY_TOPIC}'
         send_resolved: true
   - name: 'ntfy-info'
     webhook_configs:
-      - url: 'https://ntfy.sh/{{ NTFY_TOPIC }}'
+      - url: 'https://ntfy.sh/${NTFY_TOPIC}'
         send_resolved: true
 
 inhibit_rules:
