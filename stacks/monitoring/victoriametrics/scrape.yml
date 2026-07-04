@@ -255,3 +255,11 @@ scrape_configs:
         replacement: monitoring-blackbox-exporter:9115
 
         # DNS probes removed — Docker DNS health is already implicitly verified by all HTTP/TCP probes.
+
+  # Headscale VPN control server metrics (via shim on :9101)
+  - job_name: 'headscale'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['headscale-server:9101']
+        labels:
+          host: 'truenas'
