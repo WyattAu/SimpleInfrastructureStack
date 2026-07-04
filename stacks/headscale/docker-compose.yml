@@ -8,7 +8,6 @@ services:
     - no-new-privileges:true
     cap_drop:
     - ALL
-    command: ["/ko-app/headscale", "serve"]
     volumes:
     - ./config/config.yaml:/etc/headscale/config.yaml:ro
     - ./config/noise.private.key:/etc/headscale/noise.private.key:ro
