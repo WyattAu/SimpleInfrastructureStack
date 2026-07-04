@@ -53,3 +53,4 @@ stacks/webhook/.env
 stacks/blocmarket/
 tf_import.sh
 tunnel/
+stacks/headscale/config/noise.private.key
