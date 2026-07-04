@@ -13,6 +13,7 @@ services:
     image: postgres:18
     container_name: collaboration-postgres
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -98,6 +99,7 @@ services:
     image: matrixdotorg/synapse:v1.152.1
     container_name: collaboration-synapse
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -177,6 +179,7 @@ services:
     image: vectorim/element-web:v1.12.18
     container_name: collaboration-element
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -219,6 +222,7 @@ services:
     container_name: collaboration-hookshot
     working_dir: /data
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:

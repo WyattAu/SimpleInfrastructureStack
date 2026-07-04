@@ -1,6 +1,7 @@
 x-erpnext: &erpnext
   image: frappe/erpnext:v${ERPNEXT_VERSION}
   restart: unless-stopped
+    init: true
   security_opt:
   - no-new-privileges:true
   cap_drop:
@@ -33,6 +34,7 @@ services:
   erpnext-configurator:
     image: frappe/erpnext:v${ERPNEXT_VERSION}
     restart: on-failure
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -135,6 +137,7 @@ services:
     container_name: erpnext-socketio
     command: node /home/frappe/frappe-bench/apps/frappe/socketio.js
     restart: unless-stopped
+    init: true
     depends_on:
       erpnext-mariadb:
         condition: service_healthy
@@ -147,6 +150,7 @@ services:
     image: nginx:alpine
     container_name: erpnext-assets
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -210,6 +214,7 @@ services:
     image: mariadb:11.8
     container_name: erpnext-mariadb
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -253,6 +258,7 @@ services:
     image: redis:8.6-alpine
     container_name: erpnext-redis
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:

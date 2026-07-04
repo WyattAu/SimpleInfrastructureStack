@@ -3,6 +3,7 @@ services:
     image: linuxserver/wireguard:1.0.20250521
     container_name: vpn-wireguard
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:

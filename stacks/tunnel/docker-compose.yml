@@ -3,6 +3,7 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/cloudflared:2026.5.0
     container_name: infra-tunnel
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:

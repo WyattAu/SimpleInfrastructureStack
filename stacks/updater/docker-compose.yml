@@ -6,6 +6,7 @@ services:
     image: tecnativa/docker-socket-proxy:0.3.0
     container_name: updater-docker-socket-proxy
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -49,6 +50,7 @@ services:
     image: containrrr/watchtower:${WATCHTOWER_VERSION}
     container_name: updater-watchtower
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
