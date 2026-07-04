@@ -4,6 +4,8 @@ services:
     container_name: headscale-server
     restart: unless-stopped
     init: true
+    entrypoint: ["/ko-app/headscale"]
+    command: ["serve", "--config", "/etc/headscale/config.yaml"]
     security_opt:
     - no-new-privileges:true
     cap_drop:
