@@ -102,20 +102,3 @@ http:
         servers:
         - url: http://storage-collabora:9980
 
-# TCP passthrough for Headscale Tailscale Noise protocol
-# SNI-based routing: headscale.wyattau.com → raw TCP to headscale:8080
-# All other hostnames → normal HTTPS termination
-tcp:
-  routers:
-    headscale-tcp:
-      rule: "HostSNI(`headscale.wyattau.com`)"
-      service: headscale-tcp-svc
-      entrypoints:
-      - websecure
-      tls:
-        passthrough: true
-  services:
-    headscale-tcp-svc:
-      loadBalancer:
-        servers:
-        - address: "headscale-server:8080"
