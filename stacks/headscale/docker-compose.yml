@@ -16,7 +16,7 @@ services:
     - ./config/acls.hujson:/etc/headscale/acls.hujson:ro
     - ${DATA_BASE_PATH}/headscale/data:/var/lib/headscale
     tmpfs:
-    - /var/run/headscale
+    - /var/run/headscale:uid=65532,gid=65532,mode=0755
     environment:
     - TZ=${TZ}
     ports:
