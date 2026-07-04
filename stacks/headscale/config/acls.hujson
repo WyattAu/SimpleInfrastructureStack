@@ -3,7 +3,7 @@
 
 {
   "groups": {
-    "group:admin": ["wyatt"],
+    "group:admin": ["wyatt@"],
   },
   "tagOwners": {
     "tag:server": ["group:admin"],
@@ -19,7 +19,7 @@
   "ssh": [],
   "tests": [
     {
-      "src": "wyatt",
+      "src": "wyatt@",
       "accept": ["*:*"],
     },
   ],
