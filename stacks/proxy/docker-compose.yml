@@ -3,6 +3,7 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/docker-socket-proxy:v0.4.2
     container_name: proxy-socket-proxy
     restart: unless-stopped
+    init: true
     # Must run as root to access Docker socket (root:999, mode 660)
     user: "0:0"
     security_opt:
@@ -53,6 +54,7 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/traefik:v3.7.3
     container_name: proxy-traefik
     restart: unless-stopped
+    init: true
     depends_on:
     - socket-proxy
     security_opt:
@@ -126,6 +128,7 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/oauth2-proxy:v7.15.2
     container_name: proxy-oauth2-proxy
     restart: unless-stopped
+    init: true
     depends_on:
       traefik:
         condition: service_healthy

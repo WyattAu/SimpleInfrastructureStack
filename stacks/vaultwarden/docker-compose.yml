@@ -3,6 +3,7 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/vaultwarden:1.36.0
     container_name: vaultwarden-server
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:

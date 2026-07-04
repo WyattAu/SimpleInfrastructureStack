@@ -45,6 +45,7 @@ services:
     image: postgres:17
     container_name: project-management-postgres
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -112,6 +113,7 @@ services:
     image: rabbitmq:3.13-management
     container_name: project-management-rabbitmq
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -177,6 +179,7 @@ services:
     image: ghcr.io/taigaio/taiga-back:latest
     container_name: project-management-back
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -245,6 +248,7 @@ services:
     image: ghcr.io/taigaio/taiga-back:latest
     container_name: project-management-async
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -314,6 +318,7 @@ services:
     image: ghcr.io/taigaio/taiga-front:latest
     container_name: project-management-front
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -354,6 +359,7 @@ services:
     image: ghcr.io/taigaio/taiga-events:latest
     container_name: project-management-events
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -397,6 +403,7 @@ services:
     image: ghcr.io/taigaio/taiga-protected:latest
     container_name: project-management-protected
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -438,6 +445,7 @@ services:
     image: nginx:alpine
     container_name: project-management-gateway
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:

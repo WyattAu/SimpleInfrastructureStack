@@ -3,6 +3,7 @@ services:
     image: gethomepage/homepage:v1.13.1
     container_name: utility-homepage
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
