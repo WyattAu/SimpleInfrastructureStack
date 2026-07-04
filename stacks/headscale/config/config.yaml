@@ -44,7 +44,7 @@ log:
 
 policy:
   mode: file
-  path: ""
+  path: /etc/headscale/acls.hujson
 
 node:
   ephemeral:
