@@ -1,0 +1,26 @@
+// Headscale ACL Policy
+// https://headscale.net/refs/acls/
+
+{
+  "groups": {
+    "group:admin": ["wyatt"],
+  },
+  "tagOwners": {
+    "tag:server": ["group:admin"],
+    "tag:client": ["group:admin"],
+  },
+  "acls": [
+    // Admins have full access to everything
+    { "action": "accept", "src": ["group:admin"], "dst": ["*:*"] },
+    
+    // All nodes can talk to each other (mesh networking)
+    { "action": "accept", "src": ["*"], "dst": ["*:*"] },
+  ],
+  "ssh": [],
+  "tests": [
+    {
+      "src": "wyatt",
+      "accept": ["*:*"],
+    },
+  ],
+}
