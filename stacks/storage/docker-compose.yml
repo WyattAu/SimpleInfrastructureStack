@@ -14,6 +14,7 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/ocis:8.0.4
     container_name: storage-ocis
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -92,6 +93,7 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/ocis:8.0.4
     container_name: storage-collaboration
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -145,6 +147,7 @@ services:
     image: collabora/code:${COLLABORA_VERSION}
     container_name: storage-collabora
     restart: unless-stopped
+    init: true
     # Upstream Collabora CODE image — replaces EIR image that had ldconfig
     # issues and missing coolforkit-ns/coolforkit-caps binaries.
     # Uses namespace-based sandboxing (security.capabilities=false).

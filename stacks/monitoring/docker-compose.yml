@@ -10,6 +10,7 @@ services:
     image: victoriametrics/victoria-metrics:v1.143.0
     container_name: monitoring-victoriametrics
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -66,6 +67,7 @@ services:
     image: victoriametrics/vmalert:v1.143.0
     container_name: monitoring-vmalert
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -111,6 +113,7 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/grafana:12.2.9
     container_name: monitoring-grafana
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -169,6 +172,7 @@ services:
     image: victoriametrics/victoria-logs:v1.50.0
     container_name: monitoring-victorialogs
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -207,6 +211,7 @@ services:
     image: grafana/promtail:3.6.11
     container_name: monitoring-promtail
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -244,6 +249,7 @@ services:
     image: louislam/uptime-kuma:2.3.2
     container_name: monitoring-kuma
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -294,6 +300,7 @@ services:
     image: ghcr.io/frebib/zfs-exporter:latest
     container_name: monitoring-zfs-exporter
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -332,6 +339,7 @@ services:
     image: gcr.io/cadvisor/cadvisor:v0.55.1
     container_name: monitoring-cadvisor
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -377,6 +385,7 @@ services:
     image: prom/node-exporter:v1.11.1
     container_name: monitoring-node-exporter
     restart: unless-stopped
+    init: true
     depends_on:
       textfile-init:
         condition: service_completed_successfully
@@ -420,6 +429,7 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/alertmanager:v0.32.1
     container_name: monitoring-alertmanager
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -469,6 +479,7 @@ services:
     image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
     container_name: monitoring-postgres-exporter
     restart: unless-stopped
+    init: true
     depends_on:
       postgres-exporter-init:
         condition: service_completed_successfully
@@ -516,6 +527,7 @@ services:
     image: oliver006/redis_exporter:v1.83.0
     container_name: monitoring-redis-exporter
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -541,6 +553,7 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/tempo:2.10.5
     container_name: monitoring-tempo
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -570,6 +583,7 @@ services:
     image: prom/blackbox-exporter:v0.28.0
     container_name: monitoring-blackbox-exporter
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:

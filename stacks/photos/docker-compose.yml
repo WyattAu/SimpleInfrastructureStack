@@ -3,6 +3,7 @@ services:
     image: ghcr.io/immich-app/immich:v2.7.5
     container_name: photos-server
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_add:
@@ -70,6 +71,7 @@ services:
     image: ghcr.io/immich-app/immich-machine-learning:v2.7.5
     container_name: photos-ml
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -108,6 +110,7 @@ services:
     image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
     container_name: photos-postgres
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -149,6 +152,7 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/valkey:9.0.4
     container_name: photos-valkey
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:

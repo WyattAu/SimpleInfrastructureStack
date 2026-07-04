@@ -3,6 +3,7 @@ services:
     image: mariadb:11.8
     container_name: accounting-mariadb-akaunting
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -46,6 +47,7 @@ services:
     image: akaunting/akaunting:latest
     container_name: accounting-akaunting
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -109,6 +111,7 @@ services:
     image: prom/mysqld-exporter:latest
     container_name: accounting-mariadb-exporter
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:

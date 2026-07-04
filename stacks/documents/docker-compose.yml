@@ -13,6 +13,7 @@ services:
     image: postgres:16
     container_name: documents-postgres
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -57,6 +58,7 @@ services:
     image: redis:7.4.9-alpine
     container_name: documents-redis
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -95,6 +97,7 @@ services:
     image: ghcr.io/paperless-ngx/paperless-ngx:2.20.15
     container_name: documents-webserver
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:

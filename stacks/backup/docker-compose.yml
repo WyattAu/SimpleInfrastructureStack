@@ -3,6 +3,7 @@ services:
     image: restic/restic:0.17.3
     container_name: backup-restic
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -42,6 +43,7 @@ services:
       dockerfile: cron-trigger.Dockerfile
     container_name: backup-cron-trigger
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
