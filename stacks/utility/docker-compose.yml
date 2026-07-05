@@ -1,6 +1,6 @@
 services:
   homepage:
-    image: gethomepage/homepage:v1.13.1
+    image: ghcr.io/wyattau/evergreenimageregistry/homepage:v1.13.1
     container_name: utility-homepage
     restart: unless-stopped
     init: true
