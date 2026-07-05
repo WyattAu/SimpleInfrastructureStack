@@ -30,8 +30,9 @@ services:
     - --retentionPeriod=30d
     - --httpListenAddr=:8428
     networks:
-    - traefik_net
-    - backend_net
+      traefik_net:
+      backend_net:
+        ipv4_address: 172.16.7.200
     healthcheck:
       test:
       - CMD
@@ -75,6 +76,12 @@ services:
     depends_on:
       victoriametrics:
         condition: service_healthy
+    # extra_hosts maps container names to static IPs, bypassing Docker's
+    # broken embedded DNS (127.0.0.11) on TrueNAS. Go binaries with pure
+    # resolver (CGO_ENABLED=0) can't resolve container names via Docker DNS.
+    extra_hosts:
+    - "monitoring-victoriametrics:172.16.7.200"
+    - "monitoring-alertmanager:172.16.7.201"
     volumes:
     - ./prometheus/alert_rules.yml:/etc/vmalert/alert_rules.yml:ro
     - ./prometheus/recording_rules.yml:/etc/vmalert/recording_rules.yml:ro
@@ -297,7 +304,7 @@ services:
     volumes:
     - ${DATA_BASE_PATH}/monitoring/textfile-collector:/textfile-collector
   monitoring-zfs-exporter:
-    image: ghcr.io/frebib/zfs-exporter:latest
+    image: ghcr.io/frebib/zfs-exporter@sha256:f4dad11227e0e16b7752ec6047c078ed8c27b614dfe3ef8db84c2ec87031a86a
     container_name: monitoring-zfs-exporter
     restart: unless-stopped
     init: true
@@ -440,7 +447,8 @@ services:
     - NTFY_TOPIC=${NTFY_TOPIC}
     command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager-data", "--web.external-url=https://${PROMETHEUS_SUBDOMAIN}.${DOMAIN_NAME}"]
     networks:
-    - backend_net
+      backend_net:
+        ipv4_address: 172.16.7.201
     healthcheck:
       test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:9093"]
       interval: 30s
