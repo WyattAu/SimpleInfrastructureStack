@@ -208,7 +208,7 @@ services:
         max-size: 10m
         max-file: '3'
   promtail:
-    image: grafana/promtail:3.6.11
+    image: ghcr.io/wyattau/evergreenimageregistry/promtail:3.6.11
     container_name: monitoring-promtail
     restart: unless-stopped
     init: true
@@ -336,7 +336,7 @@ services:
         max-size: 10m
         max-file: '3'
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.55.1
+    image: ghcr.io/wyattau/evergreenimageregistry/cadvisor:v0.57.0
     container_name: monitoring-cadvisor
     restart: unless-stopped
     init: true
@@ -382,7 +382,7 @@ services:
         max-size: 10m
         max-file: '3'
   node-exporter:
-    image: prom/node-exporter:v1.11.1
+    image: ghcr.io/wyattau/evergreenimageregistry/node-exporter:v1.9.1
     container_name: monitoring-node-exporter
     restart: unless-stopped
     init: true
@@ -570,17 +570,17 @@ services:
       resources:
         limits:
           cpus: '2.0'
-          memory: 512M
+          memory: 1G
           pids: 100
         reservations:
-          memory: 256M
+          memory: 512M
     logging:
       driver: json-file
       options:
         max-size: 10m
         max-file: '3'
   blackbox-exporter:
-    image: prom/blackbox-exporter:v0.28.0
+    image: ghcr.io/wyattau/evergreenimageregistry/blackbox-exporter:v0.28.0
     container_name: monitoring-blackbox-exporter
     restart: unless-stopped
     init: true
