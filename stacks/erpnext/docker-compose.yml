@@ -211,7 +211,7 @@ services:
         condition: service_completed_successfully
 
   erpnext-mariadb:
-    image: mariadb:11.8
+    image: ghcr.io/wyattau/evergreenimageregistry/mariadb:11.8
     container_name: erpnext-mariadb
     restart: unless-stopped
     init: true
