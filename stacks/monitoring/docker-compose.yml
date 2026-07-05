@@ -7,7 +7,7 @@ services:
     - ${DATA_BASE_PATH}/monitoring/victoriametrics:/victoria-metrics-data
     networks: []
   victoriametrics:
-    image: victoriametrics/victoria-metrics:v1.143.0
+    image: ghcr.io/wyattau/evergreenimageregistry/victoriametrics:v1.143.0
     container_name: monitoring-victoriametrics
     restart: unless-stopped
     init: true
@@ -64,7 +64,7 @@ services:
         max-size: 10m
         max-file: '3'
   vmalert:
-    image: victoriametrics/vmalert:v1.143.0
+    image: ghcr.io/wyattau/evergreenimageregistry/vmalert:v1.143.0
     container_name: monitoring-vmalert
     restart: unless-stopped
     init: true
@@ -169,7 +169,7 @@ services:
         max-size: 10m
         max-file: '3'
   victorialogs:
-    image: victoriametrics/victoria-logs:v1.50.0
+    image: ghcr.io/wyattau/evergreenimageregistry/victoria-logs:v1.50.0
     container_name: monitoring-victorialogs
     restart: unless-stopped
     init: true
@@ -208,7 +208,7 @@ services:
         max-size: 10m
         max-file: '3'
   promtail:
-    image: grafana/promtail:3.6.11
+    image: ghcr.io/wyattau/evergreenimageregistry/promtail:3.6.11
     container_name: monitoring-promtail
     restart: unless-stopped
     init: true
@@ -246,7 +246,7 @@ services:
         max-size: 10m
         max-file: '3'
   uptime-kuma:
-    image: louislam/uptime-kuma:2.3.2
+    image: ghcr.io/wyattau/evergreenimageregistry/uptime-kuma:2.3.2
     container_name: monitoring-kuma
     restart: unless-stopped
     init: true
@@ -336,7 +336,7 @@ services:
         max-size: 10m
         max-file: '3'
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.55.1
+    image: ghcr.io/wyattau/evergreenimageregistry/cadvisor:v0.52.1
     container_name: monitoring-cadvisor
     restart: unless-stopped
     init: true
@@ -382,7 +382,7 @@ services:
         max-size: 10m
         max-file: '3'
   node-exporter:
-    image: prom/node-exporter:v1.11.1
+    image: ghcr.io/wyattau/evergreenimageregistry/node-exporter:v1.9.1
     container_name: monitoring-node-exporter
     restart: unless-stopped
     init: true
@@ -476,7 +476,7 @@ services:
     - ${DATA_BASE_PATH}/monitoring/pgpass:/pgpass
     networks: []
   postgres-exporter:
-    image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
+    image: ghcr.io/wyattau/evergreenimageregistry/postgres-exporter:v0.17.1
     container_name: monitoring-postgres-exporter
     restart: unless-stopped
     init: true
@@ -524,7 +524,7 @@ services:
         max-size: 10m
         max-file: '3'
   redis-exporter:
-    image: oliver006/redis_exporter:v1.83.0
+    image: ghcr.io/wyattau/evergreenimageregistry/redis-exporter:v1.83.0
     container_name: monitoring-redis-exporter
     restart: unless-stopped
     init: true
@@ -580,7 +580,7 @@ services:
         max-size: 10m
         max-file: '3'
   blackbox-exporter:
-    image: prom/blackbox-exporter:v0.28.0
+    image: ghcr.io/wyattau/evergreenimageregistry/blackbox-exporter:v0.28.0
     container_name: monitoring-blackbox-exporter
     restart: unless-stopped
     init: true
