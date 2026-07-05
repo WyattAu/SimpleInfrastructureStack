@@ -44,7 +44,7 @@ services:
         max-size: 10m
         max-file: '3'
   akaunting:
-    image: akaunting/akaunting:latest
+    image: akaunting/akaunting@sha256:50940112be48a229a2f567dc50ace9886fe5b14e1fe33f0232e704d0fb96f29f
     container_name: accounting-akaunting
     restart: unless-stopped
     init: true
@@ -108,7 +108,7 @@ services:
         max-size: 10m
         max-file: '3'
   mariadb-exporter:
-    image: prom/mysqld-exporter:latest
+    image: prom/mysqld-exporter@sha256:eacb4b18e2ec1e0abdf2d64851b68526c964f6d9cb3e9458fb5d5f5062ea94c1
     container_name: accounting-mariadb-exporter
     restart: unless-stopped
     init: true
