@@ -1,6 +1,6 @@
 services:
   mariadb-akaunting:
-    image: mariadb:11.8
+    image: ghcr.io/wyattau/evergreenimageregistry/mariadb:11.8
     container_name: accounting-mariadb-akaunting
     restart: unless-stopped
     init: true
