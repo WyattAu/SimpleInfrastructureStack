@@ -1,7 +1,7 @@
 x-erpnext: &erpnext
   image: frappe/erpnext:v${ERPNEXT_VERSION}
   restart: unless-stopped
-    init: true
+  init: true
   security_opt:
   - no-new-privileges:true
   cap_drop:
@@ -10,7 +10,7 @@ x-erpnext: &erpnext
     resources:
       limits:
         cpus: '1.0'
-        memory: 256M
+        memory: 512M
         pids: 100
   logging:
     driver: json-file
@@ -246,7 +246,7 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 256M
+          memory: 512M
           pids: 100
     logging:
       driver: json-file
