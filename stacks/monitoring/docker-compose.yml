@@ -336,7 +336,7 @@ services:
         max-size: 10m
         max-file: '3'
   cadvisor:
-    image: ghcr.io/wyattau/evergreenimageregistry/cadvisor:v0.57.0
+    image: ghcr.io/wyattau/evergreenimageregistry/cadvisor:v0.52.1
     container_name: monitoring-cadvisor
     restart: unless-stopped
     init: true
