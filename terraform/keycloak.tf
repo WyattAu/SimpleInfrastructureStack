@@ -126,7 +126,7 @@ resource "keycloak_user" "wyatt" {
   email_verified = true
 
   lifecycle {
-    ignore_changes = [initial_password, credentials, required_actions]
+    ignore_changes = [initial_password, required_actions]
   }
 }
 
@@ -140,7 +140,7 @@ resource "keycloak_user" "joshkad" {
   email_verified = true
 
   lifecycle {
-    ignore_changes = [initial_password, credentials, required_actions]
+    ignore_changes = [initial_password, required_actions]
   }
 }
 
@@ -154,7 +154,7 @@ resource "keycloak_user" "ayo" {
   email_verified = true
 
   lifecycle {
-    ignore_changes = [initial_password, credentials, required_actions]
+    ignore_changes = [initial_password, required_actions]
   }
 }
 
@@ -166,6 +166,6 @@ resource "keycloak_user" "viswa" {
   email_verified = true
 
   lifecycle {
-    ignore_changes = [initial_password, credentials, required_actions]
+    ignore_changes = [initial_password, required_actions]
   }
 }
