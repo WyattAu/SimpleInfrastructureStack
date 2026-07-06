@@ -10,7 +10,7 @@ services:
     - -p
     - /data
   postgres-rss:
-    image: postgres:16
+    image: ghcr.io/wyattau/evergreenimageregistry/postgres:16
     container_name: rss-postgres
     restart: unless-stopped
     init: true

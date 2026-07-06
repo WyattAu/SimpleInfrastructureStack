@@ -42,7 +42,7 @@ services:
     - backend_net
 
   postgres:
-    image: postgres:17
+    image: ghcr.io/wyattau/evergreenimageregistry/postgres:17
     container_name: project-management-postgres
     restart: unless-stopped
     init: true
