@@ -21,11 +21,11 @@
 # admin-cli auth using TF_VAR_kc_admin_password.
 # ===================================================================
 
+# Service account auth — terraform-cli has 'admin' realm role for cross-realm access.
 provider "keycloak" {
-  url       = "http://172.16.7.202:8080"
-  client_id = "admin-cli"
-  username  = "admin"
-  password  = var.kc_admin_password
+  url           = "http://172.16.7.202:8080"
+  client_id     = var.kc_sa_client_id
+  client_secret = var.kc_sa_client_secret
 }
 
 variable "kc_admin_password" {
