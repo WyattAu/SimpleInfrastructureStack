@@ -79,9 +79,10 @@ services:
     - KC_SMTP_FROM=noreply@${DOMAIN_NAME}
     - KC_SMTP_STARTTLS=true
     networks:
-    - traefik_net
-    - backend_net
-    - data_net
+      traefik_net:
+      backend_net:
+        ipv4_address: 172.16.7.202
+      data_net:
     labels:
     - traefik.enable=true
     - traefik.docker.network=traefik_net
