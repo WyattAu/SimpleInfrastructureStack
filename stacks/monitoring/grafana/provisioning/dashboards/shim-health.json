@@ -1,0 +1,72 @@
+{
+  "annotations": {"list": []},
+  "title": "EIR Shim Health",
+  "uid": "shim-health",
+  "version": 1,
+  "schemaVersion": 39,
+  "tags": ["infrastructure", "eir"],
+  "time": {"from": "now-1h", "to": "now"},
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Shim Health Status (all EIR containers)",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "victoriametrics"},
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 0},
+      "targets": [{
+        "expr": "count(shim_health_status == 1)",
+        "legendFormat": "Healthy"
+      }, {
+        "expr": "count(shim_health_status == 0) or vector(0)",
+        "legendFormat": "Unhealthy"
+      }],
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "green"}, {"color": "red", "value": 1}]}}}
+    },
+    {
+      "id": 2,
+      "title": "Container Restarts (last 1h)",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "victoriametrics"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+      "targets": [{
+        "expr": "increase(container_restarts_total{image!=\"\"}[1h])",
+        "legendFormat": "{{name}}"
+      }]
+    },
+    {
+      "id": 3,
+      "title": "OOM Kills (last 1h)",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "victoriametrics"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+      "targets": [{
+        "expr": "rate(container_oom_events_total{image!=\"\"}[5m])",
+        "legendFormat": "{{name}}"
+      }]
+    },
+    {
+      "id": 4,
+      "title": "Shim Uptime (seconds)",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "victoriametrics"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 14},
+      "targets": [{
+        "expr": "shim_uptime_seconds",
+        "legendFormat": "{{instance}}"
+      }]
+    },
+    {
+      "id": 5,
+      "title": "Memory Usage > 80% (warning)",
+      "type": "table",
+      "datasource": {"type": "prometheus", "uid": "victoriametrics"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 22},
+      "targets": [{
+        "expr": "(container_memory_usage_bytes{image!=\"\"} / container_spec_memory_limit_bytes{image!=\"\"}) * 100 > 80",
+        "format": "table",
+        "instant": true
+      }]
+    }
+  ]
+}
