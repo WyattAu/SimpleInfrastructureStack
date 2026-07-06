@@ -87,6 +87,17 @@
 # `networks: [traefik_net]` with explicit `dns: [1.1.1.1, 8.8.8.8]` in
 # docker-compose.yml, replacing the old network_mode: bridge workaround.
 
+- name: Template alertmanager.yml with NTFY_TOPIC from secrets
+  ansible.builtin.shell: |
+    set -a
+    source {{ stack_dir }}/.env 2>/dev/null || true
+    source {{ stack_dir }}/secrets.env 2>/dev/null || true
+    envsubst < {{ stack_dir }}/alertmanager/alertmanager.yml.template > {{ stack_dir }}/alertmanager/alertmanager.yml
+  args:
+    creates: "{{ stack_dir }}/alertmanager/alertmanager.yml.template"
+  when: "'monitoring' in stacks"
+  ignore_errors: true
+
 - name: Record deploy timestamp
   ansible.builtin.copy:
     content: "{{ ansible_date_time.iso8601 }}"

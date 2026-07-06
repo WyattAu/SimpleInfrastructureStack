@@ -11,16 +11,22 @@ variable "cf_api_token" {
   description = "Cloudflare API token (from SOPS secrets/proxy.env.encrypted)"
   type        = string
   sensitive   = true
+  default     = ""
+
 }
 
 variable "cf_zone_id" {
   description = "Cloudflare zone ID for wyattau.com (set via TF_VAR_cf_zone_id)"
   type        = string
+  default     = ""
+
 }
 
 variable "cf_account_id" {
   description = "Cloudflare account ID (set via TF_VAR_cf_account_id)"
   type        = string
+  default     = ""
+
 }
 
 variable "cf_tunnel_id" {
@@ -74,6 +80,8 @@ variable "kc_smtp_password" {
   description = "SMTP authentication password (from SOPS secrets/iam.env.encrypted)"
   type        = string
   sensitive   = true
+  default     = ""
+
 }
 
 variable "kc_smtp_from" {
@@ -86,18 +94,24 @@ variable "kc_oauth2_proxy_secret" {
   description = "Keycloak client secret for oauth2-proxy (from SOPS secrets/proxy.env.encrypted)"
   type        = string
   sensitive   = true
+  default     = ""
+
 }
 
 variable "kc_grafana_secret" {
   description = "Keycloak client secret for Grafana (from SOPS secrets/monitoring.env.encrypted)"
   type        = string
   sensitive   = true
+  default     = ""
+
 }
 
 variable "kc_forgejo_secret" {
   description = "Keycloak client secret for Forgejo (from SOPS secrets/iam.env.encrypted: FORGEJO_KEYCLOAK_CLIENT_SECRET)"
   type        = string
   sensitive   = true
+  default     = ""
+
 }
 
 # --- Forgejo ---
@@ -112,6 +126,8 @@ variable "forgejo_token" {
   description = "Forgejo admin API token"
   type        = string
   sensitive   = true
+  default     = ""
+
 }
 
 # --- Infra ---
