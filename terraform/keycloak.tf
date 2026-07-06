@@ -24,8 +24,15 @@
 provider "keycloak" {
   url           = "https://auth.wyattau.com"
   realm         = "master"
-  client_id     = var.kc_sa_client_id
-  client_secret = var.kc_sa_client_secret
+  client_id     = "admin-cli"
+  username      = "admin"
+  password      = var.kc_admin_password
+}
+
+variable "kc_admin_password" {
+  description = "Keycloak admin password (from SOPS secrets/iam.env.encrypted)"
+  type        = string
+  sensitive   = true
 }
 
 # ===================================================================
