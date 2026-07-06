@@ -22,11 +22,10 @@
 # ===================================================================
 
 provider "keycloak" {
-  url       = "https://auth.wyattau.com"
-  realm     = "master"
-  client_id = var.kc_sa_client_id
-  username  = ""
-  password  = var.kc_sa_client_secret
+  url           = "https://auth.wyattau.com"
+  realm         = "master"
+  client_id     = var.kc_sa_client_id
+  client_secret = var.kc_sa_client_secret
 }
 
 # ===================================================================
