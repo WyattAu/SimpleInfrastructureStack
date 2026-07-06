@@ -97,7 +97,7 @@ services:
     image: ghcr.io/paperless-ngx/paperless-ngx:2.20.15
     container_name: documents-webserver
     restart: unless-stopped
-    init: true
+    # NOTE: init: true removed — Paperless-ngx uses s6-overlay which MUST be PID 1
     security_opt:
     - no-new-privileges:true
     cap_drop:
