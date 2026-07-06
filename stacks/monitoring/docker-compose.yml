@@ -445,7 +445,7 @@ services:
     - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
     environment:
     - NTFY_TOPIC=${NTFY_TOPIC}
-    command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager-data", "--web.external-url=https://${PROMETHEUS_SUBDOMAIN}.${DOMAIN_NAME}"]
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/data", "--web.external-url=https://${PROMETHEUS_SUBDOMAIN}.${DOMAIN_NAME}"]
     networks:
       backend_net:
         ipv4_address: 172.16.7.201
