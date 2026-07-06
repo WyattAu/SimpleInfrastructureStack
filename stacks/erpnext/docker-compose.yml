@@ -255,7 +255,7 @@ services:
         max-file: '3'
 
   erpnext-redis:
-    image: redis:8.6-alpine
+    image: ghcr.io/wyattau/evergreenimageregistry/redis:8.6-alpine
     container_name: erpnext-redis
     restart: unless-stopped
     init: true
