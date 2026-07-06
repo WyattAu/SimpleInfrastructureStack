@@ -43,6 +43,7 @@ variable "kc_sa_client_secret" {
   description = "Keycloak service account client secret (set TF_VAR_kc_sa_client_secret)"
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "kc_realm" {
