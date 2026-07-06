@@ -419,8 +419,8 @@ services:
       - wget -qO- http://127.0.0.1:9100/metrics || exit 1
       interval: 30s
       timeout: 10s
-      start_period: 15s
-      retries: 3
+      start_period: 300s
+      retries: 5
     deploy:
       resources:
         limits:

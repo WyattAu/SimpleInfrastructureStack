@@ -54,3 +54,4 @@ stacks/blocmarket/
 tf_import.sh
 tunnel/
 stacks/headscale/config/noise.private.key
+stacks/monitoring/alertmanager/alertmanager.yml
