@@ -688,18 +688,17 @@ groups:
             CrowdSec agent API port is not responding to TCP probe.
             Intrusion detection and Cloudflare bouncer may not be operational.
 
-      # CrowdSec Workers Bouncer is a Cloudflare Worker (always running if deployed).
-      # CrowdSec Prometheus metrics not yet configured — disabled until scrape target added.
-      # - alert: CrowdSecWorkersBouncerDown
-      #   expr: increase(crowdsec_decisions_total{type="ban"}[1h]) > 0 unless up{job="crowdsec"}
-      #   for: 10m
-      #   labels:
-      #     severity: warning
-      #   annotations:
-      #     summary: "CrowdSec bouncer may not be applying decisions"
-      #     description: >-
-      #       CrowdSec is issuing ban decisions but the CrowdSec agent metrics
-      #       endpoint is not reachable.
+      # CrowdSec agent down — no intrusion detection active
+      - alert: CrowdSecAgentDown
+        expr: up{job="crowdsec"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CrowdSec agent is down"
+          description: >-
+            CrowdSec agent metrics endpoint (port 6060) is not responding.
+            Intrusion detection and Cloudflare bouncer may not be operational.
 
       # High rate of 4xx client errors (potential brute force or scanning)
       - alert: HighHTTPClientErrorRate
@@ -716,19 +715,18 @@ groups:
             This may indicate brute force attempts, vulnerability scanning, or
             misconfigured clients. CrowdSec should detect and block malicious IPs.
 
-      # SSH brute force — disabled until CrowdSec Prometheus endpoint is configured.
-      # To enable: add scrape target for crowdsec:6060/metrics and uncomment.
-      # - alert: SSHBruteForceDetected
-      #   expr: |
-      #     increase(crowdsec_decisions_total{type="ban",origin=~".*ssh.*"}[1h]) > 5
-      #   for: 1m
-      #   labels:
-      #     severity: warning
-      #   annotations:
-      #     summary: "SSH brute force attack detected ({{ $value }} bans in last hour)"
-      #     description: >-
-      #       CrowdSec has issued {{ $value }} SSH-related bans in the last hour.
-      #        This indicates an active brute force attack against SSH services.
+      # SSH brute force detected by CrowdSec (via sshd collection)
+      - alert: SSHBruteForceDetected
+        expr: |
+          increase(crowdsec_decisions_total{type="ban",origin=~".*ssh.*"}[1h]) > 5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SSH brute force attack detected ({{ $value }} bans in last hour)"
+          description: >-
+            CrowdSec has issued {{ $value }} SSH-related bans in the last hour.
+             This indicates an active brute force attack against SSH services.
 
   - name: zfs_health
     interval: 60s
