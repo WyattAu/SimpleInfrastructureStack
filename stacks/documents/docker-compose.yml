@@ -10,7 +10,7 @@ services:
     - -p
     - /data
   paperless-postgres:
-    image: ghcr.io/wyattau/evergreenimageregistry/postgres:16
+    image: ghcr.io/wyattau/evergreenimageregistry/postgres:16-alpine
     container_name: documents-postgres
     restart: unless-stopped
     init: true
