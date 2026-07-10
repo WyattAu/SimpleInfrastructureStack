@@ -17,15 +17,16 @@ data "cloudflare_zone" "main" {
 
 locals {
   # Services currently running on this TrueNAS
+  # NOTE: homepage and element use Cloudflare Tunnel CNAME records,
+  # not direct A/AAAA. They are excluded from service_v4/service_v6
+  # to avoid DNS conflicts (CNAME + A/AAAA on same hostname).
   active_services = {
     akaunting        = "Akaunting (accounting)"
     auth             = "Keycloak (SSO)"
     collabora        = "Collabora Online (document editing)"
     docs             = "Documentation (wiki/knowledge base)"
-    element          = "Element Web (Matrix client)"
     forgejo          = "Forgejo (git hosting)"
     grafana          = "Grafana (dashboards)"
-    homepage         = "Homepage (personal dashboard)"
     hookshot         = "Hookshot (GitHub bridge API)"
     kuma             = "Uptime Kuma (monitoring)"
     matrix           = "Synapse (Matrix federation)"
@@ -39,6 +40,13 @@ locals {
     traefik          = "Traefik (reverse proxy dashboard)"
     vault            = "Vaultwarden (password manager)"
     vpn              = "WireGuard VPN (DNS-only, no proxy)"
+  }
+
+  # Services routed via Cloudflare Tunnel (CNAME records, managed separately)
+  tunnel_services = {
+    homepage         = "Homepage (personal dashboard)"
+    element          = "Element Web (Matrix client)"
+    headscale        = "Headscale VPN (direct DNS, not proxied)"
   }
 }
 
@@ -136,6 +144,14 @@ resource "cloudflare_ruleset" "geo_block" {
     EXPR
     description = "Block high-risk countries (exceptions: Matrix federation, OIDC discovery, ACME, Hookshot)"
     enabled     = true
+  }
+
+  # CF API token must include "Zone > WAF > Edit" permission.
+  # If token lacks this permission, apply will fail on this resource only.
+  # Fix: update the CF API token in Cloudflare dashboard to add WAF Edit.
+  lifecycle {
+    # Don't try to recreate if the ruleset already exists manually
+    prevent_destroy = true
   }
 }
 
