@@ -818,3 +818,27 @@ groups:
           description: >-
             The Cloudflare tunnel (infra-tunnel) has zero open connections for 5 minutes.
             This may indicate a connectivity issue between TrueNAS and Cloudflare edge.
+
+  - name: vulnerability_scanning
+    rules:
+      - alert: CriticalCVEFound
+        expr: sis_vuln_scan_critical > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRITICAL CVEs found in {{ $labels.container }}"
+          description: >-
+            Container {{ $labels.container }} has {{ $value }} CRITICAL vulnerabilities.
+            Run Trivy for details: docker run --rm aquasec/trivy image {{ $labels.container }}
+
+      - alert: VulnScanStale
+        expr: (time() - sis_vuln_scan_timestamp) > 604800
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Vulnerability scan not run in over 7 days"
+          description: >-
+            The weekly vulnerability scan has not completed in over 7 days.
+            Check cron job: /mnt/pool_HDD_x2/infra/tools/vuln-scan.sh
