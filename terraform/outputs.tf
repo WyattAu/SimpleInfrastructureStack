@@ -7,10 +7,10 @@ output "cloudflare_zone" {
   description = "Cloudflare zone name"
 }
 
-output "active_dns_records" {
-  value       = { for k, v in cloudflare_record.service_v4 : k => v.name }
-  description = "Active service DNS records managed by Terraform"
-}
+# output "active_dns_records" {
+#   value       = { for k, v in cloudflare_record.service_v4 : k => v.name }
+#   description = "Active service DNS records managed by Terraform"
+# }
 
 output "keycloak_realm" {
   value       = data.keycloak_realm.main.realm
