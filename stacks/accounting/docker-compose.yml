@@ -108,7 +108,7 @@ services:
         max-size: 10m
         max-file: '3'
   mariadb-exporter:
-    image: prom/mysqld-exporter@sha256:eacb4b18e2ec1e0abdf2d64851b68526c964f6d9cb3e9458fb5d5f5062ea94c1
+    image: ghcr.io/wyattau/evergreenimageregistry/mysqld-exporter:v0.19.0
     container_name: accounting-mariadb-exporter
     restart: unless-stopped
     init: true
