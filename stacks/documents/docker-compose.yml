@@ -141,8 +141,8 @@ services:
       - curl -fSs http://127.0.0.1:8000 || exit 1
       interval: 30s
       timeout: 10s
-      start_period: 60s
-      retries: 3
+      start_period: 600s
+      retries: 5
     labels:
     - traefik.enable=true
     - traefik.docker.network=traefik_net
