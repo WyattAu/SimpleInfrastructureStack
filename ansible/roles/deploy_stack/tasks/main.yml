@@ -87,6 +87,18 @@
 # `networks: [traefik_net]` with explicit `dns: [1.1.1.1, 8.8.8.8]` in
 # docker-compose.yml, replacing the old network_mode: bridge workaround.
 
+- name: Fix EIR data directory ownership (UID 65532)
+  ansible.builtin.shell: |
+    chown -R 65532:65532 {{ item }} 2>/dev/null || true
+  loop:
+    - "{{ DATA_BASE_PATH }}/monitoring/victoriametrics"
+    - "{{ DATA_BASE_PATH }}/proxy/letsencrypt"
+  when: DATA_BASE_PATH is defined
+  ignore_errors: true
+  # EIR images run as UID 65532 (non-root). Data directories created by
+  # root (from ZFS or previous root-running containers) cause permission
+  # denied errors. This task ensures correct ownership after deploy.
+
 - name: Template alertmanager.yml with NTFY_TOPIC from secrets
   ansible.builtin.shell: |
     set -a
