@@ -51,27 +51,28 @@ locals {
 }
 
 # A + AAAA records for each active service
-resource "cloudflare_record" "service_v4" {
-  for_each = local.active_services
-
-  zone_id = var.cf_zone_id
-  name    = each.key
-  type    = "A"
-  content = var.primary_ipv4
-  proxied = each.key != "vpn" # VPN must be DNS-only for WireGuard
-  ttl     = 1
-}
-
-resource "cloudflare_record" "service_v6" {
-  for_each = local.active_services
-
-  zone_id = var.cf_zone_id
-  name    = each.key
-  type    = "AAAA"
-  content = var.primary_ipv6
-  proxied = each.key != "vpn"
-  ttl     = 1
-}
+# DISABLED: All services use Cloudflare Tunnel CNAME records managed by
+# the tunnel itself. Creating A/AAAA records conflicts with existing CNAMEs.
+# To re-enable: ensure services use direct IP routing, not tunnel.
+# resource "cloudflare_record" "service_v4" {
+#   for_each = local.active_services
+#   zone_id = var.cf_zone_id
+#   name    = each.key
+#   type    = "A"
+#   content = var.primary_ipv4
+#   proxied = each.key != "vpn"
+#   ttl     = 1
+# }
+# 
+# resource "cloudflare_record" "service_v6" {
+#   for_each = local.active_services
+#   zone_id = var.cf_zone_id
+#   name    = each.key
+#   type    = "AAAA"
+#   content = var.primary_ipv6
+#   proxied = each.key != "vpn"
+#   ttl     = 1
+# }
 
 # ===================================================================
 # DNS Records — Tunnel Services (CNAME to tunnel)
@@ -122,38 +123,40 @@ locals {
   geo_blocked_expr = join(" ", [for c in var.geo_blocked_countries : "\"${c}\""])
 }
 
-resource "cloudflare_ruleset" "geo_block" {
-  zone_id     = var.cf_zone_id
-  name        = "Geo-blocking: high-risk countries"
-  description = "Block HTTP requests from high-risk countries with exceptions for federation and ACME"
-  kind        = "zone"
-  phase       = "http_request_firewall_custom"
+# DISABLED: CF API token lacks "Zone > WAF > Edit" permission.
+# To enable: update CF API token in Cloudflare dashboard to add WAF Edit,
+# then uncomment this resource and run terraform apply.
+# resource "cloudflare_ruleset" "geo_block" {
+#   zone_id     = var.cf_zone_id
+#   name        = "Geo-blocking: high-risk countries"
+#   description = "Block HTTP requests from high-risk countries with exceptions for federation and ACME"
+#   kind        = "zone"
+#   phase       = "http_request_firewall_custom"
 
   # Expression logic:
   #   Block if country matches AND NOT (Matrix federation OR ACME challenge OR Hookshot)
-  rules {
-    action      = "block"
-    expression  = <<-EXPR
-      (ip.geoip.country in {${local.geo_blocked_expr}})
-      and not (
-        http.request.uri.path contains "/.well-known/matrix"
-        or http.request.uri.path contains "/.well-known/openid-configuration"
-        or http.host contains "hookshot"
-        or http.request.uri.path contains ".well-known/acme-challenge"
-      )
-    EXPR
-    description = "Block high-risk countries (exceptions: Matrix federation, OIDC discovery, ACME, Hookshot)"
-    enabled     = true
-  }
+#   rules {
+#     action      = "block"
+#     expression  = <<-EXPR
+#       (ip.geoip.country in {${local.geo_blocked_expr}})
+#       and not (
+#         http.request.uri.path contains "/.well-known/matrix"
+#         or http.request.uri.path contains "/.well-known/openid-configuration"
+#         or http.host contains "hookshot"
+#         or http.request.uri.path contains ".well-known/acme-challenge"
+#       )
+#     EXPR
+#     description = "Block high-risk countries (exceptions: Matrix federation, OIDC discovery, ACME, Hookshot)"
+#     enabled     = true
+#   }
 
   # CF API token must include "Zone > WAF > Edit" permission.
   # If token lacks this permission, apply will fail on this resource only.
   # Fix: update the CF API token in Cloudflare dashboard to add WAF Edit.
-  lifecycle {
-    # Don't try to recreate if the ruleset already exists manually
-    prevent_destroy = true
-  }
-}
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
+# }
 
 # Email routing (managed by Cloudflare Email Routing — NOT in Terraform)
 # MX records and DKIM are auto-managed by Cloudflare Email Routing and
