@@ -52,7 +52,7 @@ services:
         max-file: '3'
 
   headscale-ui:
-    image: ghcr.io/gurucomputing/headscale-ui:2026.03.17
+    image: ghcr.io/wyattau/evergreenimageregistry/headscale-ui:2026.03.17
     container_name: headscale-ui
     restart: unless-stopped
     security_opt:
