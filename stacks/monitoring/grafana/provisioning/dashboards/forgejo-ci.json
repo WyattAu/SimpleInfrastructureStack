@@ -1,311 +1,85 @@
 {
-  "annotations": {
-    "list": [
-      {
-        "builtIn": 1,
-        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
-        "enable": true,
-        "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
-        "type": "dashboard"
-      }
-    ]
-  },
-  "editable": true,
-  "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
-  "id": null,
-  "links": [],
-  "liveNow": false,
+  "annotations": {"list": []},
+  "title": "Forgejo CI",
+  "uid": "forgejo-ci",
+  "version": 1,
+  "schemaVersion": 39,
+  "tags": ["infrastructure", "ci"],
+  "time": {"from": "now-6h", "to": "now"},
+  "refresh": "30s",
   "panels": [
     {
-      "title": "Forgejo Overview",
+      "id": 1,
+      "title": "Forgejo Status",
       "type": "stat",
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
-      "targets": [
-        {
-          "expr": "gitea_repositories",
-          "legendFormat": "Repos"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "color": { "fixedColor": "blue", "mode": "fixed" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "blue", "value": null }]
-          }
-        }
-      }
+      "datasource": {"type": "prometheus", "uid": "victoriametrics"},
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [{"expr": "up{job=\"forgejo\"}", "legendFormat": "Status"}],
+      "fieldConfig": {"defaults": {"mappings": [{"options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}], "type": "value"}]}
     },
     {
-      "title": "Users",
+      "id": 2,
+      "title": "Repositories",
       "type": "stat",
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
-      "targets": [
-        {
-          "expr": "gitea_users",
-          "legendFormat": "Users"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "color": { "fixedColor": "green", "mode": "fixed" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
-          }
-        }
-      }
+      "datasource": {"type": "prometheus", "uid": "victoriametrics"},
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "targets": [{"expr": "gitea_repositories", "legendFormat": "Repos"}]
     },
     {
+      "id": 3,
       "title": "Organizations",
       "type": "stat",
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
-      "targets": [
-        {
-          "expr": "gitea_organizations",
-          "legendFormat": "Orgs"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "color": { "fixedColor": "purple", "mode": "fixed" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "purple", "value": null }]
-          }
-        }
-      }
+      "datasource": {"type": "prometheus", "uid": "victoriametrics"},
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "targets": [{"expr": "gitea_organizations", "legendFormat": "Orgs"}]
     },
     {
+      "id": 4,
       "title": "Open Issues",
       "type": "stat",
-      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
-      "targets": [
-        {
-          "expr": "gitea_issues_open",
-          "legendFormat": "Open"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "color": { "fixedColor": "orange", "mode": "fixed" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "orange", "value": null }]
-          }
-        }
-      }
+      "datasource": {"type": "prometheus", "uid": "victoriametrics"},
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "targets": [{"expr": "gitea_issues_open", "legendFormat": "Open"}]
     },
     {
-      "title": "Public Keys",
-      "type": "stat",
-      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
-      "targets": [
-        {
-          "expr": "gitea_publickeys",
-          "legendFormat": "Keys"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "color": { "fixedColor": "yellow", "mode": "fixed" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "yellow", "value": null }]
-          }
-        }
-      }
-    },
-    {
-      "title": "Webhooks",
-      "type": "stat",
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
-      "targets": [
-        {
-          "expr": "gitea_webhooks",
-          "legendFormat": "Hooks"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "color": { "fixedColor": "super-light-green", "mode": "fixed" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "super-light-green", "value": null }]
-          }
-        }
-      }
-    },
-    {
-      "title": "Goroutines",
+      "id": 5,
+      "title": "Forgejo Request Rate (req/s)",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
-      "targets": [
-        {
-          "expr": "go_goroutines{job=\"forgejo\"}",
-          "legendFormat": "goroutines"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": { "unit": "short", "min": 0 },
-        "overrides": []
-      }
+      "datasource": {"type": "prometheus", "uid": "victoriametrics"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [{"expr": "rate(gitea_http_requests_total[5m])", "legendFormat": "{{status}}"}]
     },
     {
-      "title": "Memory Allocation",
+      "id": 6,
+      "title": "Forgejo Response Duration (p99)",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
-      "targets": [
-        {
-          "expr": "go_memstats_alloc_bytes{job=\"forgejo\"}",
-          "legendFormat": "allocated"
-        },
-        {
-          "expr": "go_memstats_heap_inuse_bytes{job=\"forgejo\"}",
-          "legendFormat": "heap in-use"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": { "unit": "bytes", "min": 0 },
-        "overrides": []
-      }
+      "datasource": {"type": "prometheus", "uid": "victoriametrics"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [{"expr": "histogram_quantile(0.99, rate(gitea_http_request_duration_seconds_bucket[5m]))", "legendFormat": "p99"}]
     },
     {
-      "title": "GC Duration",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
-      "targets": [
-        {
-          "expr": "rate(go_gc_duration_seconds_sum{job=\"forgejo\"}[5m]) / rate(go_gc_duration_seconds_count{job=\"forgejo\"}[5m])",
-          "legendFormat": "avg gc duration"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": { "unit": "s", "min": 0 },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Forgejo Activity Summary",
+      "id": 7,
+      "title": "CI Runners (on CachyOS)",
       "type": "table",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
-      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "PBFA97CFB590B2093" },
-      "targets": [
-        {
-          "expr": "gitea_repositories",
-          "legendFormat": "",
-          "format": "table",
-          "instant": true
-        },
-        {
-          "expr": "gitea_users",
-          "legendFormat": "",
-          "format": "table",
-          "instant": true
-        },
-        {
-          "expr": "gitea_organizations",
-          "legendFormat": "",
-          "format": "table",
-          "instant": true
-        },
-        {
-          "expr": "gitea_issues_open",
-          "legendFormat": "",
-          "format": "table",
-          "instant": true
-        },
-        {
-          "expr": "gitea_issues_closed",
-          "legendFormat": "",
-          "format": "table",
-          "instant": true
-        },
-        {
-          "expr": "gitea_comments",
-          "legendFormat": "",
-          "format": "table",
-          "instant": true
-        },
-        {
-          "expr": "gitea_releases",
-          "legendFormat": "",
-          "format": "table",
-          "instant": true
-        },
-        {
-          "expr": "gitea_stars",
-          "legendFormat": "",
-          "format": "table",
-          "instant": true
-        },
-        {
-          "expr": "gitea_watches",
-          "legendFormat": "",
-          "format": "table",
-          "instant": true
-        },
-        {
-          "expr": "gitea_teams",
-          "legendFormat": "",
-          "format": "table",
-          "instant": true
-        }
-      ],
-      "transformations": [
-        {
-          "id": "merge",
-          "options": {}
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": { "Time": true, "instance": true, "job": true },
-            "indexByName": {},
-            "renameByName": {
-              "Value #A": "Repositories",
-              "Value #B": "Users",
-              "Value #C": "Organizations",
-              "Value #D": "Open Issues",
-              "Value #E": "Closed Issues",
-              "Value #F": "Comments",
-              "Value #G": "Releases",
-              "Value #H": "Stars",
-              "Value #I": "Watches",
-              "Value #J": "Teams"
-            }
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "options": {
-        "showHeader": true
-      }
+      "datasource": {"type": "prometheus", "uid": "victoriametrics"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+      "targets": [{"expr": "up{job=~\"cachyos.*\"}", "format": "table", "instant": true}]
+    },
+    {
+      "id": 8,
+      "title": "Forgejo Memory Usage",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "victoriametrics"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+      "targets": [{"expr": "container_memory_usage_bytes{name=\"operations-forgejo\"}", "legendFormat": "RSS"}]
+    },
+    {
+      "id": 9,
+      "title": "Forgejo CPU Usage",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "victoriametrics"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+      "targets": [{"expr": "rate(container_cpu_usage_seconds_total{name=\"operations-forgejo\"}[5m]) * 100", "legendFormat": "CPU%"}]
     }
-  ],
-  "refresh": "30s",
-  "schemaVersion": 39,
-  "tags": ["infrastructure", "forgejo", "devops"],
-  "templating": {
-    "list": []
-  },
-  "time": { "from": "now-6h", "to": "now" },
-  "title": "Forgejo",
-  "uid": "forgejo-ci",
-  "version": 1
+  ]
 }
