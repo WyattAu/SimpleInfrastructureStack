@@ -842,3 +842,14 @@ groups:
           description: >-
             The weekly vulnerability scan has not completed in over 7 days.
             Check cron job: /mnt/pool_HDD_x2/infra/tools/vuln-scan.sh
+
+      - alert: DeployStale
+        expr: (time() - sis_deploy_timestamp) > 259200
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "No successful deploy in over 3 days"
+          description: >-
+            The last successful infrastructure deploy was more than 3 days ago.
+            This may indicate the CI/CD pipeline is not running.

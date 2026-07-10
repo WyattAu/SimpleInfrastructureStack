@@ -1,0 +1,23 @@
+name: Auto-Deploy to TrueNAS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deploy on TrueNAS
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          TRUENAS_HOST: ${{ secrets.TRUENAS_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $TRUENAS_HOST >> ~/.ssh/known_hosts 2>/dev/null
+          ssh truenas_admin@$TRUENAS_HOST \
+            "sudo /mnt/pool_HDD_x2/infra/stacks/scripts/auto-deploy.sh" \
+            || echo "Deploy failed — check TrueNAS logs"
