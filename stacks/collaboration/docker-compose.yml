@@ -10,7 +10,7 @@ services:
     - -p
     - /data/postgres
   postgres-collab:
-    image: ghcr.io/wyattau/evergreenimageregistry/postgres:18
+    image: ghcr.io/wyattau/evergreenimageregistry/postgres:18-alpine
     container_name: collaboration-postgres
     restart: unless-stopped
     init: true
