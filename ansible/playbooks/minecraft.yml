@@ -1,0 +1,220 @@
+---
+# Minecraft Purpur Server Deployment
+# Target: CachyOS (192.168.1.191) — NOT TrueNAS
+# Runtime: Incus container (not Docker)
+#
+# Usage:
+#   ansible-playbook playbooks/minecraft.yml -i inventory/hosts.yml --tags deploy
+#   ansible-playbook playbooks/minecraft.yml -i inventory/hosts.yml --tags update
+#   ansible-playbook playbooks/minecraft.yml -i inventory/hosts.yml --tags backup
+
+- name: Deploy Minecraft Purpur Server
+  hosts: cachyos
+  become: true
+  vars:
+    mc_container: mc-purpur
+    mc_user: minecraft
+    mc_home: /opt/minecraft
+    mc_heap: 3G
+    mc_cpu: 2
+    mc_memory: 4GiB
+    mc_java_port: 25565
+    mc_bedrock_port: 19132
+    mc_purpur_version: "1.21"
+
+  tasks:
+    # ── Container Lifecycle ──────────────────────────────────────────
+
+    - name: Check if MC container exists
+      ansible.builtin.shell: incus list -c n --format csv {{ mc_container }} 2>/dev/null
+      register: mc_container_exists
+      changed_when: false
+
+    - name: Launch Incus container
+      ansible.builtin.shell: |
+        incus launch images:debian/12 {{ mc_container }}
+      when: mc_container_exists.stdout != mc_container
+
+    - name: Configure container limits
+      ansible.builtin.shell: |
+        incus config set {{ mc_container }} limits.cpu={{ mc_cpu }}
+        incus config set {{ mc_container }} limits.memory={{ mc_memory }}
+        incus config set {{ mc_container }} limits.memory.swap false
+        incus config set {{ mc_container }} boot.autostart true
+      when: mc_container_exists.stdout != mc_container
+
+    - name: Add proxy devices
+      ansible.builtin.shell: |
+        incus config device add {{ mc_container }} mc-java-port proxy \
+          listen=tcp:0.0.0.0:{{ mc_java_port }} connect=tcp:127.0.0.1:{{ mc_java_port }} || true
+        incus config device add {{ mc_container }} mc-bedrock-port proxy \
+          listen=udp:0.0.0.0:{{ mc_bedrock_port }} connect=udp:127.0.0.1:{{ mc_bedrock_port }} || true
+      when: mc_container_exists.stdout != mc_container
+
+    - name: Restart container to apply config
+      ansible.builtin.shell: incus restart {{ mc_container }}
+      when: mc_container_exists.stdout != mc_container
+
+    - name: Wait for container network
+      ansible.builtin.shell: incus exec {{ mc_container }} -- ip addr show eth0 | grep inet
+      register: mc_net
+      retries: 10
+      delay: 2
+      until: mc_net.rc == 0
+      changed_when: false
+
+    # ── Disable CoW on btrfs ─────────────────────────────────────────
+
+    - name: Disable CoW on world data directory
+      ansible.builtin.shell: |
+        mkdir -p /var/lib/incus/storage-pools/default/containers/{{ mc_container }}/rootfs{{ mc_home }}
+        chattr +C /var/lib/incus/storage-pools/default/containers/{{ mc_container }}/rootfs{{ mc_home }} 2>/dev/null || true
+      changed_when: false
+
+    # ── Install Dependencies ─────────────────────────────────────────
+
+    - name: Install packages (curl, tmux, gnupg)
+      ansible.builtin.shell: |
+        incus exec {{ mc_container }} -- bash -c "apt update -qq && apt install -y -qq curl tmux gnupg > /dev/null 2>&1"
+
+    - name: Add Adoptium (Temurin Java 21) repository
+      ansible.builtin.shell: |
+        incus exec {{ mc_container }} -- bash -c "
+          curl -fsSL https://packages.adoptium.net/artifactory/api/gpg/key/public | \
+          gpg --dearmor -o /usr/share/keyrings/adoptium.gpg && \
+          echo 'deb [signed-by=/usr/share/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb bookworm main' > \
+          /etc/apt/sources.list.d/adoptium.list && \
+          apt update -qq && \
+          apt install -y -qq temurin-21-jre > /dev/null 2>&1
+        "
+
+    # ── Create User ──────────────────────────────────────────────────
+
+    - name: Create minecraft user
+      ansible.builtin.shell: |
+        incus exec {{ mc_container }} -- bash -c "
+          useradd -r -m -U -d {{ mc_home }} -s /bin/bash {{ mc_user }} 2>/dev/null || true
+          mkdir -p {{ mc_home }}/plugins
+          chown -R {{ mc_user }}:{{ mc_user }} {{ mc_home }}
+        "
+
+    # ── Download Server + Plugins ────────────────────────────────────
+
+    - name: Download Purpur
+      ansible.builtin.shell: |
+        incus exec {{ mc_container }} -- su - {{ mc_user }} -c "
+          curl -sL -o {{ mc_home }}/purpur.jar \
+          https://api.purpurmc.org/v2/purpur/{{ mc_purpur_version }}/latest/download
+        "
+      register: purpur_dl
+      changed_when: "'100%' in purpur_dl.stdout | default('')"
+
+    - name: Download GeyserMC
+      ansible.builtin.shell: |
+        incus exec {{ mc_container }} -- su - {{ mc_user }} -c "
+          curl -sL -o {{ mc_home }}/plugins/Geyser-Spigot.jar \
+          https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot
+        "
+
+    - name: Download Floodgate
+      ansible.builtin.shell: |
+        incus exec {{ mc_container }} -- su - {{ mc_user }} -c "
+          curl -sL -o {{ mc_home }}/plugins/Floodgate-Spigot.jar \
+          https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot
+        "
+
+    - name: Download ViaVersion (cross-version Java support)
+      ansible.builtin.shell: |
+        incus exec {{ mc_container }} -- su - {{ mc_user }} -c "
+          curl -sL -o {{ mc_home }}/plugins/ViaVersion.jar \
+          https://ci.viaversion.com/job/ViaVersion/lastStableBuild/artifact/build/libs/ViaVersion.jar
+        "
+
+    # ── Configuration ────────────────────────────────────────────────
+
+    - name: Copy start.sh
+      ansible.builtin.shell: |
+        incus file push {{ playbook_dir }}/../../minecraft/start.sh \
+          {{ mc_container }}{{ mc_home }}/start.sh
+        incus exec {{ mc_container }} -- chmod +x {{ mc_home }}/start.sh
+        incus exec {{ mc_container }} -- chown {{ mc_user }}:{{ mc_user }} {{ mc_home }}/start.sh
+
+    - name: Copy server.properties
+      ansible.builtin.shell: |
+        incus file push {{ playbook_dir }}/../../minecraft/config/server.properties \
+          {{ mc_container }}{{ mc_home }}/server.properties
+        incus exec {{ mc_container }} -- chown {{ mc_user }}:{{ mc_user }} {{ mc_home }}/server.properties
+
+    - name: Accept EULA
+      ansible.builtin.shell: |
+        incus exec {{ mc_container }} -- bash -c "
+          echo 'eula=true' > {{ mc_home }}/eula.txt
+          chown {{ mc_user }}:{{ mc_user }} {{ mc_home }}/eula.txt
+        "
+
+    - name: Copy systemd service
+      ansible.builtin.shell: |
+        incus file push {{ playbook_dir }}/../../minecraft/minecraft.service \
+          {{ mc_container }}/etc/systemd/system/minecraft.service
+        incus exec {{ mc_container }} -- systemctl daemon-reload
+
+    # ── Firewall ─────────────────────────────────────────────────────
+
+    - name: Configure firewall (if firewalld active)
+      ansible.builtin.shell: |
+        firewall-cmd --permanent --add-port={{ mc_java_port }}/tcp 2>/dev/null || true
+        firewall-cmd --permanent --add-port={{ mc_bedrock_port }}/udp 2>/dev/null || true
+        firewall-cmd --reload 2>/dev/null || true
+      changed_when: false
+
+    # ── Backup Cron ──────────────────────────────────────────────────
+
+    - name: Install backup script
+      ansible.builtin.shell: |
+        cp {{ playbook_dir }}/../../minecraft/backup.sh /home/wyatt/minecraft-backup.sh
+        chmod +x /home/wyatt/minecraft-backup.sh
+        chown wyatt:wyatt /home/wyatt/minecraft-backup.sh
+
+    - name: Add backup cron job
+      ansible.builtin.cron:
+        name: "minecraft daily backup"
+        minute: "0"
+        hour: "3"
+        job: "/home/wyatt/minecraft-backup.sh >> /home/wyatt/mc-backup.log 2>&1"
+        user: wyatt
+
+    # ── Start / Restart ──────────────────────────────────────────────
+
+    - name: Enable and start minecraft service
+      ansible.builtin.shell: |
+        incus exec {{ mc_container }} -- systemctl enable minecraft
+        incus exec {{ mc_container }} -- systemctl restart minecraft
+
+    - name: Wait for Java to start
+      ansible.builtin.shell: incus exec {{ mc_container }} -- pgrep -c java
+      register: mc_java_proc
+      retries: 10
+      delay: 3
+      until: mc_java_proc.stdout | int > 0
+      changed_when: false
+
+    - name: Verify Java port listening
+      ansible.builtin.shell: ss -tlnp | grep {{ mc_java_port }}
+      register: mc_port_check
+      retries: 10
+      delay: 5
+      until: mc_port_check.rc == 0
+      changed_when: false
+
+    - name: Deployment complete
+      ansible.builtin.debug:
+        msg: |
+          ═══════════════════════════════════════════════
+          Minecraft server deployed successfully!
+          
+          Java:    mc.wyattau.com:{{ mc_java_port }}
+          Bedrock: mc.wyattau.com:{{ mc_bedrock_port }}
+          LAN:     192.168.1.191:{{ mc_java_port }}
+          
+          Console: incus exec {{ mc_container }} -- su - minecraft -c "tmux attach -t mc-server"
+          ═══════════════════════════════════════════════
