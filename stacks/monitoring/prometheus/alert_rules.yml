@@ -857,37 +857,37 @@ groups:
   - name: minecraft
     rules:
       - alert: MinecraftJavaDown
-        expr: probe_success{job="blackbox-mc-java"} == 0
+        expr: mc_java_port_up == 0
         for: 2m
         labels:
           severity: critical
         annotations:
           summary: "Minecraft Java server is down"
           description: >-
-            The Minecraft Java port (25565) on CachyOS is not accepting connections.
+            The Minecraft Java port (25565) on CachyOS is not listening.
             Check: incus exec mc-purpur -- systemctl status minecraft
 
       - alert: MinecraftBedrockDown
-        expr: probe_success{job="blackbox-mc-bedrock"} == 0
+        expr: mc_bedrock_port_up == 0
         for: 2m
         labels:
           severity: warning
         annotations:
-          summary: "Minecraft Bedrock port unreachable"
+          summary: "Minecraft Bedrock port down"
           description: >-
-            The Minecraft Bedrock port (19132) on CachyOS is not accepting connections.
+            The Minecraft Bedrock port (19132) is not listening.
             GeyserMC may have failed to start.
 
-      - alert: MinecraftHighLatency
-        expr: probe_duration_seconds{job="blackbox-mc-java"} > 2
+      - alert: MinecraftProbeStale
+        expr: (time() - mc_probe_timestamp) > 300
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "Minecraft server high latency ({{ $value }}s)"
+          summary: "MC probe not running"
           description: >-
-            Minecraft Java port responding slowly. May indicate TPS lag or
-            insufficient CPU allocation. Check console for lag warnings.
+            The MC server probe script hasn't updated metrics in 5 minutes.
+            Check systemd timer on CachyOS.
 
       - alert: CachyOSHighMemory
         expr: (1 - (node_memory_MemAvailable_bytes{instance="192.168.1.191:9100"} / node_memory_MemTotal_bytes{instance="192.168.1.191:9100"})) > 0.90
@@ -898,5 +898,4 @@ groups:
           summary: "CachyOS host memory above 90%"
           description: >-
             CachyOS (CI runners + Minecraft) is using over 90% of memory.
-            Minecraft server may crash from OOM. Consider reducing JVM heap
-            or adding more RAM.
+            Minecraft server may crash from OOM.
