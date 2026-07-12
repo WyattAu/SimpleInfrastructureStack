@@ -1,0 +1,17 @@
+name: mc-purpur
+profiles:
+  - default
+config:
+  boot.autostart: "true"
+  limits.cpu: "2"
+  limits.memory: 4GiB
+  limits.memory.swap: "false"
+devices:
+  mc-java-port:
+    type: proxy
+    listen: tcp:0.0.0.0:25565
+    connect: tcp:127.0.0.1:25565
+  mc-bedrock-port:
+    type: proxy
+    listen: udp:0.0.0.0:19132
+    connect: udp:127.0.0.1:19132

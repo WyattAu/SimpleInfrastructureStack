@@ -853,3 +853,50 @@ groups:
           description: >-
             The last successful infrastructure deploy was more than 3 days ago.
             This may indicate the CI/CD pipeline is not running.
+
+  - name: minecraft
+    rules:
+      - alert: MinecraftJavaDown
+        expr: probe_success{job="blackbox-mc-java"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Minecraft Java server is down"
+          description: >-
+            The Minecraft Java port (25565) on CachyOS is not accepting connections.
+            Check: incus exec mc-purpur -- systemctl status minecraft
+
+      - alert: MinecraftBedrockDown
+        expr: probe_success{job="blackbox-mc-bedrock"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Minecraft Bedrock port unreachable"
+          description: >-
+            The Minecraft Bedrock port (19132) on CachyOS is not accepting connections.
+            GeyserMC may have failed to start.
+
+      - alert: MinecraftHighLatency
+        expr: probe_duration_seconds{job="blackbox-mc-java"} > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Minecraft server high latency ({{ $value }}s)"
+          description: >-
+            Minecraft Java port responding slowly. May indicate TPS lag or
+            insufficient CPU allocation. Check console for lag warnings.
+
+      - alert: CachyOSHighMemory
+        expr: (1 - (node_memory_MemAvailable_bytes{instance="192.168.1.191:9100"} / node_memory_MemTotal_bytes{instance="192.168.1.191:9100"})) > 0.90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CachyOS host memory above 90%"
+          description: >-
+            CachyOS (CI runners + Minecraft) is using over 90% of memory.
+            Minecraft server may crash from OOM. Consider reducing JVM heap
+            or adding more RAM.
