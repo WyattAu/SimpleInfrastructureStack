@@ -271,3 +271,40 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets: ['security-crowdsec:6060']
+
+  # Minecraft server — blackbox TCP probe (Java port 25565)
+  - job_name: 'blackbox-mc-java'
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+    static_configs:
+      - targets: ['192.168.1.191:25565']
+        labels:
+          instance: 'mc-purpur'
+          service: 'minecraft-java'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: target
+      - target_label: __address__
+        replacement: monitoring-blackbox-exporter:9115
+
+  # Minecraft server — blackbox UDP probe (Bedrock port 19132)  
+  # Note: Blackbox exporter TCP connect works for verifying port is open
+  - job_name: 'blackbox-mc-bedrock'
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+    static_configs:
+      - targets: ['192.168.1.191:19132']
+        labels:
+          instance: 'mc-purpur'
+          service: 'minecraft-bedrock'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: target
+      - target_label: __address__
+        replacement: monitoring-blackbox-exporter:9115
