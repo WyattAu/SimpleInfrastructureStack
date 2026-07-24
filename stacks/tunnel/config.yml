@@ -89,6 +89,10 @@ ingress:
   service: https://127.0.0.1:443
   originRequest:
     noTLSVerify: true
+- hostname: git.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
 - hostname: status.wyattau.com
   service: https://127.0.0.1:443
   originRequest:
@@ -115,8 +119,7 @@ ingress:
     noTLSVerify: true
 - hostname: deploy.wyattau.com
   service: http://127.0.0.1:9001
-- hostname: ferro.wyattau.com
-  service: https://127.0.0.1:443
-  originRequest:
-    noTLSVerify: true
+- hostname: map.wyattau.com
+  service: http://192.168.1.191:8123
+
 - service: http_status:404
