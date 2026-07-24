@@ -1,0 +1,40 @@
+# Matrix Hookshot configuration
+# See: https://matrix-org.github.io/matrix-hookshot/setup/github.html
+
+bridge:
+  domain: wyattau.com
+  url: http://collaboration-synapse:8008
+  mediaUrl: https://matrix.wyattau.com
+
+# In v7.3.2, listeners handle ALL HTTP including appservice API.
+# Do NOT set bridge.port — it causes EADDRINUSE conflict with listeners.
+listeners:
+  - port: 8080
+    bindAddress: 0.0.0.0
+    resources:
+      - webhooks
+
+permissions:
+  - actor: wyattau.com
+    services:
+      - service: "*"
+        level: admin
+
+github:
+  auth:
+    id: 3404276
+    privateKeyFile: /data/github-app-private-key.pem
+  webhook:
+    secret: ka@Sue9pZFbc27PVH9Ykkpp7$Buv4NGa
+  allowWebhooks: true
+  webhookNotifications:
+    enabled: true
+
+passfile: /data/registration.yml
+passkeyPath: /data/passkey.pem
+
+logging:
+  level: info
+  colorize: false
+  json: false
+  timestampFormat: "YYYY-MM-DD HH:mm:ss"

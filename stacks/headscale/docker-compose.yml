@@ -3,7 +3,6 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/headscale:0.29.2
     container_name: headscale-server
     restart: unless-stopped
-    init: true
     entrypoint: ["/ko-app/headscale"]
     command: ["serve", "--config", "/etc/headscale/config.yaml"]
     security_opt:
@@ -14,9 +13,9 @@ services:
     - ./config/config.yaml:/etc/headscale/config.yaml:ro
     - ./config/noise.private.key:/etc/headscale/noise.private.key:ro
     - ./config/acls.hujson:/etc/headscale/acls.hujson:ro
-    - ${DATA_BASE_PATH}/headscale/data:/var/lib/headscale
     tmpfs:
-    - /var/run/headscale:uid=65532,gid=65532,mode=0755
+    - /var/lib/headscale:mode=0777
+    - /var/run/headscale:mode=0777
     environment:
     - TZ=${TZ}
     ports:
@@ -25,14 +24,22 @@ services:
     networks:
     - traefik_net
     - backend_net
+    - headscale_internal
+    depends_on:
+      headscale-postgres:
+        condition: service_healthy
     labels:
     - traefik.enable=true
     - traefik.docker.network=traefik_net
     - traefik.http.services.headscale-svc.loadbalancer.server.port=8080
-    - traefik.http.routers.headscale.rule=Host(`headscale.${DOMAIN_NAME}`)
+    - traefik.http.routers.headscale.rule=Host()
     - traefik.http.routers.headscale.entrypoints=websecure
     - traefik.http.routers.headscale.tls.certresolver=cloudflare
     - traefik.http.routers.headscale.service=headscale-svc
+    - traefik.http.routers.headscale-admin.rule=Host()
+    - traefik.http.routers.headscale-admin.entrypoints=websecure
+    - traefik.http.routers.headscale-admin.tls.certresolver=cloudflare
+    - traefik.http.routers.headscale-admin.service=headscale-svc
     healthcheck:
       test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:8080"]
       interval: 30s
@@ -51,39 +58,39 @@ services:
         max-size: 10m
         max-file: '3'
 
-  headscale-ui:
-    image: ghcr.io/wyattau/evergreenimageregistry/headscale-ui:2026.03.17
-    container_name: headscale-ui
+  headscale-postgres:
+    image: ghcr.io/wyattau/evergreenimageregistry/postgres:17-alpine
+    container_name: headscale-postgres
     restart: unless-stopped
+    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
     - ALL
+    cap_add:
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
+    volumes:
+    - ${DATA_BASE_PATH}/headscale/postgres:/var/lib/postgresql/data
     environment:
-    - TZ=${TZ}
-    - HS_HEADSCALE_API=http://headscale-server:8080
+    - POSTGRES_DB=headscale
+    - POSTGRES_USER=headscale
+    - POSTGRES_PASSWORD=headscale_s3cret
     networks:
-    - traefik_net
-    - backend_net
-    labels:
-    - traefik.enable=true
-    - traefik.docker.network=traefik_net
-    - traefik.http.services.headscale-ui-svc.loadbalancer.server.port=8080
-    - traefik.http.routers.headscale-ui.rule=Host(`mesh.${DOMAIN_NAME}`)
-    - traefik.http.routers.headscale-ui.entrypoints=websecure
-    - traefik.http.routers.headscale-ui.tls.certresolver=cloudflare
-    - traefik.http.routers.headscale-ui.service=headscale-ui-svc
+    - headscale_internal
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ || exit 1"]
-      interval: 30s
+      test: [CMD-SHELL, pg_isready -U headscale -d headscale]
+      interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 10s
+      retries: 5
     deploy:
       resources:
         limits:
-          cpus: '0.25'
-          memory: 64M
+          cpus: 0.5
+          memory: 128M
           pids: 50
     logging:
       driver: json-file
@@ -96,3 +103,5 @@ networks:
     external: true
   backend_net:
     external: true
+  headscale_internal:
+    driver: bridge

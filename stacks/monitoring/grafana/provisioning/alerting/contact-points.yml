@@ -1,0 +1,16 @@
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: ntfy-warning
+    receivers:
+      - uid: ntfy-warning-push
+        type: webhook
+        settings:
+          url: https://ntfy.sh/wyattau-infra-0e92568ce5d04343c3b796ed558a04b9
+  - orgId: 1
+    name: ntfy-critical
+    receivers:
+      - uid: ntfy-critical-push
+        type: webhook
+        settings:
+          url: https://ntfy.sh/wyattau-infra-0e92568ce5d04343c3b796ed558a04b9-critical
