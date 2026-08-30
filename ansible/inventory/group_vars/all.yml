@@ -38,6 +38,7 @@ stacks:
   - documents
   - vpn
   - books
+  - ferro
   - headscale
   - updater
 

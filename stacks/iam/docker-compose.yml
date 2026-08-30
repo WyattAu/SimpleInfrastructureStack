@@ -1,6 +1,6 @@
 services:
   postgres-iam:
-    image: ghcr.io/wyattau/evergreenimageregistry/postgres:17-alpine
+    image: ghcr.io/wyattau/evergreenimageregistry/postgres:17.10
     container_name: iam-postgres
     restart: unless-stopped
     init: true

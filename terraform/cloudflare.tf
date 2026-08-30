@@ -24,6 +24,7 @@ locals {
     akaunting        = "Akaunting (accounting)"
     auth             = "Keycloak (SSO)"
     collabora        = "Collabora Online (document editing)"
+    ferro            = "Ferro (file storage)"
     docs             = "Documentation (wiki/knowledge base)"
     forgejo          = "Forgejo (git hosting)"
     grafana          = "Grafana (dashboards)"
