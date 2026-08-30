@@ -79,8 +79,8 @@ export TF_VAR_kc_forgejo_secret
 #   ssh truenas_admin@192.168.1.3 \
 #     "sudo docker exec -u git operations-forgejo gitea -c /data/gitea/conf/app.ini \
 #      admin user generate-access-token -u wyatt_admin --scopes all -t terraform"
-if [ -f "$REPO_DIR/.forgejo_token" ]; then
-  TF_VAR_forgejo_token=$(cat "$REPO_DIR/.forgejo_token")
+if [ -f "$REPO_DIR/secrets/forgejo_token" ]; then
+  TF_VAR_forgejo_token=$(cat "$REPO_DIR/secrets/forgejo_token")
   export TF_VAR_forgejo_token
 else
   echo "WARNING: .forgejo_token not found. Forgejo resources will be skipped."

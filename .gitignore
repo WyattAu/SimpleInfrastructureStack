@@ -55,3 +55,6 @@ tf_import.sh
 tunnel/
 stacks/headscale/config/noise.private.key
 stacks/monitoring/alertmanager/alertmanager.yml
+
+# Forgejo token (rotate via web UI, store in secrets/)
+.forgejo_token
