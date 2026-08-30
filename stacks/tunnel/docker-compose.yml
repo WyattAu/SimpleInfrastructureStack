@@ -1,6 +1,6 @@
 services:
   cloudflared:
-    image: ghcr.io/wyattau/evergreenimageregistry/cloudflared:2026.5.0
+    image: ghcr.io/wyattau/evergreenimageregistry/cloudflared:2026.7.1
     container_name: infra-tunnel
     restart: unless-stopped
     init: true

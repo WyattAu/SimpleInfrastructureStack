@@ -51,7 +51,7 @@ services:
         max-size: 10m
         max-file: '3'
   traefik:
-    image: ghcr.io/wyattau/evergreenimageregistry/traefik:v3.7.3
+    image: ghcr.io/wyattau/evergreenimageregistry/traefik:3.7.3
     container_name: proxy-traefik
     restart: unless-stopped
     init: true
@@ -125,7 +125,7 @@ services:
         max-size: 10m
         max-file: '3'
   oauth2-proxy:
-    image: ghcr.io/wyattau/evergreenimageregistry/oauth2-proxy:v7.15.2
+    image: ghcr.io/wyattau/evergreenimageregistry/oauth2-proxy:7.15.3
     container_name: proxy-oauth2-proxy
     restart: unless-stopped
     init: true
