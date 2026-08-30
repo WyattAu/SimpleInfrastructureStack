@@ -1,0 +1,90 @@
+services:
+  ferro:
+    image: ghcr.io/wyattau/ferro:latest
+    container_name: ferro-server
+    restart: unless-stopped
+    init: true
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    volumes:
+    - ${DATA_BASE_PATH}/ferro/data:/data
+    environment:
+    - TZ=${TZ}
+    - FERRO_DATA_DIR=/data
+    - FERRO_STORAGE=local:/data/files
+    - FERRO_OIDC_ISSUER=${OIDC_ISSUER}
+    - FERRO_OIDC_CLIENT_ID=${OIDC_CLIENT_ID}
+    - FERRO_OIDC_AUDIENCE=${OIDC_AUDIENCE:-ferro}
+    - FERRO_CAS_ENABLED=true
+    networks:
+    - traefik_net
+    labels:
+    - traefik.enable=true
+    - traefik.docker.network=traefik_net
+    - traefik.http.routers.ferro.rule=Host(`${FERRO_SUBDOMAIN}.${DOMAIN_NAME}`)
+    - traefik.http.routers.ferro.entrypoints=websecure
+    - traefik.http.routers.ferro.tls.certresolver=cloudflare
+    - traefik.http.services.ferro.loadbalancer.server.port=8080
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+          pids: 100
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+  postgres-ferro:
+    image: ghcr.io/wyattau/evergreenimageregistry/postgres:17.10
+    container_name: postgres-ferro
+    restart: unless-stopped
+    init: true
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    cap_add:
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
+    volumes:
+    - ${DATA_BASE_PATH}/ferro/postgres:/var/lib/postgresql/data
+    environment:
+    - POSTGRES_DB=ferro
+    - POSTGRES_USER=${POSTGRES_USER}
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+    - data_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ferro"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+          pids: 100
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+networks:
+  traefik_net:
+    external: true
+  data_net:
+    driver: bridge
