@@ -10,7 +10,7 @@ Internet
   │     ├── ssh.wyattau.com → CF Tunnel → TrueNAS:2222 (Forgejo SSH)
   │     └── CF Access: OTP auth for SSH
   │
-  ├── Vodafone ISP (62.49.88.159)
+  ├── Vodafone ISP (62.49.93.199)
   │     ├── TrueNAS (192.168.1.3) — 96TB ZFS pool
   │     ├── CachyOS (192.168.1.191) — CI runner server
   │     └── LAN (192.168.1.0/24)
@@ -126,7 +126,7 @@ Containers → exporters → VictoriaMetrics → vmalert (820 rules) → Alertma
 
 | Layer | Mechanism |
 |-------|-----------|
-| Network | Cloudflare proxy + tunnel (no exposed ports) |
+| Network | Cloudflare proxy + tunnel (ports 80/443 via CF, 2222 for Forgejo SSH, 3478 for Headscale STUN, 51820 for WireGuard) |
 | DDoS | Cloudflare edge + rate limiting |
 | Auth | Keycloak OIDC via oauth2-proxy |
 | Container | cap_drop ALL, no-new-privileges, pids limits |
