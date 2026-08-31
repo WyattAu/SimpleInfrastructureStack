@@ -10,7 +10,7 @@
 **Server**: `https://headscale.wyattau.com`
 **Pre-auth key** (reusable, expires 2026-10-02):
 ```
-hskey-auth-6A1bCBRxMCsR-kGSg0zQiNHQMjc6N3B8A3Lf0RL-KfL5wDJCBQylDmAaWsvIBRwJTwmLlW-WC3jHV
+YOUR_PREAUTH_KEY_HERE
 ```
 
 ---
@@ -27,7 +27,7 @@ sudo systemctl enable --now tailscaled
 # Connect to Headscale
 sudo tailscale up \
   --login-server https://headscale.wyattau.com \
-  --authkey hskey-auth-6A1bCBRxMCsR-kGSg0zQiNHQMjc6N3B8A3Lf0RL-KfL5wDJCBQylDmAaWsvIBRwJTwmLlW-WC3jHV \
+  --authkey YOUR_PREAUTH_KEY_HERE \
   --hostname <your-hostname> \
   --accept-routes
 
@@ -46,7 +46,7 @@ ping 100.64.0.2  # TrueNAS exit node
 ```powershell
 tailscale up `
   --login-server https://headscale.wyattau.com `
-  --authkey hskey-auth-6A1bCBRxMCsR-kGSg0zQiNHQMjc6N3B8A3Lf0RL-KfL5wDJCBQylDmAaWsvIBRwJTwmLlW-WC3jHV `
+  --authkey YOUR_PREAUTH_KEY_HERE `
   --hostname windows-pc `
   --accept-routes
 ```

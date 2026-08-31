@@ -36,7 +36,7 @@ ssh truenas_admin@192.168.1.3
 
 ### Step 2: List Available Snapshots
 ```
-RESTIC_PASSWORD='Ki/+lLYMLu0/0sCBsKpxpISjOY2tBjcIBaFL31Moi+4=' \
+RESTIC_PASSWORD='YOUR_RESTIC_PASSWORD_HERE' \
   restic -r /mnt/pool_HDD_x2/tank/datasources/sis/backups/restic-repo-new \
   snapshots --compact
 ```
@@ -49,8 +49,8 @@ RESTIC_PASSWORD='...' \
 
 ### Step 4: Restore From B2 Offsite
 ```
-AWS_ACCESS_KEY_ID=003f3a2e96de77b0000000001 \
-AWS_SECRET_ACCESS_KEY='K003+fw0lRndYztZMFLM+lyplqfsLL0' \
+AWS_ACCESS_KEY_ID=YOUR_AWS_ACCESS_KEY_ID_HERE \
+AWS_SECRET_ACCESS_KEY='YOUR_AWS_SECRET_ACCESS_KEY_HERE' \
 RESTIC_PASSWORD='...' \
   restic -r s3:https://s3.eu-central-003.backblazeb2.com/SisInfraBackup/repo-new \
   restore <SNAPSHOT_ID> --target /path/to/restore

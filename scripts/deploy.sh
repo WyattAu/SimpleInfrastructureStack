@@ -137,9 +137,9 @@ SHA_FILE="/var/run/infra-deploy-sha"
 # ─── Stack deployment order (ansible/inventory/group_vars/all.yml) ────────
 
 STACKS=(
-    tunnel security proxy iam monitoring operations
-    collaboration storage accounting erpnext project-management utility
-    backup vaultwarden rss photos documents vpn books updater
+    tunnel webhook security proxy iam monitoring operations
+    collaboration storage accounting erpnext utility
+    backup vaultwarden rss photos documents vpn books ferro headscale updater
 )
 
 # ─── Health check containers (ansible/inventory/group_vars/all.yml) ───────
