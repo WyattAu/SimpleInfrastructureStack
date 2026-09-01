@@ -58,11 +58,7 @@ ping 100.64.0.8  # TrueNAS exit node
 ```powershell
 tailscale up `
   --login-server https://headscale.wyattau.com `
-<<<<<<< HEAD
   --authkey YOUR_PREAUTH_KEY_HERE `
-=======
-  --authkey hskey-auth-y0whvJtmNahI-Uj-HSwUcCn6v09UBFHt_P48ykjETR_D1MPh14QxvNslB0NwTkhiLYmdA5cN3kTQi `
->>>>>>> 54a2c80 (docs: fix headscale enrollment — real node names, direct DNS requirement, no keys in doc)
   --hostname windows-pc `
   --accept-routes
 ```
