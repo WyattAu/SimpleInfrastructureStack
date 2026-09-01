@@ -4,14 +4,26 @@
 
 | Node | IP | Status |
 |------|-----|--------|
-| truenas-1 (exit node) | 100.64.0.2 | Online |
-| cachyos-runner | 100.64.0.3 | Online |
+| msi-ge66 (laptop) | 100.64.0.1 | Online |
+| cachyos-x8664 (headless server, .191) | 100.64.0.2 | Online |
+| wyattdeskacercachy (Acer desktop) | 100.64.0.3 | Online |
+| truenas (exit node) | 100.64.0.8 | Online |
 
-**Server**: `https://headscale.wyattau.com`
-**Pre-auth key** (reusable, expires 2026-10-02):
+**Server**: `https://headscale.wyattau.com` — **direct A record (DNS only), never proxy
+this hostname through Cloudflare**: the TS2021 noise handshake is a POST-based upgrade
+that CF's edge strips (500) — and do NOT add websocket-header-rewriting middlewares in
+Traefik (a `headscale-ws` middleware caused 405s; removed 2026-09-01).
+
+**Pre-auth key**: do not store keys in this doc (they expire silently — caused the
+2026-09-01 outage). Mint one on demand:
+
+```bash
+ssh truenas 'sudo docker exec headscale-server headscale preauthkeys create --user 1 --reusable --expiration 90d'
 ```
-YOUR_PREAUTH_KEY_HERE
-```
+
+CachyOS laptops self-enroll: write the key to `/etc/tailscale/headscale-authkey`
+(root, 0600) and `sudo systemctl start tailscale-enroll.service` — the systemd timer
+retries hourly until a valid key appears (Ansible `local.yml` section 10g).
 
 ---
 
@@ -33,7 +45,7 @@ sudo tailscale up \
 
 # Verify
 tailscale status
-ping 100.64.0.2  # TrueNAS exit node
+ping 100.64.0.8  # TrueNAS exit node
 ```
 
 ---
@@ -46,7 +58,11 @@ ping 100.64.0.2  # TrueNAS exit node
 ```powershell
 tailscale up `
   --login-server https://headscale.wyattau.com `
+<<<<<<< HEAD
   --authkey YOUR_PREAUTH_KEY_HERE `
+=======
+  --authkey hskey-auth-y0whvJtmNahI-Uj-HSwUcCn6v09UBFHt_P48ykjETR_D1MPh14QxvNslB0NwTkhiLYmdA5cN3kTQi `
+>>>>>>> 54a2c80 (docs: fix headscale enrollment — real node names, direct DNS requirement, no keys in doc)
   --hostname windows-pc `
   --accept-routes
 ```
@@ -78,11 +94,11 @@ tailscale up `
 ## After Enrollment
 
 Once connected, you can:
-- **Access TrueNAS**: `ssh truenas_admin@100.64.0.2` or via Tailscale hostname
+- **Access TrueNAS**: `ssh truenas_admin@100.64.0.8` or via Tailscale hostname
 - **Access CachyOS**: `ssh wyatt@100.64.0.3`
 - **Use exit node**: Route all traffic through TrueNAS
   ```bash
-  sudo tailscale up --exit-node=100.64.0.2
+  sudo tailscale up --exit-node=100.64.0.8
   ```
 
 ## Verify on Server
