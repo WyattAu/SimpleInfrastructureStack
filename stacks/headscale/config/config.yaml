@@ -9,9 +9,16 @@ noise:
   private_key_path: /etc/headscale/noise.private.key
 
 database:
-  type: sqlite
-  sqlite:
-    path: /var/lib/headscale/db.sqlite
+  type: postgres
+  postgres:
+    host: headscale-postgres
+    pass: headscale_s3cret
+    port: 5432
+    name: headscale
+    user: headscale
+    max_open_conns: 10
+    max_idle_conns: 10
+    conn_max_lifetime: 3600s
 
 derp:
   server:

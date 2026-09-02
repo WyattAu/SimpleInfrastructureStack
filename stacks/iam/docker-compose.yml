@@ -44,6 +44,7 @@ services:
   keycloak:
     image: ghcr.io/wyattau/evergreenimageregistry/keycloak:26.6.2
     container_name: iam-keycloak
+    command: [start]
     restart: unless-stopped
     init: true
     security_opt:
@@ -80,9 +81,8 @@ services:
     - KC_SMTP_STARTTLS=true
     networks:
       traefik_net:
-      backend_net:
-        ipv4_address: 172.16.7.202
       data_net:
+        ipv4_address: 172.16.7.202
     labels:
     - traefik.enable=true
     - traefik.docker.network=traefik_net

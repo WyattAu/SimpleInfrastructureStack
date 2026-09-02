@@ -31,7 +31,7 @@ services:
     - --httpListenAddr=:8428
     networks:
       traefik_net:
-      data_net:
+      backend_net:
         ipv4_address: 172.16.7.200
     healthcheck:
       test:
@@ -47,14 +47,6 @@ services:
     labels:
     - traefik.enable=true
     - traefik.docker.network=traefik_net
-    - traefik.http.routers.vm.rule=Host(`vm.${DOMAIN_NAME}`)
-    - traefik.http.routers.vm.entrypoints=websecure
-    - traefik.http.routers.vm.tls.certresolver=cloudflare
-    - traefik.http.routers.vm.service=vm-svc
-    - traefik.http.routers.vm.middlewares=vm-basicauth@docker
-    - traefik.http.services.vm-svc.loadbalancer.server.port=8428
-    - traefik.http.middlewares.vm-basicauth.basicauth.users=${VM_REMOTE_WRITE_AUTH}
-    - traefik.http.middlewares.vm-basicauth.basicauth.removeheader=true
     - traefik.http.routers.prometheus.rule=Host(`${PROMETHEUS_SUBDOMAIN}.${DOMAIN_NAME}`)
     - traefik.http.routers.prometheus.entrypoints=websecure
     - traefik.http.routers.prometheus.middlewares=keycloak-auth@file
@@ -441,7 +433,7 @@ services:
         max-size: 10m
         max-file: '3'
   alertmanager:
-    image: ghcr.io/wyattau/evergreenimageregistry/alertmanager:0.32.1
+    image: ghcr.io/wyattau/evergreenimageregistry/alertmanager:v0.32.1
     container_name: monitoring-alertmanager
     restart: unless-stopped
     init: true
@@ -453,12 +445,12 @@ services:
     - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
     environment:
     - NTFY_TOPIC=${NTFY_TOPIC}
-    command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager", "--web.external-url=https://${PROMETHEUS_SUBDOMAIN}.${DOMAIN_NAME}"]
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/data", "--web.external-url=https://${PROMETHEUS_SUBDOMAIN}.${DOMAIN_NAME}"]
     networks:
-      data_net:
+      backend_net:
         ipv4_address: 172.16.7.201
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:9093/-/healthy || exit 1"]
+      test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:9093"]
       interval: 30s
       timeout: 10s
       start_period: 30s
