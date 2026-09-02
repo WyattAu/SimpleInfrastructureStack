@@ -1,6 +1,6 @@
 services:
   socket-proxy:
-    image: ghcr.io/wyattau/evergreenimageregistry/docker-socket-proxy:v0.4.2
+    image: tecnativa/docker-socket-proxy:latest
     container_name: proxy-socket-proxy
     restart: unless-stopped
     init: true
@@ -17,7 +17,7 @@ services:
     - DAC_OVERRIDE
     - DAC_READ_SEARCH
     healthcheck:
-      test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:2375"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:2375/_ping"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -81,7 +81,7 @@ services:
     cap_drop:
     - ALL
     healthcheck:
-      test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:8080"]
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -95,7 +95,7 @@ services:
     - --log.level=INFO
     - --providers.docker=true
     - --providers.docker.exposedbydefault=false
-    - --providers.docker.endpoint=tcp://socket-proxy:2375
+    - --providers.docker.endpoint=unix:///var/run/docker.sock
     - --providers.file.filename=/dynamic/dynamic.yml
     - --providers.file.watch=true
     - --entrypoints.web.address=:80
@@ -123,6 +123,7 @@ services:
     - ${DATA_BASE_PATH}/proxy/letsencrypt:/letsencrypt
     - ${DATA_BASE_PATH}/proxy/certs:/certs:ro
     - ${DATA_BASE_PATH}/proxy/dynamic.yml:/dynamic/dynamic.yml:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
     - PUID=${PUID}
     - PGID=${PGID}

@@ -113,6 +113,10 @@ ingress:
   service: https://127.0.0.1:443
   originRequest:
     noTLSVerify: true
+- hostname: vm.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
 - hostname: mesh.wyattau.com
   service: https://127.0.0.1:443
   originRequest:
@@ -121,5 +125,11 @@ ingress:
   service: http://127.0.0.1:9001
 - hostname: map.wyattau.com
   service: http://192.168.1.191:8123
-
+- hostname: ferro.wyattau.com
+  service: https://127.0.0.1:443
+  originRequest:
+    noTLSVerify: true
+    keepAliveConnections: 10
+    keepAliveTimeout: 90s
+    connectTimeout: 10s
 - service: http_status:404
