@@ -28,6 +28,7 @@ log "=== Starting SIS Infrastructure Backup ==="
 
 # === Database dumps ===
 log "Dumping databases..."
+docker exec headscale-postgres pg_dumpall -U headscale > "$DUMP_DIR/headscale.sql" 2>/dev/null || true
 docker exec iam-postgres pg_dumpall -U keycloak > "$DUMP_DIR/keycloak.sql" 2>/dev/null || true
 docker exec operations-postgres-forgejo pg_dumpall -U forgejo > "$DUMP_DIR/forgejo.sql" 2>/dev/null || true
 docker exec erpnext-mariadb mariadb-dump -u root -perpnext123 --all-databases > "$DUMP_DIR/erpnext.sql" 2>/dev/null || true

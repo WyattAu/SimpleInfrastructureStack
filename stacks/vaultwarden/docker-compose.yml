@@ -3,11 +3,16 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/vaultwarden:1.36.0
     container_name: vaultwarden-server
     restart: unless-stopped
-    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
     - ALL
+    cap_add:
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
     volumes:
     - ${DATA_BASE_PATH}/vaultwarden:/data
     environment:
@@ -40,7 +45,7 @@ services:
     - traefik.http.services.vaultwarden.loadbalancer.server.port=80
     - traefik.http.services.vaultwarden.loadbalancer.server.scheme=http
     healthcheck:
-      test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:80"]
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:80/alive || exit 1"]
       interval: 30s
       timeout: 10s
       start_period: 30s

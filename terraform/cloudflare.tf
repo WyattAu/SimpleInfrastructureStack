@@ -226,3 +226,41 @@ locals {
     "wyattsnotes.wyattau.com"   = "wyattsnotes.pages.dev (Cloudflare Pages)"
   }
 }
+
+# ===================================================================
+# Headscale endpoint — direct (DNS only) records
+# Created 2026-09-01 via API during the TS2021/Cloudflare fix.
+# IMPORTANT: content is owned by the cf-ddns container (proxy stack)
+# which keeps it pointed at the current WAN IP — never managed here.
+# ===================================================================
+
+resource "cloudflare_record" "headscale_v4" {
+  zone_id = var.cf_zone_id
+  name    = "headscale"
+  type    = "A"
+  content = "62.49.53.24"
+  ttl     = 300
+  proxied = false
+
+  lifecycle {
+    ignore_changes = [content]
+  }
+}
+
+resource "cloudflare_record" "headscale_v6" {
+  zone_id = var.cf_zone_id
+  name    = "headscale"
+  type    = "AAAA"
+  content = "2a0a:ef40:10fe:8901:6e4b:90ff:fe48:c063"
+  ttl     = 300
+  proxied = false
+
+  lifecycle {
+    ignore_changes = [content]
+  }
+}
+
+# ADOPT INTO STATE (run during next site.yml terraform pass, when the
+# keycloak/gitea provider creds are present — state refresh requires them):
+#   terraform import cloudflare_record.headscale_v4 '<cf_zone_id>/142f665c6e07289491cec289ce1859ee'
+#   terraform import cloudflare_record.headscale_v6 '<cf_zone_id>/ce12f32868e4a12b25bdffffc979155f'

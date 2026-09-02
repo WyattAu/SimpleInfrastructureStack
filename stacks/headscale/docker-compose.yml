@@ -1,6 +1,6 @@
 services:
   headscale:
-    image: ghcr.io/wyattau/evergreenimageregistry/headscale:0.29.2
+    image: ghcr.io/juanfont/headscale:0.29.3
     container_name: headscale-server
     restart: unless-stopped
     entrypoint: ["/ko-app/headscale"]
@@ -19,7 +19,7 @@ services:
     environment:
     - TZ=${TZ}
     ports:
-    - 127.0.0.1:8080:8080
+    - 0.0.0.0:8080:8080
     - 3478:3478/udp
     networks:
     - traefik_net
@@ -32,16 +32,16 @@ services:
     - traefik.enable=true
     - traefik.docker.network=traefik_net
     - traefik.http.services.headscale-svc.loadbalancer.server.port=8080
-    - traefik.http.routers.headscale.rule=Host()
+    - traefik.http.routers.headscale.rule=Host(`headscale.wyattau.com`)
     - traefik.http.routers.headscale.entrypoints=websecure
     - traefik.http.routers.headscale.tls.certresolver=cloudflare
     - traefik.http.routers.headscale.service=headscale-svc
-    - traefik.http.routers.headscale-admin.rule=Host()
+    - traefik.http.routers.headscale-admin.rule=Host(`mesh.wyattau.com`)
     - traefik.http.routers.headscale-admin.entrypoints=websecure
     - traefik.http.routers.headscale-admin.tls.certresolver=cloudflare
     - traefik.http.routers.headscale-admin.service=headscale-svc
     healthcheck:
-      test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:8080"]
+      test: ["CMD", "/ko-app/headscale", "version"]
       interval: 30s
       timeout: 10s
       retries: 3
