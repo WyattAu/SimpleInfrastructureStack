@@ -8,7 +8,10 @@
   },
   "acls": [
     { "action": "accept", "src": ["group:admin"], "dst": ["*:*"] },
+    { "action": "accept", "src": ["*"], "dst": ["192.168.0.0/24:*", "192.168.1.0/24:*", "autogroup:internet:*"] },
     { "action": "accept", "src": ["*"], "dst": ["*:*"] },
   ],
-  "ssh": [],
+  "ssh": [
+    { "action": "accept", "src": ["group:admin"], "dst": ["autogroup:member"], "users": ["wyatt", "root", "truenas_admin"] },
+  ],
 }
