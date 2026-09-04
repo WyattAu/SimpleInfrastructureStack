@@ -65,3 +65,4 @@ stacks/collaboration/config/hookshot/
 stacks/operations/forgejo-runner/config-*.yaml
 *.bak
 *.bak2
+secrets/forgejo_token
