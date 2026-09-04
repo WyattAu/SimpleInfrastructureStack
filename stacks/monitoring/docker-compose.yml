@@ -125,7 +125,7 @@ services:
         max-size: 10m
         max-file: '3'
   grafana:
-    image: grafana/grafana:12.2.9
+    image: ghcr.io/wyattau/evergreenimageregistry/grafana:12.2.9
     container_name: monitoring-grafana
     restart: unless-stopped
     init: true
@@ -160,7 +160,7 @@ services:
     - traefik_net
     - backend_net
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:3000"]
       interval: 30s
       timeout: 10s
       start_period: 30s
