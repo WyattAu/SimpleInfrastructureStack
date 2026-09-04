@@ -1,6 +1,6 @@
 services:
   backup-restic:
-    image: restic/restic:0.17.3
+    image: ghcr.io/wyattau/evergreenimageregistry/restic:0.18.1
     container_name: backup-restic
     restart: unless-stopped
     init: true
@@ -24,6 +24,12 @@ services:
     - tail
     - -f
     - /dev/null
+    healthcheck:
+      test: ["CMD", "restic", "snapshots", "--latest", "1", "--compact"]
+      interval: 300s
+      timeout: 60s
+      retries: 3
+      start_period: 60s
     deploy:
       resources:
         limits:

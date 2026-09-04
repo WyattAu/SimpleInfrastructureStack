@@ -13,8 +13,8 @@ DUMP_DIR="/mnt/pool_HDD_x2/tank/datasources/sis/backups/db-dumps-$(date +%Y%m%d-
 
 # Offsite (Backblaze B2) configuration
 B2_REPO="s3:https://s3.eu-central-003.backblazeb2.com/SisInfraBackup/repo-new"
-B2_KEY="***REMOVED_B2_KEY_ID***"
-B2_SECRET="***REMOVED_B2_SECRET***"
+B2_KEY="${OFFSITE_AWS_KEY:?OFFSITE_AWS_KEY not set}"
+B2_SECRET="${OFFSITE_AWS_SECRET:?OFFSITE_AWS_SECRET not set}"
 
 # Textfile collector for Prometheus metrics
 TEXTFILE_DIR="/mnt/pool_HDD_x2/tank/datasources/sis/appdata/monitoring/textfile-collector"
@@ -28,6 +28,7 @@ log "=== Starting SIS Infrastructure Backup ==="
 
 # === Database dumps ===
 log "Dumping databases..."
+docker exec headscale-postgres pg_dumpall -U headscale > "$DUMP_DIR/headscale.sql" 2>/dev/null || true
 docker exec iam-postgres pg_dumpall -U keycloak > "$DUMP_DIR/keycloak.sql" 2>/dev/null || true
 docker exec operations-postgres-forgejo pg_dumpall -U forgejo > "$DUMP_DIR/forgejo.sql" 2>/dev/null || true
 docker exec erpnext-mariadb mariadb-dump -u root -perpnext123 --all-databases > "$DUMP_DIR/erpnext.sql" 2>/dev/null || true

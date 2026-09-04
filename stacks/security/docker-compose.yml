@@ -22,7 +22,7 @@
 
 services:
   crowdsec:
-    image: crowdsecurity/crowdsec:v1.7.8
+    image: ghcr.io/wyattau/evergreenimageregistry/crowdsec:1.7.8
     container_name: security-crowdsec
     restart: unless-stopped
     init: true

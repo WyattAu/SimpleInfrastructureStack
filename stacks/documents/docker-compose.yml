@@ -10,7 +10,7 @@ services:
     - -p
     - /data
   paperless-postgres:
-    image: ghcr.io/wyattau/evergreenimageregistry/postgres:17.10
+    image: postgres:16-alpine
     container_name: documents-postgres
     restart: unless-stopped
     init: true
@@ -55,7 +55,7 @@ services:
         max-size: 10m
         max-file: '3'
   paperless-redis:
-    image: ghcr.io/wyattau/evergreenimageregistry/redis:7.4-alpine
+    image: redis:7-alpine
     container_name: documents-redis
     restart: unless-stopped
     init: true
@@ -94,7 +94,7 @@ services:
         max-size: 10m
         max-file: '3'
   paperless-webserver:
-    image: ghcr.io/paperless-ngx/paperless-ngx:2.20.15
+    image: ghcr.io/wyattau/evergreenimageregistry/paperless-ngx:2.20.15
     container_name: documents-webserver
     restart: unless-stopped
     # NOTE: init: true removed — Paperless-ngx uses s6-overlay which MUST be PID 1

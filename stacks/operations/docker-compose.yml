@@ -1,7 +1,8 @@
 services:
   postgres-forgejo:
-    image: ghcr.io/wyattau/evergreenimageregistry/postgres:17.10
+    image: ghcr.io/wyattau/evergreenimageregistry/postgres:17-alpine
     container_name: operations-postgres-forgejo
+    init: true
     restart: unless-stopped
     security_opt:
     - no-new-privileges:true
@@ -44,11 +45,16 @@ services:
     image: ghcr.io/wyattau/evergreenimageregistry/forgejo:15.0.4
     container_name: operations-forgejo
     restart: unless-stopped
-    init: true
     security_opt:
     - no-new-privileges:true
     cap_drop:
     - ALL
+    cap_add:
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
     ports:
     - 2222:2522
     depends_on:

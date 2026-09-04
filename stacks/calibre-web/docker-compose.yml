@@ -1,0 +1,55 @@
+services:
+  calibre-web:
+    image: ghcr.io/wyattau/evergreenimageregistry/calibre-web:0.6.26
+    container_name: calibre-web
+    restart: unless-stopped
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    cap_add:
+    - SETGID
+    - SETUID
+    - DAC_OVERRIDE
+    - FOWNER
+    - CHOWN
+    volumes:
+    - /mnt/pool_HDD_x2/tank/datasources/sis/appdata/books/calibre-web:/config
+    - /mnt/pool_HDD_x2/tank/datasources/sis/appdata/books/calibre-library:/books
+    environment:
+    - PUID=911
+    - PGID=911
+    - TZ=${TZ:-UTC}
+    ports:
+    - 8083:8083
+    networks:
+    - traefik_net
+    labels:
+    - traefik.enable=true
+    - traefik.docker.network=traefik_net
+    - traefik.http.services.calibre-web-svc.loadbalancer.server.port=8083
+    - traefik.http.routers.calibre-web.rule=Host(`books.wyattau.com`)
+    - traefik.http.routers.calibre-web.entrypoints=websecure
+    - traefik.http.routers.calibre-web.tls.certresolver=cloudflare
+    - traefik.http.routers.calibre-web.service=calibre-web-svc
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:8083"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+          pids: 100
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+networks:
+  traefik_net:
+    external: true

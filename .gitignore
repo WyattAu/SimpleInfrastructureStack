@@ -58,3 +58,10 @@ stacks/monitoring/alertmanager/alertmanager.yml
 
 # Forgejo token (rotate via web UI, store in secrets/)
 .forgejo_token
+
+# Runtime configs with embedded secrets (generated on TrueNAS)
+stacks/security/config/workers-bouncer/
+stacks/collaboration/config/hookshot/
+stacks/operations/forgejo-runner/config-*.yaml
+*.bak
+*.bak2
