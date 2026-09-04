@@ -101,7 +101,9 @@ for config_file in \
     "${RESTORE_DIR}/data/monitoring/alertmanager/alertmanager.yml"; do
 
     if docker exec backup-restic test -s "${config_file}"; then
-        size=$(docker exec backup-restic wc -c < "${config_file}")
+        # NOTE: redirect must happen INSIDE backup-restic (the file lives
+        # in its /tmp, not in this container)
+        size=$(docker exec backup-restic sh -c "wc -c < '${config_file}'")
         pass "Config $(basename "$(dirname "${config_file}")")/$(basename "${config_file}"): ${size} bytes"
     else
         fail "Config missing or empty: ${config_file}"
@@ -169,7 +171,7 @@ fi
 
 # Verify Paperless document database file exists
 if docker exec backup-restic test -f "${RESTORE_DIR}/data/documents/data/documents.db" 2>/dev/null; then
-    db_size=$(docker exec backup-restic wc -c < "${RESTORE_DIR}/data/documents/data/documents.db" 2>/dev/null || echo "unknown")
+    db_size=$(docker exec backup-restic sh -c "wc -c < '${RESTORE_DIR}/data/documents/data/documents.db'" 2>/dev/null || echo "unknown")
     pass "Paperless: database verified (${db_size} bytes)"
 else
     pass "Paperless: no database found (normal before first scan)"
