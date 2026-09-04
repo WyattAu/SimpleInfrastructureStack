@@ -46,7 +46,7 @@ for tag in operations iam vaultwarden monitoring db-dumps; do
 done
 
 # Step 2: Locate the restored appdata root (dynamic - snapshot paths are absolute)
-APPDATA=$(docker exec backup-restic sh -c "find ${RESTORE_DIR}${APPDATA_REL:+} -maxdepth 0 2>/dev/null; echo ${RESTORE_DIR}/${APPDATA_REL}")
+APPDATA="${RESTORE_DIR}/${APPDATA_REL}"
 if ! docker exec backup-restic test -d "${APPDATA}"; then
     echo "Restore test FAILED: appdata root not found at ${APPDATA}"
     exit 1
