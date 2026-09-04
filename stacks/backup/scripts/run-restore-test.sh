@@ -179,8 +179,9 @@ fi
 
 # Step 9: Get snapshot info for reporting
 # shellcheck disable=SC2034
-SNAPSHOT_INFO=$(docker exec backup-restic restic snapshots --latest --json 2>/dev/null | head -1)
-SNAPSHOT_DATE=$(docker exec backup-restic restic snapshots --latest --compact 2>/dev/null)
+# NOTE: --latest requires a count argument; reporting must never kill the test
+SNAPSHOT_INFO=$(docker exec backup-restic restic snapshots --latest 1 --json 2>/dev/null | head -1 || true)
+SNAPSHOT_DATE=$(docker exec backup-restic restic snapshots --latest 1 --compact 2>/dev/null || true)
 
 # Report results
 echo ""
