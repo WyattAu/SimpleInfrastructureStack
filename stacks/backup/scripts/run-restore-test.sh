@@ -87,10 +87,13 @@ else
     fail "DB dumps not found in db-dumps snapshot"
 fi
 
-# Step 5: Validate key config files exist and are non-empty
+# Step 5: Validate key config files exist and are non-empty.
+# Monitoring configs are bind-mounted from the stacks dir (git), so they
+# come from the configs-tag snapshot, not the appdata/monitoring tag.
+STACKS_DIR="${RESTORE_DIR}/mnt/pool_HDD_x2/infra/stacks/stacks"
 for config_file in \
-    "${APPDATA}/monitoring/victoriametrics/scrape.yml" \
-    "${APPDATA}/monitoring/alertmanager/alertmanager.yml"; do
+    "${STACKS_DIR}/monitoring/victoriametrics/scrape.yml" \
+    "${STACKS_DIR}/monitoring/alertmanager/alertmanager.yml"; do
     if docker exec backup-restic sh -c "test -s '${config_file}'"; then
         size=$(docker exec backup-restic sh -c "wc -c < '${config_file}'")
         pass "Config $(basename "${config_file}"): ${size} bytes"
