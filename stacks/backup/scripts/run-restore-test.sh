@@ -38,23 +38,26 @@ trap cleanup EXIT
 
 echo "[$(date -Iseconds)] Starting monthly backup restore test..."
 
-# Step 1: Restore latest snapshot
-echo "[$(date -Iseconds)] Restoring latest snapshot..."
-docker exec backup-restic sh -c "
-    rm -rf ${RESTORE_DIR}
-    restic restore latest --target ${RESTORE_DIR}
-"
+# Step 1: Restore the latest snapshot of each critical tag.
+# The nightly backup splits appdata into PER-STACK snapshots, so there is
+# no single "latest" containing everything - restore by tag instead.
+echo "[$(date -Iseconds)] Restoring latest snapshots (per-tag)..."
+for tag in operations iam vaultwarden configs; do
+    docker exec backup-restic sh -c "
+        restic restore --tag ${tag} latest --target ${RESTORE_DIR} >/dev/null 2>&1
+    " || fail "Restore failed for tag: ${tag}"
+done
 
 # Step 2: Validate database directories contain files
 echo "[$(date -Iseconds)] Validating database directories..."
 
 for db_entry in \
-    "operations/postgres-forgejo:iam-postgres-forgejo:forgejo" \
-    "collaboration/postgres:collaboration-postgres:synapse" \
-    "iam/postgres:iam-postgres:keycloak" \
-    "rss/postgres:rss-postgres:freshrss" \
-    "photos/db:photos-postgres:immich" \
-    "documents/postgres:documents-postgres:paperless"; do
+    "postgres-forgejo:iam-postgres-forgejo:forgejo" \
+    "postgres:collaboration-postgres:synapse" \
+    "postgres:iam-postgres:keycloak" \
+    "postgres:rss-postgres:freshrss" \
+    "db:photos-postgres:immich" \
+    "postgres:documents-postgres:paperless"; do
 
     db_dir="${RESTORE_DIR}/data/${db_entry%%:*}"
     # db_container extracted for future pg_isready connectivity checks
