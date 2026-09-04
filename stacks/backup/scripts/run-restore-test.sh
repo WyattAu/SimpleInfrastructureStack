@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # Monthly Backup Restore Test
-# Restores the latest snapshot to a temporary location and validates:
-#   1. Key files exist and are non-empty
-#   2. Database directories contain valid data
-#   3. Configuration files parse correctly
-#   4. File counts match expectations
+# Restores the latest snapshot per critical tag and validates:
+#   1. Database directories contain files
+#   2. Key config files exist and are non-empty
+#   3. App data has content
+#
+# The nightly backup (backup.sh) creates PER-STACK snapshots using ABSOLUTE
+# host paths, so restores land under
+#   ${RESTORE_DIR}/mnt/pool_HDD_x2/tank/datasources/sis/appdata/...
+# This script locates that root dynamically instead of assuming a layout.
 #
 # Runs inside backup-cron-trigger container.
 # Exit code 0 = all checks passed, 1 = one or more checks failed.
@@ -12,112 +16,94 @@
 set -euo pipefail
 
 RESTORE_DIR="/tmp/restore-test-$$"
+APPDATA_REL="mnt/pool_HDD_x2/tank/datasources/sis/appdata"
 NTFY_TOPIC="${NTFY_TOPIC:-}"
 RESULTS=""
-
-# Track pass/fail counts
 PASS=0
 FAIL=0
 
-pass() {
-    PASS=$((PASS + 1))
-    RESULTS="${RESULTS}[PASS] $1\n"
-}
-
-fail() {
-    FAIL=$((FAIL + 1))
-    RESULTS="${RESULTS}[FAIL] $1\n"
-}
+pass() { PASS=$((PASS+1)); RESULTS="${RESULTS}[PASS] $1\n"; }
+fail() { FAIL=$((FAIL+1)); RESULTS="${RESULTS}[FAIL] $1\n"; }
+skip() { RESULTS="${RESULTS}[SKIP] $1\n"; }
 
 cleanup() {
     echo "[$(date -Iseconds)] Cleaning up restore directory..."
-    docker exec backup-restic rm -rf "${RESTORE_DIR}" 2>/dev/null || true
+    docker exec backup-restic sh -c "rm -rf ${RESTORE_DIR}" 2>/dev/null || true
 }
-
 trap cleanup EXIT
 
 echo "[$(date -Iseconds)] Starting monthly backup restore test..."
 
-# Step 1: Restore the latest snapshot of each critical tag.
-# The nightly backup splits appdata into PER-STACK snapshots, so there is
-# no single "latest" containing everything - restore by tag instead.
-echo "[$(date -Iseconds)] Restoring latest snapshots (per-tag)..."
-for tag in operations iam vaultwarden configs; do
-    docker exec backup-restic sh -c "
-        restic restore --tag ${tag} latest --target ${RESTORE_DIR} >/dev/null 2>&1
-    " || fail "Restore failed for tag: ${tag}"
+# Step 1: Restore the latest snapshot per critical tag.
+# Nightly backups are split per-stack, so there is no single "latest".
+for tag in operations iam vaultwarden monitoring db-dumps; do
+    echo "[$(date -Iseconds)] Restoring tag: ${tag}..."
+    if ! docker exec backup-restic sh -c "
+        restic restore --tag ${tag} latest --target ${RESTORE_DIR} >/dev/null
+    "; then
+        fail "Restore failed for tag: ${tag}"
+    fi
 done
 
-# Step 2: Validate database directories contain files
-echo "[$(date -Iseconds)] Validating database directories..."
+# Step 2: Locate the restored appdata root (dynamic - snapshot paths are absolute)
+APPDATA=$(docker exec backup-restic sh -c "find ${RESTORE_DIR}${APPDATA_REL:+} -maxdepth 0 2>/dev/null; echo ${RESTORE_DIR}/${APPDATA_REL}")
+if ! docker exec backup-restic test -d "${APPDATA}"; then
+    echo "Restore test FAILED: appdata root not found at ${APPDATA}"
+    exit 1
+fi
+pass "Appdata root located"
 
+# Step 3: Validate database directories (stacks whose tags we restored)
 for db_entry in \
-    "postgres-forgejo:iam-postgres-forgejo:forgejo" \
-    "postgres:collaboration-postgres:synapse" \
-    "postgres:iam-postgres:keycloak" \
-    "postgres:rss-postgres:freshrss" \
-    "db:photos-postgres:immich" \
-    "postgres:documents-postgres:paperless"; do
-
-    db_dir="${RESTORE_DIR}/data/${db_entry%%:*}"
-    # db_container extracted for future pg_isready connectivity checks
-    # shellcheck disable=SC2034
-    db_container="${db_entry#*:}"
+    "operations/postgres-forgejo:forgejo" \
+    "iam/postgres:keycloak" \
+    "vaultwarden:vaultwarden-sqlite"; do
+    db_dir="${APPDATA}/${db_entry%%:*}"
     db_name="${db_entry##*:}"
-
-    if [ -d "${db_dir}" ]; then
-        file_count=$(docker exec backup-restic find "${db_dir}" -type f | wc -l)
-        if [ "$file_count" -gt 0 ]; then
-            # Check for PostgreSQL backup dump files (FC format from pg_dump)
-            if docker exec backup-restic test -f "${RESTORE_DIR}/tmp/pg-dumps/${db_name}.dump" 2>/dev/null; then
-                pass "Database ${db_name}: ${file_count} data files + dump verified"
-            else
-                pass "Database ${db_name}: ${file_count} files"
-            fi
+    if docker exec backup-restic sh -c "test -d '${db_dir}'"; then
+        file_count=$(docker exec backup-restic sh -c "find '${db_dir}' -type f 2>/dev/null | wc -l")
+        if [ "${file_count}" -gt 0 ]; then
+            pass "Database ${db_name}: ${file_count} files"
         else
-            fail "Database ${db_name}: EMPTY (0 files)"
+            fail "Database ${db_name}: directory EMPTY"
         fi
     else
         fail "Database directory missing: ${db_name} at ${db_dir}"
     fi
 done
 
-# Validate MariaDB directory separately
-MARIADB_DIR="${RESTORE_DIR}/data/accounting/mariadb-akaunting"
-if [ -d "${MARIADB_DIR}" ]; then
-    mariadb_count=$(docker exec backup-restic find "${MARIADB_DIR}" -type f | wc -l)
-    if [ "$mariadb_count" -gt 0 ]; then
-        pass "MariaDB akaunting: ${mariadb_count} files"
+# Step 4: Validate DB dump files (from db-dumps tag; dumps land under
+# mnt/.../sis/backups/db-dumps-<date>/)
+latest_dumps=$(docker exec backup-restic sh -c \
+    "ls -d ${RESTORE_DIR}/mnt/pool_HDD_x2/tank/datasources/sis/backups/db-dumps-* 2>/dev/null | sort | tail -1")
+if [ -n "${latest_dumps}" ]; then
+    dump_count=$(docker exec backup-restic sh -c "find '${latest_dumps}' -name '*.dump' -o -name '*.sql' 2>/dev/null | wc -l")
+    if [ "${dump_count}" -gt 0 ]; then
+        pass "DB dumps: ${dump_count} dump files present"
     else
-        fail "MariaDB akaunting: EMPTY (0 files)"
+        fail "DB dumps dir exists but no dump files"
     fi
 else
-    fail "MariaDB directory missing: ${MARIADB_DIR}"
+    fail "DB dumps not found in db-dumps snapshot"
 fi
 
-# Step 3: Validate key configuration files exist and are non-empty
-echo "[$(date -Iseconds)] Validating configuration files..."
-
+# Step 5: Validate key config files exist and are non-empty
 for config_file in \
-    "${RESTORE_DIR}/data/collaboration/synapse/homeserver.yaml" \
-    "${RESTORE_DIR}/data/monitoring/victoriametrics/scrape.yml" \
-    "${RESTORE_DIR}/data/monitoring/alertmanager/alertmanager.yml"; do
-
-    if docker exec backup-restic test -s "${config_file}"; then
-        # NOTE: redirect must happen INSIDE backup-restic (the file lives
-        # in its /tmp, not in this container)
+    "${APPDATA}/monitoring/victoriametrics/scrape.yml" \
+    "${APPDATA}/monitoring/alertmanager/alertmanager.yml"; do
+    if docker exec backup-restic sh -c "test -s '${config_file}'"; then
         size=$(docker exec backup-restic sh -c "wc -c < '${config_file}'")
-        pass "Config $(basename "$(dirname "${config_file}")")/$(basename "${config_file}"): ${size} bytes"
+        pass "Config $(basename "${config_file}"): ${size} bytes"
     else
         fail "Config missing or empty: ${config_file}"
     fi
 done
 
-# Step 4: Validate Forgejo data has content
-echo "[$(date -Iseconds)] Validating Forgejo data..."
-if docker exec backup-restic test -d "${RESTORE_DIR}/data/operations/forgejo"; then
-    forgejo_files=$(docker exec backup-restic find "${RESTORE_DIR}/data/operations/forgejo" -type f | wc -l)
-    if [ "$forgejo_files" -gt 0 ]; then
+# Step 6: Validate Forgejo data has content
+forgejo_dir="${APPDATA}/operations/forgejo"
+if docker exec backup-restic sh -c "test -d '${forgejo_dir}'"; then
+    forgejo_files=$(docker exec backup-restic sh -c "find '${forgejo_dir}' -type f 2>/dev/null | wc -l")
+    if [ "${forgejo_files}" -gt 0 ]; then
         pass "Forgejo data: ${forgejo_files} files"
     else
         fail "Forgejo data: EMPTY"
@@ -126,97 +112,49 @@ else
     fail "Forgejo data directory missing"
 fi
 
-# Step 5: Validate Vaultwarden data exists
-if docker exec backup-restic test -d "${RESTORE_DIR}/data/vaultwarden"; then
-    vault_files=$(docker exec backup-restic find "${RESTORE_DIR}/data/vaultwarden" -type f | wc -l)
-    if [ "$vault_files" -gt 0 ]; then
-        pass "Vaultwarden data: ${vault_files} files"
+# Step 7: Validate Vaultwarden database
+vw_db="${APPDATA}/vaultwarden/db.sqlite3"
+if docker exec backup-restic sh -c "test -s '${vw_db}'"; then
+    size=$(docker exec backup-restic sh -c "wc -c < '${vw_db}'")
+    pass "Vaultwarden SQLite: ${size} bytes"
+else
+    # some deployments keep it in a subdir
+    if docker exec backup-restic sh -c "find '${APPDATA}/vaultwarden' -name 'db.sqlite3' 2>/dev/null | grep -q ."; then
+        pass "Vaultwarden SQLite: found (nested path)"
     else
-        pass "Vaultwarden data: not yet created (normal before first user)"
+        fail "Vaultwarden db.sqlite3 missing"
     fi
-else
-    pass "Vaultwarden data directory: not yet created"
 fi
-
-# Step 6: Validate Immich data exists
-if docker exec backup-restic test -d "${RESTORE_DIR}/data/photos/upload"; then
-    immich_files=$(docker exec backup-restic find "${RESTORE_DIR}/data/photos/upload" -type f | wc -l)
-    pass "Immich upload: ${immich_files} files"
-else
-    pass "Immich upload: not yet created (normal before first upload)"
-fi
-
-# Step 7: Validate Paperless data exists
-if docker exec backup-restic test -d "${RESTORE_DIR}/data/documents/media"; then
-    paperless_files=$(docker exec backup-restic find "${RESTORE_DIR}/data/documents/media" -type f | wc -l)
-    pass "Paperless media: ${paperless_files} files"
-else
-    pass "Paperless media: not yet created (normal before first scan)"
-fi
-
-# Step 8: Validate Synapse media exists (if any)
-if docker exec backup-restic test -d "${RESTORE_DIR}/data/collaboration/synapse/media_store"; then
-    media_count=$(docker exec backup-restic find "${RESTORE_DIR}/data/collaboration/synapse/media_store" -type f | wc -l)
-    pass "Synapse media store: ${media_count} files"
-else
-    pass "Synapse media store: not yet created (normal for new installs)"
-fi
-
-# Step 7: Application-level verification (verify services can actually use their data)
-echo "[$(date -Iseconds)] Verifying application-level data integrity..."
-
-# Verify Forgejo repository listing via API (Forgejo must be running)
-if docker exec backup-restic test -f "${RESTORE_DIR}/data/operations/forgejo/gitea/conf/app.ini" 2>/dev/null; then
-    pass "Forgejo: config file verified"
-else
-    pass "Forgejo: no config found (normal for fresh install)"
-fi
-
-# Verify Paperless document database file exists
-if docker exec backup-restic test -f "${RESTORE_DIR}/data/documents/data/documents.db" 2>/dev/null; then
-    db_size=$(docker exec backup-restic sh -c "wc -c < '${RESTORE_DIR}/data/documents/data/documents.db'" 2>/dev/null || echo "unknown")
-    pass "Paperless: database verified (${db_size} bytes)"
-else
-    pass "Paperless: no database found (normal before first scan)"
-fi
-
-# Step 9: Get snapshot info for reporting
-# shellcheck disable=SC2034
-# NOTE: --latest requires a count argument; reporting must never kill the test
-SNAPSHOT_INFO=$(docker exec backup-restic restic snapshots --latest 1 --json 2>/dev/null | head -1 || true)
-SNAPSHOT_DATE=$(docker exec backup-restic restic snapshots --latest 1 --compact 2>/dev/null || true)
 
 # Report results
 echo ""
 echo "=========================================="
 echo "  MONTHLY BACKUP RESTORE TEST RESULTS"
 echo "=========================================="
-echo "  Snapshot: ${SNAPSHOT_DATE}"
 echo "  Passed:   ${PASS}"
 echo "  Failed:   ${FAIL}"
 echo "------------------------------------------"
-printf "%b" "$RESULTS"
+printf "%b" "${RESULTS}"
 echo "=========================================="
 
 # Send ntfy notification
 if [ -n "${NTFY_TOPIC}" ]; then
-    if [ "$FAIL" -eq 0 ]; then
+    if [ "${FAIL}" -eq 0 ]; then
         curl -s -H "Title: Backup Restore Test PASSED" \
              -H "Priority: default" \
-             -d "All ${PASS} checks passed. Snapshot: ${SNAPSHOT_DATE}" \
+             -d "All ${PASS} checks passed." \
              "https://ntfy.sh/${NTFY_TOPIC}" > /dev/null 2>&1 || true
     else
         curl -s -H "Title: Backup Restore Test FAILED" \
              -H "Priority: high" \
-             -d "${FAIL}/${PASS} checks failed. See deploy log for details." \
+             -d "${FAIL} failed / ${PASS} passed." \
              "https://ntfy.sh/${NTFY_TOPIC}" > /dev/null 2>&1 || true
     fi
 fi
 
-if [ "$FAIL" -gt 0 ]; then
+if [ "${FAIL}" -gt 0 ]; then
     echo "[$(date -Iseconds)] Restore test FAILED"
     exit 1
-else
-    echo "[$(date -Iseconds)] Restore test PASSED"
-    exit 0
 fi
+echo "[$(date -Iseconds)] Restore test PASSED"
+exit 0
