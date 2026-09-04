@@ -3,7 +3,7 @@
 
 server_url: https://headscale.wyattau.com
 listen_addr: 0.0.0.0:8080
-metrics_listen_addr: 0.0.0.0:9101
+metrics_listen_addr: 0.0.0.0:9102
 
 noise:
   private_key_path: /etc/headscale/noise.private.key

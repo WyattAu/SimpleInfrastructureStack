@@ -1,10 +1,8 @@
 services:
   headscale:
-    image: ghcr.io/juanfont/headscale:0.29.3
+    image: ghcr.io/wyattau/evergreenimageregistry/headscale:0.29.2
     container_name: headscale-server
     restart: unless-stopped
-    entrypoint: ["/ko-app/headscale"]
-    command: ["serve", "--config", "/etc/headscale/config.yaml"]
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -41,7 +39,7 @@ services:
     - traefik.http.routers.headscale-admin.tls.certresolver=cloudflare
     - traefik.http.routers.headscale-admin.service=headscale-svc
     healthcheck:
-      test: ["CMD", "/ko-app/headscale", "version"]
+      test: ["CMD", "/usr/local/bin/shim", "healthcheck", "--tcp", "127.0.0.1:8080"]
       interval: 30s
       timeout: 10s
       retries: 3

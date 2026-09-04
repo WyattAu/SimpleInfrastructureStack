@@ -13,8 +13,8 @@ DUMP_DIR="/mnt/pool_HDD_x2/tank/datasources/sis/backups/db-dumps-$(date +%Y%m%d-
 
 # Offsite (Backblaze B2) configuration
 B2_REPO="s3:https://s3.eu-central-003.backblazeb2.com/SisInfraBackup/repo-new"
-B2_KEY="003f3a2e96de77b0000000001"
-B2_SECRET="K003+fw0lRndYztZMFLM+lyplqfsLL0"
+B2_KEY="${OFFSITE_AWS_KEY:?OFFSITE_AWS_KEY not set}"
+B2_SECRET="${OFFSITE_AWS_SECRET:?OFFSITE_AWS_SECRET not set}"
 
 # Textfile collector for Prometheus metrics
 TEXTFILE_DIR="/mnt/pool_HDD_x2/tank/datasources/sis/appdata/monitoring/textfile-collector"
