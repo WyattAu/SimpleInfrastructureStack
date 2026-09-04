@@ -20,7 +20,14 @@ Internet
         └── cachyos-runner (100.64.0.3)
 ```
 
-## TrueNAS (192.168.1.3) — 66 Containers
+## TrueNAS (192.168.1.3) — ~42 Containers
+
+> Container images are pinned to `ghcr.io/wyattau/evergreenimageregistry`
+> (EIR) across all stacks. **Documented upstream exceptions**: documents
+> postgres stays `postgres:16-alpine` (PG16 data, no EIR 16 build),
+> `tailscale` runs bare via docker-run (kernel mode, TS_USERSPACE=false),
+> `proxy-cf-ddns` (favonia, no EIR equivalent), `backup-cron-trigger`
+> (stack-local Dockerfile), `ferro-server` (own image).
 
 ### Proxy Layer
 | Container | Image | Function |
@@ -114,13 +121,14 @@ Containers → exporters → VictoriaMetrics → vmalert (820 rules) → Alertma
 
 | Type | Schedule | Location | Retention |
 |------|----------|----------|-----------|
-| App data (per stack) | Daily 3AM | Local ZFS | 30 snapshots |
-| DB dumps | Daily 3AM | Local ZFS | 30 snapshots |
-| Configs (git repo) | Daily 3AM | Local ZFS | 30 snapshots |
-| Offsite sync | Daily after local | B2 (eu-central-003) | 30 snapshots |
+| App data (per stack) | Daily 02:00 (restic) | restic repo + B2 offsite | 24h/7d/4w/6m/3y |
+| DB dumps | Daily 02:00 (restic) | restic repo + B2 offsite | same |
+| Configs (git repo) | push -> GitHub | Local + remote | all |
+| Minecraft | Daily 03:30 (mc-backup.timer on CachyOS) | appdata/backups/minecraft | 7 days |
 | Vuln scan | Weekly Sun 4AM | Metrics (.prom) | Latest |
 
 **DR drill:** Vaultwarden restore verified from both local and B2. SQLite integrity OK.
+Monthly automated restore test runs in backup-cron-trigger (needs bash in image — fixed Sep 2026).
 
 ## Security
 
