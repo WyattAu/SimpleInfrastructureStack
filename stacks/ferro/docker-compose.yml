@@ -2,55 +2,28 @@ services:
   ferro:
     image: ghcr.io/wyattau/ferro:latest
     container_name: ferro-server
-<<<<<<< HEAD
-    restart: unless-stopped
-    init: true
-=======
     ports:
     - "8081:8080"
     restart: unless-stopped
     init: true
     user: "0:0"
->>>>>>> 0072e10 (reconcile live drift: headscale 0.29.3 + postgres, cf-ddns, vm remote-write endpoint, tunnel vm route, headscale pg_dump, headscale DNS records in TF)
     security_opt:
     - no-new-privileges:true
     cap_drop:
     - ALL
-<<<<<<< HEAD
-    volumes:
-    - ${DATA_BASE_PATH}/ferro/data:/data
-=======
     cap_add:
     - DAC_OVERRIDE
     - FOWNER
     - CHOWN
-    - SETGID
-    - SETUID
     volumes:
     - ${DATA_BASE_PATH}/ferro/data:/data
     - ${DATA_BASE_PATH}/ferro/cedar_policies.cedar:/etc/ferro/cedar_policies.cedar:ro
->>>>>>> 0072e10 (reconcile live drift: headscale 0.29.3 + postgres, cf-ddns, vm remote-write endpoint, tunnel vm route, headscale pg_dump, headscale DNS records in TF)
     environment:
     - TZ=${TZ}
     - FERRO_DATA_DIR=/data
     - FERRO_STORAGE=local:/data/files
     - FERRO_OIDC_ISSUER=${OIDC_ISSUER}
     - FERRO_OIDC_CLIENT_ID=${OIDC_CLIENT_ID}
-<<<<<<< HEAD
-    - FERRO_OIDC_AUDIENCE=${OIDC_AUDIENCE:-ferro}
-    - FERRO_CAS_ENABLED=true
-    networks:
-    - traefik_net
-    labels:
-    - traefik.enable=true
-    - traefik.docker.network=traefik_net
-    - traefik.http.routers.ferro.rule=Host(`${FERRO_SUBDOMAIN}.${DOMAIN_NAME}`)
-    - traefik.http.routers.ferro.entrypoints=websecure
-    - traefik.http.routers.ferro.tls.certresolver=cloudflare
-    - traefik.http.services.ferro.loadbalancer.server.port=8080
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8080/"]
-=======
     - FERRO_OIDC_AUDIENCE=${OIDC_AUDIENCE:-account}
     - FERRO_CORS_ORIGINS=https://ferro.wyattau.com
     - FERRO_STATIC_DIR=/app/ui
@@ -58,11 +31,8 @@ services:
     - FERRO_EXTERNAL_URL=https://ferro.wyattau.com
     networks:
     - traefik_net
-    labels:
-    - traefik.http.services.ferro.loadbalancer.server.port=8080
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8080/healthz"]
->>>>>>> 0072e10 (reconcile live drift: headscale 0.29.3 + postgres, cf-ddns, vm remote-write endpoint, tunnel vm route, headscale pg_dump, headscale DNS records in TF)
       interval: 30s
       timeout: 10s
       retries: 3
@@ -70,26 +40,16 @@ services:
     deploy:
       resources:
         limits:
-<<<<<<< HEAD
           cpus: '2.0'
-=======
-          cpus: "2.0"
->>>>>>> 0072e10 (reconcile live drift: headscale 0.29.3 + postgres, cf-ddns, vm remote-write endpoint, tunnel vm route, headscale pg_dump, headscale DNS records in TF)
           memory: 1G
           pids: 100
     logging:
       driver: json-file
       options:
         max-size: 10m
-<<<<<<< HEAD
         max-file: '3'
   postgres-ferro:
-    image: ghcr.io/wyattau/evergreenimageregistry/postgres:17.10
-=======
-        max-file: "3"
-  postgres-ferro:
     image: postgres:17-alpine
->>>>>>> 0072e10 (reconcile live drift: headscale 0.29.3 + postgres, cf-ddns, vm remote-write endpoint, tunnel vm route, headscale pg_dump, headscale DNS records in TF)
     container_name: postgres-ferro
     restart: unless-stopped
     init: true
@@ -119,22 +79,14 @@ services:
     deploy:
       resources:
         limits:
-<<<<<<< HEAD
           cpus: '1.0'
-=======
-          cpus: "1.0"
->>>>>>> 0072e10 (reconcile live drift: headscale 0.29.3 + postgres, cf-ddns, vm remote-write endpoint, tunnel vm route, headscale pg_dump, headscale DNS records in TF)
           memory: 512M
           pids: 100
     logging:
       driver: json-file
       options:
         max-size: 10m
-<<<<<<< HEAD
         max-file: '3'
-=======
-        max-file: "3"
->>>>>>> 0072e10 (reconcile live drift: headscale 0.29.3 + postgres, cf-ddns, vm remote-write endpoint, tunnel vm route, headscale pg_dump, headscale DNS records in TF)
 networks:
   traefik_net:
     external: true
