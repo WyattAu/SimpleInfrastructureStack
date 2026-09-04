@@ -22,6 +22,8 @@ services:
     - SIGNUPS_VERIFY=${SIGNUPS_VERIFY:-false}
     - INVITATIONS_ALLOWED=${INVITATIONS_ALLOWED:-true}
     - SHOW_PASSWORD_HINT=${SHOW_PASSWORD_HINT:-false}
+    # NOTE: ADMIN_TOKEN in .env is an Argon2 PHC hash with $ escaped as $$ —
+    # compose interpolates $VAR, so unescaped $ kills the hash (silent 401s).
     - ADMIN_TOKEN=${ADMIN_TOKEN}
     - LOG_LEVEL=${LOG_LEVEL:-warn}
     - EXTENDED_LOGGING=${EXTENDED_LOGGING:-false}
