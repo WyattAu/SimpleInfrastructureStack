@@ -24,7 +24,8 @@ services:
     - ${BACKUP_BASE_PATH}/restic-repo:/restic-repo
     - ${BACKUP_BASE_PATH}/restic-repo-new:/restic-repo-new
     environment:
-    - RESTIC_REPOSITORY=/restic-repo
+    # Live backup repo (restic-repo is a stale legacy repo, kept for now)
+    - RESTIC_REPOSITORY=/restic-repo-new
     - RESTIC_PASSWORD=${RESTIC_PASSWORD}
     entrypoint:
     - tail
