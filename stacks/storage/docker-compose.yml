@@ -144,7 +144,7 @@ services:
         max-size: 10m
         max-file: '3'
   collabora:
-    image: collabora/code:${COLLABORA_VERSION}
+    image: ghcr.io/wyattau/evergreenimageregistry/collabora-online:25.04.9.4.1
     container_name: storage-collabora
     restart: unless-stopped
     init: true
