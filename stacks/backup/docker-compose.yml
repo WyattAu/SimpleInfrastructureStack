@@ -8,6 +8,12 @@ services:
     - no-new-privileges:true
     cap_drop:
     - ALL
+    # CHOWN/FOWNER/DAC_OVERRIDE: restic restore must set file ownership
+    # from snapshots (monthly restore-test validates this)
+    cap_add:
+    - CHOWN
+    - FOWNER
+    - DAC_OVERRIDE
     # Use default bridge network — Docker embedded DNS (127.0.0.11) is broken
     # on TrueNAS user-defined networks. The default bridge copies the host's
     # /etc/resolv.conf directly, bypassing the broken embedded DNS.
