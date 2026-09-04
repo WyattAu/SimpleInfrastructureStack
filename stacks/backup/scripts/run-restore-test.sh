@@ -36,7 +36,7 @@ echo "[$(date -Iseconds)] Starting monthly backup restore test..."
 
 # Step 1: Restore the latest snapshot per critical tag.
 # Nightly backups are split per-stack, so there is no single "latest".
-for tag in operations iam vaultwarden monitoring db-dumps; do
+for tag in operations iam vaultwarden monitoring configs db-dumps; do
     echo "[$(date -Iseconds)] Restoring tag: ${tag}..."
     if ! docker exec backup-restic sh -c "
         restic restore --tag ${tag} latest --target ${RESTORE_DIR} >/dev/null
