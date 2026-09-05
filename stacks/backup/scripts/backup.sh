@@ -13,6 +13,10 @@ DUMP_DIR="/mnt/pool_HDD_x2/tank/datasources/sis/backups/db-dumps-$(date +%Y%m%d-
 
 # Offsite (Backblaze B2) configuration
 B2_REPO="s3:https://s3.eu-central-003.backblazeb2.com/SisInfraBackup/repo-new"
+# Creds come from env (cron-trigger) or the root-only file (host cron)
+if [ -z "${OFFSITE_AWS_KEY:-}" ] && [ -f /mnt/pool_HDD_x2/tank/datasources/sis/backups/.offsite-credentials ]; then
+    . /mnt/pool_HDD_x2/tank/datasources/sis/backups/.offsite-credentials
+fi
 B2_KEY="${OFFSITE_AWS_KEY:?OFFSITE_AWS_KEY not set}"
 B2_SECRET="${OFFSITE_AWS_SECRET:?OFFSITE_AWS_SECRET not set}"
 
