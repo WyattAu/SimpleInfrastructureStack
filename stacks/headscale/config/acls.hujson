@@ -1,6 +1,7 @@
 {
   "groups": {
     "group:admin": ["wyatt@"],
+    "group:users": ["josh@"],
   },
   "tagOwners": {
     "tag:server": ["group:admin"],
@@ -12,6 +13,7 @@
     { "action": "accept", "src": ["*"], "dst": ["*:*"] },
   ],
   "ssh": [
-    { "action": "accept", "src": ["group:admin"], "dst": ["autogroup:member"], "users": ["wyatt", "root", "truenas_admin"] },
+    { "action": "accept", "src": ["group:admin"], "dst": ["autogroup:member"], "users": ["wyatt", "root", "truenas_admin", "josh"] },
+    { "action": "accept", "src": ["group:users"], "dst": ["autogroup:member"], "users": ["josh"] },
   ],
 }
