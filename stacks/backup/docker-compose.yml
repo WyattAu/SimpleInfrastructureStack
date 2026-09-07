@@ -21,10 +21,9 @@ services:
     volumes:
     - ${DATA_BASE_PATH}:/data:ro
     - /mnt/pool_HDD_x2/infra/stacks/terraform:/terraform:ro
-    - ${BACKUP_BASE_PATH}/restic-repo:/restic-repo
     - ${BACKUP_BASE_PATH}/restic-repo-new:/restic-repo-new
     environment:
-    # Live backup repo (restic-repo is a stale legacy repo, kept for now)
+    # Live backup repo
     - RESTIC_REPOSITORY=/restic-repo-new
     - RESTIC_PASSWORD=${RESTIC_PASSWORD}
     entrypoint:
@@ -72,7 +71,7 @@ services:
     - CRON_SCHEDULE=0 2 * * *
     - RESTORE_TEST_SCHEDULE=${RESTORE_TEST_SCHEDULE:-0 3 1 * *}
     - BACKUP_DATA_PATH=/data
-    - RESTIC_REPOSITORY=/restic-repo
+    - RESTIC_REPOSITORY=/restic-repo-new
     - RESTIC_PASSWORD=${RESTIC_PASSWORD}
     - RESTIC_KEEP_HOURLY=24
     - RESTIC_KEEP_DAILY=7
