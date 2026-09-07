@@ -95,6 +95,17 @@ log "Syncing to offsite repository (B2)..."
 RESTIC_PASS=$(cat "$RESTIC_PASSWORD_FILE")
 docker exec backup-restic sh -c "echo -n '${RESTIC_PASS}' > /tmp/restic-pass && chmod 600 /tmp/restic-pass" 2>/dev/null
 
+# Clear stale locks on BOTH repos (OOM-kills during copy leave exclusive
+# locks that block every subsequent sync - Sep 2025 incident)
+docker exec \
+  -e AWS_ACCESS_KEY_ID="$B2_KEY" \
+  -e AWS_SECRET_ACCESS_KEY="$B2_SECRET" \
+  backup-restic restic \
+    --password-file /tmp/restic-pass \
+    -r "$B2_REPO" unlock --remove-all >> "$LOG_FILE" 2>&1 || true
+docker exec backup-restic restic \
+  -r /restic-repo-new --password-file /tmp/restic-pass unlock --remove-all >> "$LOG_FILE" 2>&1 || true
+
 # Copy all local snapshots to B2
 if docker exec \
   -e AWS_ACCESS_KEY_ID="$B2_KEY" \
