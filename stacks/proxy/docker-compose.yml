@@ -51,6 +51,28 @@ services:
         max-size: 10m
         max-file: '3'
 
+  # Keeps the grey A record for headscale fresh. IPv6 updates disabled:
+  # the household AAAA is firewalled inbound and poisoned clients
+  # (tailscale dials it and hangs). v4-only by design.
+  cf-ddns:
+    image: favonia/cloudflare-ddns:1
+    container_name: proxy-cf-ddns
+    restart: unless-stopped
+    security_opt:
+    - no-new-privileges:true
+    environment:
+    - CLOUDFLARE_API_TOKEN=${CF_API_TOKEN}
+    - DOMAINS=headscale.${DOMAIN_NAME}
+    - PROXIED=false
+    - IP6_PROVIDER=none
+    networks:
+    - backend_net
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
   traefik:
     image: ghcr.io/wyattau/evergreenimageregistry/traefik:3.7.3
     container_name: proxy-traefik
