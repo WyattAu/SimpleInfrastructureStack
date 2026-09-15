@@ -1,6 +1,6 @@
 services:
   calibre-web:
-    image: lscr.io/linuxserver/calibre-web:0.6.26
+    image: lscr.io/linuxserver/calibre-web:0.6.27
     container_name: calibre-web
     restart: unless-stopped
     # NOTE: init: true removed — LinuxServer images use s6-overlay which MUST be PID 1
