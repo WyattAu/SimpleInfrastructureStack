@@ -1,3 +1,8 @@
+// Dependency-driver boundary (decided 2026-09-15):
+//   - renovate: docker images (via the custom versions.env manager) — this file
+//   - dependabot: github-actions only (.github/dependabot.yml)
+// No ecosystem is driven by both; when adding a new ecosystem, pick ONE and
+// note it here.
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
