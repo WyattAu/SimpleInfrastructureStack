@@ -58,3 +58,6 @@ stacks/monitoring/alertmanager/alertmanager.yml
 *.bak
 # contains live CF token (rotate + SOPS me)
 stacks/security/config/workers-bouncer/config.yaml
+
+# Live credential removed from repo & history 2026-09-15; store via SOPS env or secrets manager
+secrets/forgejo_token
