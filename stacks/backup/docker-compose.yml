@@ -1,6 +1,11 @@
 services:
   backup-restic:
     image: ghcr.io/wyattau/evergreenimageregistry/restic:0.18.1
+    extra_hosts:
+      # Interim gateway: docker ULA IPv6 can't reach the internet - pin B2 to v4
+      - "s3.eu-central-003.backblazeb2.com:45.11.38.254"
+      - "s3.eu-central-003.backblazeb2.com:45.11.39.254"
+
     container_name: backup-restic
     restart: unless-stopped
     init: true
