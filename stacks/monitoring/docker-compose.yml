@@ -33,6 +33,7 @@ services:
       traefik_net:
       data_net:
         ipv4_address: 172.16.7.200
+      backend_net:
     healthcheck:
       test:
       - CMD

@@ -44,13 +44,6 @@ scrape_configs:
   - job_name: 'victorialogs'
     static_configs:
       - targets: ['monitoring-victorialogs:9428']
-  # Synapse metrics listener on port 19090 (enable_metrics: true required)
-  # Metrics path is /_synapse/metrics (Synapse's default, not /metrics)
-  - job_name: 'synapse'
-    metrics_path: /_synapse/metrics
-    static_configs:
-      - targets: ['collaboration-synapse:19090']
-  # Alertmanager metrics
   - job_name: 'alertmanager'
     static_configs:
       - targets: ['monitoring-alertmanager:9093']
@@ -68,8 +61,6 @@ scrape_configs:
       - targets:
           - 'postgresql://forgejo@operations-postgres-forgejo:5432/forgejo?sslmode=disable'
           - 'postgresql://keycloak@iam-postgres:5432/keycloak?sslmode=disable'
-          - 'postgresql://synapse@collaboration-postgres:5432/synapse?sslmode=disable'
-          - 'postgresql://immich@photos-postgres:5432/immich?sslmode=disable'
           - 'postgresql://paperless@documents-postgres:5432/paperless?sslmode=disable'
     relabel_configs:
       - source_labels: [__address__]
@@ -101,7 +92,6 @@ scrape_configs:
     scrape_interval: 30s
     static_configs:
       - targets:
-          - 'redis://photos-valkey:6379'
           - 'redis://documents-redis:6379'
     relabel_configs:
       - source_labels: [__address__]
@@ -186,9 +176,7 @@ scrape_configs:
           - http://monitoring-grafana:3000/api/health     # Grafana health
           - http://monitoring-kuma:3001/                  # Uptime Kuma
           - http://monitoring-victorialogs:9428/health    # VictoriaLogs health
-          - http://utility-homepage:3000/                 # Homepage (port 3000)
           - http://vaultwarden-server:80/                 # Vaultwarden
-          - http://photos-server:2283/                    # Immich
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -214,7 +202,6 @@ scrape_configs:
           - https://forgejo.wyattau.com/api/v1/version    # API path (no auth required)
           - https://grafana.wyattau.com/api/health
           - https://vault.wyattau.com/api/config
-          - https://photos.wyattau.com/api/server/ping
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -237,10 +224,7 @@ scrape_configs:
       - targets:
           - iam-postgres:5432           # Keycloak PostgreSQL
           - operations-postgres-forgejo:5432  # Forgejo PostgreSQL
-          - collaboration-postgres:5432  # Synapse PostgreSQL
-          - photos-postgres:5432         # Immich PostgreSQL
           - documents-postgres:5432      # Paperless PostgreSQL
-          - photos-valkey:6379           # Immich Valkey
           - documents-redis:6379         # Paperless Redis
           - monitoring-victorialogs:9428     # VictoriaLogs
           - security-crowdsec:8080       # CrowdSec API
@@ -272,39 +256,3 @@ scrape_configs:
     static_configs:
       - targets: ['security-crowdsec:6060']
 
-  # Minecraft server — blackbox TCP probe (Java port 25565)
-  - job_name: 'blackbox-mc-java'
-    metrics_path: /probe
-    params:
-      module: [tcp_connect]
-    static_configs:
-      - targets: ['192.168.1.191:25565']
-        labels:
-          instance: 'mc-purpur'
-          service: 'minecraft-java'
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: target
-      - target_label: __address__
-        replacement: monitoring-blackbox-exporter:9115
-
-  # Minecraft server — blackbox UDP probe (Bedrock port 19132)  
-  # Note: Blackbox exporter TCP connect works for verifying port is open
-  - job_name: 'blackbox-mc-bedrock'
-    metrics_path: /probe
-    params:
-      module: [tcp_connect]
-    static_configs:
-      - targets: ['192.168.1.191:19132']
-        labels:
-          instance: 'mc-purpur'
-          service: 'minecraft-bedrock'
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: target
-      - target_label: __address__
-        replacement: monitoring-blackbox-exporter:9115
