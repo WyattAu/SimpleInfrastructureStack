@@ -402,6 +402,25 @@ services:
       options:
         max-size: 10m
         max-file: '3'
+  zfs-exporter:
+    image: ghcr.io/wyattau/evergreenimageregistry/zfs-exporter:latest
+    container_name: monitoring-zfs-exporter
+    restart: unless-stopped
+    privileged: true
+    security_opt:
+    - no-new-privileges:false
+    environment:
+    - TZ=${TZ}
+    volumes:
+    - /dev/disk:/dev/disk:ro
+    networks:
+    - backend_net
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
   alertmanager:
     image: ghcr.io/wyattau/evergreenimageregistry/alertmanager:0.32.1
     container_name: monitoring-alertmanager
