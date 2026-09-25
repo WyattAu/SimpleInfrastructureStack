@@ -306,51 +306,6 @@ services:
       options:
         max-size: 10m
         max-file: '3'
-  textfile-init:
-    image: busybox:1.37.0
-    container_name: monitoring-textfile-init
-    command: sh -c "mkdir -p /textfile-collector && printf '# HELP sis_backup_last_success Unix timestamp of last successful backup\\n# TYPE sis_backup_last_success gauge\\nsis_backup_last_success 0\\n# HELP sis_backup_last_run Unix timestamp of last backup attempt\\n# TYPE sis_backup_last_run gauge\\nsis_backup_last_run 0\\n# HELP sis_backup_offsite_last_success Unix timestamp of last successful offsite sync\\n# TYPE sis_backup_offsite_last_success gauge\\nsis_backup_offsite_last_success 0\\n' > /textfile-collector/backup.prom"
-    volumes:
-    - ${DATA_BASE_PATH}/monitoring/textfile-collector:/textfile-collector
-  monitoring-zfs-exporter:
-    image: ghcr.io/wyattau/evergreenimageregistry/zfs-exporter:latest
-    container_name: monitoring-zfs-exporter
-    restart: unless-stopped
-    init: true
-    security_opt:
-    - no-new-privileges:true
-    cap_drop:
-    - ALL
-    cap_add:
-    - SYS_ADMIN
-    - SYS_PTRACE
-    command:
-    - -web.listen-address=:9254
-    devices:
-    - /dev/zfs:/dev/zfs
-    volumes:
-    - /dev/disk:/dev/disk:ro
-    networks:
-    - backend_net
-    healthcheck:
-      test:
-      - CMD
-      - wget -qO- http://127.0.0.1:9254/metrics > /dev/null 2>&1 || exit 1
-      interval: 60s
-      timeout: 10s
-      start_period: 30s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 64M
-          pids: 50
-    logging:
-      driver: json-file
-      options:
-        max-size: 10m
-        max-file: '3'
   cadvisor:
     image: ghcr.io/wyattau/evergreenimageregistry/cadvisor:v0.52.1
     container_name: monitoring-cadvisor
@@ -402,9 +357,6 @@ services:
     container_name: monitoring-node-exporter
     restart: unless-stopped
     init: true
-    depends_on:
-      textfile-init:
-        condition: service_completed_successfully
     security_opt:
     - no-new-privileges:true
     cap_drop:
