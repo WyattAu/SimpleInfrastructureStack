@@ -69,7 +69,7 @@ services:
     - FOWNER
     - SETGID
     - SETUID
-    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru --requirepass 975f8fb2a670d488ff76a9fb7db7d5940938c4e767e2865b
     volumes:
     - ${DATA_BASE_PATH}/documents/redis:/data
     networks:
@@ -126,7 +126,7 @@ services:
     - PAPERLESS_DBUSER=${POSTGRES_USER}
     - PAPERLESS_DBPASS=${POSTGRES_PASSWORD}
     - PAPERLESS_DBNAME=${POSTGRES_DB}
-    - PAPERLESS_REDIS=redis://paperless-redis:6379
+    - PAPERLESS_REDIS=redis://:975f8fb2a670d488ff76a9fb7db7d5940938c4e767e2865b@paperless-redis:6379
     - PAPERLESS_TIME_ZONE=${TZ}
     - PAPERLESS_OCR_LANGUAGE=eng
     - PAPERLESS_OCR_MODE=force
