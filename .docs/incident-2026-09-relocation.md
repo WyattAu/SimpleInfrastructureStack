@@ -56,3 +56,19 @@ when VM loses network attachments. Stale `up == 0` series clear within
 4. ddns updates headscale.wyattau.com within ~5 min
 5. Verify: watchdog passes, `up == 0` empty, offsite metric non-zero
 6. josh auto-reconnects once 443 is forwarded
+
+## Appendix: CF tunnel is NOT viable for headscale control plane
+
+Tested 2026-09-26: cloudflared tunnel + proxied CNAME for
+headscale.wyattau.com. Health endpoint passed through the full chain,
+and a raw HTTP/1.1 Upgrade request got 101 Switching Protocols.
+However, a REAL tailscale client registration consistently failed:
+Cloudflare's edge strips the TS2021 upgrade headers from tailscaled's
+POST /ts2021 (a non-standard WebSocket-style upgrade that CF's
+http/2-to-http/1.1 translation does not preserve). Headscale logged
+"no upgrade header in TS2021 request" and returned 500. Verified with
+a throwaway tailscale container dialing through the tunnel.
+
+Conclusion: headscale control plane cannot ride a CF tunnel. It
+requires a direct TCP path (port-forward or VPS proxy). The tunnel
+ingress was removed and DNS reverted to the direct A record.
