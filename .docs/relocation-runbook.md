@@ -40,3 +40,24 @@ See .docs/incident-2026-09-relocation.md for detailed procedures.
 - Workstation = single point of failure (all internet flows through it)
 - Hyperoptic CGNAT = no inbound from internet (josh cut off without VPS)
 - Wifi = backup bandwidth bottleneck
+
+## Workstation uptime (interim gateway - critical)
+The workstation is the sole internet gateway for both servers.
+Disable auto-suspend:
+```bash
+# KDE: System Settings → Power Management → Sleep → "Do not sleep"
+# systemd (belt-and-braces):
+sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+```
+Verify: `systemctl status sleep.target` should show "masked"
+
+## Monitoring health
+The CachyOS watchdog (`sis-watchdog.timer`, every 15 min) monitors:
+- Offsite backup age (threshold: 25h)
+- Fleet unhealthy container count
+- Headscale control plane
+- VictoriaMetrics scrape failures
+Alerts go to the same ntfy topic as alertmanager.
+If the watchdog itself fires alerts, investigate immediately —
+it means the production network is degraded in a way that
+TrueNAS's own monitoring cannot detect.
