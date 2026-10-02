@@ -42,7 +42,7 @@ services:
         max-size: 10m
         max-file: '3'
   keycloak:
-    image: ghcr.io/wyattau/evergreenimageregistry/keycloak:26.6.2
+    image: ghcr.io/wyattau/evergreenimageregistry/keycloak-quarkus:26.7.3
     container_name: iam-keycloak
     command: [start]
     restart: unless-stopped

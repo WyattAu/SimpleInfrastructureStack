@@ -71,7 +71,7 @@ on TrueNAS (where the Docker socket and restic repo live), not from a laptop.
 - [ ] EIR images exist for all three blocked targets (Docker CLI):
 
   ```bash
-  docker manifest inspect ghcr.io/wyattau/evergreenimageregistry/keycloak:26.7.3
+  docker manifest inspect ghcr.io/wyattau/evergreenimageregistry/keycloak-quarkus:26.7.3
   docker manifest inspect ghcr.io/wyattau/evergreenimageregistry/collabora-online:26.04.1.4.1
   docker manifest inspect ghcr.io/wyattau/evergreenimageregistry/paperless-ngx:3.1.3
   ```
@@ -162,7 +162,9 @@ Grafana, ocis, forgejo, and ferro configs need no changes.
 1. `stacks/iam/versions.env` — `KEYCLOAK_VERSION=26.6.2` → `26.7.3` (Renovate
    comment above it stays).
 2. `stacks/iam/docker-compose.yml` — keycloak service image
-   `ghcr.io/wyattau/evergreenimageregistry/keycloak:26.6.2` → `:26.7.3`.
+   `ghcr.io/wyattau/evergreenimageregistry/keycloak-quarkus:26.7.3` (the
+   26.7.3 build is published under the `keycloak-quarkus` package; the legacy
+   `keycloak` package stops at 26.6.2).
 3. `stacks/iam/docker-compose.yml` — postgres-iam (`.../postgres:17.10`) is
    NOT touched.
 

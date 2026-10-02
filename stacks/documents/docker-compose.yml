@@ -94,7 +94,7 @@ services:
         max-size: 10m
         max-file: '3'
   paperless-webserver:
-    image: ghcr.io/wyattau/evergreenimageregistry/paperless-ngx:2.20.15
+    image: ghcr.io/wyattau/evergreenimageregistry/paperless-ngx:3.1.3
     container_name: documents-webserver
     restart: unless-stopped
     # NOTE: init: true removed — Paperless-ngx uses s6-overlay which MUST be PID 1
@@ -123,6 +123,8 @@ services:
     - PAPERLESS_URL=https://${DOCS_SUBDOMAIN}.${DOMAIN_NAME}
     - PAPERLESS_SECRET_KEY=${PAPERLESS_SECRET_KEY}
     - PAPERLESS_DBHOST=paperless-postgres
+    # Required for PostgreSQL on Paperless v3 (migration guide).
+    - PAPERLESS_DBENGINE=postgresql
     - PAPERLESS_DBUSER=${POSTGRES_USER}
     - PAPERLESS_DBPASS=${POSTGRES_PASSWORD}
     - PAPERLESS_DBNAME=${POSTGRES_DB}
@@ -130,6 +132,8 @@ services:
     - PAPERLESS_TIME_ZONE=${TZ}
     - PAPERLESS_OCR_LANGUAGE=eng
     - PAPERLESS_OCR_MODE=force
+    # v3 accepts duplicate documents by default; keep v2 behavior (reject).
+    - PAPERLESS_CONSUMER_DELETE_DUPLICATES=true
     - PAPERLESS_ENABLE_METRICS=true
     networks:
     - traefik_net
