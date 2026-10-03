@@ -72,3 +72,21 @@ a throwaway tailscale container dialing through the tunnel.
 Conclusion: headscale control plane cannot ride a CF tunnel. It
 requires a direct TCP path (port-forward or VPS proxy). The tunnel
 ingress was removed and DNS reverted to the direct A record.
+
+## Appendix 2: CF tunnel + direct headscale (no traefik) also fails
+
+Tested 2026-10-03: changed the cloudflared ingress from
+`https://127.0.0.1:443` (traefik) to `http://localhost:8080`
+(headscale directly, host networking). Raw curl TS2021 upgrade
+through the full CF tunnel returned 101 ✓. But a REAL tailscale
+container (Go HTTP client) still got 500/no-upgrade-header.
+
+Root cause: Cloudflare's edge strips upgrade headers when the
+client negotiates HTTP/2 via ALPN. Go's HTTP client (tailscaled)
+negotiates h2 with CF automatically; the Upgrade header is an
+HTTP/1.1 mechanism and does not survive h2. curl with --http1.1
+bypasses this, which is why the manual test worked.
+
+Conclusion: CF tunnels cannot carry headscale's TS2021 protocol
+regardless of origin configuration. The control plane requires
+either a direct TCP path (router forward) or a VPS proxy.
