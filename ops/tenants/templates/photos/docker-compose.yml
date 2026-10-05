@@ -1,0 +1,139 @@
+# ==============================================================================
+# TENANT TEMPLATE: photos (Immich)
+#
+# PILOT STATUS: not yet deployed in our own infrastructure. Validate on a
+# staging tenant before offering to a customer (see ops/tenants/README.md).
+#
+# Self-contained: own Postgres (vector data), own upload/thumbnail/library dirs.
+# The ML container is deliberately omitted by default — it is multi-GB and
+# CPU-hungry. Enable with SET_ML=true in the tenant .env for face/search.
+#
+# Published on 127.0.0.1 only; TLS terminated by the shared edge proxy.
+# ==============================================================================
+services:
+  postgres:
+    image: ghcr.io/wyattau/evergreenimageregistry/immich-postgres:${POSTGRES_VERSION}
+    container_name: ${TENANT}-photos-postgres
+    restart: unless-stopped
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    cap_add:
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
+    volumes:
+    - ${TENANT_DATA_DIR}/postgres:/var/lib/postgresql/data
+    environment:
+    - POSTGRES_DB=${POSTGRES_DB}
+    - POSTGRES_USER=${POSTGRES_USER}
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    # Required by Immich: vector extension for face/search data
+    - POSTGRES_INITDB_ARGS=--data-checksums
+    labels:
+    - sis.tenant=${TENANT}
+    - sis.service=photos
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 1G
+          pids: 100
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  immich-server:
+    image: ghcr.io/wyattau/evergreenimageregistry/immich-server:${IMMICH_VERSION}
+    container_name: ${TENANT}-photos-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    cap_add:
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
+    ports:
+    - "127.0.0.1:${APP_PORT}:8080"
+    volumes:
+    - ${TENANT_DATA_DIR}/immich/server:/usr/src/app/upload
+    environment:
+    - TZ=${TZ}
+    - NODE_ENV=production
+    - IMMICH_PORT=8080
+    - DB_HOSTNAME=postgres
+    - DB_PORT=5432
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASSWORD}
+    - DB_DATABASE_NAME=${POSTGRES_DB}
+    - IMMICH_MACHINE_LEARNING_URL=http://immich-machine-learning:3003
+    - IMMICH_EXTERNAL_URL=https://${DOMAIN}
+    labels:
+    - sis.tenant=${TENANT}
+    - sis.service=photos
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:2286/api/server/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+          pids: 250
+        reservations:
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  # Opt-in only: large image + sustained CPU. Enable with SET_ML=true.
+  immich-machine-learning:
+    image: ghcr.io/wyattau/evergreenimageregistry/immich-ml:${IMMICH_ML_VERSION}
+    container_name: ${TENANT}-photos-ml
+    restart: unless-stopped
+    profiles: ["ml"]
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    volumes:
+    - ${TENANT_DATA_DIR}/immich/ml:/cache
+    environment:
+    - MACHINE_LEARNING_CACHE_FOLDER=/cache
+    labels:
+    - sis.tenant=${TENANT}
+    - sis.service=photos
+    deploy:
+      resources:
+        limits:
+          cpus: '3.0'
+          memory: 4G
+          pids: 250
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'

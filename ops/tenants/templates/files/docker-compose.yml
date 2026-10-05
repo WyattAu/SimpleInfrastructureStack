@@ -1,0 +1,109 @@
+# ==============================================================================
+# TENANT TEMPLATE: files (Ferro — in-house Rust file storage platform)
+#
+# This is our own product, not resold upstream software: WebDAV, S3, OIDC,
+# full-text search and Cedar authorisation, single Rust binary.
+#
+# Auth wiring is the one manual step (see NOTES.md): ferro expects an OIDC
+# issuer. For a customer tenant you either point it at their identity
+# provider or run it behind the edge proxy's auth middleware.
+#
+# Published on 127.0.0.1 only; TLS terminated by the shared edge proxy.
+# ==============================================================================
+services:
+  postgres:
+    image: ghcr.io/wyattau/evergreenimageregistry/postgres:${POSTGRES_VERSION}
+    container_name: ${TENANT}-files-postgres
+    restart: unless-stopped
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    cap_add:
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
+    volumes:
+    - ${TENANT_DATA_DIR}/postgres:/var/lib/postgresql/data
+    environment:
+    - POSTGRES_DB=${POSTGRES_DB}
+    - POSTGRES_USER=${POSTGRES_USER}
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    labels:
+    - sis.tenant=${TENANT}
+    - sis.service=files
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+          pids: 100
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  ferro:
+    image: ghcr.io/wyattau/ferro:${FERRO_VERSION}
+    container_name: ${TENANT}-files-ferro
+    restart: unless-stopped
+    init: true
+    # ferro chowns its own data dir on first start; needs these caps as non-root
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    cap_add:
+    - DAC_OVERRIDE
+    - FOWNER
+    - CHOWN
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+    - "127.0.0.1:${APP_PORT}:8080"
+    volumes:
+    - ${TENANT_DATA_DIR}/ferro/data:/data
+    environment:
+    - TZ=${TZ}
+    - FERRO_DATA_DIR=/data
+    - FERRO_STORAGE=local:/data/files
+    - FERRO_DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    - FERRO_EXTERNAL_URL=https://${DOMAIN}
+    - FERRO_CORS_ORIGINS=https://${DOMAIN}
+    - FERRO_STATIC_DIR=/app/ui
+    # --- OIDC: set per tenant, see NOTES.md ---
+    - FERRO_OIDC_ISSUER=${FERRO_OIDC_ISSUER}
+    - FERRO_OIDC_CLIENT_ID=${FERRO_OIDC_CLIENT_ID}
+    - FERRO_OIDC_AUDIENCE=${FERRO_OIDC_AUDIENCE:-account}
+    labels:
+    - sis.tenant=${TENANT}
+    - sis.service=files
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+          pids: 150
+        reservations:
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
