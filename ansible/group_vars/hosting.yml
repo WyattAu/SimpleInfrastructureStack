@@ -1,0 +1,38 @@
+---
+# ===================================================================
+# Group vars — client hosting platform (docker01)
+# ===================================================================
+# Placeholders marked (override) must be set before first run: either
+# edit here, put the value in host_vars/docker01.yml, or pass -e on the
+# command line. Never put secrets in this file — they live in
+# secrets/hosting.env.encrypted (SOPS).
+
+# --- Reachability ---------------------------------------------------------
+# The Proxmox node's management address. docker01 sits on the internal
+# tenant bridge and is only reachable through it (inventory ProxyJump).
+hosting_pve_jump_host: "192.168.0.50"  # (override) PVE node mgmt IP
+
+# --- Identity / TLS ---------------------------------------------------------
+hosting_acme_email: "devops@wyattau.com"  # (override) Let's Encrypt contact
+hosting_ntfy_url: "https://ntfy.sh/wyattau-infra-0e92568ce5d04343c3b796ed558a04b9"
+
+# --- Storage layout (roles/hosting_docker_host) ------------------------------
+# The tenant data disk is referenced by-id so reordering SATA/NVMe ports
+# cannot point /srv at the wrong volume. (override) after inspecting the
+# real disk once with `ls -l /dev/disk/by-id/`.
+hosting_data_disk_by_id: ""  # e.g. scsi-0QEMU_QEMU_HARDDISK_drive-scsi1
+hosting_data_mount: "/srv"
+
+# --- Backups -----------------------------------------------------------------
+hosting_backup_local_repo: "/srv/backups/restic"
+hosting_backup_schedule: "*-*-* 03:30:00"  # systemd timer, daily
+hosting_watchdog_schedule: "*-*-* *:00/15:00"  # every 15 min
+
+# --- Tenants -----------------------------------------------------------------
+# The single source of truth for edge routing and backup iteration.
+# Provision tenants with ops/tenant-provision.sh, then add them here so
+# the edge and the backup timer pick them up on the next bootstrap run.
+#   - name: acme            # tenant slug (must match the provisioned one)
+#     domain: docs.acme.example
+#     port: 18080           # local publish port (127.0.0.1:<port>)
+hosting_tenants: []

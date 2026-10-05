@@ -1,0 +1,45 @@
+---
+# Variables for the hosting_docker_host role.
+
+hosting_admin_user: wyatt
+
+# Paths on docker01
+hosting_opt_dir: /opt/sis-hosting
+hosting_bin_dir: "{{ hosting_opt_dir }}/bin"
+hosting_env_dir: /etc/sis-hosting
+hosting_repo_root: "{{ playbook_dir }}/../.."  # SIS repo on the control node
+
+# Secrets: decrypted from SOPS to this path on the target (0600 root).
+# Expected keys (see secrets/hosting.env.example):
+#   RESTIC_PASSWORD, B2_BUCKET, B2_ENDPOINT, B2_ACCESS_KEY_ID,
+#   B2_SECRET_ACCESS_KEY, NTFY_TOPIC
+hosting_secret_env_src: "{{ playbook_dir }}/../../secrets/hosting.env.encrypted"
+hosting_secret_env_dest: "{{ hosting_env_dir }}/hosting.env"
+
+# Docker daemon tuning
+hosting_docker_log_max_size: 10m
+hosting_docker_log_max_files: 3
+
+# The internal tenant bridge is 10.10.10.0/24 — keep Docker's own pools
+# well clear of it and of the data_net ranges used on TrueNAS.
+hosting_docker_address_pools:
+  - base: 172.20.0.0/14
+    size: 20
+  - base: 172.26.0.0/15
+    size: 22
+
+# SSH hardening: management interface only sees key auth (cloud-init sets
+# ssh_pwauth false; this belt-and-braces the running config).
+hosting_fail2ban_bantime: 1h
+hosting_fail2ban_findtime: 10m
+hosting_fail2ban_maxretry: 5
+
+# Ports the edge proxy serves. 80/443 open; SSH restricted to the mgmt
+# bridge network in nftables; everything else inbound dropped.
+hosting_public_tcp_ports:
+  - 80
+  - 443
+
+# Managed by this role; anything else on the host is out of scope.
+hosting_node_exporter_version: v1.9.1
+hosting_cadvisor_version: v0.52.1

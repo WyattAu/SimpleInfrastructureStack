@@ -1,0 +1,12 @@
+---
+# Variables for the hosting_edge role.
+
+# Where Caddy stores ACME account data + certificates.
+hosting_caddy_data_dir: /var/lib/caddy
+
+# Admin endpoint binds to loopback only.
+hosting_caddy_admin_listen: 127.0.0.1:2019
+
+# Proxy read timeouts for tenant apps with slow uploads.
+hosting_caddy_read_timeout: 120s
+hosting_caddy_write_timeout: 120s

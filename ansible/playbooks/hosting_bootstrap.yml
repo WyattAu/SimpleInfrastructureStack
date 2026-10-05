@@ -1,0 +1,59 @@
+---
+# ===================================================================
+# hosting_bootstrap.yml — configure docker01 as the tenant platform host
+# ===================================================================
+# Run AFTER terraform/hosting has created the VM:
+#
+#   ansible-playbook -i ansible/inventory/hosts.yml \
+#     ansible/playbooks/hosting_bootstrap.yml
+#
+# Requires:
+#   - terraform/hosting applied (VM exists, cloud-init completed)
+#   - secrets/hosting.env.encrypted present (SOPS; sops on the control
+#     node + the age key in ~/.config/sops/age/keys.txt)
+#   - hosting_data_disk_by_id set to the scsi1 disk's by-id name
+#   - hosting_tenants populated as tenants are provisioned
+#
+# Safe to re-run at any time; handlers only fire on real changes.
+
+- name: Bootstrap the hosting platform
+  hosts: hosting
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Confirm we are provisioning the right host
+      ansible.builtin.assert:
+        that:
+          - ansible_hostname == 'docker01'
+        fail_msg: >-
+          Refusing to run: expected docker01, got {{ ansible_hostname }}.
+          Check the inventory / ProxyJump.
+
+    - name: Verify the encrypted secrets file exists on the control node
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/../../secrets/hosting.env.encrypted"
+      register: hosting_secrets_file
+      delegate_to: localhost
+      become: false
+
+    - name: Assert secrets file present
+      ansible.builtin.assert:
+        that: hosting_secrets_file.stat.exists
+        fail_msg: >-
+          Missing secrets/hosting.env.encrypted — create it with
+          `sops -e secrets/hosting.env.example > secrets/hosting.env.encrypted`
+          (keys live in .sops.yaml).
+
+  roles:
+    - role: hosting_docker_host
+      tags: [docker_host]
+    - role: hosting_edge
+      tags: [edge]
+
+  post_tasks:
+    - name: Summary
+      ansible.builtin.debug:
+        msg: >-
+          docker01 ready. Tenants routed by the edge:
+          {{ hosting_tenants | map(attribute='domain') | list | join(', ') if hosting_tenants | length > 0 else '(none yet — provision with ops/tenant-provision.sh, then re-run)' }}

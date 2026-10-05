@@ -1,0 +1,46 @@
+{
+	# Loopback-only admin API; no metrics endpoint exposed publicly.
+	admin {{ hosting_caddy_admin_listen }}
+
+	# ACME account contact.
+	email {{ hosting_acme_email }}
+
+	# Explicitly pin the challenge set — this host has a public static IP
+	# and serves 80/443 directly (see nftables baseline).
+	servers {
+		timeouts {
+			read_body {{ hosting_caddy_read_timeout }}
+			write {{ hosting_caddy_write_timeout }}
+		}
+	}
+}
+
+# ===================================================================
+# Tenant routes — generated from the hosting_tenants list.
+# Each tenant publishes on 127.0.0.1:<port> (see ops/tenants/).
+# ===================================================================
+{% for tenant in hosting_tenants %}
+
+# {{ tenant.name }}
+{{ tenant.domain }} {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:{{ tenant.port }} {
+		# Tenant apps sit behind one hop; pass the real host/proto through.
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+	}
+	header {
+		# Basic hardening for every tenant origin.
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	log {
+		output file /var/log/caddy/{{ tenant.name }}.access.log {
+			roll_size 50MiB
+			roll_keep 5
+		}
+	}
+}
+{% endfor %}

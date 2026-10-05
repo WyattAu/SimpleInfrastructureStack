@@ -1,0 +1,7 @@
+[Unit]
+Description=SIS hosting — platform watchdog
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart={{ hosting_bin_dir }}/watchdog.sh

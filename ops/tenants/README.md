@@ -4,6 +4,12 @@ Per-tenant stacks for paying customers. Each tenant gets an isolated stack —
 its own database, its own data directory, its own credentials — provisioned
 from a template in this directory.
 
+Tenants deploy onto **docker01**, the dedicated hosting VM on the client
+platform (EPYC node, Proxmox). See `.docs/hosting-architecture.md` for the
+host, network and backup design; `ansible/playbooks/hosting_bootstrap.yml`
+configures that host and `ansible/group_vars/hosting.yml` lists the tenants
+the edge proxy routes and the backup timer sweeps.
+
 Everything here is intentionally decoupled from the internal infrastructure:
 no shared Postgres, no shared Redis, no shared identity provider. A customer
 tenant must never be able to reach our internal network, and an internal

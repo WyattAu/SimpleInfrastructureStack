@@ -1,0 +1,51 @@
+#!/bin/bash
+# ===================================================================
+# tenant-backup-all.sh — nightly per-tenant backup sweep.
+# Managed by Ansible (hosting_docker_host). Edits are overwritten.
+#
+# Iterates every provisioned tenant under /srv/tenants and runs
+# tenant-backup.sh with the offsite flag. Each tenant is backed up and
+# restored independently; one failure must not skip the rest.
+# ===================================================================
+set -u
+
+source /etc/sis-hosting/env
+source /etc/sis-hosting/hosting.env
+
+TENANT_ROOT="{{ hosting_data_mount }}/tenants"
+LOCAL_REPO="{{ hosting_backup_local_repo }}"
+OFFSITE_LOG="{{ hosting_data_mount }}/backups/.last-offsite-success"
+NTFY="{{ hosting_ntfy_url }}"
+FAILURES=""
+
+shopt -s nullglob
+for tenant_dir in "$TENANT_ROOT"/*/; do
+    tenant="$(basename "$tenant_dir")"
+
+    # A directory without provisioned secrets is not a tenant (yet).
+    [ -x "$tenant_dir/compose.sh" ] || continue
+
+    echo "[$(date -Is)] backing up tenant: $tenant"
+    if ! env \
+        TENANT_ROOT="$TENANT_ROOT" \
+        BACKUP_BASE_PATH="{{ hosting_data_mount }}/backups" \
+        RESTIC_REPOSITORY="$LOCAL_REPO" \
+        RESTIC_PASSWORD_FILE="/etc/sis-hosting/restic-password" \
+        B2_ENDPOINT="s3:https://${B2_ENDPOINT_HOST}" \
+        B2_BUCKET="${B2_BUCKET}" \
+        B2_ACCESS_KEY_ID="${B2_ACCESS_KEY_ID}" \
+        B2_SECRET_ACCESS_KEY="${B2_SECRET_ACCESS_KEY}" \
+        "{{ hosting_bin_dir }}/tenant-backup.sh" "$tenant" --offsite; then
+        FAILURES="$FAILURES\n- $tenant"
+        echo "[$(date -Is)] BACKUP FAILED: $tenant" >&2
+    fi
+done
+
+if [ -n "$FAILURES" ]; then
+    curl -s -H "Title: HOSTING: tenant backup failures" -H "Priority: high" \
+        -d "$(echo -e "Failed tenants:$FAILURES")" "$NTFY" > /dev/null
+    exit 1
+fi
+
+date +%s > "$OFFSITE_LOG"
+echo "[$(date -Is)] all tenant backups OK (offsite copy done)"

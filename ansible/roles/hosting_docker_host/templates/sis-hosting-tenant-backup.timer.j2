@@ -1,0 +1,10 @@
+[Unit]
+Description=SIS hosting — nightly tenant backup schedule
+
+[Timer]
+OnCalendar={{ hosting_backup_schedule }}
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

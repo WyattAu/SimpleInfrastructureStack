@@ -1,0 +1,11 @@
+[Unit]
+Description=SIS hosting — nightly per-tenant backup sweep
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart={{ hosting_bin_dir }}/tenant-backup-all.sh
+TimeoutStartSec=4h
+# Backups stop/restart tenant stacks; never run two sweeps at once.
+Nice=5

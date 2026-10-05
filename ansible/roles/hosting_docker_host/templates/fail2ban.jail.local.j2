@@ -1,0 +1,11 @@
+# fail2ban: SSH brute-force protection.
+# Managed by Ansible (hosting_docker_host).
+[DEFAULT]
+bantime  = {{ hosting_fail2ban_bantime }}
+findtime = {{ hosting_fail2ban_findtime }}
+maxretry = {{ hosting_fail2ban_maxretry }}
+banaction = nftables-multiport
+
+[sshd]
+enabled = true
+backend = systemd

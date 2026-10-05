@@ -1,0 +1,309 @@
+---
+# ===================================================================
+# hosting_docker_host — turn docker01 into the tenant platform host
+# ===================================================================
+# Idempotent: safe to re-run at any time. Order matters — packages and
+# mounts first, security baseline second, platform tooling last.
+#
+# What this role deliberately does NOT do:
+#   - Tenant provisioning (ops/tenant-provision.sh, run per tenant)
+#   - Edge routing (roles/hosting_edge)
+#   - Anything on the Proxmox node itself (runbook: .docs/hosting-architecture.md)
+
+# --- 1. Base system ---------------------------------------------------------
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - gnupg
+      - jq
+      - rsync
+      - restic
+      - nftables
+      - fail2ban
+      - unattended-upgrades
+      - qemu-guest-agent
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Enable the QEMU guest agent (IP reporting for PVE)
+  ansible.builtin.systemd:
+    name: qemu-guest-agent
+    enabled: true
+    state: started
+
+# --- 2. Docker (official repo, not distro packages) --------------------------
+
+- name: Docker apt keyring directory
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Docker apt key
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: "0644"
+
+- name: Docker apt repository
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc]
+      https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+    filename: docker
+    state: present
+
+- name: Docker engine + compose plugin
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+    update_cache: true
+
+- name: Docker daemon configuration (log rotation, address pools)
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    mode: "0644"
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": { "max-size": "{{ hosting_docker_log_max_size }}", "max-file": "{{ hosting_docker_log_max_files }}" },
+        "default-address-pools": {{ hosting_docker_address_pools | to_nice_json }}
+      }
+  notify: Restart docker
+
+- name: Admin user in the docker group
+  ansible.builtin.user:
+    name: "{{ hosting_admin_user }}"
+    groups: docker
+    append: true
+
+- name: Docker enabled and running
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+
+# --- 3. Data disk -------------------------------------------------------------
+
+- name: Locate the tenant data disk
+  ansible.builtin.stat:
+    path: "/dev/disk/by-id/{{ hosting_data_disk_by_id }}"
+  register: hosting_data_disk
+
+- name: Assert the data disk exists
+  ansible.builtin.assert:
+    that: hosting_data_disk.stat.exists
+    fail_msg: >-
+      /dev/disk/by-id/{{ hosting_data_disk_by_id }} not found — set
+      hosting_data_disk_by_id to the scsi1 disk's by-id name
+      (`ls -l /dev/disk/by-id/`).
+
+- name: Filesystem on the data disk (created once, never reformatted)
+  community.general.filesystem:
+    dev: "/dev/disk/by-id/{{ hosting_data_disk_by_id }}"
+    fstype: ext4
+    state: present
+
+- name: Mount points under {{ hosting_data_mount }}
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ hosting_data_mount }}/tenants"
+    - "{{ hosting_data_mount }}/backups/restic"
+    - "{{ hosting_data_mount }}/backups/staging"
+    - "{{ hosting_env_dir }}"
+
+- name: Read the data disk UUID
+  ansible.builtin.command:
+    cmd: "blkid -s UUID -o value /dev/disk/by-id/{{ hosting_data_disk_by_id }}"
+  register: hosting_data_disk_uuid
+  changed_when: false
+
+- name: Mount the data disk at {{ hosting_data_mount }}
+  ansible.posix.mount:
+    path: "{{ hosting_data_mount }}"
+    src: "UUID={{ hosting_data_disk_uuid.stdout }}"
+    fstype: ext4
+    opts: defaults,noatime
+    state: mounted
+
+- name: Platform directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+    owner: root
+    group: root
+  loop:
+    - "{{ hosting_opt_dir }}"
+    - "{{ hosting_bin_dir }}"
+
+# --- 4. Secrets ---------------------------------------------------------------
+
+- name: Install decrypted platform secrets (from SOPS)
+  ansible.builtin.copy:
+    content: "{{ lookup('community.sops.sops', hosting_secret_env_src) }}"
+    dest: "{{ hosting_secret_env_dest }}"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+# --- 5. Security baseline ------------------------------------------------------
+
+- name: nftables baseline
+  ansible.builtin.copy:
+    dest: /etc/nftables.conf
+    mode: "0644"
+    content: "{{ lookup('template', 'nftables.conf.j2') }}"
+  notify: Reload nftables
+
+- name: nftables enabled
+  ansible.builtin.systemd:
+    name: nftables
+    enabled: true
+    state: started
+
+- name: fail2ban jail (sshd)
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.local
+    mode: "0644"
+    content: "{{ lookup('template', 'fail2ban.jail.local.j2') }}"
+  notify: Restart fail2ban
+
+- name: fail2ban enabled
+  ansible.builtin.systemd:
+    name: fail2ban
+    enabled: true
+    state: started
+
+- name: Unattended security upgrades
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    mode: "0644"
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+
+- name: Kernel tuning
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/90-sis-hosting.conf
+    mode: "0644"
+    content: "{{ lookup('template', 'sysctl.90-sis-hosting.conf.j2') }}"
+  notify: Apply sysctls
+
+# --- 6. Tenant platform tooling -------------------------------------------------
+
+- name: Install tenant tooling (provision + backup scripts)
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ hosting_bin_dir }}/{{ item.name }}"
+    mode: "0750"
+    owner: root
+    group: root
+  loop:
+    - name: tenant-provision.sh
+      src: "{{ hosting_repo_root }}/ops/tenant-provision.sh"
+    - name: tenant-backup.sh
+      src: "{{ hosting_repo_root }}/ops/tenant-backup.sh"
+
+- name: Tenant tooling environment (TENANT_ROOT and friends)
+  ansible.builtin.copy:
+    dest: "{{ hosting_env_dir }}/env"
+    mode: "0644"
+    content: |
+      TENANT_ROOT=/srv/tenants
+      BACKUP_BASE_PATH=/srv/backups
+      RESTIC_PASSWORD_FILE={{ hosting_env_dir }}/restic-password
+      RESTIC_REPOSITORY={{ hosting_backup_local_repo }}
+
+- name: Extract the restic password from platform secrets
+  ansible.builtin.copy:
+    dest: "{{ hosting_env_dir }}/restic-password"
+    mode: "0600"
+    content: >-
+      {{ lookup('pipe', '. ' + hosting_secret_env_dest + ' && printf %s "$RESTIC_PASSWORD"') }}
+  no_log: true
+
+- name: nightly tenant backup runner
+  ansible.builtin.copy:
+    dest: "{{ hosting_bin_dir }}/tenant-backup-all.sh"
+    mode: "0750"
+    content: "{{ lookup('template', 'tenant-backup-all.sh.j2') }}"
+
+- name: systemd units (backup + watchdog)
+  ansible.builtin.copy:
+    dest: "/etc/systemd/system/{{ item }}"
+    mode: "0644"
+    content: "{{ lookup('template', item + '.j2') }}"
+  loop:
+    - sis-hosting-tenant-backup.service
+    - sis-hosting-tenant-backup.timer
+    - sis-hosting-watchdog.service
+    - sis-hosting-watchdog.timer
+  notify: Reload systemd
+
+- name: Enable backup and watchdog timers
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop:
+    - sis-hosting-tenant-backup.timer
+    - sis-hosting-watchdog.timer
+
+- name: Watchdog script
+  ansible.builtin.copy:
+    dest: "{{ hosting_bin_dir }}/watchdog.sh"
+    mode: "0750"
+    content: "{{ lookup('template', 'watchdog.sh.j2') }}"
+
+# --- 7. Host-level monitoring exporters -------------------------------------------
+
+- name: Node exporter
+  community.docker.docker_container:
+    name: hosting-node-exporter
+    image: "ghcr.io/wyattau/evergreenimageregistry/node-exporter:{{ hosting_node_exporter_version }}"
+    restart_policy: unless-stopped
+    network_mode: host
+    pid_mode: host
+    volumes:
+      - /:/host:ro,rslave
+    command:
+      - --path.rootfs=/host
+    comparisons:
+      image: ignore  # pin via defaults, don't rebuild on every run
+  tags: [monitoring]
+
+- name: cAdvisor (per-container metrics for all tenants)
+  community.docker.docker_container:
+    name: hosting-cadvisor
+    image: "ghcr.io/wyattau/evergreenimageregistry/cadvisor:{{ hosting_cadvisor_version }}"
+    restart_policy: unless-stopped
+    ports:
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    privileged: true
+    command:
+      - --housekeeping_interval=30s
+      - --docker_only=true
+  tags: [monitoring]

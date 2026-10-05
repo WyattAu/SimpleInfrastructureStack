@@ -1,0 +1,49 @@
+#!/usr/sbin/nft -f
+# ===================================================================
+# {{ inventory_hostname }} — nftables baseline
+# Managed by Ansible (hosting_docker_host). Local edits are overwritten.
+#
+# DESIGN NOTE: this ruleset only hardens the `input` chain. The `forward`
+# chain is intentionally NOT managed here — Docker owns it (its own
+# iptables-nft rules do container NAT and per-publish filtering). A host
+# forward policy of drop here would silently break tenant publishing.
+# Containment for tenants is enforced by Docker networks + per-tenant
+# compose, not by this file.
+# ===================================================================
+
+flush ruleset
+
+table inet filter {
+    chain input {
+        type filter hook input priority 0; policy drop;
+
+        # Loopback
+        iif "lo" accept
+
+        # Established/related
+        ct state established,related accept
+
+        # ICMP + ICMPv6 (PMTU discovery needs this)
+        ip protocol icmp accept
+        meta l4proto ipv6-icmp accept
+
+        # SSH — from the management LAN only (Proxmox node + workstation).
+        # Tenant-bridge peers are NOT allowed to SSH here.
+        ip saddr 192.168.0.0/24 tcp dport 22 ct state new accept
+
+        # Edge proxy — the only tenant-facing surface.
+{% for port in hosting_public_tcp_ports %}
+        tcp dport {{ port }} ct state new accept
+{% endfor %}
+
+        # Node/cAdvisor metrics: scrape only from the tenant bridge.
+        ip saddr 10.10.10.0/24 tcp dport { 9100, 8081 } ct state new accept
+
+        # Everything else: drop (default policy), count it.
+        counter drop
+    }
+
+    chain output {
+        type filter hook output priority 0; policy accept;
+    }
+}

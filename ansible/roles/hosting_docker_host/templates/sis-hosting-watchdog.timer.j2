@@ -1,0 +1,9 @@
+[Unit]
+Description=SIS hosting — watchdog schedule
+
+[Timer]
+OnCalendar={{ hosting_watchdog_schedule }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

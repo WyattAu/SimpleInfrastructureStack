@@ -1,0 +1,52 @@
+#!/bin/bash
+# ===================================================================
+# watchdog.sh — hosting-platform meta-watchdog.
+# Managed by Ansible (hosting_docker_host). Edits are overwritten.
+#
+# Checks, from the tenant host itself (independent of any monitoring
+# stack that could itself be down):
+#   1. Any tenant container unhealthy/restarting
+#   2. Edge proxy (Caddy) alive and serving
+#   3. Offsite backup freshness (last success < 25h)
+# Alerts to ntfy on failure. Silence is health.
+# ===================================================================
+set -u
+
+NTFY="{{ hosting_ntfy_url }}"
+TENANT_ROOT="{{ hosting_data_mount }}/tenants"
+OFFSITE_LOG="{{ hosting_data_mount }}/backups/.last-offsite-success"
+NOW=$(date +%s)
+failures=""
+
+# 1. Tenant fleet health
+BAD=0
+for compose in "$TENANT_ROOT"/*/compose.sh; do
+    [ -x "$compose" ] || continue
+    # Default `compose ps` output already includes the Status column, so
+    # plain grep works here. (--format braces would collide with Jinja.)
+    n=$(cd "$(dirname "$compose")" && ./compose.sh ps 2>/dev/null \
+        | grep -cE 'unhealthy|Restarting' || true)
+    BAD=$((BAD + n))
+done
+[ "$BAD" -gt 0 ] && failures="$failures\n- TENANTS DEGRADED: $BAD container(s) unhealthy/restarting"
+
+# 2. Edge proxy answers locally
+if ! curl -fsS --max-time 8 -o /dev/null http://127.0.0.1:80/ 2>/dev/null; then
+    # Port 80 may legitimately refuse plain HTTP if Caddy redirects; test 443 too.
+    if ! echo | timeout 8 openssl s_client -connect 127.0.0.1:443 -servername localhost 2>/dev/null | grep -q "BEGIN CERTIFICATE"; then
+        failures="$failures\n- EDGE PROXY NOT RESPONDING on 80/443"
+    fi
+fi
+
+# 3. Offsite backup freshness
+AGE=$((NOW - $(cat "$OFFSITE_LOG" 2>/dev/null || echo 0)))
+[ "$AGE" -gt 90000 ] && failures="$failures\n- OFFSITE BACKUP STALE: $((AGE / 3600))h since last success"
+
+if [ -n "$failures" ]; then
+    curl -s -H "Title: HOSTING WATCHDOG: degraded" -H "Priority: high" \
+        -d "$(echo -e "$failures")" "$NTFY" > /dev/null
+    echo "ALERT SENT:$failures"
+    exit 1
+fi
+
+echo "watchdog OK (bad=$BAD offsite_age=${AGE}s)"
