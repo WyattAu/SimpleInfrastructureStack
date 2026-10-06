@@ -131,19 +131,53 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
   republish debt. **Dogfooding found the skew — that is the loop
   working.**
 
-### Iteration 1 — queued
+### Iteration 1 — 2026-10-06 — EIR FIPS wave + nightly verification
+
+#### ANALYZE
+
+- Build FIPS Variants red: every job failed instantly. Two independent
+  root causes (both fixed this iteration):
+  1. `IMAGE_PREFIX: ${{ github.repository_owner }}` → `WyattAu` (upper)
+     — GHCR rejects uppercase repository names. Fixed by lowercasing into
+     `GITHUB_ENV` per job, mirroring `_build-reusable.yml`.
+  2. `build-keycloak-fips` referenced `images/keycloak/manifest.toml`,
+     but an automated bump renamed the dir to `keycloak-quarkus/` and the
+     rename left no `Dockerfile.fips` — empty version tag even before the
+     prefix bug. Job removed from the matrix; a purpose-built
+     keycloak-quarkus FIPS variant is backlog #10.
+- Upstream Version Watch still red — the known PR-permission block
+  (user action: enable "Allow GitHub Actions to create and approve pull
+  requests" in repo settings). Unchanged.
+
+#### VERIFY (nightly)
+
+- Oct 5 Nightly Full Rebuild: **all 25 jobs succeeded**, including every
+  build batch (oxidized + alertmanager fixes confirmed in a full build).
+  The run-level conclusion says "failure" while no job or step failed
+  (API evidence: 25/25 success, run_attempt 1) — logged as a GH
+  quirk; confirm on the Oct 6 nightly before treating red as real.
+- The 3 unhealthy exporters stay unhealthy until the next SIS deploy
+  pulls rebuilt shim-equipped images — expected; watchdog exempts them.
+
+#### IMPLEMENT
+
+- EIR `8591a717f`: FIPS lowercase fix + keycloak variant removal.
+  (Pre-push gate caught a trailing-blank-line, fixed in a follow-up
+  style commit — the gate-as-formatter loop is normal now.)
+
+### Iteration 2 — queued
 
 1. **hosting-api v1**: `worker-kit`-driven backup job queue (async
    trigger → job status endpoint), `outbox-kit` for durable job events,
    bearer-token auth (so the edge can proxy it safely), systemd unit +
    Ansible wiring for docker01.
-2. **EIR fixes**: FIPS workflow lowercases `$GITHUB_REPOSITORY` before
-   tagging (`ghcr.io/WyattAu/...` → invalid uppercase tag — root cause of
-   Build FIPS Variants failure); triage Oct 5 nightly batch failures;
-   publish telemetry-init 0.1.2 (metrics-kit 0.2 dep) and testkit 0.3.0
-   (http module) to repay skew debt.
+2. **EIR estate republish wave**: publish telemetry-init 0.1.2 (metrics-kit
+   0.2 dep) and testkit 0.3.0 (http module) to repay skew debt; then bump
+   hosting-api deps off the 0.1 pins.
 3. **hosting-dashboard scaffold**: Astro 7 + SolidJS 1.9 + pediment,
    consuming hosting-api; login via edge (oauth2-proxy) first.
+4. Confirm Oct 6 nightly conclusion quirk (all-jobs-green run marked
+   failure) — if it recurs, file upstream with evidence.
 
 ## Backlog (ranked)
 
