@@ -22,3 +22,8 @@
 - name: Reload systemd
   ansible.builtin.systemd:
     daemon_reload: true
+
+- name: Restart hosting-api
+  ansible.builtin.systemd:
+    name: sis-hosting-api
+    state: restarted

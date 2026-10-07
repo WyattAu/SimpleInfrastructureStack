@@ -1,0 +1,24 @@
+[Unit]
+Description=SIS hosting — control-plane API (hosting-api)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+ExecStart={{ hosting_opt_dir }}/bin/hosting-api
+Environment=TENANT_ROOT={{ hosting_data_mount }}/tenants
+Environment=HOSTING_JOBS_DIR={{ hosting_data_mount }}/backups/jobs
+Environment=HOSTING_LISTEN=127.0.0.1:8484
+Environment=HOSTING_BACKUP_SCRIPT={{ hosting_bin_dir }}/tenant-backup.sh
+EnvironmentFile={{ hosting_env_dir }}/hosting.env
+# API token is injected via the SOPS environment file (HOSTING_API_TOKEN=...)
+Restart=on-failure
+RestartSec=5
+# Loopback-only listener: the edge proxy is the only public path.
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths={{ hosting_data_mount }} /etc/sis-hosting
+
+[Install]
+WantedBy=multi-user.target

@@ -165,19 +165,57 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
   (Pre-push gate caught a trailing-blank-line, fixed in a follow-up
   style commit — the gate-as-formatter loop is normal now.)
 
-### Iteration 2 — queued
+### Iteration 2 — 2026-10-07 — hosting-api v1 + FIPS wave verified
 
-1. **hosting-api v1**: `worker-kit`-driven backup job queue (async
-   trigger → job status endpoint), `outbox-kit` for durable job events,
-   bearer-token auth (so the edge can proxy it safely), systemd unit +
-   Ansible wiring for docker01.
-2. **EIR estate republish wave**: publish telemetry-init 0.1.2 (metrics-kit
-   0.2 dep) and testkit 0.3.0 (http module) to repay skew debt; then bump
-   hosting-api deps off the 0.1 pins.
-3. **hosting-dashboard scaffold**: Astro 7 + SolidJS 1.9 + pediment,
-   consuming hosting-api; login via edge (oauth2-proxy) first.
-4. Confirm Oct 6 nightly conclusion quirk (all-jobs-green run marked
-   failure) — if it recurs, file upstream with evidence.
+**ANALYZE**
+
+- Oct 6 nightly: 25/25 jobs green again, run-level conclusion still
+  "failure" — quirk confirmed recurring. Evidence logged twice; treat
+  the nightly as functionally green, watch a third run, then file.
+- FIPS dispatch (manual) sent after the fix; verify on next ANALYZE.
+- josh server-side state audited: TrueNAS account had been LOST (home
+  + key survived) — recreated uid 3002/gid 3004 + sudoers; CachyOS
+  intact; Forgejo joshkad re-activated, fresh password, must-change on
+  first login; keys API is 405 on this Forgejo (josh adds his own key
+  post-login — the correct flow anyway). Handoff commands delivered.
+
+**ROADMAP adjustment (honest fit over planned fit)**
+
+- Planned: worker-kit as on-demand job queue. Reality: worker-kit is a
+  *periodic* scheduler (cadence/jitter/breaker), not a queue. V1
+  shipped: on-demand backups on tokio + durable JobStore; worker-kit
+  owns the recurring nightly sweep (Trigger::Cron), replacing the shell
+  systemd timer. `outbox-kit` deferred until the API gains a database —
+  file-backed job records cover v1 durability without a new stateful dep.
+
+**IMPLEMENT**
+
+- hosting-api v0.2.0 (pushed): async backup jobs (202 + job id, durable
+  file-backed records, crash-orphan reaping), bearer auth on /api/*
+  (constant-time, fail-closed; healthz/metrics open), nightly sweep on
+  worker-kit+shutdown-kit, Ansible wiring (systemd unit, binary deploy,
+  shell timer retired), HOSTING_API_TOKEN added to the SOPS contract.
+- Findings fed back into the estate: worker-kit cron needs 6-field
+  expressions (`30 3 * * *` invalid; `0 30 3 * * *` = 03:30 UTC) — worth
+  a doc patch upstream.
+
+**TEST/VERIFY**
+
+- 21 tests green (unit + integration over auth rejection, async job
+  completion, script-failure-recorded). End-to-end against the real
+  binary: 401s, submit → poll → terminal, persistence across restart,
+  orphan-reap no-op on terminal jobs.
+
+### Iteration 3 — queued
+
+1. **hosting-dashboard scaffold**: Astro 7 + SolidJS 1.9 + pediment,
+   consuming hosting-api v1 (jobs + tenants), auth via edge
+   (oauth2-proxy); repo #3 for the dogfooding matrix.
+2. **Estate republish wave**: telemetry-init 0.1.2 (metrics-kit 0.2 dep),
+   testkit 0.3.0 (http module) — prepared as PRs if publish creds are
+   not on this machine; then bump hosting-api off the 0.1 pins.
+3. **Verify**: FIPS run green on the new commit; third nightly data
+   point for the conclusion quirk; exporters health after next SIS push.
 
 ## Backlog (ranked)
 

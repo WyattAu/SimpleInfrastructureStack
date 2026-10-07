@@ -254,21 +254,50 @@
     - sis-hosting-watchdog.timer
   notify: Reload systemd
 
-- name: Enable backup and watchdog timers
+- name: Enable watchdog timer (backup sweep lives inside hosting-api now)
   ansible.builtin.systemd:
     name: "{{ item }}"
     enabled: true
     state: started
     daemon_reload: true
   loop:
-    - sis-hosting-tenant-backup.timer
     - sis-hosting-watchdog.timer
+
+- name: Disable the shell backup timer (superseded by hosting-api cron)
+  ansible.builtin.systemd:
+    name: sis-hosting-tenant-backup.timer
+    enabled: false
+    state: stopped
+  failed_when: false
 
 - name: Watchdog script
   ansible.builtin.copy:
     dest: "{{ hosting_bin_dir }}/watchdog.sh"
     mode: "0750"
     content: "{{ lookup('template', 'watchdog.sh.j2') }}"
+
+- name: Install hosting-api binary
+  ansible.builtin.copy:
+    src: "{{ hosting_api_binary_src }}"
+    dest: "{{ hosting_bin_dir }}/hosting-api"
+    mode: "0755"
+    owner: root
+    group: root
+  notify: Restart hosting-api
+
+- name: systemd unit (hosting-api)
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/sis-hosting-api.service
+    mode: "0644"
+    content: "{{ lookup('template', 'sis-hosting-api.service.j2') }}"
+  notify: Reload systemd
+
+- name: Enable hosting-api service
+  ansible.builtin.systemd:
+    name: sis-hosting-api
+    enabled: true
+    state: started
+    daemon_reload: true
 
 # --- 7. Host-level monitoring exporters -------------------------------------------
 
