@@ -56,8 +56,9 @@ consumers.
 
 | Estate crate | Consumers | Status |
 | --- | --- | --- |
-| `telemetry-init` 0.1 | **hosting-api** | live |
-| `metrics-kit` 0.1 | **hosting-api** (via telemetry-init) | live |
+| `telemetry-init` 0.1.2 | **hosting-api** | live (0.1.2 republished with metrics-kit 0.2) |
+| `metrics-kit` 0.2 | **hosting-api** (via telemetry-init 0.1.2) | live |
+| `pediment` | **hosting-dashboard** (tokens vendored until npm publish) | partial |
 | `worker-kit` | hosting-api v1 (backup job queue) | planned |
 | `outbox-kit` | hosting-api v1 (durable backup events) | planned |
 | `billing-kit` / `ledger-kit` | hosting-metering (iteration ≥3) | planned |
@@ -206,26 +207,68 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
   binary: 401s, submit → poll → terminal, persistence across restart,
   orphan-reap no-op on terminal jobs.
 
-### Iteration 3 — queued
+### Iteration 3 — 2026-10-07 — FIPS green, dashboard repo, republish wave
 
-1. **hosting-dashboard scaffold**: Astro 7 + SolidJS 1.9 + pediment,
-   consuming hosting-api v1 (jobs + tenants), auth via edge
-   (oauth2-proxy); repo #3 for the dogfooding matrix.
-2. **Estate republish wave**: telemetry-init 0.1.2 (metrics-kit 0.2 dep),
-   testkit 0.3.0 (http module) — prepared as PRs if publish creds are
-   not on this machine; then bump hosting-api off the 0.1 pins.
-3. **FIPS matrix audit (new, from iteration-2 verify)**: the lowercase
-   fix worked (`ghcr.io/wyattau/...` in logs) and exposed the next rot
-   layer — per-image version/build failures. `images/kubescape/` holds
-   ONLY Dockerfile.fips (base image archived away; manifest gone →
-   empty tag). Matrix audit needed: for each listed image verify
-   manifest.toml + Dockerfile.fips + version extraction; archive the
-   orphaned variants (keycloak precedent). Also `nginx`/`redis`
-   openssl-fips jobs hit apk `unable to select packages` — Alpine
-   package rot inside Dockerfile.fips files, same treatment as the
-   oxidized openssl fix.
-4. **Verify**: FIPS post-audit green; third nightly data point for the
-   conclusion quirk; exporters health after next SIS push.
+**ANALYZE**
+
+- FIPS audit executed (matrix entry-by-entry vs filesystem): go-fips
+  12/13 (kubescape half-orphan), envoy green, openssl-fips 0/6. Root
+  cause for the whole openssl job: **Wolfi removed
+  `openssl-provider-fips` from the public package repo** (verified live;
+  only `openssl-hardened-*` and `provider-legacy` remain). Building
+  would silently ship "FIPS" images without the FIPS provider — a
+  compliance lie. Job disabled fail-closed with restore paths documented
+  inline (Chainguard FIPS images, or an honest openssl-hardened rebuild
+  under a non-FIPS name — needs a product decision).
+- Nightly quirk: Oct 7 run still in-flight at analysis time; keep
+  collecting data points.
+
+**IMPLEMENT**
+
+- EIR `1dcffcef8`: kubescape removed (restore only with its base image),
+  openssl-fips job disabled, matrix audited. **Verification: FIPS run
+  15/15 SUCCESS — first fully green Build FIPS Variants.**
+- `hosting-dashboard` repo #3 (pushed): Astro 7.3.5 + SolidJS 1.9.15,
+  node-adapter server routes proxying hosting-api server-side so
+  HOSTING_API_TOKEN never reaches the browser; slug regex at the proxy
+  plus the API's own validation; backup trigger → job list UI; pediment
+  Spatial-Materialism tokens vendored (attributed) until npm publish.
+- Republish wave: **telemetry-init 0.1.2 published** (ships the
+  metrics-kit 0.2 dep that 0.1.1 predated); hosting-api pin lifted,
+  single metrics-kit 0.2 across the graph, 21 tests green.
+
+**BLOCKED (user action)**
+
+- **testkit 0.3.0** prepared locally (http::TestServer module, version
+  bumped, tests green) but publish returned 403: the local crates.io
+  token is not an owner of the `testkit` crate name. Fix: accept the
+  owner invite under this account, or publish from wherever 0.2.2
+  originated. hosting-api keeps its vendored TestServer until then.
+- **pediment npm publish** — packages/tokens + packages/components need
+  `npm publish` from the monorepo; unlocks the dashboard's vendored-token
+  swap. (NPM Publishing doc exists in the pediment repo.)
+
+**VERIFY**
+
+- FIPS 15/15 green (evidence above). Dashboard verified end-to-end
+  against a real hosting-api fixture: tenants render with live health,
+  backup trigger 202s and records a job, bad tenants rejected at the
+  proxy, zero token material in served pages. Types clean via tsc -p
+  (`astro check` hangs under bun — logged).
+
+### Iteration 4 — queued
+
+1. **Dashboard deploy wiring**: systemd unit + Ansible task for
+   hosting-dashboard on docker01 (binary = `bun run build` artifact,
+   loopback 4321), edge route via hosting_tenants-style list.
+2. **testkit ownership + pediment publish** (user actions — nag list).
+3. **hosting-api v1.1**: scim-kit/webauthn-kit evaluation for per-user
+   authz once the edge hands identity through; `outbox-kit` when the
+   API gains a DB (job events durability beyond files).
+4. **Nightly quirk**: file the GitHub issue with the 3-run evidence set
+   if the Oct 8 run shows all-jobs-green + run-failure again.
+5. **EIR**: watch the next scheduled FIPS run (should stay 15/15);
+   revisit openssl-fips when the Chainguard FIPS decision is made.
 
 ## Backlog (ranked)
 
