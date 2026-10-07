@@ -214,8 +214,18 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 2. **Estate republish wave**: telemetry-init 0.1.2 (metrics-kit 0.2 dep),
    testkit 0.3.0 (http module) — prepared as PRs if publish creds are
    not on this machine; then bump hosting-api off the 0.1 pins.
-3. **Verify**: FIPS run green on the new commit; third nightly data
-   point for the conclusion quirk; exporters health after next SIS push.
+3. **FIPS matrix audit (new, from iteration-2 verify)**: the lowercase
+   fix worked (`ghcr.io/wyattau/...` in logs) and exposed the next rot
+   layer — per-image version/build failures. `images/kubescape/` holds
+   ONLY Dockerfile.fips (base image archived away; manifest gone →
+   empty tag). Matrix audit needed: for each listed image verify
+   manifest.toml + Dockerfile.fips + version extraction; archive the
+   orphaned variants (keycloak precedent). Also `nginx`/`redis`
+   openssl-fips jobs hit apk `unable to select packages` — Alpine
+   package rot inside Dockerfile.fips files, same treatment as the
+   oxidized openssl fix.
+4. **Verify**: FIPS post-audit green; third nightly data point for the
+   conclusion quirk; exporters health after next SIS push.
 
 ## Backlog (ranked)
 
