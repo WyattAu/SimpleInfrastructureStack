@@ -285,6 +285,27 @@
     group: root
   notify: Restart hosting-api
 
+- name: Install the dashboard build artifact (dist + production deps)
+  ansible.builtin.copy:
+    src: "{{ hosting_dashboard_dist_src }}"
+    dest: "{{ hosting_opt_dir }}/dashboard/"
+    mode: "preserve"
+  notify: Restart hosting-dashboard
+
+- name: systemd unit (hosting-dashboard)
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/sis-hosting-dashboard.service
+    mode: "0644"
+    content: "{{ lookup('template', 'sis-hosting-dashboard.service.j2') }}"
+  notify: Reload systemd
+
+- name: Enable hosting-dashboard service
+  ansible.builtin.systemd:
+    name: sis-hosting-dashboard
+    enabled: true
+    state: started
+    daemon_reload: true
+
 - name: systemd unit (hosting-api)
   ansible.builtin.copy:
     dest: /etc/systemd/system/sis-hosting-api.service

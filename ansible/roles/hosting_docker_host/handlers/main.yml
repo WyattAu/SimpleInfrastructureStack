@@ -27,3 +27,8 @@
   ansible.builtin.systemd:
     name: sis-hosting-api
     state: restarted
+
+- name: Restart hosting-dashboard
+  ansible.builtin.systemd:
+    name: sis-hosting-dashboard
+    state: restarted

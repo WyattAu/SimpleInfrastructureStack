@@ -1,0 +1,23 @@
+[Unit]
+Description=SIS hosting — customer dashboard (hosting-dashboard)
+After=network-online.target sis-hosting-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory={{ hosting_opt_dir }}/dashboard
+ExecStart=/usr/bin/node {{ hosting_opt_dir }}/dashboard/dist/server/entry.mjs
+Environment=HOST=127.0.0.1
+Environment=PORT=4321
+Environment=HOSTING_API_URL=http://127.0.0.1:8484
+EnvironmentFile={{ hosting_env_dir }}/hosting.env
+# HOSTING_API_TOKEN comes from the SOPS-rendered env file.
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths={{ hosting_opt_dir }}/dashboard
+
+[Install]
+WantedBy=multi-user.target

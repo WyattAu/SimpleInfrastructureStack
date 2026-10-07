@@ -256,7 +256,86 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
   proxy, zero token material in served pages. Types clean via tsc -p
   (`astro check` hangs under bun — logged).
 
-### Iteration 4 — queued
+### Nightly phantom-failure — GitHub bug report (ready to file)
+
+File at github.com/orgs/community/discussions (Actions category). Paste:
+
+> **Workflow run conclusion "failure" while every job, step, and check-run
+> is success — 3 consecutive scheduled runs**
+>
+> Repo: WyattAu/EvergreenImageRegistry (private). Workflow: build-nightly.yml
+> (schedule trigger, matrix builds, three jobs with job-level
+> `continue-on-error: true`).
+>
+> Evidence per run (Oct 5, 6, 7 2026, all `run_attempt: 1`):
+> - Runs API `conclusion: "failure"`
+> - Jobs API: 25/25 jobs `conclusion: "success"` (total_count 25, no pagination)
+> - Steps API: zero steps with non-success conclusion
+> - Check-suite API: 25 check-runs, `failures: []`
+> - Raw logs: zero `##[error]` lines in the entire run
+>
+> Expected: run conclusion success (or a job/check-run that explains the
+> failure). Observed: phantom run-level failure with no failing surface
+> anywhere in the API or logs.
+>
+> Suspect: interaction of job-level `continue-on-error` with the run-level
+> conclusion (docs say continue-on-error "prevents a workflow run from
+> failing when a job fails" — the run is failing anyway, with the jobs
+> reporting success so there is nothing to inspect).
+
+Workaround shipped meanwhile (EIR `build-nightly.yml`): the three advisory
+jobs (`pin-check`, `perf-regression`, `binary-type-check`) now read
+`continue-on-error: ${{ vars.ADVISORY_GATES_BLOCKING != 'true' }}` — set the
+repo variable to make them blocking, which both surfaces any internal failure
+in the run conclusion and sidesteps the phantom-red interaction.
+
+### Iteration 4 — 2026-10-07 — identity audit trail + deploy wiring + quirk root-caused
+
+**ANALYZE (the phantom, cornered)**
+
+Three runs (Oct 5/6/7), identical signature: run `conclusion: failure`
+while Jobs API shows 25/25 success, Steps API zero failures, check-suite
+`failures: []`, and zero `##[error]` lines in raw logs. A ready-to-file
+GitHub bug report now lives in this document (search: "phantom-failure").
+Prime suspect remains job-level `continue-on-error` interacting with the
+run conclusion against documented semantics.
+
+**IMPLEMENT**
+
+- EIR `45ede5a30`: the three advisory jobs (pin-check, perf-regression,
+  binary-type-check) now read
+  `continue-on-error: ${{ vars.ADVISORY_GATES_BLOCKING != 'true' }}` —
+  a repo variable flips them to blocking, which both surfaces any
+  internal failure in the run conclusion and sidesteps the phantom-red
+  interaction while the upstream report is pending.
+- hosting-api `e463c65`: audit identity. JobRecord gains `requested_by`,
+  populated from `X-Forwarded-User` **only when `TRUST_PROXY_HEADERS=true`**
+  (default off — the listener is loopback-only; a direct caller could
+  forge the header). Nightly sweep records itself as `nightly-sweep`.
+  Verified against the real binary in both directions: identity recorded
+  with trust on; forged header ignored with trust off.
+- Ansible: dashboard deploy wiring (dist artifact task, systemd unit on
+  loopback 4321, env from the SOPS file, restart handlers). Syntax
+  checked; first real apply happens with the EPYC bring-up.
+
+**BLOCKED (user, unchanged)**
+
+- testkit crates.io ownership (403 on publish), pediment npm publish.
+- ADVISORY_GATES_BLOCKING: optional repo variable if you want advisory
+  failures visible in the run badge.
+
+### Iteration 5 — queued
+
+1. **hosting-api v1.1**: webauthn-kit spike — passkey registration/login
+   as a second factor for /api/* (defense in depth behind the edge);
+   evaluate scim-kit for tenant-user provisioning sync.
+2. **Dashboard UX**: job polling with auto-refresh (Solid resource
+   invalidation), tenant detail drill-down, backup duration sparkline.
+3. **EIR**: openssl-fips decision (Chainguard FIPS images vs honest
+   openssl-hardened relabel) — product call, needs the catalogue pricing
+   implications written down first.
+4. **Verify**: first EPYC apply (terraform + bootstrap) when hardware
+   lands; FIPS stays 15/15; nightly phantom tracked via the variable.
 
 1. **Dashboard deploy wiring**: systemd unit + Ansible task for
    hosting-dashboard on docker01 (binary = `bun run build` artifact,
