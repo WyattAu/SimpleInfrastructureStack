@@ -540,17 +540,49 @@ text (static) mispredicted runtime reality (23 false positives) and
 text-based classification mispredicted upstream init behaviour (5/5
 wrong). Runtime evidence is the only admissible classification input.
 
-### Iteration 9 — queued
+### Iteration 9 — 2026-10-08/09 — honest signal restored across three checkers
 
-1. **Nightly readout** (Oct 9 03:00 UTC, ~6h away): phantom verdict under
-   ADVISORY_GATES_BLOCKING=true. If green: keep the variable permanently.
-   If red-with-green-jobs: escalate the community report.
-2. **EIR smoke test follow-up**: the new effective-user INFO line will
-   reclassify the registry honestly on the next run — review its output
-   and reconcile the audit doc with CI-derived numbers.
-3. **EPYC rehearsal** — hardware still pending; every software layer it
-   depends on (terraform, ansible, tenant platform, dashboard, passkeys,
-   backups, watchdog, userns-remap config) is now built and validated.
+**ANALYZE**
+
+- First post-fix smoke run delivered CI-derived truth: **82/82 critical
+  images passed the smoke job** (49 effectively non-root, 33 root-start,
+  0 hard failures) — the audit's numbers confirmed exactly (argo-cd 999,
+  loki/tempo 10001, coredns nonroot; postgres/busybox/vault INFO
+  root-start).
+- But the workflow stayed red: **two sibling jobs still ran the same
+  wrong idea** — the governance script's CC003 and static-validation's
+  inline USER grep. Three implementations, one bug, all red since
+  forever.
+
+**IMPLEMENT**
+
+- `effective-user-exceptions.json` — the evidence file, three categories:
+  tier_a_upstream_init (27, runtime-verified), tier_c_root_required (7),
+  inherited_nonroot (23, generated from GHCR config-blob data).
+- CC003 now passes on USER directive OR documented exception; both
+  static-validation loops honour the same file.
+- Honest signal restored: **4 genuine violations remain** (drone,
+  scylla-operator, trivy, vault — real fixes or runtime reclassification
+  pending). A red smoke workflow now means something.
+- hosting-api `94d5c7e`: hosting_backup_duration_seconds histogram.
+- Early nightly dispatched with ADVISORY_GATES_BLOCKING=true (the
+  readout moved up from Oct 9 03:00); smoke re-dispatched post-governance
+  fix (37846017582).
+
+**Iterations 8+9 in one line**: the "58 non-root violations" dissolved
+into 23 inherited non-root + ~44 legitimate upstream patterns + 8
+root-required + 4 genuine. What remains flagged is real work — the
+quality gate is a signal again.
+
+### Iteration 10 — queued
+
+1. **Readouts**: dispatched nightly (phantom verdict under blocking
+   advisory gates) + smoke re-run (governance-green expected with the 4
+   genuine CC003s). Reclassify or escalate accordingly.
+2. **Tier fixes for the real four**: vault + rabbitmq runtime check
+   (likely Tier A); drone/scylla-operator/trivy actual USER fixes.
+3. **EPYC rehearsal** — hardware pending; software side is complete and
+   waiting.
 
 1. **Dashboard deploy wiring**: systemd unit + Ansible task for
    hosting-dashboard on docker01 (binary = `bun run build` artifact,
