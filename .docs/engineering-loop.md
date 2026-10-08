@@ -464,18 +464,64 @@ run conclusion against documented semantics.
 - testkit crates.io ownership; pediment npm publish; GH community report
   (evidence strengthened by run #4).
 
-### Iteration 8 — queued
+### Iteration 8 — 2026-10-08 — identity unification + the non-root audit turned
 
-1. **Nightly readout** (Oct 9 03:00 UTC): conclusion-green with blocking
-   advisory gates => loop-closed; reclassify phantom; decide whether to
-   keep ADVISORY_GATES_BLOCKING permanently (honest badges > advisory
-   silence) — recommend yes, since the three gates are mature.
-2. **hosting-api v1.2**: use the passkey session for the audit trail too
-   (requested_by from X-Passkey-Session /me lookup, not just the edge
-   header) so API-triggered and dashboard-triggered backups share one
-   identity story.
-3. **EIR**: the 58-image non-root USER audit (backlog #3) — with the
-   nightly pipeline stable, this is the last pre-pilot quality gap.
+**ANALYZE**
+
+- Nightly readout pending (Oct 9 03:00 UTC; variable armed). Meanwhile:
+  **audit finding that rewrites the backlog item** — of the 58 images
+  flagged for "no non-root USER", **23 are false positives** (upstream
+  bases set USER in inherited layers; a Dockerfile-text grep can never
+  see inheritance: argo-cd 999, loki/tempo 10001, coredns nonroot,
+  kafka appuser...). The real root-starters are 35, classified:
+  - Tier A (14): start-root-and-drop via official entrypoints (postgres,
+    mysql, mongo, redis, paperless s6, immich, taiga, busybox) — forcing
+    USER would BREAK them.
+  - Tier C (8): root-required host agents (crowdsec, falco, fluent-bit,
+    watchtower, portainer-*, docker-socket-proxy) — excluded from tenant
+    networks by design.
+  - Tier B (13): genuine fix candidates (calibre-web, drone, envoy,
+    kanidm*, uptime-kuma, trivy...) — remediation is per-image with
+    runtime verification, not a blind batch.
+- Full classification in `.docs/eir-non-root-audit.md`. The systemic
+  control remains docker01's userns-remap, which neutralizes all 35 in
+  the tenant context regardless of tier.
+
+**IMPLEMENT**
+
+- EIR `1dc9a89ef`: smoke test no longer greps Dockerfile text for USER
+  (structurally wrong). Post-build `docker image inspect .Config.User`
+  records the effective user — non-root as OK, root-start as INFO (not
+  a failure; Tier A/C legitimacy). This permanently eliminates the false
+  positive class.
+- hosting-api `3acc8f1`: identity resolution unified — edge-forwarded
+  user wins when trusted, else the live passkey session, else anonymous.
+  Dashboard-triggered and edge-triggered backups now record the same
+  identity class.
+
+**VERIFY**
+
+- hosting-api: 25 tests green through the hook; identity precedence
+  verified against the real binary (edge wins under trust).
+- Registry-config audit: 58/58 images resolved from GHCR blobs, 0 errors.
+
+**BLOCKED (user, carried)**
+
+- testkit ownership; pediment npm; GH community report. NEW: webauthn-kit
+  0.4.0 was published with the user's token (same account as
+  telemetry-init) — no action needed.
+
+### Iteration 9 — queued
+
+1. **Nightly readout** (Oct 9 03:00 UTC with ADVISORY_GATES_BLOCKING):
+   the phantom verdict. Recommend keeping the variable permanently if
+   green (honest badges; the three gates are mature).
+2. **Tier B fix wave 1**: runtime-verify + USER the trivial five
+   (calibre-web, flame, sqlpad, uptime-kuma, matrix-hookshot) — one
+   verified batch, smoke test as the gate.
+3. **docker01 userns-remap migration** (Ansible): subuid range, data-dir
+   chown, monitoring exceptions — the systemic control before the first
+   paying tenant.
 4. **EPYC rehearsal** — hardware still pending.
 
 1. **Dashboard deploy wiring**: systemd unit + Ansible task for
