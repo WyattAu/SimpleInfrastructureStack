@@ -385,18 +385,61 @@ run conclusion against documented semantics.
   upstream gaps (want an issue filed there — repo is yours);
   GH community report; optional ADVISORY_GATES_BLOCKING variable.
 
-### Iteration 6 — queued
+### Iteration 6 — 2026-10-08 — webauthn-kit PR, ceremony UI, nightly watch
 
-1. **Dashboard ceremony UI**: navigator.credentials create/get flows for
-   the passkey endpoints (register first admin on first run) — completes
-   the passkey feature end to end in a browser.
-2. **webauthn-kit upstream fixes**: return COSE key in RegistrationResult;
-   re-export cborium types. Small PRs, unblock integrators estate-wide.
-3. **EIR nightly watch**: first clean scheduled run post-54e9c5dc2 should
-   be all-green AND conclusion-green (no duplicates, advisory intact).
-4. **EPYC bring-up rehearsal**: terraform plan against the PVE stub is
-   maxed — remaining risk is physical (BIOS/ZFS/bridges). Rehearse the
-   runbook steps 1–4 on spare hardware if any exists.
+**ANALYZE**
+
+- The Oct 8 03:00 UTC scheduled nightly **did not fire at all**: at
+  trigger time HEAD was still 45ede5a30 (the invalid-workflow SHA); my
+  fix landed 03:30. GitHub silently skips schedule triggers whose
+  workflow file fails to parse — no run, no trace. Consequence of the
+  duplicate-key bug extended by one day.
+- Confirmation of the invalid-file diagnosis: the 20:06 run is titled
+  with the file PATH (".github/workflows/build-nightly.yml") because
+  GitHub could not extract the workflow name.
+- Manual nightly dispatched (37770658769) on the fixed HEAD — the first
+  clean data point; scheduled cadence resumes Oct 9 03:00 UTC.
+
+**IMPLEMENT**
+
+- webauthn-kit PR #9 (branch feat/registration-result-public-key):
+  RegistrationResult.public_key_cose (the parsed COSE key already
+  existed inside verify_registration — returned instead of dropped) +
+  `pub use ciborium` re-export. 206 tests green untouched (additive).
+  Unblocks hosting-api from its ~40-line consumer-side extraction.
+- hosting-dashboard `dcf6240`: passkey ceremony UI — /login page,
+  PasskeySetup island driving navigator.credentials create/get,
+  base64url<->ArrayBuffer translation to webauthn-kit's DTO shapes,
+  /api/auth/[...path] server-side proxy with token injection and
+  ceremony-path validation. Verified through the proxy against a real
+  hosting-api (200 with real WebAuthn creation options; unknown paths
+  404); tsc + astro build clean.
+
+**VERIFY**
+
+- webauthn-kit: 206 tests, clippy/fmt clean on the PR branch.
+- Dashboard: build + typecheck green; ceremony proxy e2e against a real
+  hosting-api fixture.
+- Browser-authenticator ceremony verification remains deploy-time (needs
+  a real platform authenticator) — the last step to call passkeys
+  production-ready.
+
+**BLOCKED (user, carried + new)**
+
+- PR #9 merge + telemetry-init/testkit publishes remain yours.
+- Dashboard deploy still awaits the EPYC bring-up.
+
+### Iteration 7 — queued
+
+1. **Merge PR #9 → hosting-api consumes it**: delete the ~40-line
+   consumer-side extraction, bump to webauthn-kit 0.4 when published
+   (or git dep interim), publish webauthn-kit 0.4.0.
+2. **Dashboard: session-gated UI** — when a passkey session is absent,
+   read-only mode (tenants visible, backup trigger hidden); completes
+   the step-up story without edge changes.
+3. **Nightly watch**: verify the dispatched run + Oct 9 scheduled run are
+   conclusion-green (phantom gone on valid files, or reclassify).
+4. **EPYC rehearsal** stays pending hardware.
 
 1. **Dashboard deploy wiring**: systemd unit + Ansible task for
    hosting-dashboard on docker01 (binary = `bun run build` artifact,
