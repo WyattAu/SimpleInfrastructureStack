@@ -20,6 +20,18 @@ hosting_secret_env_dest: "{{ hosting_env_dir }}/hosting.env"
 hosting_docker_log_max_size: 10m
 hosting_docker_log_max_files: 3
 
+# Daemon-level user namespace remapping: container root becomes an
+# unprivileged high UID on the host (dockremap, 231072:65536). This is the
+# systemic containment for tenant containers — including upstream images
+# that legitimately start as root and drop privileges at runtime (see
+# .docs/eir-non-root-audit.md). Enable BEFORE first boot of any tenant:
+# existing image/volume layers are masked once enabled.
+# NOTE: containers needing host networking or the docker socket
+# (node-exporter, cadvisor, docker-socket-proxy-class) must set
+# `userns_mode: host` explicitly — compose templates get this for free
+# when they declare it.
+hosting_docker_userns_remap: true
+
 # The internal tenant bridge is 10.10.10.0/24 — keep Docker's own pools
 # well clear of it and of the data_net ranges used on TrueNAS.
 hosting_docker_address_pools:

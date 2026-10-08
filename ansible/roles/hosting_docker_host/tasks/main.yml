@@ -68,7 +68,7 @@
     state: present
     update_cache: true
 
-- name: Docker daemon configuration (log rotation, address pools)
+- name: Docker daemon configuration (log rotation, address pools, userns-remap)
   ansible.builtin.copy:
     dest: /etc/docker/daemon.json
     mode: "0644"
@@ -76,9 +76,23 @@
       {
         "log-driver": "json-file",
         "log-opts": { "max-size": "{{ hosting_docker_log_max_size }}", "max-file": "{{ hosting_docker_log_max_files }}" },
-        "default-address-pools": {{ hosting_docker_address_pools | to_nice_json }}
+        "default-address-pools": {{ hosting_docker_address_pools | to_nice_json }}{{ ',' if hosting_docker_userns_remap else '' }}
+      {% if hosting_docker_userns_remap %}
+        ,"userns-remap": "default"
+      {% endif %}
       }
   notify: Restart docker
+
+- name: Verify the dockremap subordinate ranges exist
+  ansible.builtin.assert:
+    that:
+      - lookup('file', '/etc/subuid') is search('dockremap')
+      - lookup('file', '/etc/subgid') is search('dockremap')
+    fail_msg: >-
+      /etc/subuid or /etc/subgid lacks a dockremap entry after enabling
+      userns-remap — docker creates it on restart; if this fires, check
+      that the daemon restarted successfully.
+  when: hosting_docker_userns_remap | bool
 
 - name: Admin user in the docker group
   ansible.builtin.user:

@@ -57,32 +57,31 @@ Mitigations: host network isolation (nftables input baseline confines
 them to the mgmt/tenant bridges), `no-new-privileges` where compatible,
 and daemon-level `userns-remap` exclusion documented per container.
 
-### Tier B — no reason to be root (fix candidates, 13)
+### Tier B — collapsed to empty (runtime-tested, Oct 2026)
 
-| Image | Note |
+The initial classification listed 13 "fix candidates". Fix wave 1
+runtime-tested five of them by running the upstream images with
+`--user 65532:65532` (docker-level, identical to a Dockerfile USER):
+
+| Image | Result as 65532 |
 | --- | --- |
-| calibre-web | python app; add USER + chown in build |
-| cockroachdb | Go binary; upstream supports non-root with `--store` path writable |
-| drone | Go binary; binds 80/443 by default — needs port override or cap |
-| envoy | upstream contributes a non-root variant; set USER 65532 + ensure 8080/9901 |
-| flame | static dashboard; trivial |
-| immich-machine-learning | python; upstream runs as root, writable /cache needed |
-| kanidm, kanidm-client, kanidm-server | upstream packages usually drop to `kanidmd`; verify our build's entrypoint |
-| matrix-hookshot | node app; trivial |
-| rabbitmq | config shows root; official entrypoint gosu's down — reclassify after runtime check |
-| scylla-operator | Go binary |
-| sqlpad | node app; trivial |
-| trivy | Go binary |
-| typesense | C++ binary; data dir writable by 65532 |
-| uptime-kuma | node app; needs writable /data |
-| vault | hashicorp official entrypoint drops to vault — likely Tier A after runtime check |
+| calibre-web (linuxserver) | `s6-applyuidgid: fatal: unable to set supplementary group list` — linuxserver's s6 init REQUIRES root start, then applies PUID/PGID |
+| flame | `chown: /app/data: Operation not permitted` — entrypoint chowns then runs |
+| sqlpad | node process crash on startup paths |
+| uptime-kuma | `chown: changing ownership of '/app/data': Operation not permitted` |
+| matrix-hookshot | `/data/config.yml` unwritable, exit |
 
-Remediation order: runtime-verify each (run with `id -u`, check the
-port bindings), add `USER 65532:65532` + build-time `chown` for the
-writable paths, smoke test already validates start + health post-change.
-**Do not batch-fix blind**: the loop's own standard is one verified
-wave, and `userns-remap` on the hosting host is the systemic control
-that covers all of them meanwhile (see below).
+**All five are upstream-designed root-start images.** The Tier B
+hypothesis was wrong for every tested member — the same class of error
+as the false positives: classification from text instead of runtime.
+Every FROM-upstream image in the former Tier B list moves to Tier A
+(upstream-init pattern). The only true fix path would be rebuilding
+from source with our own user layout — real forks, not justified while
+userns-remap provides the containment.
+
+**Final tally: Tier A ~44 (upstream/drop patterns, runtime-evidenced),
+Tier C 8 (root-required), Tier B 0. The per-image fix wave is
+cancelled with evidence; userns-remap is the control.**
 
 ---
 

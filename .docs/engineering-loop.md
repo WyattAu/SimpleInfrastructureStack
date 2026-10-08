@@ -511,18 +511,46 @@ run conclusion against documented semantics.
   0.4.0 was published with the user's token (same account as
   telemetry-init) — no action needed.
 
+### Iteration 8b — 2026-10-08 (same day) — Tier B collapsed by runtime evidence
+
+**The fix wave was tested and cancelled.** All five Tier B candidates
+were run with `--user 65532:65532`: calibre-web's linuxserver s6 init
+fatals (`s6-applyuidgid: unable to set supplementary group list`),
+flame/uptime-kuma die on entrypoint `chown` of their data dirs, sqlpad
+and matrix-hookshot crash on unwritable state paths. Every FROM-upstream
+image in Tier B is an upstream-designed root-start image — the same
+classification error as the false positives, made a second time: **text
+is not runtime**.
+
+Final audit tally: Tier A ~44 (upstream init/drop patterns,
+runtime-evidenced), Tier C 8 (root-required), **Tier B 0**. The per-image
+fix wave is cancelled; userns-remap is the control. Audit doc updated
+with the test table.
+
+**userns-remap migration shipped** (Ansible, applies on first docker01
+boot — free now, expensive later): daemon.json gains
+`userns-remap: default` behind `hosting_docker_userns_remap` (default
+true), with a subordinate-range assertion and the documented trade-offs
+(host-networking containers and socket-access containers declare
+`userns_mode: host`). Combined with the audit, tenant containment no
+longer depends on any per-image USER.
+
+**Lesson recorded**: the loop has now hit the same wall twice — Dockerfile
+text (static) mispredicted runtime reality (23 false positives) and
+text-based classification mispredicted upstream init behaviour (5/5
+wrong). Runtime evidence is the only admissible classification input.
+
 ### Iteration 9 — queued
 
-1. **Nightly readout** (Oct 9 03:00 UTC with ADVISORY_GATES_BLOCKING):
-   the phantom verdict. Recommend keeping the variable permanently if
-   green (honest badges; the three gates are mature).
-2. **Tier B fix wave 1**: runtime-verify + USER the trivial five
-   (calibre-web, flame, sqlpad, uptime-kuma, matrix-hookshot) — one
-   verified batch, smoke test as the gate.
-3. **docker01 userns-remap migration** (Ansible): subuid range, data-dir
-   chown, monitoring exceptions — the systemic control before the first
-   paying tenant.
-4. **EPYC rehearsal** — hardware still pending.
+1. **Nightly readout** (Oct 9 03:00 UTC, ~6h away): phantom verdict under
+   ADVISORY_GATES_BLOCKING=true. If green: keep the variable permanently.
+   If red-with-green-jobs: escalate the community report.
+2. **EIR smoke test follow-up**: the new effective-user INFO line will
+   reclassify the registry honestly on the next run — review its output
+   and reconcile the audit doc with CI-derived numbers.
+3. **EPYC rehearsal** — hardware still pending; every software layer it
+   depends on (terraform, ansible, tenant platform, dashboard, passkeys,
+   backups, watchdog, userns-remap config) is now built and validated.
 
 1. **Dashboard deploy wiring**: systemd unit + Ansible task for
    hosting-dashboard on docker01 (binary = `bun run build` artifact,
