@@ -429,17 +429,54 @@ run conclusion against documented semantics.
 - PR #9 merge + telemetry-init/testkit publishes remain yours.
 - Dashboard deploy still awaits the EPYC bring-up.
 
-### Iteration 7 — queued
+### Iteration 7 — 2026-10-08 — upstream loop closed, session gating, phantom experiment armed
 
-1. **Merge PR #9 → hosting-api consumes it**: delete the ~40-line
-   consumer-side extraction, bump to webauthn-kit 0.4 when published
-   (or git dep interim), publish webauthn-kit 0.4.0.
-2. **Dashboard: session-gated UI** — when a passkey session is absent,
-   read-only mode (tenants visible, backup trigger hidden); completes
-   the step-up story without edge changes.
-3. **Nightly watch**: verify the dispatched run + Oct 9 scheduled run are
-   conclusion-green (phantom gone on valid files, or reclassify).
-4. **EPYC rehearsal** stays pending hardware.
+**ANALYZE**
+
+- Fourth phantom: the Oct 8 dispatched nightly (valid file, correct name)
+  ran 25/25 jobs green with run conclusion failure. Evidence set now
+  spans four runs plus the one REAL failure (Oct 7 20:06, duplicate keys
+  — mine, fixed). The community report draft in this document is current.
+- **Experiment armed**: `ADVISORY_GATES_BLOCKING=true` repo variable set
+  (Oct 8 15:59 UTC). The Oct 9 03:00 UTC scheduled run is the readout:
+  green conclusion => the continue-on-error interaction was the cause
+  (variable stays until the upstream report resolves); red conclusion
+  with all-green jobs => something deeper, evidence escalates.
+
+**IMPLEMENT — the upstream loop closed**
+
+- PR #9 merged; **webauthn-kit 0.4.0 published** (RegistrationResult
+  .public_key_cose + ciborium re-export).
+- hosting-api consumed it: the ~40-line consumer-side CTAP2 extraction
+  from iteration 5 is **deleted**; register_finish reads
+  `result.public_key_cose` directly. ciborium direct dependency removed.
+  25 tests green, clippy clean. This is the loop's full cycle: dogfood →
+  find gap → fix upstream → consumer shrinks.
+
+- hosting-dashboard `cb1430f`: session-gated UI. Shared session signal
+  (sessionStorage-backed); the backup trigger renders only with a live
+  passkey session — read-only otherwise, with a login link. Completes
+  step-up without edge changes: read-only needs nothing, mutations need
+  the passkey.
+
+**BLOCKED (user, carried)**
+
+- testkit crates.io ownership; pediment npm publish; GH community report
+  (evidence strengthened by run #4).
+
+### Iteration 8 — queued
+
+1. **Nightly readout** (Oct 9 03:00 UTC): conclusion-green with blocking
+   advisory gates => loop-closed; reclassify phantom; decide whether to
+   keep ADVISORY_GATES_BLOCKING permanently (honest badges > advisory
+   silence) — recommend yes, since the three gates are mature.
+2. **hosting-api v1.2**: use the passkey session for the audit trail too
+   (requested_by from X-Passkey-Session /me lookup, not just the edge
+   header) so API-triggered and dashboard-triggered backups share one
+   identity story.
+3. **EIR**: the 58-image non-root USER audit (backlog #3) — with the
+   nightly pipeline stable, this is the last pre-pilot quality gap.
+4. **EPYC rehearsal** — hardware still pending.
 
 1. **Dashboard deploy wiring**: systemd unit + Ansible task for
    hosting-dashboard on docker01 (binary = `bun run build` artifact,
