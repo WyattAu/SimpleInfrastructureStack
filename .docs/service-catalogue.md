@@ -161,6 +161,33 @@ hosting fee keeps the lights on; the services are the profit.
 
 ---
 
+## FIPS decision note (from the engineering loop, iteration 5)
+
+Context: Wolfi removed `openssl-provider-fips` from its public package
+repo, so the EIR can no longer build honest OpenSSL-based FIPS images
+(`nginx`, `postgres`, `redis`, `valkey`, `mysql`). The build job is
+disabled fail-closed rather than shipping images that claim FIPS without
+the provider. Two real options exist:
+
+1. **Chainguard FIPS Images** (commercial): maintained, certified-path
+   FIPS builds. Cost is per-image subscription — current list pricing is
+   enterprise-tier (~£1k+/yr for the tiers covering our five variants).
+   Selling implication: FIPS becomes a **premium add-on** only if a
+   customer segment requires it (UK healthcare/finance/public-sector
+   procurement asks for CSTA-certified crypto). At pilot pricing (£10–25)
+   the subscription cannot be absorbed — it would need ~40–80 extra
+   tenants per host or a dedicated FIPS tier at £60+/mo.
+2. **openssl-hardened relabel** (free): Wolfi ships `openssl-hardened-*`
+   (hardening flags, no certification). Honest and free, but it is NOT
+   FIPS and must not be sold as such.
+
+**Decision for now:** do neither. No pilot customer has asked for FIPS;
+building for a requirement nobody has expressed adds a paid dependency
+(1) or a marketing-liability (2). Revisit the moment a prospect's
+procurement checklist mentions FIPS/CSTA — at that point it justifies a
+dedicated tier price. The go-based FIPS variants (boringcrypto) remain
+available and green; they cover Go-service FIPS needs already.
+
 ## Roadmap
 
 | Phase | Content |

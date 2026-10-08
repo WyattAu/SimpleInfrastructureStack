@@ -334,18 +334,69 @@ run conclusion against documented semantics.
   candidate: bisect the local hook definitions in .pre-commit-config.yaml
   (suspect: a local hook with a stale exit path), or pre-commit upgrade.
 
-### Iteration 5 — queued
+### Iteration 5 — 2026-10-08 — passkey spike, nightly duplicate-key catch, UX polling
 
-1. **hosting-api v1.1**: webauthn-kit spike — passkey registration/login
-   as a second factor for /api/* (defense in depth behind the edge);
-   evaluate scim-kit for tenant-user provisioning sync.
-2. **Dashboard UX**: job polling with auto-refresh (Solid resource
-   invalidation), tenant detail drill-down, backup duration sparkline.
-3. **EIR**: openssl-fips decision (Chainguard FIPS images vs honest
-   openssl-hardened relabel) — product call, needs the catalogue pricing
-   implications written down first.
-4. **Verify**: first EPYC apply (terraform + bootstrap) when hardware
-   lands; FIPS stays 15/15; nightly phantom tracked via the variable.
+**ANALYZE**
+
+- Nightly Oct 7 20:06 (event: push — my 45ede5a30): **0 jobs, 0
+  check-runs, failure** = unparseable workflow at that SHA. Root cause:
+  my ADVISORY_GATES_BLOCKING patch inserted a second `continue-on-error`
+  key into three jobs that already had the static `true`; python-yaml
+  tolerates duplicates, GitHub's parser does not. Fixed in `54e9c5dc2`
+  (variable-driven key kept, static originals dropped; strict
+  duplicate-rejecting YAML validation added to the check). Lesson: every
+  future workflow patch gets the strict validator, not `yaml.safe_load`.
+- The Oct 5/6 + Oct 7-09:49 phantom (25/25 green, run red) remains a
+  genuine GitHub-side oddity — those files had no duplicates. Bug-report
+  draft stays ready to file.
+- FIPS scheduled verification: 15/15 green post-fix.
+
+**IMPLEMENT**
+
+- hosting-api `377579d` — **passkey step-up spike** (webauthn-kit 0.3,
+  serde feature): register/login ceremonies + `/me`, file-backed
+  credential store, 12h in-memory sessions, disabled-unless-configured
+  (503 via new `ApiError::NotConfigured`). Routes sit outside the bearer
+  middleware by design (login must be public; registration enforces a
+  bootstrap rule in-handler via the shared `auth::bearer_matches`).
+  Wiring verified against the real binary: real creation options, garbage
+  challenges rejected, disabled mode 503. Full ceremony needs a browser
+  authenticator — queued with the dashboard ceremony UI.
+- **Two upstream gaps found by dogfooding** (filed as loop findings):
+  1. `RegistrationResult` does not carry the COSE public key — the
+     integrator must re-extract it from the attestation object. hosting-api
+     does this with the kit's exported CBOR helpers (CTAP2 map walk +
+     authData layout walk, ~40 lines) — but the kit should just return it.
+  2. The kit's `ciborium::Value` type is not re-exported, forcing a direct
+     `ciborium` dependency on every integrator doing extraction.
+- Dashboard `2ee6731`: auto-poll jobs (30s) and tenants (60s).
+- Catalogue: FIPS decision note — **do neither Chainguard FIPS nor
+  openssl-hardened relabel** until a prospect's procurement asks; go-FIPS
+  (boringcrypto) variants already cover Go-service needs and stay green.
+
+**VERIFY**
+
+- 25 tests green through the pre-commit hook (19 unit incl. 4 passkey +
+  6 integration); clippy clean; build+typecheck clean on dashboard.
+
+**BLOCKED (user, carried)**
+
+- testkit crates.io ownership; pediment npm publish; webauthn-kit
+  upstream gaps (want an issue filed there — repo is yours);
+  GH community report; optional ADVISORY_GATES_BLOCKING variable.
+
+### Iteration 6 — queued
+
+1. **Dashboard ceremony UI**: navigator.credentials create/get flows for
+   the passkey endpoints (register first admin on first run) — completes
+   the passkey feature end to end in a browser.
+2. **webauthn-kit upstream fixes**: return COSE key in RegistrationResult;
+   re-export cborium types. Small PRs, unblock integrators estate-wide.
+3. **EIR nightly watch**: first clean scheduled run post-54e9c5dc2 should
+   be all-green AND conclusion-green (no duplicates, advisory intact).
+4. **EPYC bring-up rehearsal**: terraform plan against the PVE stub is
+   maxed — remaining risk is physical (BIOS/ZFS/bridges). Rehearse the
+   runbook steps 1–4 on spare hardware if any exists.
 
 1. **Dashboard deploy wiring**: systemd unit + Ansible task for
    hosting-dashboard on docker01 (binary = `bun run build` artifact,
