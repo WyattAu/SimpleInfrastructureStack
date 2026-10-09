@@ -574,7 +574,40 @@ into 23 inherited non-root + ~44 legitimate upstream patterns + 8
 root-required + 4 genuine. What remains flagged is real work — the
 quality gate is a signal again.
 
-### Iteration 10 — queued
+### Iteration 10 — 2026-10-08/09 (running) — four grep implementations, one truth
+
+**ANALYZE + FIX CASCADE** (each fix exposed the next stale checker):
+
+1. Smoke critical job: 82/82 green with effective-user inspection (iter 9).
+2. static-validation still red → scoped the USER check to the critical
+   tier (it walked all 656 images; CC003 binds only critical) — `4e4aa5f22`.
+3. constraint-check still red on a commit where local governance exits 0
+   → found a FOURTH divergent implementation: inline C003 python globbing
+   all images. Retired it in favour of critical_image_governance.py —
+   `8b75e62ed`.
+4. Lint red → ruff format on the governance script (my edit) — `2ffcd9fd1`.
+5. **First-ever full green wave**: Smoke Test SUCCESS (all three jobs),
+   Lint success, governance exits 0.
+
+**Tier corrections with runtime evidence** (`22d77858d`):
+
+- vault → Tier A (process UID 100 = vault when started as root)
+- rabbitmq → Tier A (process UID 999 = rabbitmq)
+- drone, scylla-operator, trivy → genuine fixes: USER 65532 added,
+  build-verified, runtime-verified identical to root behaviour (their
+  exits are config/usage, not permissions)
+
+**Governance contract**: postgresql-16 manifest gains [source].type
+(CC011); CC008 documents the SIGINT exception for postgres-family
+(SIGINT = fast shutdown; SIGTERM = smart shutdown which can hang against
+live clients — deliberate, per-image). `critical_image_governance.py`
+exits **0 for the first time**.
+
+**IN FLIGHT**: the early nightly (37840771006) under
+ADVISORY_GATES_BLOCKING=true — the phantom verdict. 22/23 jobs green at
+last check, zero failures including the now-blocking advisory gates.
+
+### Iteration 10 — final readout (appended below when complete)
 
 1. **Readouts**: dispatched nightly (phantom verdict under blocking
    advisory gates) + smoke re-run (governance-green expected with the 4
