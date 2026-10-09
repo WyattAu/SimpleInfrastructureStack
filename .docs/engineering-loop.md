@@ -607,7 +607,58 @@ exits **0 for the first time**.
 ADVISORY_GATES_BLOCKING=true — the phantom verdict. 22/23 jobs green at
 last check, zero failures including the now-blocking advisory gates.
 
-### Iteration 10 — final readout (appended below when complete)
+### Iteration 10 — final readout
+
+**The nightly phantom is NOT the advisory gates.** Nightly `37840771006`
+(dispatched with `ADVISORY_GATES_BLOCKING=true`) finished **25/25 jobs
+successful** — including pin-check, perf and binary-type, which were
+blocking under the experiment — and the run still concluded `failure`.
+
+**Root cause: the conclusion tracks the commit's check suite, not the
+nightly's own jobs.** Enumerating check runs on that run's head SHA
+(`54e9c5dc2`) via the API:
+
+| check run | verdict | workflow |
+| --- | --- | --- |
+| `constraint-check` | failure | Smoke Test (red at that SHA) |
+| `smoke-test (critical)` | failure | Smoke Test (red at that SHA) |
+| `static-validation` | failure | Smoke Test (red at that SHA) |
+| `Create Pull Request` | failure | Upstream Version Watch |
+
+None of those four are nightly jobs. The three Smoke Test failures were
+already fixed on later SHAs; `Create Pull Request` was **permanently red**
+because it needs the repository setting "Allow GitHub Actions to create and
+approve pull requests", which is off. So every SHA — and therefore every
+nightly — inherited at least one red check. Consistent with the record:
+**0 successes in the last 60 nightly runs, across 8 SHAs and 4 workflow
+triggers.**
+
+Fix: `upstream-watch.yml`'s `pr` job is now `continue-on-error: true` with an
+always-on remediation step naming the setting to enable. Bumps are still
+computed and logged; only the PR push is best-effort.
+
+**Falsifiable prediction (recorded before the result):** with HEAD green
+(verified: zero red checks on `2ffcd9fd1`), nightly `37869256681` on
+`b06c067f9` should conclude **success** with 25/25 jobs. If it still fails
+with every job green, the aggregation theory is wrong and this is a GitHub
+bug — report it with the check-run enumeration as evidence.
+
+**hosting-api 0.3.0 + metering shipped.** Per-tenant usage from cAdvisor,
+priced through `billing-kit`:
+
+- Prometheus exposition parser that respects quoted labels and escapes
+- container-level series only; `cpu="total"` preferred over per-CPU series
+- billing window accumulated across scrapes; counter resets contribute zero
+  instead of negative usage
+- `<project>-<service>-<index>` attribution, refusing ambiguous prefixes
+- `GET /api/usage`, `GET /api/tenants/{tenant}/usage`, three per-tenant
+  gauges
+- integration tests against a stateful cAdvisor stub caught a real bug:
+  sub-second scrape intervals were rejected as "non-increasing" because the
+  guard compared whole seconds
+
+45 tests, clippy clean under the estate deny-panic posture.
+
 
 1. **Readouts**: dispatched nightly (phantom verdict under blocking
    advisory gates) + smoke re-run (governance-green expected with the 4
