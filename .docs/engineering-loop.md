@@ -727,6 +727,15 @@ we suspect aggregation mishandles some property of this workflow shape
 (25 jobs, 3 reusable calls, hours-long duration, OIDC id-token usage).
 ---
 
+**Lint drift (2026-10-10):** CI installs ruff unpinned; a new ruff
+release landed mid-window and failed lint on untouched files (UP017 et
+al., CI saw 13, local saw 9 — version skew). Fixed two ways: test file
+imports trimmed to names actually used (plus noqa'd, documented
+sys.path pattern), and **ruff pinned to 0.15.12** in lint.yml with the
+policy written into the workflow: rule bumps happen deliberately with
+findings fixed, never by upstream drift. Lint green again; Smoke Test
+green wave intact.
+
 Also performed this session: `upstream-watch.yml`'s `pr` job is now
 `continue-on-error: true` (job stays red, run goes green — verified live
 on run 37929756988: job failure, run success), plus a remediation step
