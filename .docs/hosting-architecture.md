@@ -89,9 +89,47 @@ vmbr1 (tenant bridge, 10.10.10.0/24, host = 10.10.10.1)
 3. **Cloud-init**: no password auth, admin key only.
 4. **Tenants**: no-new-privileges, cap-drop ALL, non-root users, read-only
    rootfs where upstream allows (already enforced in `ops/tenants` templates).
-5. **Secrets**: SOPS+age on the control node; decrypted onto the host at
+5. **Isolation tiers** (research loop iter 1; see below): userns-remap +
+   hardened defaults for the pilot, per-tenant rootless runtime as the
+   growth target, gVisor as an opt-in sandbox, Firecracker reserved for a
+   future untrusted-code tier.
+6. **Secrets**: SOPS+age on the control node; decrypted onto the host at
    `/etc/sis-hosting/hosting.env` (0600) per run.
-6. **Unattended-upgrades** for the security pocket-list.
+7. **Unattended-upgrades** for the security pocket-list.
+
+### Isolation tiers (research loop iteration 1)
+
+Research basis: gVisor architecture docs (userspace application kernel;
+low fixed cost, high per-syscall cost — hostile to fsync-heavy databases)
+and Firecracker (microVM: <125ms boot, <5 MiB overhead, hardware boundary,
+requires KVM).
+
+**Flaw found in the current spec.** Docker's `userns-remap` is
+daemon-wide: every container on the host shares ONE mapped host UID
+range. A container escape from tenant A lands as the same host user that
+runs tenant B's containers. It namespaces against the *host*, not against
+*other tenants*. Cross-tenant separation then rests entirely on nftables
+rules and the absence of shared volumes — weaker than the spec claims.
+
+**Tiered policy (adopted):**
+
+| Tier | Runtime | Who | Overhead |
+| --- | --- | --- | --- |
+| 0 (pilot) | shared dockerd, daemon-wide userns-remap + seccomp default + cap-drop + no-new-privileges | vetted pilot tenants, no untrusted code | ~0-2% |
+| 1 (growth target) | per-tenant **rootless runtime** — rootless dockerd or Podman (quadlet) per tenant, per-tenant subuid/subgid ranges | every tenant eventually | ~0-2%, one supervisor process set per tenant |
+| 2 (opt-in) | gVisor `runsc` for syscall-light web apps that want sandboxing | premium option | 10-25% syscall-heavy |
+| 3 (future) | Firecracker microVM per tenant | untrusted-code tier; needs bare-metal or nested-KVM host | ~5 MiB + guest kernel per tenant |
+
+Tier 1 kills the aliasing flaw structurally: each tenant's containers map
+to that tenant's own host UID range under its own rootless daemon, with
+systemd user-slice cgroup delegation. It also removes the root daemon
+from the container path. Migration is per-tenant and reversible
+(`docker compose` files are OCI-compatible with Podman's compose
+provider).
+
+Hosting-api impact: it shells out to `docker compose`; tier 1 swaps that
+for `DOCKER_HOST=unix:///run/user/<uid>/docker.sock` per tenant — the
+API surface does not change.
 
 ### Backups and recovery
 
