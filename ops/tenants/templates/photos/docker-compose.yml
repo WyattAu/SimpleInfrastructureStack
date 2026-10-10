@@ -42,6 +42,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    cpu_shares: 512
     deploy:
       resources:
         limits:
@@ -95,6 +96,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 120s
+    cpu_shares: 2048
     deploy:
       resources:
         limits:
@@ -126,6 +128,7 @@ services:
     labels:
     - sis.tenant=${TENANT}
     - sis.service=photos
+    cpu_shares: 3072
     deploy:
       resources:
         limits:

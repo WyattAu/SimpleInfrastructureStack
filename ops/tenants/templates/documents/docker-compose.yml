@@ -41,6 +41,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    cpu_shares: 512
     deploy:
       resources:
         limits:
@@ -78,6 +79,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    cpu_shares: 256
     deploy:
       resources:
         limits:
@@ -113,6 +115,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+    cpu_shares: 512
     deploy:
       resources:
         limits:
@@ -148,6 +151,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    cpu_shares: 512
     deploy:
       resources:
         limits:
@@ -217,6 +221,7 @@ services:
       timeout: 10s
       start_period: 600s
       retries: 5
+    cpu_shares: 2048
     deploy:
       resources:
         limits:

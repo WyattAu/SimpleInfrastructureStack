@@ -76,6 +76,43 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Hosting research loop — iteration 7: resource governance (2026-10-10)
+
+RESEARCH: cgroup v2 CPU control (hard `cpu.max` ceilings vs `cpu.weight`
+proportional shares under contention), PSI / Pressure Stall Information
+(Facebook's kernel saturation signal; node_exporter exports
+`node_pressure_*` natively), memory.high soft-limit-with-reclaim vs
+memory.max OOM.
+
+ANALYZE: all three tenant templates already carry per-service limits AND
+pids caps (good - the noisy-neighbor ceiling exists). Two gaps: (1) hard
+ceilings alone make contention first-come-first-served - a tenant that
+bursts to cap starves neighbours that also burst, even when a lighter
+neighbour could have used 0.2 cores of slack; (2) the nightly backup
+window (backup 1.0 core + tenants at cap) can oversubscribe silicon, and
+nothing measured or guarded that. PSI is the correct saturation guard -
+kernel-native, zero cost.
+
+IMPLEMENT: (a) `cpu_shares` on every service in all three templates,
+weighted proportional to each ceiling (shares = cpus x 1000: postgres
+512, redis 256, paperless/ferro/immich-server 2048, immich-ML 3072) -
+contention is now proportional, not first-come; (b) the backup sweep
+unit becomes the low-priority citizen: CPUWeight=20, IOWeight=20,
+MemoryHigh=1G - it yields to tenant bursts inside the window;
+(c) lean-model refined: steady platform (edge+control+metrics = 1.5
+cores) checked against capacity; backup modeled as a windowed,
+yielding reservation with the PSI guard as a recorded condition.
+
+LEAN PROOF: **exit 0 - all budgets hold.** Capacity 10x1.0+1.5=11.5<=12;
+steady platform overhead 12.5% <= 20%; backup window legal because the
+backup yields and PSI pages on sustained pressure. The two baseline
+failures found when this loop started are resolved with enforcement, not
+with looser budgets.
+
+VERIFY: templates parse (yaml), ansible --syntax-check clean, model
+exit 0; SIS local-only.
+
+
 ### Hosting research loop — iteration 6: observability (2026-10-10)
 
 RESEARCH: Gorilla (VLDB'15 — delta-of-delta + XOR timestamps/values; the

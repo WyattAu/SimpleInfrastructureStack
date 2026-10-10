@@ -9,3 +9,10 @@ ExecStart={{ hosting_bin_dir }}/tenant-backup-all.sh
 TimeoutStartSec=4h
 # Backups stop/restart tenant stacks; never run two sweeps at once.
 Nice=5
+# Research loop iter 7: the backup is the low-priority citizen. During the
+# nightly window it yields CPU and IO to any tenant that bursts (cgroup v2
+# weights); the TrueNAS Prometheus node_pressure (PSI) alert pages if the
+# window still causes sustained host pressure.
+CPUWeight=20
+IOWeight=20
+MemoryHigh=1G
