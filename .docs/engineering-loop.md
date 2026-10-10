@@ -76,6 +76,46 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Hosting research loop — synthesis (iterations 1-10, 2026-10-10)
+
+Ten research->implement->verify iterations over the hosting spec. Score:
+**6 spec flaws found and fixed, 4 cutting-edge options rejected with
+recorded reasons, 0 budgets broken.** The pattern across the rejects:
+every one was "newer/fancier tool solving a problem a bigger platform
+has" (Pingora, Vault/Infisical, eBPF metering, VictoriaMetrics, ZFS
+fast-dedup) — and every fix was boring, kernel- or systemd-native
+enforcement (project quotas, cpu_shares, nftables fence, systemd-creds,
+retention schedules). Lean = boring tech, correctly enforced.
+
+Flaws the loop found (each was silently wrong before):
+1. userns-remap namespaces tenants against the HOST, not each other
+   (daemon-wide UID range) — isolation tiers spec'd, per-tenant rootless
+   runtime is the growth target.
+2. Edge onboarding was a manual Caddyfile edit — now machine-driven
+   (idempotent route block + validate + zero-downtime reload).
+3. Metering billed page cache as memory (working_set) — now RSS.
+4. Backup retention was opt-in and OFF; repo integrity never checked —
+   now weekly forget/prune + restic check, paged.
+5. Plaintext secrets at rest on the tenant-facing host — systemd-creds
+   TPM2 path behind a flag, pending DR rehearsal.
+6. Tenant egress to the LAN was unfiltered; no per-tenant disk cap —
+   nftables fence at forward -5; ext4 project quotas (100 GiB standard).
+
+Enforcement added (iter 7): cpu_shares proportional contention, yielding
+backup window (CPUWeight/IOWeight), PSI guard as a recorded condition.
+
+The lean proof (ops/lean-model.py) started at exit 1 with two honest
+failures and now holds all budgets with stronger guarantees than the
+spec originally claimed.
+
+Verification state: lean model exit 0; ansible --syntax-check clean;
+all shell scripts bash -n clean; compose templates parse; nftables
+fence validates in a user-namespace netns; hosting-api 48 tests green,
+pushed. SIS changes are LOCAL ONLY (auto-deploy repo — review, then push
+deliberately; the Ansible changes especially want the DR rehearsal
+before apply).
+
+
 ### Hosting research loop — iteration 10: tenant lifecycle (2026-10-10)
 
 RESEARCH: Dokku (app lifecycle = create/destroy, git-push deploys),
