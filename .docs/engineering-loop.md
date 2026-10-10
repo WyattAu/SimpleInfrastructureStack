@@ -76,6 +76,37 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Hosting research loop — iteration 4: backup/DR (2026-10-10)
+
+RESEARCH: FastCDC (USENIX ATC'16, content-defined chunking via
+normalized rolling hash; the class of chunker kopia uses — higher
+chunking throughput than restic's Rabin at similar dedup ratios);
+restic operational guidance (periodic `restic check`, forget policy
+enforcement).
+
+ANALYZE — spec flaws found: (1) retention was OPT-IN and OFF
+(`TENANT_PRUNE` env): the live repo grows forever and the documented
+7d/5w/12m policy is fiction; (2) no `restic check` anywhere: silent
+bitrot/corruption in the one artifact the whole business depends on
+would go unnoticed until a restore fails. Chunking swap REJECTED: no
+measured problem (12 min vs 30 min budget), tool churn is the opposite
+of lean.
+
+IMPLEMENT: nightly sweep template now enforces retention weekly (Sundays:
+`restic forget --keep-daily 7 --keep-weekly 5 --keep-monthly 12 --prune`,
+paged on failure) and runs `restic check --read-data-subset=25%` weekly
+(rolling monthly full-read coverage, paged with "RESTORE DRILL NOW").
+Spec records the chunking verdict and the customer-visible consistent-
+snapshot window. Lean model annotated.
+
+LEAN PROOF: backup window budget unchanged (prune/check run inside the
+weekly window, minutes at this repo size); SLA claims now backed by an
+actually-enforced policy.
+
+VERIFY: template bash syntax OK (rendered-form check); ansible syntax
+already clean; SIS local-only.
+
+
 ### Hosting research loop — iteration 3: metering (2026-10-10)
 
 RESEARCH: cAdvisor Prometheus metric reference (confirmed:

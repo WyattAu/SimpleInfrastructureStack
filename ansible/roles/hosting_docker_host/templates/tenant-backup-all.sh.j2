@@ -47,5 +47,28 @@ if [ -n "$FAILURES" ]; then
     exit 1
 fi
 
+# --- retention (research iter 4: was opt-in via TENANT_PRUNE and never ran) -
+# Enforce the forget policy once a week. Applies to the whole live repo by
+# design: one policy, one place. Offsite copies are never pruned here.
+if [ "$(date +%u)" = "7" ]; then
+    echo "[$(date -Is)] weekly retention pass (keep 7d/5w/12m)"
+    if ! env RESTIC_REPOSITORY="$LOCAL_REPO" \
+        RESTIC_PASSWORD_FILE="/etc/sis-hosting/restic-password" \
+        restic forget --keep-daily 7 --keep-weekly 5 --keep-monthly 12 --prune; then
+        curl -s -H "Title: HOSTING: weekly prune FAILED" -H "Priority: high" \
+            -d "restic forget/prune failed - repo retention is drifting" "$NTFY" > /dev/null
+    fi
+
+    # --- integrity (research iter 4: restic check never ran anywhere) -------
+    # Rolling 25% data read each week -> full coverage roughly monthly, per
+    # restic's own recommendation for large repos without a full offline read.
+    if ! env RESTIC_REPOSITORY="$LOCAL_REPO" \
+        RESTIC_PASSWORD_FILE="/etc/sis-hosting/restic-password" \
+        restic check --read-data-subset=25%; then
+        curl -s -H "Title: HOSTING: restic check FAILED" -H "Priority: high" \
+            -d "restic check found repo corruption - RESTORE DRILL NOW" "$NTFY" > /dev/null
+    fi
+fi
+
 date +%s > "$OFFSITE_LOG"
 echo "[$(date -Is)] all tenant backups OK (offsite copy done)"

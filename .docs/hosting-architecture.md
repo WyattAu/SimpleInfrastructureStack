@@ -147,6 +147,17 @@ API surface does not change.
 
 - Per tenant: `ops/tenant-backup.sh` — restic snapshot tagged
   `tenant:<slug>` into `/srv/backups/restic`, copied offsite to B2.
+- **Backup research (loop iter 4):** restic's Rabin chunking (512 KiB
+  avg) vs kopia's FastCDC-class chunking was evaluated — FastCDC wins on
+  chunking throughput but switching tools buys nothing here: measured
+  backups run ~12 min against a 30-min SLA budget and dedup is not the
+  bottleneck. The real gaps were operational and are now fixed in the
+  nightly sweep: retention is **enforced weekly** (was opt-in via
+  `TENANT_PRUNE` and effectively never ran) and **`restic check
+  --read-data-subset=25%` runs weekly** (rolling monthly full coverage)
+  with a ntfy page on failure. Customers are told in the service
+  catalogue that the consistent snapshot window is nightly ~03:30 and
+  lasts minutes (stack stopped for the copy, then restarted).
 - Nightly sweep (`sis-hosting-tenant-backup.timer`, 03:30) with ntfy alert
   on any tenant failure; watchdog (`sis-hosting-watchdog.timer`, 15 min)
   alerts on unhealthy containers, dead edge, or stale offsite (>25h).
