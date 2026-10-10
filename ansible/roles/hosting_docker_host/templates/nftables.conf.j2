@@ -3,15 +3,42 @@
 # {{ inventory_hostname }} — nftables baseline
 # Managed by Ansible (hosting_docker_host). Local edits are overwritten.
 #
-# DESIGN NOTE: this ruleset only hardens the `input` chain. The `forward`
-# chain is intentionally NOT managed here — Docker owns it (its own
-# iptables-nft rules do container NAT and per-publish filtering). A host
-# forward policy of drop here would silently break tenant publishing.
-# Containment for tenants is enforced by Docker networks + per-tenant
-# compose, not by this file.
+# DESIGN NOTE: this ruleset hardens the `input` chain and adds a
+# tenant-EGRESS fence (research loop iter 8). The `forward` path is owned
+# by Docker (iptables-nft), so the fence is a separate table hooked at
+# priority -5 — it runs BEFORE Docker's rules and contains only DROPs, so
+# it can never break container publishing/NAT, and `flush ruleset` does
+# not touch Docker's own table. Effect: tenant containers (the
+# hosting_docker_address_pools ranges) can reach the internet but NOT the
+# LAN — the mgmt LAN, TrueNAS and every RFC1918 neighbour — so one
+# compromised tenant cannot pivot laterally. Docker's embedded DNS
+# egresses from the host namespace and is unaffected; tenants wanting LAN
+# services should be a reviewed exception, not a default.
 # ===================================================================
 
 flush ruleset
+
+# Tenant egress fence: deny docker bridges -> RFC1918. Drops only.
+table ip tenant_fence {
+    set rfc1918 {
+        type ipv4_addr
+        flags interval
+        elements = { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 }
+    }
+
+    set tenant_sources {
+        type ipv4_addr
+        flags interval
+        elements = { {{ hosting_docker_address_pools | map(attribute='base') | join(', ') }} }
+    }
+
+    chain forward {
+        type filter hook forward priority -5; policy accept;
+
+        ct state established accept
+        ip saddr @tenant_sources ip daddr @rfc1918 counter drop
+    }
+}
 
 table inet filter {
     chain input {

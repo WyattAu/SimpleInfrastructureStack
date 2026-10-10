@@ -76,6 +76,32 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Hosting research loop — iteration 8: network policy (2026-10-10)
+
+RESEARCH: Docker's forward path (iptables-nft isolation rules; DOCKER-USER
+as the supported policy hook), nftables hook priorities (a table at
+forward priority -5 evaluates before Docker's priority-0 rules and only
+DROPS, so it cannot break publishing/NAT and survives Docker's own
+rule churn), eBPF network policy (Cilium class: needs an agent/K8s —
+rejected as not lean for a single host).
+
+ANALYZE — spec flaw found: the nftables baseline explicitly left the
+forward path to Docker, which means tenant containers were masqueraded
+with UNFILTERED egress: one compromised tenant could reach the mgmt LAN,
+TrueNAS and every RFC1918 neighbour and pivot. Tenant-to-tenant was
+blocked by Docker's inter-bridge isolation, but tenant-to-LAN was open.
+
+IMPLEMENT: `table ip tenant_fence` in nftables.conf.j2 - forward hook at
+priority -5, DROP docker address-pool sources -> RFC1918 (established
+accepted; internet unaffected; Docker embedded DNS unaffected since it
+egresses from the host namespace). LAN access for a tenant becomes a
+reviewed exception, not a default. nft syntax validated in a user
+namespace netns; ansible --syntax-check clean.
+
+LEAN PROOF: zero daemons, zero agents - the fence is ~15 lines of
+kernel-native config. No budget changes.
+
+
 ### Hosting research loop — iteration 7: resource governance (2026-10-10)
 
 RESEARCH: cgroup v2 CPU control (hard `cpu.max` ceilings vs `cpu.weight`
