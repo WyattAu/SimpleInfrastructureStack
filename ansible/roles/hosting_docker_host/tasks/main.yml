@@ -127,6 +127,28 @@
     fstype: ext4
     state: present
 
+# Research loop iter 9: per-tenant DISK quotas via ext4 project quotas -
+# the storage noisy-neighbor fix without changing filesystems (the spec's
+# ext4 decision stands; ZFS-in-guest remains the documented growth path).
+# Project feature enablement is one-way on ext4 (harmless if quotas are
+# never set).
+- name: Enable ext4 project quota feature on the data disk
+  ansible.builtin.command:
+    cmd: "tune2fs -O project,quota /dev/disk/by-id/{{ hosting_data_disk_by_id }}"
+  register: hosting_project_quota
+  changed_when: "'must be run' not in hosting_project_quota.stderr"
+  failed_when: >-
+    hosting_project_quota.rc != 0 and
+    'The filesystem already' not in hosting_project_quota.stderr and
+    'is set' not in hosting_project_quota.stderr
+
+- name: Quota tooling (project quota administration)
+  ansible.builtin.apt:
+    name:
+      - quota
+      - xfsprogs   # xfs_quota administers ext4 project quotas via netlink
+    state: present
+
 - name: Mount points under {{ hosting_data_mount }}
   ansible.builtin.file:
     path: "{{ item }}"
@@ -149,7 +171,7 @@
     path: "{{ hosting_data_mount }}"
     src: "UUID={{ hosting_data_disk_uuid.stdout }}"
     fstype: ext4
-    opts: defaults,noatime
+    opts: defaults,noatime,prjquota
     state: mounted
 
 - name: Platform directories

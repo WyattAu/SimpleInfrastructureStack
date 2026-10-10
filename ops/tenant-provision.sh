@@ -185,6 +185,28 @@ else
     info "skipping start (--no-start)"
 fi
 
+# --- per-tenant disk quota (research loop iter 9) ---------------------------
+# ext4 project quota: one tenant cannot fill the shared data disk for
+# everyone. Project id = stable numeric hash of the tenant slug; the quota
+# is enforced with xfs_quota (which administers ext4 project quotas).
+TENANT_QUOTA_GB="${TENANT_QUOTA_GB:-100}"
+if [ "${TENANT_QUOTA_GB}" != "0" ] && command -v xfs_quota >/dev/null 2>&1; then
+    PROJ_ID=$(echo -n "$TENANT" | sum | awk '{print $1}')
+    PROJ_FILE=/etc/projid
+    touch "$PROJ_FILE"; chmod 644 "$PROJ_FILE"
+    grep -qE "^${TENANT}:" "$PROJ_FILE" || echo "${TENANT}:${PROJ_ID}" >> "$PROJ_FILE"
+    chattr -p "${PROJ_ID}" -P "${TENANT_DIR}" 2>/dev/null \
+        || warn "could not set project id on ${TENANT_DIR} (prjquota mounted?)"
+    if ! xfs_quota -x -c "project -s ${TENANT} ${TENANT_DIR}" "${TENANT_ROOT}" 2>/dev/null; then
+        warn "project setup failed for ${TENANT} - quota NOT enforced"
+    fi
+    xfs_quota -x -c "limit -p bhard=${TENANT_QUOTA_GB}g ${TENANT}" "${TENANT_ROOT}" 2>/dev/null \
+        && info "disk quota: ${TENANT_QUOTA_GB}G hard for ${TENANT}" \
+        || warn "could not set project limit for ${TENANT} - quota NOT enforced"
+else
+    warn "TENANT_QUOTA_GB=0 or xfs_quota missing - NO disk quota for ${TENANT}"
+fi
+
 # --- edge route (research loop iter 2: API-driven onboarding) ---------------
 # Idempotently add the tenant's reverse-proxy route to the Caddyfile and
 # gracefully reload (Caddy reloads are zero-downtime: connections drain,

@@ -75,6 +75,19 @@ Why ext4 on a zvol rather than ZFS inside the VM: snapshots and rollback
 happen at the Proxmox layer for the whole disk, and the guest keeps a
 boring, well-understood filesystem. No ZFS-in-KVM tuning rabbit holes.
 
+**Storage research (loop iter 9):** the guest's gap was per-tenant disk
+accounting - nothing stopped one tenant from filling `/srv` for everyone
+(the storage noisy-neighbor). Fixed with **ext4 project quotas**
+(`tune2fs -O project,quota`, `prjquota` mount, per-tenant project id +
+hard limit set by `ops/tenant-provision.sh`, 100 GiB standard tier): the
+spec's ext4 decision stands, and the enforcement is kernel-native with
+zero new layers. ZFS datasets per tenant remain the growth path (quotas +
+instant per-tenant snapshots as a paid feature) when tenants outgrow the
+flat layout. On the node side, OpenZFS 2.3's fast dedup was evaluated for
+`tank` and rejected: the restic repo already dedups, so kernel dedup would
+pay RAM for deduplication we already have. Quota math is asserted in
+`ops/lean-model.py` (10 x 100 GiB + 400 GiB backups = 1.4 TiB <= 1.5 TiB).
+
 ### Network
 
 ```text

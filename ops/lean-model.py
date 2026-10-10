@@ -79,6 +79,12 @@ class LeanBudgets:
     # TSDB storage for 30d retention at 10 tenants (GiB).
     tsdb_gib_30d: float = 8.0
 
+    # --- storage (iter 9) ---------------------------------------------------
+    # Per-tenant hard quota (ext4 project quota, enforced in provisioning)
+    # and the local restic repo budget must fit the data disk together.
+    tenant_quota_gib: int = 100
+    backups_reserve_gib: int = 400
+
     # --- unit economics ---------------------------------------------------
     # Standard tier price (GBP/month) and the hard floor: infrastructure
     # cost per tenant-month must stay below 25% of the standard price.
@@ -169,6 +175,12 @@ def check(b: LeanBudgets, m: ModelInputs) -> list[str]:
         failures.append(f"TSDB {m.tsdb_gib_30d}GiB > budget {b.tsdb_gib_30d}GiB")
     if m.infra_cost_per_tenant_gbp / b.standard_price_gbp > b.max_infra_cost_share:
         failures.append("infra cost share exceeds 25% of price")
+    data_gib = DATA_TIB * 1024
+    if m.tenants * b.tenant_quota_gib + b.backups_reserve_gib > data_gib:
+        failures.append(
+            f"storage: {m.tenants} x {b.tenant_quota_gib}GiB quota + "
+            f"{b.backups_reserve_gib}GiB backups exceeds {data_gib:.0f}GiB data disk"
+        )
     return failures
 
 

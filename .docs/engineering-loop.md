@@ -76,6 +76,33 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Hosting research loop — iteration 9: storage (2026-10-10)
+
+RESEARCH: OpenZFS 2.3 (RAIDZ expansion, fast dedup, direct IO), ext4
+project quotas (kernel 4.5+; tune2fs -O project,quota + prjquota mount;
+xfs_quota administers them via the netlink quota API), ZFS-in-KVM ARC
+tuning costs.
+
+ANALYZE — spec flaw found: no per-tenant disk accounting. CPU and RAM got
+caps in iter 7, but one tenant could still fill /srv and take down
+everyone's IO. Two rejects recorded: fast-dedup on tank (restic already
+dedups; kernel dedup = RAM cost for work we have), ZFS-in-guest now (the
+spec's documented ext4 decision stands until dataset-per-tenant is a
+paid feature).
+
+IMPLEMENT: ext4 project quota feature on the data disk (idempotent
+tune2fs), prjquota mount option, quota+xfsprogs packages, and
+ops/tenant-provision.sh assigns a stable project id per tenant slug with
+a 100 GiB hard limit (TENANT_QUOTA_GB, warnings if enforcement fails).
+Lean model asserts the quota math (10x100+400 <= 1536 GiB).
+
+LEAN PROOF: storage budget added and holding; the standard tier promise
+is now backed by an enforced, kernel-native limit.
+
+VERIFY: bash -n clean, ansible --syntax-check clean, model exit 0; SIS
+local-only.
+
+
 ### Hosting research loop — iteration 8: network policy (2026-10-10)
 
 RESEARCH: Docker's forward path (iptables-nft isolation rules; DOCKER-USER
