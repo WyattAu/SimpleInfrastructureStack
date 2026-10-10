@@ -643,6 +643,96 @@ computed and logged; only the PR push is best-effort.
 with every job green, the aggregation theory is wrong and this is a GitHub
 bug — report it with the check-run enumeration as evidence.
 
+**Investigation arc (post-prediction): theory falsified, bug confirmed.**
+
+The prediction failed: nightly `37869256681` ran on a SHA with zero red
+checks and still concluded `failure` with 25/25 jobs green. Falsification
+cascade:
+
+1. Advisory gates — ruled out (blocking experiment, 25/25 green, failure)
+2. Commit check-suite aggregation — ruled out (zero red checks at
+   conclusion time; the only red, `Create Pull Request`, appeared 7h later)
+3. Job-level `continue-on-error` masking — ruled out (variable true ->
+   expressions evaluate false; with masking ON a red job shows red)
+4. Reusable-workflow calls, matrices, dynamic outputs, needs graph,
+   continue-on-error expressions, workflow_dispatch inputs — all ruled out
+   by three probe workflows (v1/v2/v3) that mirrored the nightly's
+   structure and all concluded `success`
+
+**The decisive object:** the nightly's own check suite
+(`102603491484`) concluded `failure` with `latest_check_runs_count: 25`
+— while all 25 member check-runs are `success`. GitHub's aggregation is
+internally inconsistent for this workflow.
+
+**Scale of the signal:** 0 successes in the last 100 nightly runs back to
+2026-07-15 — the workflow has never once concluded success. Same-repo
+controls (Lint in the same minutes, Smoke Test, three probes) succeed.
+
+**Functional impact:** downstream `workflow_run` jobs (SLSA Provenance
+Verification, SBOM Attestation Verification, Registry Index) gate on
+`conclusion == success` and have been skipped every single night —
+provenance verification and the registry index never run in production.
+
+**GitHub report — ready to file** (github.community or support ticket;
+account-bound action):
+
+---
+Title: Actions workflow run concludes `failure` when all jobs and steps
+succeed — check-suite aggregation internally inconsistent (reproducible
+nightly, 100/100 runs)
+
+Repo: WyattAu/EvergreenImageRegistry (private)
+Workflow: Nightly Full Rebuild (build-nightly.yml) — cron + dispatch,
+25 jobs incl. 3 reusable-workflow calls (`uses: ./.github/workflows/
+_build-reusable.yml`), dynamic batch matrices, ~4h duration.
+
+Evidence:
+
+1. Run 37869256681 (workflow_dispatch, head b06c067f9, started
+   2026-10-09T01:19:57Z, concluded 05:20:35Z):
+   - jobs API: total_count 25, all 25 jobs conclusion=success
+   - every step of every job: success/skipped, zero failures/cancellations
+   - run conclusion: failure
+2. Check suite 102603491484 (same run): conclusion=failure,
+   latest_check_runs_count=25, all 25 member check-runs conclusion=success
+   — the suite's own conclusion contradicts its members.
+3. No job-level `continue-on-error` masking: three jobs have
+   `continue-on-error: ${{ vars.ADVISORY_GATES_BLOCKING != 'true' }}`
+   with the repo variable = true, so the expression evaluates false
+   (blocking); a genuinely failed job would appear as failure.
+4. Commit state at conclusion: zero non-success check runs on head SHA
+   b06c067f9 at 05:20Z (the only later red, Upstream Version Watch
+   'Create Pull Request', started 12:25Z, after the run concluded).
+5. Same-repo control runs conclude success in the same window: Lint &
+   Format Check 37869245740 (same push, started 01:19Z, success);
+   Daily Security Scan 37929025461 (32 jobs, success).
+6. Minimal probes on the same repo, same permissions block
+   (contents/id-token/packages/security-events/actions), same reusable
+   workflow call pattern, same dynamic-matrix-from-outputs pattern, same
+   continue-on-error expression, same workflow_dispatch inputs — all
+   conclude success (37946382750, 38019398314, 38019764414).
+7. History: 100/100 failures of this workflow since 2026-07-15 (the
+   workflow has never concluded success), across schedule and dispatch
+   events and many head SHAs.
+8. Earlier runs same signature: 37770658769 and 37840771006 — 25/25 jobs
+   success, run failure; the latter with advisory gates made blocking.
+
+Impact: three downstream workflow_run workflows gated on
+`conclusion == success` (SLSA Provenance Verification, SBOM Attestation
+Verification, Registry Index) are skipped every night, so provenance
+verification and the registry index never run.
+
+Ask: please check the server-side suite-computation logs for these runs;
+we suspect aggregation mishandles some property of this workflow shape
+(25 jobs, 3 reusable calls, hours-long duration, OIDC id-token usage).
+---
+
+Also performed this session: `upstream-watch.yml`'s `pr` job is now
+`continue-on-error: true` (job stays red, run goes green — verified live
+on run 37929756988: job failure, run success), plus a remediation step
+that names the repo setting to enable. That workflow's run conclusion is
+now correct.
+
 **hosting-api 0.3.0 + metering shipped.** Per-tenant usage from cAdvisor,
 priced through `billing-kit`:
 
