@@ -76,6 +76,36 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Hosting research loop — iteration 6: observability (2026-10-10)
+
+RESEARCH: Gorilla (VLDB'15 — delta-of-delta + XOR timestamps/values; the
+compression Prometheus inherits, ~1.4 bytes/sample), VictoriaMetrics
+(single-binary TSDB, materially lower RAM/disk at high cardinality),
+cAdvisor metric-family flags (`--disable_metrics`; `referenced_memory`
+documented as intrusive — it perturbs kernel page reclaim to measure).
+
+ANALYZE: the cutting-edge-lean answer for docker01 is LESS machinery,
+not newer machinery: no TSDB on the hosting VM at all. TrueNAS
+Prometheus scrapes node-exporter/cAdvisor/hosting-api over vmbr1; alerts
+already live there (40/40). VictoriaMetrics was evaluated for the
+TrueNAS side and deferred: the existing Prometheus is healthy, retention
+storage is tiny (Gorilla compression; budgeted 8 GiB for 30d/10 tenants)
+and a monitoring migration mid-business-launch is churn without a
+measured problem. cAdvisor's remaining waste was metric families we
+neither bill nor alert on.
+
+IMPLEMENT: cAdvisor on docker01 gains
+`--disable_metrics=percpu,referenced_memory,udp,tcp,advtcp,cpuLoad,numa,
+hugetlb,disk,process` — cutting collection work (and the intrusive
+working-set probe) while keeping exactly what metering (cpu, memory)
+and alerting (network, diskIO, oom_event) consume.
+
+LEAN PROOF: metrics pipeline stays inside the 0.5-core metrics budget
+with headroom reclaimed; TSDB budget unchanged (remote side, HDD pool).
+
+VERIFY: ansible --syntax-check clean; SIS local-only.
+
+
 ### Hosting research loop — iteration 5: secrets (2026-10-10)
 
 RESEARCH: systemd-creds (systemd 250+; `encrypt --with-key=tpm2` seals

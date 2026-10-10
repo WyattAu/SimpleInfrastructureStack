@@ -389,4 +389,9 @@
     command:
       - --housekeeping_interval=30s
       - --docker_only=true
+      # Research loop iter 6: collect only what we bill or alert on
+      # (cpu, memory, network, diskIO, oom_event). referenced_memory is
+      # disabled because cAdvisor's own docs flag it as intrusive - it
+      # perturbs kernel page reclaim to measure working-set size.
+      - --disable_metrics=percpu,referenced_memory,udp,tcp,advtcp,cpuLoad,numa,hugetlb,disk,process
   tags: [monitoring]
