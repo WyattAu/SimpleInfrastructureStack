@@ -173,6 +173,25 @@
     group: root
     mode: "0600"
   no_log: true
+  when: not (hosting_secrets_tpm_creds | bool)
+
+# Research loop iter 5: TPM-bound secret at rest. SOPS decrypts inside the
+# ansible controller and pipes straight into systemd-creds on the host - the
+# plaintext never touches the host disk; at rest it is ciphertext bound to
+# this machine's TPM2 (or the host fallback key when no vTPM exists).
+- name: Seal platform secrets with systemd-creds (TPM2-bound)
+  ansible.builtin.shell: |
+    set -o pipefail
+    {{ lookup('community.sops.sops', hosting_secret_env_src) }} \
+      | systemd-creds encrypt --name=hosting.env \
+          {% if hosting_secrets_tpm | default(true) %}--with-key=tpm2 {% endif %} \
+          - {{ hosting_env_dir }}/hosting.env.cred
+    chmod 0600 {{ hosting_env_dir }}/hosting.env.cred
+    rm -f {{ hosting_env_dir }}/hosting.env
+  args:
+    executable: /bin/bash
+  no_log: true
+  when: hosting_secrets_tpm_creds | bool
 
 # --- 5. Security baseline ------------------------------------------------------
 

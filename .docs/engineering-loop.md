@@ -76,6 +76,32 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Hosting research loop — iteration 5: secrets (2026-10-10)
+
+RESEARCH: systemd-creds (systemd 250+; `encrypt --with-key=tpm2` seals
+ciphertext to the machine TPM; `LoadCredentialEncrypted`/decrypt-at-start
+into tmpfs $CREDENTIALS_DIRECTORY), Proxmox vTPM (swtpm, PVE 8+), Vault
+and Infisical (self-hosted secret servers).
+
+ANALYZE — spec flaw found: the pilot path leaves decrypted PLAINTEXT
+secrets at rest on docker01 (`/etc/sis-hosting/hosting.env`); in tier-0
+isolation an escape that reads /etc owns every tenant at once. Vault/
+Infisical rejected: a secret server is a service to run, patch and DR -
+the anti-lean choice for one operator. systemd-creds+TPM2 is both the
+cutting edge and the leanest: no extra daemons, ciphertext at rest bound
+to hardware, tmpfs-only plaintext, kernel+systemd native.
+
+IMPLEMENT (SIS, local): `hosting_secrets_tpm_creds` flag (default false
+until the DR rehearsal covers it). When on: SOPS decrypts on the
+controller and pipes straight into `systemd-creds encrypt` ON the host
+(plaintext never hits host disk), the legacy plaintext file is removed,
+and service units decrypt into a 0700 RuntimeDirectory at start.
+Units/templates conditioned; ansible --syntax-check clean.
+
+LEAN PROOF: zero new services, zero new daemons — the cost of the
+stronger secret model is one ExecStartPre per unit. No budget changes.
+
+
 ### Hosting research loop — iteration 4: backup/DR (2026-10-10)
 
 RESEARCH: FastCDC (USENIX ATC'16, content-defined chunking via

@@ -65,3 +65,11 @@ hosting_dashboard_dist_src: "{{ playbook_dir }}/../../../hosting-dashboard"
 # Managed by this role; anything else on the host is out of scope.
 hosting_node_exporter_version: v1.9.1
 hosting_cadvisor_version: v0.52.1
+
+# Secrets at rest (research loop iter 5): when true, the SOPS-decrypted
+# platform secrets are sealed with `systemd-creds encrypt` (TPM2-bound when
+# the VM has a vTPM) and units decrypt them into a tmpfs RuntimeDirectory at
+# start - no plaintext secrets at rest on the tenant-facing host. Requires
+# systemd >= 250 (Ubuntu 24.04: 255) and, for TPM binding, a vTPM device
+# (PVE: add via VM hardware before first boot; rehearse in DR drill).
+hosting_secrets_tpm_creds: false

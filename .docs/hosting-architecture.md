@@ -107,6 +107,16 @@ vmbr1 (tenant bridge, 10.10.10.0/24, host = 10.10.10.1)
    future untrusted-code tier.
 6. **Secrets**: SOPS+age on the control node; decrypted onto the host at
    `/etc/sis-hosting/hosting.env` (0600) per run.
+   **Secrets research (loop iter 5):** the pilot path leaves PLAINTEXT
+   secrets at rest on the tenant-facing host - in isolation tier 0 a
+   container escape that reads `/etc` owns every tenant. Evaluated: Vault
+   and Infisical (both rejected: another service to run, patch and DR for
+   one operator), systemd-creds + TPM2 (adopted as the target: `systemd-
+   creds encrypt --with-key=tpm2` seals secrets to the VM's vTPM - PVE
+   supports vTPM - and units decrypt into a tmpfs RuntimeDirectory at
+   start; zero extra daemons). Implemented behind
+   `hosting_secrets_tpm_creds` (default false until the DR rehearsal
+   covers it); when enabled, plaintext never touches the host disk.
 7. **Unattended-upgrades** for the security pocket-list.
 
 ### Isolation tiers (research loop iteration 1)

@@ -11,7 +11,14 @@ Environment=TENANT_ROOT={{ hosting_data_mount }}/tenants
 Environment=HOSTING_JOBS_DIR={{ hosting_data_mount }}/backups/jobs
 Environment=HOSTING_LISTEN=127.0.0.1:8484
 Environment=HOSTING_BACKUP_SCRIPT={{ hosting_bin_dir }}/tenant-backup.sh
+{% if hosting_secrets_tpm_creds | bool %}
+RuntimeDirectory=sis-hosting
+RuntimeDirectoryMode=0700
+ExecStartPre=/usr/bin/systemd-creds decrypt --name=hosting.env {{ hosting_env_dir }}/hosting.env.cred /run/sis-hosting/hosting.env
+EnvironmentFile=-/run/sis-hosting/hosting.env
+{% else %}
 EnvironmentFile={{ hosting_env_dir }}/hosting.env
+{% endif %}
 # API token is injected via the SOPS environment file (HOSTING_API_TOKEN=...)
 Restart=on-failure
 RestartSec=5
