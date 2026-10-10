@@ -76,6 +76,34 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Hosting research loop — iteration 10: tenant lifecycle (2026-10-10)
+
+RESEARCH: Dokku (app lifecycle = create/destroy, git-push deploys),
+Coolify (Docker-API resource model; API complexity is its known cost),
+CapRover (docker-native apps + one-click templates).
+
+ANALYZE: the PaaS state of the art solves DEPLOYMENT lifecycle; none ship
+BUSINESS lifecycle — suspend on non-payment, resume, exit-with-export
+receipt. That gap is ours, and it is the cheap one to close: no daemons,
+no new state machine - a marker file, compose stop, and a route toggle.
+
+IMPLEMENT: (hosting-api, pushed) TenantStatus.suspended reported from a
+`.suspended` marker via TenantRoot::suspended, test-covered (the first
+test failed honestly against tenant_dir's compose.sh requirement and was
+fixed, gate held the push). (SIS, local) ops/tenant-lifecycle.sh:
+suspend (stop + route strip + marker), resume (reverse), deprovision
+(final offsite backup REQUIRED before destruction, export receipt with
+snapshot id, triple confirmation, receipt-then-delete ordering so the
+operator copies it out before rm).
+
+LEAN PROOF: lifecycle costs zero services and zero budget lines; a
+suspended tenant costs the platform nothing (no CPU/RAM) while its data
+and backups remain intact - the cleanest possible non-payment state.
+
+VERIFY: cargo test 48 green, clippy clean, pushed; bash -n clean; SIS
+local-only.
+
+
 ### Hosting research loop — iteration 9: storage (2026-10-10)
 
 RESEARCH: OpenZFS 2.3 (RAIDZ expansion, fast dedup, direct IO), ext4
