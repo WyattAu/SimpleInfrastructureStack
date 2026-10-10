@@ -76,6 +76,76 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Hosting research loop — iteration 3: metering (2026-10-10)
+
+RESEARCH: cAdvisor Prometheus metric reference (confirmed:
+`container_memory_rss` = resident anonymous+kernel pages;
+`container_memory_working_set_bytes` = usage minus inactive file cache,
+i.e. INCLUDES active file cache). Industry practice: OpenCost/cloud
+showback price memory by ALLOCATION, not usage, precisely because
+usage-memory is noisy and gameable; eBPF per-process metering
+(Pixie/Parca class) is highest fidelity but a system to build and
+operate, not a config line.
+
+ANALYZE — spec flaw found: hosting-api metered memory on working_set,
+so a tenant doing big sequential reads got billed for page cache the
+kernel holds on its behalf — a billing-fairness bug a customer could
+rightly dispute. eBPF rejected as not lean at 10 tenants; RSS is the
+fair, defensible usage meter for classic vCPU/RAM tiers; allocation
+pricing recorded as the fallback if disputes arise.
+
+IMPLEMENT (hosting-api, pushed): parse_cadvisor prefers
+container_memory_rss, falls back to working_set; preference + fallback
+locked by tests; README documents the rationale. 47 tests, clippy clean.
+
+LEAN PROOF: metering CPU budget unchanged (same scrape, one more gauge).
+Billing fairness now provable from the repo.
+
+### Hosting research loop — iteration 2: edge proxy (2026-10-10)
+
+RESEARCH: Pingora (Cloudflare: Rust proxy FRAMEWORK, quadrillion
+requests at CP scale, pre-1.0 no API stability; ISRG building River on
+top as the batteries-included proxy), Caddy (single Go binary, ACME
+built in, Caddyfile + JSON admin API, graceful reload).
+
+ANALYZE: Pingora solves problems we do not have (CP-scale throughput,
+memory safety vs C) and costs a custom-built proxy (ACME/config/reload
+are DIY). Rejecting misfit cutting-edge tooling IS the lean decision.
+River is the watch item: revisit at 1.0 / ~50 tenants / routing needs
+Caddy cannot express.
+
+IMPLEMENT: ops/tenant-provision.sh writes the tenant's Caddy route
+itself (idempotent marker block, atomic replace, `caddy validate` before
+graceful zero-downtime reload, explicit failure warnings) — the manual
+"add a router and reload" handoff step is gone. Spec records the verdict
+and revisit triggers.
+
+LEAN PROOF: edge budget unchanged (0.5 core for Caddy at 10 tenants).
+
+### Hosting research loop — iteration 1: tenant isolation (2026-10-10)
+
+RESEARCH: gVisor docs (userspace app kernel; low fixed cost, per-syscall
+cost hostile to fsync-heavy DBs), Firecracker (Rust microVM, <125ms boot,
+<5MiB, KVM, built-in net+disk rate limiters).
+
+ANALYZE — spec flaw found: `userns-remap` is daemon-WIDE; all tenants
+share ONE mapped host UID range, so it namespaces tenants against the
+host, NOT against each other. Cross-tenant containment was resting on
+nftables + no shared volumes alone. Rootless per-tenant runtimes (per-
+tenant subuid ranges) are the modern boundary the spec thought it had.
+
+IMPLEMENT: `.docs/hosting-architecture.md` gains "Isolation tiers":
+tier 0 pilot (hardening + flaw documented), tier 1 growth target
+(per-tenant rootless runtime; hosting-api swaps DOCKER_HOST per tenant,
+API surface unchanged), tier 2 opt-in gVisor (priced separately), tier 3
+Firecracker (future untrusted-code tier). Ansible defaults annotated.
+
+LEAN PROOF: tier-0 overhead ~0-2% (within the 10% budget); gVisor 10-25%
+recorded as opt-in, outside the shared-capacity budget. Baseline model
+failures (9-not-10 tenants; platform CPU 20.8% > 20%) stand as the
+honest starting point for iterations 6/7 to fix.
+
+
 ### Iteration 0 — 2026-10-06 — loop bootstrap + hosting-api
 
 #### ANALYZE
