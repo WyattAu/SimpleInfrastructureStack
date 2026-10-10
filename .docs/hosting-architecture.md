@@ -46,6 +46,18 @@ internal job; the customer-facing edge is deliberately separate. `vane`
 (the in-house Go gateway) is the intended long-term replacement — its
 Caddyfile routes translate 1:1.
 
+**Edge research (loop iter 2):** Pingora (Cloudflare's Rust proxy
+framework) was evaluated and rejected for this platform's size: it is a
+framework, not a proxy — no ACME wiring, no config surface, pre-1.0
+without API stability — so adopting it means writing and maintaining a
+custom edge to solve throughput problems that start north of ~50 busy
+tenants. The aligned-future option is **River** (ISRG's batteries-on-top
+proxy built on Pingora); revisit triggers: River 1.0, tenant count past
+~50, or a routing need Caddy cannot express. Caddy stays: memory-safe,
+single binary, ACME built-in, and its zero-downtime reload is now driven
+by `ops/tenant-provision.sh` (idempotent route block + `caddy validate`
++ graceful reload), removing the manual onboarding step.
+
 ### Storage
 
 Two ZFS pools on the node:

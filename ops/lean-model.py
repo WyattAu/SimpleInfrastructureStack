@@ -34,7 +34,7 @@ DATA_TIB = 1.5
 # backup agent). This is the LEANNESS target: keep platform overhead low
 # enough that the vast majority of purchased capacity sells.
 PLATFORM_OVERHEAD = {
-    "edge_cpu": 0.5,        # Caddy, one core-fraction
+    "edge_cpu": 0.5,        # Caddy, one core-fraction (iter 2: reload-driven onboarding; Pingora/River rejected at this scale)
     "control_cpu": 0.5,     # hosting-api + dashboard
     "metrics_cpu": 0.5,     # prometheus exporter pipeline
     "backup_cpu": 1.0,      # restic window (peak)

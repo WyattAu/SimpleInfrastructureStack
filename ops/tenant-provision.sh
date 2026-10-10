@@ -185,6 +185,47 @@ else
     info "skipping start (--no-start)"
 fi
 
+# --- edge route (research loop iter 2: API-driven onboarding) ---------------
+# Idempotently add the tenant's reverse-proxy route to the Caddyfile and
+# gracefully reload (Caddy reloads are zero-downtime: connections drain,
+# sockets hand over). Removes the manual "add a router and reload" handoff
+# step, which is where tenant routes went stale before this.
+CADDYFILE=/etc/caddy/Caddyfile
+BEGIN_MARK="# BEGIN tenant:${TENANT}"
+END_MARK="# END tenant:${TENANT}"
+ROUTE_BLOCK="${BEGIN_MARK}
+${DOMAIN} {
+	reverse_proxy 127.0.0.1:${PORT}
+}
+${END_MARK}"
+if [ -f "$CADDYFILE" ]; then
+    if grep -qF "$BEGIN_MARK" "$CADDYFILE"; then
+        # Replace the existing block atomically (new file + mv).
+        TMP_CADDY=$(mktemp)
+        awk -v b="$BEGIN_MARK" -v e="$END_MARK" -v r="$ROUTE_BLOCK" '
+            $0 ~ b {print r; skip=1; next}
+            $0 ~ e {skip=0; next}
+            !skip {print}' "$CADDYFILE" > "$TMP_CADDY"
+        mv "$TMP_CADDY" "$CADDYFILE"
+        info "edge route for ${DOMAIN} updated"
+    else
+        printf '\n%s\n' "$ROUTE_BLOCK" >> "$CADDYFILE"
+        info "edge route for ${DOMAIN} appended"
+    fi
+    if command -v caddy >/dev/null 2>&1; then
+        if caddy validate --config "$CADDYFILE" >/dev/null 2>&1; then
+            systemctl reload caddy && info "edge reloaded (zero-downtime)" \
+                || warn "caddy reload failed - route is in the file; check: systemctl status caddy"
+        else
+            warn "caddy validate FAILED against ${CADDYFILE} - NOT reloading; fix the file manually"
+        fi
+    else
+        warn "caddy binary not found; route written but not reloaded"
+    fi
+else
+    warn "${CADDYFILE} not found - add the route for ${DOMAIN} -> 127.0.0.1:${PORT} manually"
+fi
+
 # --- handoff ----------------------------------------------------------------
 cat <<HANDOFF
 
@@ -199,8 +240,8 @@ $(printf '=%.0s' {1..70})
  Next steps
    1. DNS: point ${DOMAIN} at this host (A record, or a proxied CNAME
       if you terminate at Cloudflare).
-   2. Edge proxy: add a router for ${DOMAIN} -> 127.0.0.1:${PORT}
-      and reload the proxy. See ops/tenants/README.md for snippets.
+   2. Edge proxy: route added and reloaded automatically (if /etc/caddy/
+      Caddyfile exists); verify with: curl -fsS https://${DOMAIN}/
    3. Backup:  ops/tenant-backup.sh ${TENANT}
       and register it in the backup timer (README covers this).
    4. Hand over: walk the customer through .docs/tenant-onboarding.md
