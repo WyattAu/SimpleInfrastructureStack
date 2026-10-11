@@ -45,9 +45,9 @@ locals {
 
   # Services routed via Cloudflare Tunnel (CNAME records, managed separately)
   tunnel_services = {
-    homepage         = "Homepage (personal dashboard)"
-    element          = "Element Web (Matrix client)"
-    headscale        = "Headscale VPN (direct DNS, not proxied)"
+    homepage  = "Homepage (personal dashboard)"
+    element   = "Element Web (Matrix client)"
+    headscale = "Headscale VPN (direct DNS, not proxied)"
   }
 }
 
@@ -134,8 +134,8 @@ locals {
 #   kind        = "zone"
 #   phase       = "http_request_firewall_custom"
 
-  # Expression logic:
-  #   Block if country matches AND NOT (Matrix federation OR ACME challenge OR Hookshot)
+# Expression logic:
+#   Block if country matches AND NOT (Matrix federation OR ACME challenge OR Hookshot)
 #   rules {
 #     action      = "block"
 #     expression  = <<-EXPR
@@ -151,12 +151,12 @@ locals {
 #     enabled     = true
 #   }
 
-  # CF API token must include "Zone > WAF > Edit" permission.
-  # If token lacks this permission, apply will fail on this resource only.
-  # Fix: update the CF API token in Cloudflare dashboard to add WAF Edit.
-  # lifecycle {
-  #   prevent_destroy = true
-  # }
+# CF API token must include "Zone > WAF > Edit" permission.
+# If token lacks this permission, apply will fail on this resource only.
+# Fix: update the CF API token in Cloudflare dashboard to add WAF Edit.
+# lifecycle {
+#   prevent_destroy = true
+# }
 # }
 
 # Email routing (managed by Cloudflare Email Routing — NOT in Terraform)

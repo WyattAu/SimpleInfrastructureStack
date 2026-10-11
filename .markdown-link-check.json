@@ -24,6 +24,9 @@
     },
     {
       "pattern": "kuma\\.wyattau\\.com"
+    },
+    {
+      "pattern": "docs\\.paperless-ngx\\.com"
     }
   ]
 }

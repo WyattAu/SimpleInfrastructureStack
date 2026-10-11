@@ -113,7 +113,7 @@ CONTAINER_LIST=$(mktemp)
 trap 'rm -f "$CONTAINER_LIST"' EXIT
 sudo docker ps --format '{{.ID}} {{.Image}}' 2>/dev/null | sort -u -k2 > "$CONTAINER_LIST"
 
-while IFS=' ' read -r image_id image_name; do
+while IFS=' ' read -r _ image_name; do
   # Skip EIR custom builds
   if [[ "$image_name" == ghcr.io/wyattau/* ]]; then
     SKIPPED=$((SKIPPED + 1))

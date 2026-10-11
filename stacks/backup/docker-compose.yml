@@ -10,31 +10,31 @@ services:
     restart: unless-stopped
     init: true
     security_opt:
-    - no-new-privileges:true
+      - no-new-privileges:true
     cap_drop:
-    - ALL
+      - ALL
     # CHOWN/FOWNER/DAC_OVERRIDE: restic restore must set file ownership
     # from snapshots (monthly restore-test validates this)
     cap_add:
-    - CHOWN
-    - FOWNER
-    - DAC_OVERRIDE
+      - CHOWN
+      - FOWNER
+      - DAC_OVERRIDE
     # Use default bridge network — Docker embedded DNS (127.0.0.11) is broken
     # on TrueNAS user-defined networks. The default bridge copies the host's
     # /etc/resolv.conf directly, bypassing the broken embedded DNS.
     network_mode: bridge
     volumes:
-    - ${DATA_BASE_PATH}:/data:ro
-    - /mnt/pool_HDD_x2/infra/stacks/terraform:/terraform:ro
-    - ${BACKUP_BASE_PATH}/restic-repo-new:/restic-repo-new
+      - ${DATA_BASE_PATH}:/data:ro
+      - /mnt/pool_HDD_x2/infra/stacks/terraform:/terraform:ro
+      - ${BACKUP_BASE_PATH}/restic-repo-new:/restic-repo-new
     environment:
     # Live backup repo
-    - RESTIC_REPOSITORY=/restic-repo-new
-    - RESTIC_PASSWORD=${RESTIC_PASSWORD}
+      - RESTIC_REPOSITORY=/restic-repo-new
+      - RESTIC_PASSWORD=${RESTIC_PASSWORD}
     entrypoint:
-    - tail
-    - -f
-    - /dev/null
+      - tail
+      - -f
+      - /dev/null
     healthcheck:
       test: ["CMD", "restic", "snapshots", "--latest", "1", "--compact"]
       interval: 300s
@@ -62,37 +62,37 @@ services:
     restart: unless-stopped
     init: true
     security_opt:
-    - no-new-privileges:true
+      - no-new-privileges:true
     cap_drop:
-    - ALL
+      - ALL
     depends_on:
-    - backup-restic
+      - backup-restic
     volumes:
-    - ./scripts:/scripts:ro
-    - /var/run/docker.sock:/var/run/docker.sock:ro
-    - ${DATA_BASE_PATH}/monitoring/textfile-collector:/textfile-collector
+      - ./scripts:/scripts:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${DATA_BASE_PATH}/monitoring/textfile-collector:/textfile-collector
     environment:
-    - TZ=${TZ}
-    - CRON_SCHEDULE=0 2 * * *
-    - RESTORE_TEST_SCHEDULE=${RESTORE_TEST_SCHEDULE:-0 3 1 * *}
-    - BACKUP_DATA_PATH=/data
-    - RESTIC_REPOSITORY=/restic-repo-new
-    - RESTIC_PASSWORD=${RESTIC_PASSWORD}
-    - RESTIC_KEEP_HOURLY=24
-    - RESTIC_KEEP_DAILY=7
-    - RESTIC_KEEP_WEEKLY=4
-    - RESTIC_KEEP_MONTHLY=6
-    - RESTIC_KEEP_YEARLY=3
-    - OFFSITE_REPO=${OFFSITE_REPO}
-    - OFFSITE_AWS_KEY=${OFFSITE_AWS_KEY}
-    - OFFSITE_AWS_SECRET=${OFFSITE_AWS_SECRET}
-    - NTFY_TOPIC=${NTFY_TOPIC:-}
-    - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-}
+      - TZ=${TZ}
+      - CRON_SCHEDULE=0 2 * * *
+      - RESTORE_TEST_SCHEDULE=${RESTORE_TEST_SCHEDULE:-0 3 1 * *}
+      - BACKUP_DATA_PATH=/data
+      - RESTIC_REPOSITORY=/restic-repo-new
+      - RESTIC_PASSWORD=${RESTIC_PASSWORD}
+      - RESTIC_KEEP_HOURLY=24
+      - RESTIC_KEEP_DAILY=7
+      - RESTIC_KEEP_WEEKLY=4
+      - RESTIC_KEEP_MONTHLY=6
+      - RESTIC_KEEP_YEARLY=3
+      - OFFSITE_REPO=${OFFSITE_REPO}
+      - OFFSITE_AWS_KEY=${OFFSITE_AWS_KEY}
+      - OFFSITE_AWS_SECRET=${OFFSITE_AWS_SECRET}
+      - NTFY_TOPIC=${NTFY_TOPIC:-}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-}
     entrypoint:
-    - /bin/sh
-    - -c
+      - /bin/sh
+      - -c
     command:
-    - 'echo "30 1 * * * /scripts/run-keycloak-export.sh" > /etc/crontabs/root
+      - 'echo "30 1 * * * /scripts/run-keycloak-export.sh" > /etc/crontabs/root
 
       echo "$$RESTORE_TEST_SCHEDULE /scripts/run-restore-test.sh" >> /etc/crontabs/root
 
