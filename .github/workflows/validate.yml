@@ -39,7 +39,10 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -yqq yamllint
+          # Pinned (see ruff policy): yamllint 1.38 tightened indentation
+          # defaults, which failed untouched stack files. Bump
+          # deliberately with findings fixed, never by drift.
+          sudo apt-get install -yqq yamllint=1.38.0-1 || sudo apt-get install -yqq yamllint
 
       - name: Lint YAML files
         run: |

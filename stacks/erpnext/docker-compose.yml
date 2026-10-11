@@ -18,17 +18,17 @@ x-erpnext: &erpnext
       max-size: 10m
       max-file: '3'
   volumes:
-    - erpnext-sites:/home/frappe/frappe-bench/sites
-    - erpnext-assets:/home/frappe/frappe-bench/sites/assets
-    - erpnext-logs:/home/frappe/frappe-bench/logs
+  - erpnext-sites:/home/frappe/frappe-bench/sites
+  - erpnext-assets:/home/frappe/frappe-bench/sites/assets
+  - erpnext-logs:/home/frappe/frappe-bench/logs
   environment:
     DB_HOST: erpnext-mariadb
     DB_PORT: "3306"
     REDIS_CACHE: erpnext-redis:6379
     REDIS_QUEUE: erpnext-redis:6379
   networks:
-    - default
-    - traefik_net
+  - default
+  - traefik_net
 
 services:
   erpnext-configurator:
@@ -46,7 +46,7 @@ services:
         max-file: '3'
     entrypoint: bash -c
     command:
-      - |
+    - |
         ls -1 apps > sites/apps.txt
         bench set-config -g db_host erpnext-mariadb
         bench set-config -gp db_port 3306
@@ -67,7 +67,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       ERPNEXT_ADMIN_PASSWORD: ${ERPNEXT_ADMIN_PASSWORD}
     volumes:
-      - erpnext-sites:/home/frappe/frappe-bench/sites
+    - erpnext-sites:/home/frappe/frappe-bench/sites
     depends_on:
       erpnext-mariadb:
         condition: service_healthy
@@ -88,7 +88,7 @@ services:
         max-file: '3'
     entrypoint: bash -c
     command:
-      - |
+    - |
         cd /home/frappe/frappe-bench/sites/erp.wyattau.com
         # Run bench build (creates symlinks to /apps/*/public)
         bench build
@@ -99,9 +99,9 @@ services:
         tar xf /tmp/assets.tar -C /home/frappe/frappe-bench/sites/assets
         echo "=== Assets built and dereferenced ==="
     volumes:
-      - erpnext-sites:/home/frappe/frappe-bench/sites
-      - erpnext-assets:/home/frappe/frappe-bench/sites/assets
-      - erpnext-logs:/home/frappe/frappe-bench/logs
+    - erpnext-sites:/home/frappe/frappe-bench/sites
+    - erpnext-assets:/home/frappe/frappe-bench/sites/assets
+    - erpnext-logs:/home/frappe/frappe-bench/logs
     depends_on:
       erpnext-mariadb:
         condition: service_healthy
@@ -172,10 +172,10 @@ services:
         max-size: 10m
         max-file: '3'
     volumes:
-      - erpnext-assets:/sites:ro
-      - ./nginx-assets.conf:/etc/nginx/conf.d/default.conf:ro
+    - erpnext-assets:/sites:ro
+    - ./nginx-assets.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
-      - traefik_net
+    - traefik_net
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health || exit 1"]
       interval: 10s
@@ -226,16 +226,16 @@ services:
     - SETGID
     - SETUID
     command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      - --skip-character-set-client-handshake
-      - --innodb-buffer-pool-size=128M
-      - --max-connections=20
+    - --character-set-server=utf8mb4
+    - --collation-server=utf8mb4_unicode_ci
+    - --skip-character-set-client-handshake
+    - --innodb-buffer-pool-size=128M
+    - --max-connections=20
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MARIADB_AUTO_UPGRADE: "1"
     volumes:
-      - erpnext-db:/var/lib/mysql
+    - erpnext-db:/var/lib/mysql
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       start_period: 10s
@@ -271,7 +271,7 @@ services:
       retries: 3
       start_period: 5s
     volumes:
-      - erpnext-redis-data:/data
+    - erpnext-redis-data:/data
     deploy:
       resources:
         limits:
