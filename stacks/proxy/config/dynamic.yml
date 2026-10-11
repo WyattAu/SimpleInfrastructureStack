@@ -11,6 +11,16 @@ http:
       rateLimit:
         average: 100
         burst: 50
+    ferro-csp:
+      headers:
+        customResponseHeaders:
+          Content-Security-Policy: 'default-src ''self''; script-src ''self''; style-src
+            ''self'' ''unsafe-inline'' https://fonts.googleapis.com; img-src ''self''
+            data: blob:; font-src ''self'' https://fonts.gstatic.com; media-src ''self''
+            blob:; connect-src ''self'' https://auth.wyattau.com https://api.github.com
+            ws: wss:; frame-src ''self'' blob: https://collabora.wyattau.com; frame-ancestors
+            ''none''; base-uri ''self''; form-action ''self''; worker-src ''self''
+            blob:'
   routers:
     forgejo-web:
       rule: Host(`forgejo.wyattau.com`) || Host(`git.wyattau.com`)
@@ -101,4 +111,3 @@ http:
       loadBalancer:
         servers:
         - url: http://storage-collabora:9980
-

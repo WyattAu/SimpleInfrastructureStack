@@ -1,23 +1,32 @@
+networks:
+  data_net:
+    driver: bridge
+  traefik_net:
+    external: true
 services:
   ferro:
-    image: ghcr.io/wyattau/ferro:latest
-    container_name: ferro-server
-    ports:
-    - "8081:8080"
-    restart: unless-stopped
-    init: true
-    user: "0:0"
-    security_opt:
-    - no-new-privileges:true
-    cap_drop:
-    - ALL
     cap_add:
     - DAC_OVERRIDE
     - FOWNER
     - CHOWN
-    volumes:
-    - ${DATA_BASE_PATH}/ferro/data:/data
-    - ${DATA_BASE_PATH}/ferro/cedar_policies.cedar:/etc/ferro/cedar_policies.cedar:ro
+    cap_drop:
+    - ALL
+    command:
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8080'
+    - --data-dir
+    - /data
+    container_name: ferro-server
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+          pids: 100
+    entrypoint:
+    - /ferro-server
     environment:
     - TZ=${TZ}
     - FERRO_DATA_DIR=/data
@@ -25,70 +34,93 @@ services:
     - FERRO_OIDC_ISSUER=${OIDC_ISSUER}
     - FERRO_OIDC_CLIENT_ID=${OIDC_CLIENT_ID}
     - FERRO_OIDC_AUDIENCE=${OIDC_AUDIENCE:-account}
+    - FERRO_OIDC_CLIENT_SECRET=${FERRO_OIDC_CLIENT_SECRET:?set in stacks/ferro/.env}
     - FERRO_CORS_ORIGINS=https://ferro.wyattau.com
     - FERRO_STATIC_DIR=/app/ui
     - FERRO_CEDAR_POLICY_FILE=/etc/ferro/cedar_policies.cedar
     - FERRO_EXTERNAL_URL=https://ferro.wyattau.com
-    networks:
-    - traefik_net
+    - FERRO_CEDAR_AUTO=true
+    - FERRO_ADMIN_SUB=92823fc5-cc56-434e-96dd-4285edad0c27
+    - FERRO_SPACE_MEMBERS_FILE=/etc/ferro/space_members.json
+    - FERRO_WEBAUTHN_RP_ID=wyattau.com
+    - FERRO_WEBAUTHN_ORIGINS=https://ferro.wyattau.com
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8080/healthz"]
       interval: 30s
-      timeout: 10s
       retries: 3
       start_period: 30s
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 1G
-          pids: 100
+      test:
+      - CMD
+      - wget
+      - --spider
+      - -q
+      - http://127.0.0.1:8080/healthz
+      timeout: 10s
+    image: ghcr.io/wyattau/ferro:prod-20260905
+    init: true
+    labels:
+    - traefik.enable=true
+    - traefik.docker.network=traefik_net
+    - traefik.http.routers.ferro.rule=Host(`ferro.wyattau.com`)
+    - traefik.http.routers.ferro.entrypoints=websecure
+    - traefik.http.routers.ferro.tls.certresolver=cloudflare
+    - traefik.http.routers.ferro.service=ferro-svc
+    - traefik.http.services.ferro-svc.loadbalancer.server.port=8080
     logging:
       driver: json-file
       options:
-        max-size: 10m
         max-file: '3'
-  postgres-ferro:
-    image: postgres:17-alpine
-    container_name: postgres-ferro
+        max-size: 10m
+    networks:
+    - traefik_net
+    - data_net
+    ports:
+    - 8081:8080
     restart: unless-stopped
-    init: true
     security_opt:
     - no-new-privileges:true
-    cap_drop:
-    - ALL
+    user: 0:0
+    volumes:
+    - ${DATA_BASE_PATH}/ferro/data:/data
+    - ${DATA_BASE_PATH}/ferro/cedar_policies.cedar:/etc/ferro/cedar_policies.cedar:ro
+    - /mnt/pool_HDD_x2/infra/stacks/stacks/ferro/cedar_space_members.json:/etc/ferro/space_members.json:ro
+  postgres-ferro:
     cap_add:
     - CHOWN
     - DAC_OVERRIDE
     - FOWNER
     - SETGID
     - SETUID
-    volumes:
-    - ${DATA_BASE_PATH}/ferro/postgres:/var/lib/postgresql/data
-    environment:
-    - POSTGRES_DB=ferro
-    - POSTGRES_USER=${POSTGRES_USER}
-    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    networks:
-    - data_net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ferro"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    cap_drop:
+    - ALL
+    container_name: postgres-ferro
     deploy:
       resources:
         limits:
           cpus: '1.0'
           memory: 512M
           pids: 100
+    environment:
+    - POSTGRES_DB=ferro
+    - POSTGRES_USER=${POSTGRES_USER}
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    healthcheck:
+      interval: 10s
+      retries: 5
+      test:
+      - CMD-SHELL
+      - pg_isready -U ${POSTGRES_USER} -d ferro
+      timeout: 5s
+    image: postgres:17-alpine
+    init: true
     logging:
       driver: json-file
       options:
-        max-size: 10m
         max-file: '3'
-networks:
-  traefik_net:
-    external: true
-  data_net:
-    driver: bridge
+        max-size: 10m
+    networks:
+    - data_net
+    restart: unless-stopped
+    security_opt:
+    - no-new-privileges:true
+    volumes:
+    - ${DATA_BASE_PATH}/ferro/postgres:/var/lib/postgresql/data
