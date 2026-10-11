@@ -407,6 +407,12 @@ services:
     container_name: monitoring-zfs-exporter
     restart: unless-stopped
     privileged: true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 64M
+          pids: 50
     security_opt:
     - no-new-privileges:false
     environment:

@@ -58,6 +58,12 @@ services:
     image: favonia/cloudflare-ddns:1
     container_name: proxy-cf-ddns
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.10'
+          memory: 64M
+          pids: 50
     security_opt:
     - no-new-privileges:true
     environment:

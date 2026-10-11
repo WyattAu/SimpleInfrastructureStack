@@ -35,6 +35,12 @@ services:
     image: frappe/erpnext:v${ERPNEXT_VERSION}
     restart: on-failure
     init: true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+          pids: 100
     security_opt:
     - no-new-privileges:true
     cap_drop:
@@ -77,6 +83,12 @@ services:
   erpnext-build-assets:
     image: frappe/erpnext:v${ERPNEXT_VERSION}
     restart: "no"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+          pids: 100
     security_opt:
     - no-new-privileges:true
     cap_drop:

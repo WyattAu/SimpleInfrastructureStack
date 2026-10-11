@@ -23,15 +23,31 @@ no_new_privileges_exempt := {"collabora", "wireguard", "taiga-back", "taiga-asyn
 # Approved :latest tag exemptions (free-tier images with no version tags).
 # - cgr.dev/chainguard/*: distroless images, free tier only provides :latest.
 #   Renovate tracks by digest (pinDigests) to detect image changes.
-latest_tag_exempt_prefixes := {"cgr.dev/chainguard/"}
+# - ghcr.io/wyattau/*: our own images; latest is tagged by our own rebuild
+#   pipeline (EvergreenImageRegistry), so float-by-design.
+# - ghcr.io/taigaio/*: upstream Taiga images; version drift is tracked by
+#   upstream-watch rather than pinned here.
+# - tecnativa/docker-socket-proxy: floating deliberately; pin when the
+#   upstream tag policy is verified.
+latest_tag_exempt_prefixes := {
+    "cgr.dev/chainguard/",
+    "ghcr.io/wyattau/",
+    "ghcr.io/taigaio/",
+    "tecnativa/docker-socket-proxy",
+}
 
 # Approved privileged mode exemptions (require full host capabilities).
 # - wireguard: requires NET_ADMIN, SYS_MODULE for VPN tunnel management.
-privileged_exempt := {"wireguard"}
+# - zfs-exporter: reads host /dev/zfs for pool metrics; privileged is the
+#   documented access mode for zfs tools.
+privileged_exempt := {"wireguard", "zfs-exporter"}
 
 # Approved Docker socket RW exemptions (need full socket for container ops).
 # - forgejo-runner: executes Docker builds and job containers.
-docker_socket_rw_exempt := {"forgejo-runner"}
+# - infra-webhook: the auto-deploy listener; it runs docker compose against
+#   the socket by design. Future hardening: route it through socket-proxy
+#   with a deploy-scoped API allowlist.
+docker_socket_rw_exempt := {"forgejo-runner", "webhook"}
 
 # --- Helpers ---
 
@@ -121,7 +137,7 @@ deny_logging_no_max_size[msg] {
     svc := input.services[name]
     not is_ephemeral(name)
     svc.logging
-    not svc.logging.options.max_size
+    not svc.logging.options["max-size"]
     msg := sprintf("Service '%s' logging has no max-size option", [name])
 }
 
