@@ -42,7 +42,8 @@ jobs:
           # Pinned (see ruff policy): yamllint 1.38 tightened indentation
           # defaults, which failed untouched stack files. Bump
           # deliberately with findings fixed, never by drift.
-          sudo apt-get install -yqq yamllint=1.38.0-1 || sudo apt-get install -yqq yamllint
+          pipx install yamllint==1.38.0
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Lint YAML files
         run: |
