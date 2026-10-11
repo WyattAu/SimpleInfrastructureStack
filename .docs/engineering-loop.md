@@ -1081,6 +1081,18 @@ verification and the registry index never run.
 Ask: please check the server-side suite-computation logs for these runs;
 we suspect aggregation mishandles some property of this workflow shape
 (25 jobs, 3 reusable calls, hours-long duration, OIDC id-token usage).
+
+**SECOND INSTANCE (2026-10-11):** not nightly-specific. Musl Rebuild run
+38105703271 (schedule, head 313089b8, 2026-10-11T02:36Z): jobs = 2
+success + 2 skipped (Discover Musl Candidates, Musl Rebuild Report,
+Update Tracker, Create PR — zero failures, no continue-on-error
+anywhere in the file, no reusable workflows), run conclusion = FAILURE,
+and its check-suite again reports failure over members that are all
+success/skipped. Rules out: nightly's shape, reusable-workflow calls,
+job-level continue-on-error, concurrency (build-nightly has none).
+Common traits of the two affected workflows vs the green ones remain
+unclear (both are scheduled+dispatch with inputs, but probe v3 mirrored
+that and concluded success).
 ---
 
 **Lint drift (2026-10-10):** CI installs ruff unpinned; a new ruff
