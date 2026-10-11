@@ -291,7 +291,11 @@ jobs:
           restore-keys: pip-ansible-lint-${{ runner.os }}-
 
       - name: Install ansible-lint
-        run: pip install ansible-lint
+        run: |
+          pip install ansible-lint
+          # The linted roles use these collections; without them
+          # syntax-check reports unknown-module failures.
+          ansible-galaxy collection install community.docker community.general ansible.posix community.sops
 
       - name: Run ansible-lint
         env:
