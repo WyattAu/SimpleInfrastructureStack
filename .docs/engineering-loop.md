@@ -76,6 +76,46 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Post-deploy incident: site-wide 404s — three stacked causes, all fixed (2026-10-11)
+
+After the first real deploy in 6 weeks, forgejo/photos/books/cloud/rss/
+homepage 404'd. Three independent causes, each masked by the next:
+
+1. **traefik extra_hosts stale IP**: the proxy compose hardcoded
+   `socket-proxy:172.16.4.7` (old embedded-DNS workaround). The deploy
+   recreated traefik; socket-proxy's real IP was .13 -> the docker
+   provider could not connect -> every LABEL-routed service 404'd.
+   Removed the hardcode (embedded DNS verified working); forgejo/books/
+   rss recovered on the next deploy.
+2. **acme.json ownership vs non-root traefik**: the SIS hardening runs
+   traefik as 65532; the letsencrypt appdata dir was root:root 0600 ->
+   "unable to get ACME account: permission denied" -> the cloudflare
+   resolver was dropped -> every router referencing it (file AND label
+   providers) errored. chown 65532:65532 + restart -> resolver init
+   (ACME provider started).
+3. **traefik reads an appdata COPY of dynamic.yml**, not the git
+   checkout: `/mnt/.../appdata/proxy/dynamic.yml` was a stale
+   hand-edited version (forgejo-web missing its service ref). Synced
+   from the checkout (file provider watches it). DURABILITY GAP: the
+   legacy ansible does not refresh this file on deploy — needs a
+   template/copy task or the appdata path replaced by a checkout bind.
+
+Also found and fixed while sweeping:
+- documents (paperless) upstream dead for ~2 weeks: the paperless image
+  switched to granian, which binds `::` (v6-only); traefik dials v4.
+  Fixed with GRANIAN_HOST=0.0.0.0 (host override now, compose env in
+  SIS for durability). NOTE: the service is docs.wyattau.com
+  (keycloak-gated, 403 unauthenticated) — documents.wyattau.com does
+  not exist in the zone.
+- photos.wyattau.com 404 is pre-existing: the photos stack exists in
+  git but has never been deployed on TrueNAS (0 containers ever); it is
+  a pilot-tenant template pending EPYC. Aspirational DNS only.
+
+**Post-incident state:** forgejo 200, books/rss 302, homepage/grafana/
+cloud/docs 403 (auth gates, correct), auth 302, git 200. Deploy
+pipeline exercised three times green (validations + webhook + ansible).
+
+
 ### Deploy pipeline repair — first end-to-end deploy since Sep 27 (2026-10-11)
 
 **Discovery chain:** the "push SIS -> auto-deploy" premise was stale. The

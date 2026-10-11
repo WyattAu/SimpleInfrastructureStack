@@ -118,6 +118,7 @@ services:
     - ${DATA_BASE_PATH}/documents/media:/data
     - ${DATA_BASE_PATH}/documents/export:/export
     environment:
+    - GRANIAN_HOST=0.0.0.0  # granian binds :: v6-only by default; traefik dials v4
     - USERMAP_UID=${PUID}
     - USERMAP_GID=${PGID}
     - PAPERLESS_URL=https://${DOCS_SUBDOMAIN}.${DOMAIN_NAME}
