@@ -27,6 +27,9 @@
     },
     {
       "pattern": "docs\\.paperless-ngx\\.com"
+    },
+    {
+      "pattern": "traefik\\.wyattau\\.com"
     }
   ]
 }

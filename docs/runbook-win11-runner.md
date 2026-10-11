@@ -395,7 +395,7 @@ nssm start ForgejoRunner
 
 ### Updating the Runner Binary
 
-1. Download the latest release from the [Crown0815 GitHub mirror](https://github.com/Crown0815/forgejo-runner/releases)
+1. Download the latest release from the [Crown0815 GitHub mirror](https://code.forgejo.org/forgejo/runner/releases)
 2. Stop the service:
    ```powershell
    net stop ForgejoRunner

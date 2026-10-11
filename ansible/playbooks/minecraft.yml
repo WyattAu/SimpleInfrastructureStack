@@ -211,10 +211,10 @@
         msg: |
           ═══════════════════════════════════════════════
           Minecraft server deployed successfully!
-          
+
           Java:    mc.wyattau.com:{{ mc_java_port }}
           Bedrock: mc.wyattau.com:{{ mc_bedrock_port }}
           LAN:     192.168.1.191:{{ mc_java_port }}
-          
+
           Console: incus exec {{ mc_container }} -- su - minecraft -c "tmux attach -t mc-server"
           ═══════════════════════════════════════════════
