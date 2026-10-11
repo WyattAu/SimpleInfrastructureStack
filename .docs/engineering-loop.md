@@ -76,6 +76,47 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Hosting platform — SIS push review package (2026-10-10)
+
+30 local commits are pending on SIS main (48 files, +5044). SIS pushes
+auto-deploy to production TrueNAS, so this is a deliberate-review list,
+not a push-now list.
+
+**Deploy-inert (safe, docs/meta only):** all `.docs/*` (loop, spec,
+catalogue, onboarding, audit), `ops/lean-model.py` (runs in CI-style,
+no host effect).
+
+**Provision-time only (no effect until `tenant-provision.sh` runs for a
+new tenant):** `ops/tenant-provision.sh` (Caddy route automation, disk
+quota, idempotent), `ops/tenant-lifecycle.sh` (new tool, must be run
+deliberately), compose templates (cpu_shares; applies to new tenants and
+only on `up -d --force-recreate`).
+
+**Ansible — applies on next `hosting_bootstrap.yml` run (the risk set):**
+- cAdvisor `--disable_metrics` (metrics families shrink; Prometheus
+  dashboards referencing dropped families go empty — check dashboards)
+- nftables `tenant_fence` (docker pools -> RFC1918 drop at forward -5;
+  VERIFY a tenant container can still reach the internet after apply)
+- ext4 project quota: one-way `tune2fs -O project,quota` + `prjquota`
+  remount + quota/xfsprogs packages (remount churns docker briefly)
+- backup sweep: weekly forget/prune + restic check (Sunday run is longer)
+- backup unit: CPUWeight/IOWeight/MemoryHigh (behavioural, safe)
+- secrets: unchanged by default (`hosting_secrets_tpm_creds: false`);
+  the TPM2 path stays inert until the flag is set AND a DR rehearsal
+  covers decryption-on-boot
+- systemd unit templates for api/dashboard: new RuntimeDirectory/
+  ExecStartPre block renders only when the TPM flag is on
+
+**Order of operations for the eventual push:**
+1. Review the diff (esp. nftables.j2 + tasks/main.yml).
+2. Push (auto-deploy runs the role).
+3. Verify on docker01: `nft list table ip tenant_fence`,
+   `mount | grep prjquota`, tenant container internet egress,
+   cAdvisor still exporting cpu/memory families.
+4. Run one tenant provision end-to-end (quota + route automation).
+5. Watch the Sunday backup sweep for prune/check output.
+
+
 ### Hosting research loop — synthesis (iterations 1-10, 2026-10-10)
 
 Ten research->implement->verify iterations over the hosting spec. Score:
