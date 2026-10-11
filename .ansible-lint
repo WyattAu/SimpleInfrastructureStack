@@ -1,0 +1,32 @@
+# ansible-lint configuration.
+#
+# exclude_paths: legacy TrueNAS deployment roles and playbooks. They are
+# the superseded deploy path (kept running on production TrueNAS until the
+# EPYC hosting host replaces them). Churning them for lint cosmetics is
+# untested risk with no payoff; the hosting_* roles are held to the full
+# standard instead.
+exclude_paths:
+  - ansible/roles/deploy_stack
+  - ansible/roles/health_check
+  - ansible/roles/integration_test
+  - ansible/roles/manage_runners
+  - ansible/roles/prepare
+  - ansible/roles/test
+  - ansible/playbooks/destroy.yml
+  - ansible/playbooks/deploy.yml
+  - ansible/playbooks/health_check.yml
+  - ansible/playbooks/minecraft.yml
+  - ansible/playbooks/rollback.yml
+  - ansible/playbooks/site.yml
+  - ansible/playbooks/terraform_deploy.yml
+
+skip_list:
+  # Platform variables are deliberately shared: `hosting_*` lives in
+  # group_vars/hosting.yml and is consumed by both hosting roles, their
+  # templates and the playbooks. Role-prefixing would be a cross-cutting
+  # rename of live infra variables for a cosmetic rule.
+  - var-naming[no-role-prefix]
+
+# Warn-only for rules we accept.
+warn_list:
+  - schema[meta]

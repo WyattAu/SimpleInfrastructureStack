@@ -212,32 +212,33 @@
     rm -f {{ hosting_env_dir }}/hosting.env
   args:
     executable: /bin/bash
+  changed_when: true
   no_log: true
   when: hosting_secrets_tpm_creds | bool
 
 # --- 5. Security baseline ------------------------------------------------------
 
-- name: nftables baseline
+- name: Nftables baseline
   ansible.builtin.copy:
     dest: /etc/nftables.conf
     mode: "0644"
     content: "{{ lookup('template', 'nftables.conf.j2') }}"
   notify: Reload nftables
 
-- name: nftables enabled
+- name: Nftables enabled
   ansible.builtin.systemd:
     name: nftables
     enabled: true
     state: started
 
-- name: fail2ban jail (sshd)
+- name: Fail2ban jail (sshd)
   ansible.builtin.copy:
     dest: /etc/fail2ban/jail.local
     mode: "0644"
     content: "{{ lookup('template', 'fail2ban.jail.local.j2') }}"
   notify: Restart fail2ban
 
-- name: fail2ban enabled
+- name: Fail2ban enabled
   ansible.builtin.systemd:
     name: fail2ban
     enabled: true
@@ -291,13 +292,13 @@
       {{ lookup('pipe', '. ' + hosting_secret_env_dest + ' && printf %s "$RESTIC_PASSWORD"') }}
   no_log: true
 
-- name: nightly tenant backup runner
+- name: Nightly tenant backup runner
   ansible.builtin.copy:
     dest: "{{ hosting_bin_dir }}/tenant-backup-all.sh"
     mode: "0750"
     content: "{{ lookup('template', 'tenant-backup-all.sh.j2') }}"
 
-- name: systemd units (backup + watchdog)
+- name: Systemd units (backup + watchdog)
   ansible.builtin.copy:
     dest: "/etc/systemd/system/{{ item }}"
     mode: "0644"
@@ -347,7 +348,7 @@
     mode: "preserve"
   notify: Restart hosting-dashboard
 
-- name: systemd unit (hosting-dashboard)
+- name: Systemd unit (hosting-dashboard)
   ansible.builtin.copy:
     dest: /etc/systemd/system/sis-hosting-dashboard.service
     mode: "0644"
@@ -361,7 +362,7 @@
     state: started
     daemon_reload: true
 
-- name: systemd unit (hosting-api)
+- name: Systemd unit (hosting-api)
   ansible.builtin.copy:
     dest: /etc/systemd/system/sis-hosting-api.service
     mode: "0644"
@@ -392,7 +393,7 @@
       image: ignore  # pin via defaults, don't rebuild on every run
   tags: [monitoring]
 
-- name: cAdvisor (per-container metrics for all tenants)
+- name: Container advisor (cAdvisor, per-tenant metrics)
   community.docker.docker_container:
     name: hosting-cadvisor
     image: "ghcr.io/wyattau/evergreenimageregistry/cadvisor:{{ hosting_cadvisor_version }}"
