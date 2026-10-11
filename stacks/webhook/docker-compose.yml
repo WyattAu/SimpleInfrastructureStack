@@ -47,3 +47,33 @@ services:
       options:
         max-size: 10m
         max-file: '3'
+
+  # Research-loop wave 1: Rust twin of the deploy webhook (webhookkit).
+  # SHADOW mode: verifies signatures and logs; never executes. The Go
+  # webhook above stays the executor until the decision logs agree.
+  webhook-rs:
+    image: ghcr.io/wyattau/deploy-webhook-rs:0.1.0
+    container_name: infra-webhook-rs
+    restart: unless-stopped
+    init: true
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    ports:
+    - 127.0.0.1:9002:9002
+    environment:
+    - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+    - LISTEN=0.0.0.0:9002
+    - SHADOW=1
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 64M
+          pids: 50
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
