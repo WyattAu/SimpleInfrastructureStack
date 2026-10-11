@@ -90,8 +90,9 @@ services:
     - no-new-privileges:true
     cap_drop:
     - ALL
-    extra_hosts:
-    - "socket-proxy:172.16.4.7"
+    # Docker embedded DNS resolves socket-proxy on backend_net (verified
+    # 2026-10-11); the old hardcoded extra_hosts entry broke the docker
+    # provider whenever socket-proxy's IP shuffled.
     healthcheck:
       test: ["CMD", "/traefik", "healthcheck", "--ping"]
       interval: 30s
