@@ -76,6 +76,44 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Dogfood wave 2 — flagsd + eventbusd shipped, eventbus-kit enhanced (2026-10-11)
+
+**Crate enhancement (the "not a perfect fit" case, executed):**
+`eventbus-kit` 0.3.5 had SQLite persistence (raw rusqlite store) but NO
+`EventStore` trait adapter — `PersistentBus` (durable mode) was unusable
+with SQLite. Enhanced to **0.3.6**: added
+`SqliteEventStore<T>` (EventStore impl: envelope-as-JSON bytes, topic +
+timestamp indexed columns, spawn_blocking around rusqlite, wildcard
+replay via the dot-segment topic grammar) plus a raw
+`get_all_events(since)` for pattern reads. 47 crate tests green,
+published to crates.io.
+
+**New services (estate posture, musl static, distroless-class images):**
+
+- **flagsd 0.1.0** (`flagsd` repo): flag-kit sidecar — HTTP evaluation
+  with deterministic same-user percentage bucketing, bearer-gated
+  mutations, SQLite persistence, per-flag change audit history.
+  THE cutover control plane for every parallel run.
+  API: PUT/GET/DELETE /flags, GET /evaluate, GET /flags/{name}/changes.
+  Flag names snake_case (estate policy, flag-kit-enforced).
+- **eventbusd 0.1.0** (`eventbusd` repo): durable event daemon —
+  bearer-gated POST /publish/{topic}, wildcard GET /events replay,
+  SQLite persistence. The dual-emit partner for ntfy: push stays on
+  ntfy, internal events (deploys, backups, watchdog) gain durability +
+  replay.
+
+**Shadow deployment:** `stacks/dogfood/` compose on TrueNAS — flagsd
+:9003, eventbusd :9004, loopback-only, 0.1-core/32M caps each,
+nonroot 65532, secrets via gitignored stack .env. Next session wires
+dual-emit (watchdog/deploy POST to eventbusd) and the first flag-gated
+cutover (webhook-rs on/off via flagsd).
+
+**Crates.io naming traps recorded:** package names diverge from repo
+dirs (`ratelimit`->throttle-kit, `eventbus`->eventbus-kit, lib
+`typed_eventbus`); auditlog publishes as `tamper-audit`. The dogfooding
+matrix needs a canonical name column.
+
+
 ### Dogfood wave 1 — library adoption + webhook twin live (2026-10-11)
 
 The fit-analysis classified estate crates against the stack; wave 1

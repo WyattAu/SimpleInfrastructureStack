@@ -1,0 +1,61 @@
+# ==============================================================================
+# dogfood — estate software running beside the incumbent stack.
+# Wave 2: flagsd (flag-kit rollout control) + eventbusd (durable events).
+# Both are shadow services: loopback-only, no user-facing routing yet.
+# ==============================================================================
+services:
+  flagsd:
+    image: ghcr.io/wyattau/flagsd:0.1.0
+    container_name: dogfood-flagsd
+    restart: unless-stopped
+    user: "65532:65532"
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    ports:
+    - 127.0.0.1:9003:9003
+    volumes:
+    - ${DATA_BASE_PATH:-/mnt/pool_HDD_x2/tank/datasources/sis/appdata}/flagsd:/var/lib/flagsd
+    environment:
+    - LISTEN=0.0.0.0:9003
+    - ADMIN_TOKEN=${DOGFOOD_ADMIN_TOKEN}
+    deploy:
+      resources:
+        limits:
+          cpus: '0.10'
+          memory: 32M
+          pids: 50
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  eventbusd:
+    image: ghcr.io/wyattau/eventbusd:0.1.0
+    container_name: dogfood-eventbusd
+    restart: unless-stopped
+    user: "65532:65532"
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    ports:
+    - 127.0.0.1:9004:9004
+    volumes:
+    - ${DATA_BASE_PATH:-/mnt/pool_HDD_x2/tank/datasources/sis/appdata}/eventbusd:/var/lib/eventbusd
+    environment:
+    - LISTEN=0.0.0.0:9004
+    - EVENTBUS_TOKEN=${DOGFOOD_BUS_TOKEN}
+    deploy:
+      resources:
+        limits:
+          cpus: '0.10'
+          memory: 32M
+          pids: 50
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
