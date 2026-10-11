@@ -102,11 +102,16 @@ published to crates.io.
   ntfy, internal events (deploys, backups, watchdog) gain durability +
   replay.
 
-**Shadow deployment:** `stacks/dogfood/` compose on TrueNAS — flagsd
-:9003, eventbusd :9004, loopback-only, 0.1-core/32M caps each,
-nonroot 65532, secrets via gitignored stack .env. Next session wires
-dual-emit (watchdog/deploy POST to eventbusd) and the first flag-gated
-cutover (webhook-rs on/off via flagsd).
+**Shadow deployment (LIVE + verified):** `stacks/dogfood/` compose on
+TrueNAS — flagsd :9003, eventbusd :9004, loopback-only, 0.1-core/32M
+caps each, nonroot 65532, secrets in gitignored stack .env. Verified
+live: flagsd upsert -> evaluate (0% -> wyatt=false) -> audit endpoint;
+eventbusd publish -> wildcard replay. flagsd 0.1.1 fix: FLAGS_DB is the
+SQLite FILE path (flag-kit Connection::open contract), not a directory.
+
+**Next session:** dual-emit wiring (watchdog.sh + deploy.sh POST one
+event each to eventbusd), then the first flag-gated cutover
+(webhook-rs execution gated on flagsd's webhook_rs_cutover).
 
 **Crates.io naming traps recorded:** package names diverge from repo
 dirs (`ratelimit`->throttle-kit, `eventbus`->eventbus-kit, lib
