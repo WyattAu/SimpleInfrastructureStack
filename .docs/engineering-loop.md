@@ -76,6 +76,44 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Dogfood wave 1 — library adoption + webhook twin live (2026-10-11)
+
+The fit-analysis classified estate crates against the stack; wave 1
+adopted the perfect fits:
+
+**hosting-api 0.5.0 (pushed, 49 tests):**
+- `envstack`: layered ConfigStack replaces hand-rolled env reads
+- `healthkit`: /healthz (JSON liveness contract) + new /readyz readiness
+  over real dependencies (backup script executable, job store writable)
+- `throttle-kit` (GCRA): per-client-IP rate limit on /api — loopback
+  trusted hop, fallback key for unproxied callers, 429 test inside the
+  burst window
+
+Naming finding: the estate GCRA crate is published as **throttle-kit**
+(repo dir `ratelimit`); crates.io `ratelimit` is an unrelated 2.0.
+
+**deploy-webhook-rs (new repo, live on TrueNAS :9002):**
+- webhookkit-verified twin of the Go deploy webhook, shadow-first:
+  accepts the same `X-Hub-Signature-256` contract, verifies, logs, and
+  refuses to execute while SHADOW=1
+- musl-static scratch image (distroless nonroot lacked libgcc_s; gnu
+  crt-static breaks proc-macros — musl target is the estate answer)
+- live verification: real-secret HMAC -> `verified:true, executed:false,
+  mode:shadow`; invalid signature -> 403 (note: the Go twin returns 500
+  on invalid signatures — a tracked decision divergence; the shadow logs
+  exist to surface exactly these)
+
+**Deploy durability gaps found (logged, not yet fixed):** the legacy
+ansible deploy does not recreate NEW services added to an existing stack
+(webhook-rs needed a manual `compose up -d` twice) — consistent with the
+appdata dynamic.yml gap; both are legacy-path refresh problems that the
+hosting platform replaces wholesale.
+
+**Next waves:** wave 2 = flagsd (flag-kit sidecar) + eventbusd dual-emit
+for watchdog/deploy events; wave 3 = oauth-toolkit ES256 enhancement ->
+authbox decision-shadow beside Keycloak; aether probe on an alt hostname.
+
+
 ### Post-deploy incident: site-wide 404s — three stacked causes, all fixed (2026-10-11)
 
 After the first real deploy in 6 weeks, forgejo/photos/books/cloud/rss/
