@@ -76,6 +76,46 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Deploy pipeline repair — first end-to-end deploy since Sep 27 (2026-10-11)
+
+**Discovery chain:** the "push SIS -> auto-deploy" premise was stale. The
+real path: GitHub SIS -> Forgejo mirror (BlocMarket_app repo name, same
+history) -> TrueNAS checkout -> infra-webhook (deploy.wyattau.com) ->
+deploy.sh (git reset --hard + legacy site.yml). Every layer was broken:
+
+1. Pre-deploy validation red since Sep 27 (yamllint 1.38 drift on
+   untouched stacks, SC2034s, dead links, terraform fmt, missing ansible
+   collections, ansible-lint violations) — fixed layer by layer; ruff/
+   yamllint now pinned with the drift policy written into the workflows.
+2. OPA security policy bug: `max_size` ref never matched the real
+   `max-size` key — the logging deny fired for EVERY service. Quoted the
+   key; documented exemptions (own-image :latest floats, zfs-exporter
+   privileged, webhook socket RW); real limits added to 4 services.
+   conftest: 515 tests, 0 failures across 32 stacks.
+3. `infra-webhook` container did not exist and its `.env` (HMAC secret)
+   was gone — provisioned fresh secret, matching `gh secret set`, image
+   built and started.
+4. `deploy.wyattau.com` CNAME pointed at a DEAD tunnel id (75ad59d3);
+   the live tunnel is 4efe9873. DNS record updated -> 200.
+5. TrueNAS checkout was 2 weeks stale with LIVE HOTFIXES in the working
+   tree (ferro networking/CSP, tunnel headscale-route removal) that the
+   next successful deploy would have WIPED (deploy.sh does git reset
+   --hard). Hotfixes were upstreamed to SIS FIRST (OIDC secret
+   parametrized to ${FERRO_OIDC_CLIENT_SECRET}, provisioned in the
+   gitignored stack .env), then the checkout fast-forwarded.
+
+**Result:** Deploy workflow green end-to-end; TrueNAS at 70039fa;
+ferro healthy and serving 200 with its config now identical to upstream
+(no more drift); tunnel restarted with the post-migration route set.
+
+**Known remaining debt (precisely diagnosed):** monitoring-promtail/
+cadvisor/node-exporter stay unhealthy because their pinned ghcr tags
+(promtail:3.6.11, cadvisor:v0.52.1, node-exporter:v1.9.1 as EIR shims)
+do not exist in ghcr — the shim rebuilds were never published under
+those tags. Fix path: publish from EIR, then `docker compose pull && up
+-d` for the three services. Watchdog-exempt until then.
+
+
 ### Hosting platform — SIS push review package (2026-10-10)
 
 30 local commits are pending on SIS main (48 files, +5044). SIS pushes
