@@ -76,6 +76,45 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Cutover test — two critical catches, exactly what the dogfood loop is for (2026-10-12)
+
+The first flag-ON test (both twins receiving a real push) surfaced two
+production-grade bugs BEFORE they could matter at scale:
+
+1. **GitHub's 10-second webhook timeout killed deploys.** The rs twin
+   awaited the 4-minute deploy inside the handler with
+   `kill_on_drop(true)`: GitHub disconnected at 10s, hyper dropped the
+   handler future, and the kill terminated deploy.sh MID-ANSIBLE —
+   aborted play, no recap, partially-deployed working tree. Fixed
+   (0.2.1): respond 202 immediately, run the deploy detached, decisions
+   emitted on completion (mirrors the Go webhook's design — now
+   understood, not copied).
+2. **Per-container flock = no serialization.** Each twin locked its own
+   `/var/run/infra-deploy.lock`; both ansibles ran concurrently on one
+   checkout. Fixed: one `deploy.lock` bind-mounted into both containers.
+
+**Reconcile:** full deploy re-run clean (ok=47, failed=0); fleet healthy
+(only the 3 documented exporter debts); flag rolled back to 0%
+(steady state: Go executes, rs verifies-only with decision events).
+
+**Wave-2/3 deliverables also landed:** watchdog dual-emit live (the
+CachyOS meta-watchdog publishes `sis.watchdog.healthy/.degraded` — first
+real event persisted + replayed through eventbusd), eventbusd port on
+the LAN for the off-host watchdog, watchdog events in the loop's own
+event history.
+
+**Cutover procedure (validated, one flagsd call):** percentage 100 =
+twins race under a SHARED flock (safe); percentage 0 = incumbent only.
+Full cutover = tunnel route move + Go webhook retirement, gated on a
+clean decision log (executed.success streak) for a full day.
+
+**Packaging notes:** new-service repos MUST get .gitignore before the
+first commit (target/ bloat hit flagsd + deploy-webhook-rs; flagsd
+history rewritten via force-push, deploy-webhook-rs cleaned same way);
+musl builds need rust >= dependency MSRV (Containerfiles use
+ARG RUST=1.89-slim).
+
+
 ### Dogfood wave 3 — flag-gated cutover armed end-to-end (2026-10-12)
 
 The parallel-run loop between the Go deploy webhook (incumbent,
