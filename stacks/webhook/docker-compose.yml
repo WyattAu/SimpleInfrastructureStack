@@ -52,7 +52,7 @@ services:
   # SHADOW mode: verifies signatures and logs; never executes. The Go
   # webhook above stays the executor until the decision logs agree.
   webhook-rs:
-    image: ghcr.io/wyattau/deploy-webhook-rs:0.1.1
+    image: ghcr.io/wyattau/deploy-webhook-rs:0.2.0
     container_name: infra-webhook-rs
     restart: unless-stopped
     init: true
@@ -62,10 +62,23 @@ services:
     - ALL
     ports:
     - 127.0.0.1:9002:9002
+    volumes:
+    - ${REPO_DIR:-/mnt/pool_HDD_x2/infra/stacks}:/mnt/pool_HDD_x2/infra/stacks
+    - /mnt/pool_HDD_x2/infra/stacks/stacks/webhook/deploy.sh:/opt/webhook/deploy.sh:ro
+    - ./ssh:/root/.ssh:ro
+    - /var/log/infra-deploy.log:/var/log/infra-deploy.log
     environment:
     - WEBHOOK_SECRET=${WEBHOOK_SECRET}
     - LISTEN=0.0.0.0:9002
-    - SHADOW=1
+    - SHADOW=0
+    - EXECUTE=1
+    - DEPLOY_COMMAND=/opt/webhook/deploy.sh
+    - FLAGS_URL=http://flagsd:9003
+    - EVENTBUS_URL=http://eventbusd:9004
+    - EVENTBUS_TOKEN=${DOGFOOD_BUS_TOKEN}
+    networks:
+    - default
+    - dogfood
     deploy:
       resources:
         limits:
@@ -77,3 +90,8 @@ services:
       options:
         max-size: 10m
         max-file: '3'
+
+networks:
+  dogfood:
+    external: true
+    name: dogfood_default
