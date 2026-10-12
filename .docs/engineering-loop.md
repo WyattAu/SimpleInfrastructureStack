@@ -76,6 +76,34 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Wave 3b live — authbox decision-shadow beside Keycloak (2026-10-12)
+
+- **oauth-toolkit 0.4.0** (crates.io): ES256/RS256 JWT sign/verify with
+  PEM keys — the issuer prerequisite.
+- **authbox 0.1.0** (new repo, LIVE on TrueNAS :9005): decision-shadow
+  sidecar. POST /verify validates Bearer tokens against the Keycloak
+  realm's JWKS (oauth-toolkit OidcValidator: cache + auto-discovery),
+  returns Keycloak-shaped identity (sub/username/roles), and appends
+  every decision to a hash-chained tamper-audit log.
+- Wired into `stacks/dogfood/` against the REAL realm
+  (`company-realm` — discovered via the Keycloak well-known endpoints;
+  the "sis" realm name was a guess, the live realm is company-realm).
+  Verified live: garbage token -> 401 + "no matching key found" in the
+  log (JWKS fetch + reject path exercised); healthz estate contract.
+
+**Shadow comparison loop is now possible:** for any service token,
+`POST authbox/verify` answers independently of Keycloak's own
+introspection — diff the two during rollout.
+
+**Authbox roadmap:** (1) token ISSUANCE on oauth-toolkit 0.4's ES256
+(authorize/token/userinfo/.well-known) — the actual Keycloak
+replacement; (2) accessctl policy enforcement per route; (3) decision
+comparison dashboard.
+
+Also: deploy.yml Trigger Webhook now retries 5xx (tunnel blip
+recurrence guard).
+
+
 ### Wave 3b prerequisite shipped + deploy hardening (2026-10-12)
 
 - **oauth-toolkit 0.4.0 published**: ES256 + RS256 JWT sign/verify with
