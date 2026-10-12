@@ -76,6 +76,23 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Exporter debt healed — root cause was the pin, verified end-to-end (2026-10-12)
+
+The 3 two-week-unhealthy exporters are HEALTHY: SIS pinned
+pre-publication tags (cadvisor v0.52.1, node-exporter v1.9.1) that
+never existed in ghcr — every pull failed "manifest unknown" against
+packages GitHub reports as absent for unauthenticated/missing tags.
+Bumped the monitoring stack (and hosting role defaults) to the
+published EIR shims (cadvisor v0.57.0, node-exporter v1.11.1, promtail
+3.6.11 already current): pulled, recreated, all three healthy, and
+VictoriaMetrics scrapes them up (`cadvisor`/`node-exporter`/`promtail`
+up == 1 alongside the CachyOS pair).
+
+**Fleet state: zero unhealthy containers for the first time this
+cycle.** The watchdog's fleet-bad exemption for these three is now
+redundant (kept as defense).
+
+
 ### Wave 3b live — authbox decision-shadow beside Keycloak (2026-10-12)
 
 - **oauth-toolkit 0.4.0** (crates.io): ES256/RS256 JWT sign/verify with
