@@ -20,6 +20,8 @@ services:
     - 127.0.0.1:9001:9000
     volumes:
     - ${REPO_DIR:-/mnt/pool_HDD_x2/infra/stacks}:/mnt/pool_HDD_x2/infra/stacks
+    - /mnt/pool_HDD_x2/infra/stacks/stacks/webhook/deploy.lock:/var/run/infra-deploy.lock
+
     - /mnt/pool_HDD_x2/infra/bin:/mnt/pool_HDD_x2/infra/bin:ro
     - /var/run/docker.sock:/var/run/docker.sock
     - /root/.config/sops/age:/root/.config/sops/age:ro
@@ -52,7 +54,7 @@ services:
   # SHADOW mode: verifies signatures and logs; never executes. The Go
   # webhook above stays the executor until the decision logs agree.
   webhook-rs:
-    image: ghcr.io/wyattau/deploy-webhook-rs:0.2.0
+    image: ghcr.io/wyattau/deploy-webhook-rs:0.2.1
     container_name: infra-webhook-rs
     restart: unless-stopped
     init: true
@@ -64,6 +66,7 @@ services:
     - 127.0.0.1:9002:9002
     volumes:
     - ${REPO_DIR:-/mnt/pool_HDD_x2/infra/stacks}:/mnt/pool_HDD_x2/infra/stacks
+    - /mnt/pool_HDD_x2/infra/stacks/stacks/webhook/deploy.lock:/var/run/infra-deploy.lock
     - /mnt/pool_HDD_x2/infra/stacks/stacks/webhook/deploy.sh:/opt/webhook/deploy.sh:ro
     - ./ssh:/root/.ssh:ro
     - /var/log/infra-deploy.log:/var/log/infra-deploy.log
