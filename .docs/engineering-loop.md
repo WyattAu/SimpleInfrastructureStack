@@ -76,6 +76,23 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Wave 3b prerequisite shipped + deploy hardening (2026-10-12)
+
+- **oauth-toolkit 0.4.0 published**: ES256 + RS256 JWT sign/verify with
+  PEM keys (PKCS#8; jsonwebtoken `use_pem`). ES256 roundtrip +
+  tamper-rejection tested with an embedded P-256 keypair. This is the
+  asymmetric-signing prerequisite for `authbox` (the estate OIDC issuer
+  that will decision-shadow Keycloak).
+- **Deploy hardening**: the Trigger Webhook job now retries 5xx/network
+  failures (4x, 30s apart; 403 fails fast) — a tunnel blip no longer
+  blocks deploys entirely (recurrence guard for the restart-race
+  outage).
+
+**Next authbox steps:** token endpoint + sessions (accessctl authz,
+auditlog trail), .well-known discovery, then the decision-shadow
+sidecar beside Keycloak.
+
+
 ### Follow-up incident: webhook restart race took the Go executor down (2026-10-12, fixed)
 
 During the shared-lock rollout, a `compose restart webhook` raced two
