@@ -36,3 +36,7 @@ hosting_watchdog_schedule: "*-*-* *:00/15:00"  # every 15 min
 #     domain: docs.acme.example
 #     port: 18080           # local publish port (127.0.0.1:<port>)
 hosting_tenants: []
+# Estate eventbusd (dogfood wave 2): durable watchdog/deploy events.
+# Same secret class as hosting_ntfy_url (loopback-only service).
+hosting_eventbus_url: "http://127.0.0.1:9004"
+hosting_eventbus_token: "dfaa082b14da2ed417a7b497de8f08a686c4148021562fd6ff608fb3f3ea7230"

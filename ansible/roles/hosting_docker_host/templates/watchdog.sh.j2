@@ -13,6 +13,19 @@
 set -u
 
 NTFY="{{ hosting_ntfy_url }}"
+# Dual-emit target (estate eventbusd): durable, replayable watchdog events
+# beside the ntfy push. Publish failure is never fatal to the watchdog.
+EVENTBUS="{{ hosting_eventbus_url | default('') }}"
+EVENTBUS_TOKEN="{{ hosting_eventbus_token | default('') }}"
+
+emit_event() {
+    # emit_event <topic> <payload-json>
+    [ -n "$EVENTBUS" ] || return 0
+    curl -s --max-time 5 -X POST "$EVENTBUS/publish/$1" \
+        -H "Authorization: Bearer $EVENTBUS_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "$2" > /dev/null || true
+}
 TENANT_ROOT="{{ hosting_data_mount }}/tenants"
 OFFSITE_LOG="{{ hosting_data_mount }}/backups/.last-offsite-success"
 NOW=$(date +%s)
@@ -45,8 +58,15 @@ AGE=$((NOW - $(cat "$OFFSITE_LOG" 2>/dev/null || echo 0)))
 if [ -n "$failures" ]; then
     curl -s -H "Title: HOSTING WATCHDOG: degraded" -H "Priority: high" \
         -d "$(echo -e "$failures")" "$NTFY" > /dev/null
+    FAILURES_JSON=$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$(echo -e "$failures")" 2>/dev/null || echo '{}')
+    emit_event "hosting.watchdog.degraded" "{\"failures\": $FAILURES_JSON, \"at\": \"$(date -Is)\"}"
+    FAILURES_JSON=$(printf '%s' "$failures" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null || echo '"{}"')
+    emit_event "hosting.watchdog.degraded" "{\"failures\": $FAILURES_JSON, \"at\": \"$(date -Is)\"}"
     echo "ALERT SENT:$failures"
     exit 1
 fi
 
 echo "watchdog OK (bad=$BAD offsite_age=${AGE}s)"
+
+# Dual-emit: healthy heartbeat to eventbusd (research loop wave 2).
+emit_event "hosting.watchdog.healthy" "{\"at\": \"$(date -Is)\"}"
