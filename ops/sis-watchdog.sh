@@ -1,6 +1,9 @@
 #!/bin/bash
 # SIS meta-watchdog v5 - CachyOS-resident, independent of TrueNAS monitoring stack.
 NTFY="https://ntfy.sh/wyattau-infra-0e92568ce5d04343c3b796ed558a04b9"
+# Estate eventbusd (dogfood wave 2): durable watchdog event history.
+EVENTBUS="http://192.168.1.3:9004"
+EVENTBUS_TOKEN="dfaa082b14da2ed417a7b497de8f08a686c4148021562fd6ff608fb3f3ea7230"
 failures=""
 
 # --- remote check bundle via script file (avoids nested-quoting failures) ---
@@ -31,10 +34,21 @@ eval "$REMOTE_REPORT"
 [ "${SCRAPE_DOWN:-unknown}" = "unknown" ] && failures="$failures\n- MONITORING BLIND: VictoriaMetrics query failed"
 [ "${SCRAPE_DOWN:-0}" -gt 2 ] && failures="$failures\n- SCRAPES FAILING: ${SCRAPE_DOWN} targets down"
 
+emit_event() {
+  # emit_event <topic> <payload-json>; failure is never fatal
+  curl -s --max-time 5 -X POST "$EVENTBUS/publish/$1" \
+    -H "Authorization: Bearer $EVENTBUS_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "$2" > /dev/null || true
+}
+
 if [ -n "$failures" ]; then
   curl -s -H "Title: SIS WATCHDOG: production degraded" -H "Priority: high" \
     -d "$(echo -e "$failures")" "$NTFY" > /dev/null
+  FAILURES_JSON=$(printf '%s' "$failures" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null || echo '{}')
+  emit_event "sis.watchdog.degraded" "{\"failures\": $FAILURES_JSON, \"at\": \"$(date -Is)\"}"
   echo "ALERT SENT:$failures"
 else
+  emit_event "sis.watchdog.healthy" "{\"at\": \"$(date -Is)\", \"offsite_age\": ${OFFSITE_AGE:-0}, \"fleet_bad\": ${FLEET_BAD:-0}, \"scrape_down\": ${SCRAPE_DOWN:-0}}"
   echo "ALL WATCHDOG CHECKS PASSED (offsite_age=${OFFSITE_AGE:-?}s fleet_bad=${FLEET_BAD:-0} scrape_down=${SCRAPE_DOWN:-0} headscale=${HEADSCALE:-ok})"
 fi
