@@ -54,23 +54,39 @@ Estate crates (all published on crates.io) and who consumes them. Goal:
 every shipping stack sits on estate crates, and every estate crate has ≥2
 consumers.
 
-| Estate crate | Consumers | Status |
+| Estate crate (crates.io name) | Consumers | Status |
 | --- | --- | --- |
-| `telemetry-init` 0.1.2 | **hosting-api** | live (0.1.2 republished with metrics-kit 0.2) |
-| `metrics-kit` 0.2 | **hosting-api** (via telemetry-init 0.1.2) | live |
-| `pediment` | **hosting-dashboard** (tokens vendored until npm publish) | partial |
-| `worker-kit` | hosting-api v1 (backup job queue) | planned |
-| `outbox-kit` | hosting-api v1 (durable backup events) | planned |
-| `billing-kit` / `ledger-kit` | hosting-metering (iteration ≥3) | planned |
-| `policy-kit` | hosting-api authz (edge-delegated for now) | planned |
-| `scim-kit` / `webauthn-kit` | hosting-dashboard auth | planned |
-| `pediment` | hosting-dashboard | planned |
+| `telemetry-init` 0.1.2 | hosting-api, authbox, flagsd, eventbusd, deploy-webhook-rs | live |
+| `metrics-kit` 0.2 | hosting-api (via telemetry-init), hosting-api gauges | live |
+| `healthkit` 1.2 | hosting-api (/healthz + /readyz), deploy-webhook-rs, flagsd, eventbusd, authbox | live |
+| `envstack` 0.2 | hosting-api (layered config) | live |
+| `throttle-kit` 1.1 (repo: ratelimit) | hosting-api (GCRA /api) | live |
+| `webhookkit` 1.1 | deploy-webhook-rs (deploy HMAC) | live |
+| `billing-kit` 0.2 | hosting-api metering (usage pricing) | live |
+| `flag-kit` 0.2 | flagsd (the cutover control plane) | live |
+| `eventbus-kit` 0.3.6 (repo: eventbus, lib `typed_eventbus`) | eventbusd; watchdog dual-emit consumer | live |
+| `oauth-toolkit` 0.4 | authbox (JWKS validation); ES256/RS256 issuer primitives | live |
+| `tamper-audit` 0.2 (repo: auditlog) | authbox decision log | live |
+| `webauthn-kit` 0.4 | hosting-api passkeys | live |
+| `worker-kit` 0.3 | hosting-api nightly sweep | live |
+| `shutdown-kit` 0.3 | hosting-api graceful drain | live |
+| `pediment` | hosting-dashboard (tokens vendored until npm publish) | partial |
 | `ferro` | SIS production; `files` tenant template | live |
 | `Tachyon` | SIS production | live |
 | EIR images | 34+ SIS containers; all tenant templates | live |
+| `aether-core` 2.0 | probe pending (see queue) | probe |
 
 Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 `kestrel`, `aether-core`.
+
+**Naming traps (crates.io ≠ repo dir ≠ lib name):** `ratelimit` repo ->
+`throttle-kit`; `eventbus` repo -> `eventbus-kit` (lib
+`typed_eventbus`); `auditlog` repo -> `tamper-audit`. The matrix lists
+crates.io names; check the repo dir when navigating the workspace.
+
+**Dogfood services live on TrueNAS (stacks/dogfood + stacks/webhook):**
+flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
+— all estate-built, all shadow-verified, cutover via flagsd.
 
 ---
 
