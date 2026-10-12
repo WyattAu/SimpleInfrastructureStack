@@ -76,6 +76,33 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### authbox 0.2.0 — the estate ISSUES tokens (2026-10-12, live)
+
+**The first production service-token issuance from estate software.**
+authbox 0.2.0 added the issuer half on oauth-toolkit 0.4's ES256:
+
+- `POST /token` — `client_credentials` grant (Basic auth, OAuth2 form);
+  ES256-signed one-hour access tokens with `kid`
+- `GET /jwks` — EC P-256 JWK set derived from the signing key
+- `GET /.well-known/openid-configuration` — discovery (issuer, token
+  endpoint, jwks_uri, grant types, signing algs)
+- `POST /verify-local` — validate authbox-issued tokens
+- P-256 signing key generated on first boot, stored 0600, reused from
+  disk; `kid` = truncated SHA-256 over the public point coordinates
+
+**Verified live on TrueNAS:** discovery document served; token issued
+for the `hosting-api` service client; JWKS published with the matching
+`kid`; issued token accepted by `/verify-local` (`sub: hosting-api`).
+The Keycloak-side `/verify` shadow path is unchanged and still
+first-in-line — issuance coexists rather than cuts.
+
+**What this unlocks:** service-to-service auth without Keycloak is now
+possible for new estate services (hosting-api <-> future services) by
+pointing their OidcValidator at authbox's discovery document. The
+user-facing issuer (authorize redirect, sessions, user store) remains
+the larger build — Keycloak keeps that role for now.
+
+
 ### Exporter debt healed — root cause was the pin, verified end-to-end (2026-10-12)
 
 The 3 two-week-unhealthy exporters are HEALTHY: SIS pinned
