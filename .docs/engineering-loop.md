@@ -76,6 +76,28 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Follow-up incident: webhook restart race took the Go executor down (2026-10-12, fixed)
+
+During the shared-lock rollout, a `compose restart webhook` raced two
+orphaned Created containers holding the 9001 binding: the Go webhook
+caught SIGTERM and exited, the restart failed on the port, and nothing
+restarted it (policy does not cover bind failures) -> the next Actions
+Trigger Webhook got 502 -> deploys blocked.
+
+Fixed: removed the orphans, `compose up -d` recreated + started both
+twins, re-ran the deploy workflow -> success (TrueNAS at d244dd0,
+ok=46/failed=0). Both twins verified: Go accepting via tunnel (405 on
+GET = listening), rs healthz 200.
+
+**Hardening owed (queued):** the webhook stack should get
+`restart: unless-stopped` resilience against bind races (pre-up orphan
+cleanup or `compose down` before up in deploy.sh), and the Trigger
+Webhook job should retry on 5xx so a transient tunnel blip doesn't fail
+the whole pipeline. The rs twin's shadow mode already provides a second
+execution path if the Go webhook dies again — flag ON = rs takes over
+(fail-open cutover for outage recovery, not just rollout mechanics).
+
+
 ### Cutover test — two critical catches, exactly what the dogfood loop is for (2026-10-12)
 
 The first flag-ON test (both twins receiving a real push) surfaced two
