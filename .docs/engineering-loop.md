@@ -1370,3 +1370,5 @@ priced through `billing-kit`:
 - Astro 7 islands + SolidJS hydration cost vs SPA for the dashboard
 - OCI image signatures in practice: cosign verify at docker01 pull time
   (EIR already attests — enforce on the consumer side)
+
+Cutover test: flag enabled 100% at this commit — next push exercises the flag-gated execution (flock serializes the twins).
