@@ -76,6 +76,43 @@ Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
 
 ## Iteration log
 
+### Dogfood wave 3 — flag-gated cutover armed end-to-end (2026-10-12)
+
+The parallel-run loop between the Go deploy webhook (incumbent,
+:9001/deploy.wyattau.com) and the Rust twin (:9002/deploy2.wyattau.com)
+is fully armed:
+
+1. **deploy-webhook-rs 0.2.0**: flag-gated execution — with FLAGS_URL
+   set, a valid signature executes only when flagsd evaluates
+   `webhook_rs_cutover` enabled (fail closed: flagsd down = incumbent
+   stays in charge). Every decision publishes
+   `hosting.deploy.decision` to eventbusd. Image rebuilt on the alpine
+   runtime stack (ansible/sops/docker-cli) so flag-enabled execution
+   runs deploy.sh identically to the Go webhook — the scratch image
+   could not (no bash/flock/ansible).
+2. **Parallel receive**: second GitHub webhook (id 696002744, push)
+   -> deploy2.wyattau.com -> tunnel ingress -> :9002. Same HMAC secret.
+   First live event (GitHub ping, 7.5KB): signature VERIFIED, cutover
+   flag disabled, not executing — the gate worked on its first real
+   traffic.
+3. **Concurrency safety**: when the flag flips ON, both twins receive
+   the same push; deploy.sh's flock serializes — the loser exits
+   "another deploy is running" instead of double-deploying.
+
+**Cutover procedure (now a flagsd one-liner):**
+  enable:  PUT /flags/webhook_rs_cutover {"enabled":true,"percentage":100}
+  rollback: percentage 0 (or enabled false) — incumbent untouched.
+
+**Verification path to full cutover:** flip to 100% for a day; compare
+infra-deploy.log executions + eventbusd decision events (executed.
+success counts vs the Go webhook's); roll back to 0 if any divergence.
+
+**Packaging lesson (repeated):** rust musl builds need rust >= deps'
+MSRV (uuid 1.28 wants 1.89) — Containerfiles parametrized
+(ARG RUST=1.89-slim). And ALWAYS create the .gitignore before the
+first commit in a new service repo (target/ bloat hit twice).
+
+
 ### Dogfood wave 2 — flagsd + eventbusd shipped, eventbus-kit enhanced (2026-10-11)
 
 **Crate enhancement (the "not a perfect fit" case, executed):**
