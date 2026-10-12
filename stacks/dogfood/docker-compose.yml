@@ -62,3 +62,33 @@ services:
       options:
         max-size: 10m
         max-file: '3'
+
+  # Wave 3b: authbox decision-shadow beside Keycloak. Verifies tokens
+  # against the Keycloak realm's JWKS and decision-logs them; no service
+  # routes through it yet (shadow only).
+  authbox:
+    image: ghcr.io/wyattau/authbox:0.1.0
+    container_name: dogfood-authbox
+    restart: unless-stopped
+    user: "65532:65532"
+    security_opt:
+    - no-new-privileges:true
+    cap_drop:
+    - ALL
+    ports:
+    - 127.0.0.1:9005:9005
+    environment:
+    - LISTEN=0.0.0.0:9005
+    - AUTHBOX_ISSUER=${AUTHBOX_ISSUER}
+    - AUTHBOX_AUDIENCE=${AUTHBOX_AUDIENCE}
+    deploy:
+      resources:
+        limits:
+          cpus: '0.10'
+          memory: 32M
+          pids: 50
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
