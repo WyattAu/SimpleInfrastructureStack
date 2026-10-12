@@ -92,6 +92,32 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Aether probe — runtime runs, actor-SDK docs gap found (2026-10-12, time-boxed)
+
+**What works today (verified on the workstation):**
+- `aether-cli` builds and runs (full command surface: dev/deploy/status/
+  scale/rollback/observability...)
+- `aether-server v2.0.0` starts: **wasm execution available**, actor
+  scheduler active, `/health` answers, warns correctly about missing
+  `AETHER_API_KEYS` (deny-by-default posture is real)
+- `aether deploy --dry-run` parses `aether.toml` and prints a correct
+  deployment plan
+
+**Gap found (enhancement request for aether-core):** the actor-authoring
+path is undocumented. The README quickstart says "create aether.toml +
+`aether deploy`" but never shows how to BUILD an actor — the
+`aether-actor` SDK's `export_actor!` macro signature, the expected
+`Message` API shape, and a worked example actor (hello.wasm) are all
+missing from the repo. An outsider cannot go from zero to hello.wasm
+without reverse-engineering the macro. Requested: a
+`examples/hello-actor/` crate + a `aether new actor <name>` scaffold.
+
+**Probe verdict:** the runtime layer is real and promising (wasm
+scheduler + capability model + no-YAML manifests), but the on-ramp is
+not ready for platform use. Re-probe after the SDK example lands. No
+TrueNAS deployment — pointless without an actor to host.
+
+
 ### authbox 0.2.0 — the estate ISSUES tokens (2026-10-12, live)
 
 **The first production service-token issuance from estate software.**
