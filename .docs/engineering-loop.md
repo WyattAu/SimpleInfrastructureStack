@@ -92,6 +92,42 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 2 — iteration 20: deploy pipeline + Standard Webhooks (2026-10-14)
+
+RESEARCH: Standard Webhooks spec v1.0 (full text: signature over
+msg_id.timestamp.payload, v1 HMAC-SHA256 + v1a ed25519,
+space-delimited multi-signature rotation, webhook-id idempotency keys,
+timestamp tolerance vs replay, 2xx-success/410-disable status
+etiquette, retry schedule example spanning ~75h with exponential
+backoff, 15-30s timeouts, thin-vs-full payloads, SSRF/smokescreen
+guidance, side-by-side legacy migration); Kamal docs URL 404'd
+(kamal-deploy.org/docs/overview) — compared on known shape: SSH app-
+artifact deploys with env accessories.
+
+ANALYZE — other engines: GitOps (Flux/Argo) presumes a K8s API to
+reconcile — the platform's convergence target is compose+ansible on one
+host, so the entire GitOps class is out-of-scope, not behind. Kamal
+solves app-artifact rollout — irrelevant to infra convergence, useful
+someday for tenant-app deploys. The adoptable cut is Standard Webhooks:
+our webhook receiving is solid (HMAC verify, flock, 202-detached
+execution — the cutover test bugs were operational and fixed), but the
+estate's webhook SENDING story predates the standard. Signing +
+idempotency + status etiquette for outbound estate webhooks is a small,
+well-specified upgrade. Internal vs customer-facing retry policies
+split: eventbusd durability means deploy webhooks fail fast (4x/30s,
+already shipped); customer-facing senders get the days-long schedule.
+
+IMPLEMENT (spec): hosting-architecture.md gains a "Deploy pipeline"
+section (pipeline shape + iter-20 verdicts + Standard Webhooks policy:
+inbound GitHub keeps X-Hub-Signature-256, outbound estate senders adopt
+v1 signatures + idempotency keys; webhookkit enhancement recorded).
+Lean model: no budget change (webhook handling was always inside the
+control-plane CPU line).
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 2 — iteration 19: host patching (2026-10-14)
 
 RESEARCH: systemd-sysupdate man page (atomic A/B/A/B/C... updates of

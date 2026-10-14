@@ -339,6 +339,34 @@ already bound the blast radius; another daemon is not lean.
   `ansible-playbook hosting_bootstrap.yml`, `restic restore` per tenant.
   Rehearse this before the first paying customer (see checklist).
 
+### Deploy pipeline
+
+Pushes to this repo deploy to TrueNAS (Forgejo mirror -> checkout ->
+deploy webhook -> `deploy.sh`: flock, `git reset --hard`, ansible
+playbook) with the Rust twin (`deploy-webhook-rs`) flag-gated beside it:
+both receive every event under a shared flock, the twin verifies-only at
+0%, full cutover is one flagsd call, and every decision publishes to
+eventbusd for diff/replay.
+
+**Deploy/webhook research (loop iter 20):** the GitOps engines (Flux,
+Argo) are K8s reconcilers — rejected: our convergence target is compose +
+ansible on one host, not a cluster API. Kamal-class tools ship APP
+artifacts over SSH — rejected for infra convergence, noted for future
+tenant-app deploys. The cutting edge that fits is the **Standard
+Webhooks** spec (v1.0: `webhook-id`/`webhook-timestamp`/`webhook-signature`
+headers, `v1` HMAC-SHA256 + `v1a` ed25519, space-delimited multi-signature
+for zero-downtime key rotation, idempotency via `webhook-id`, 2xx =
+success / 410 disables endpoint, exponential-backoff retry schedules
+spanning days with jitter, 15-30s consumer timeouts, SSRF proxy
+guidance). Policy: inbound GitHub deploy events keep `X-Hub-Signature-256`
+(interop constraint; Standard Webhooks explicitly supports side-by-side
+legacy schemes); OUTBOUND estate webhooks (webhookkit senders, eventbusd
+consumers) adopt Standard Webhooks v1 signatures + idempotency keys —
+recorded as the webhookkit crate enhancement. Internal deploy webhooks
+keep fast-fail retries (4x/30s) because eventbusd holds durability; the
+days-long backoff schedules apply to customer-facing senders when the
+estate grows them.
+
 ---
 
 ## Bare-metal runbook (order matters)
