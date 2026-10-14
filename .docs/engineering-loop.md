@@ -92,6 +92,38 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 2 — iteration 13: TSDB compression + Prometheus 3.0 (2026-10-14)
+
+RESEARCH: Chimp (VLDB'22, DOI 10.14778/3551793.3551852) — streaming
+floating-point compression, ~50% of the space of prior streaming
+approaches with better compression AND access time; Elf (VLDB'24, DOI
+10.14778/3587136.3587149) — erasing-based lossless FP compression
+exploiting trailing zeros, O(N) time / O(1) space, beats 9 competitors
+incl. Chimp; Prometheus 3.0 announcement (Nov 2024) — first major
+release in 7 years: measured TSDB CPU/memory improvements (prombench
+2.0 vs 2.18 vs 3.0), native OTLP ingest endpoint, Remote Write 2.0,
+UTF-8 names, new UI; migration guide requires 2.55 first (rollback to
+2.55 only).
+
+ANALYZE — other engines: the Elf/Chimp line IS the cutting edge of TSDB
+storage cost, and engines that implement it (or VictoriaMetrics' own
+encodings) hold real advantages — at high cardinality. Our fleet
+produces bounded, known cardinality (10 tenants x cAdvisor families we
+curated in iter 6); iter 6's deferral stands. The decisive new fact is
+that the cheap wins now arrive via the Prometheus 3.x UPGRADE instead of
+an engine MIGRATION: same TSDB budget, zero new machinery, plus OTLP
+ingest that matches the estate's OTLP-shaped metering (billing-kit).
+Chimp/Elf rejected for adoption (format papers, wrong scale);
+VictoriaMetrics deferral refreshed with a sharper revisit trigger.
+
+IMPLEMENT (spec): hosting-architecture.md gains an "Observability"
+section recording the verdicts; upgrade policy 2.55 -> 3.x on TrueNAS.
+Lean model: TSDB budget annotated with the iter-13 verdict (no change).
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 2 — iteration 12: edge TLS, post-quantum + ACME profiles (2026-10-14)
 
 RESEARCH: Cloudflare "state of the post-quantum Internet" (X25519MLKEM768

@@ -109,6 +109,26 @@ flat layout. On the node side, OpenZFS 2.3's fast dedup was evaluated for
 pay RAM for deduplication we already have. Quota math is asserted in
 `ops/lean-model.py` (10 x 100 GiB + 400 GiB backups = 1.4 TiB <= 1.5 TiB).
 
+### Observability
+
+Metrics, metering and alerting live on the TrueNAS Prometheus (scrapes
+over vmbr1); the hosting VM runs no TSDB at all.
+
+**Observability research (loop iter 13):** the compression frontier has
+moved past Gorilla (what Prometheus TSDB implements): Chimp (VLDB'22)
+halves the space of streaming XOR encoders, Elf (VLDB'24) improves
+further via trailing-zero erasing at O(N)/O(1) cost. These are FORMAT
+papers - adopting them means swapping the TSDB engine, and the wins
+materialize at high cardinality that a 10-tenant fleet does not produce.
+The lean move is the UPGRADE path, not the engine swap: Prometheus 3.0
+(first major release in seven years) inherits years of measured TSDB
+CPU/memory improvements, adds native OTLP ingest (the estate's
+billing-kit metering is already OTLP-shaped) and Remote Write 2.0.
+VictoriaMetrics stays deferred; the revisit trigger is now measured
+cardinality pain on the TrueNAS Prometheus, not benchmark tables.
+Upgrade policy: Prometheus 2.55 -> 3.x on TrueNAS with the migration
+guide (rollback only to 2.55), 8 GiB TSDB budget unchanged.
+
 ### Network
 
 ```text
