@@ -85,6 +85,15 @@ class LeanBudgets:
     tenant_quota_gib: int = 100
     backups_reserve_gib: int = 400
 
+    # --- identity (iter 11) ----------------------------------------------
+    # The identity plane must add zero standing daemons: SPIFFE/SPIRE was
+    # rejected (stateful server + node agent) in favour of authbox issuing
+    # short-lived tokens; placement (loopback + 0600 creds) is the
+    # attestation at one-host scale.
+    max_identity_daemons: int = 0
+    # Service access tokens must stay short-lived (minutes), SPIFFE-style.
+    max_service_token_minutes: int = 60
+
     # --- unit economics ---------------------------------------------------
     # Standard tier price (GBP/month) and the hard floor: infrastructure
     # cost per tenant-month must stay below 25% of the standard price.
@@ -104,6 +113,8 @@ class ModelInputs:
     backup_minutes_std_tenant: int = 12     # iter 4: restic incremental, warm cache; weekly prune+check scheduled inside the window budget
     tsdb_gib_30d: float = 4.0               # iter 6: prometheus 15s, 10 tenants
     infra_cost_per_tenant_gbp: float = 9.0  # iter 10: power+disk+B2 share
+    identity_daemons: int = 0               # iter 11: authbox is in-process; SPIRE rejected
+    service_token_minutes: int = 15         # iter 11: short-lived service tokens (was 60)
 
 
 def check(b: LeanBudgets, m: ModelInputs) -> list[str]:
@@ -175,6 +186,16 @@ def check(b: LeanBudgets, m: ModelInputs) -> list[str]:
         failures.append(f"TSDB {m.tsdb_gib_30d}GiB > budget {b.tsdb_gib_30d}GiB")
     if m.infra_cost_per_tenant_gbp / b.standard_price_gbp > b.max_infra_cost_share:
         failures.append("infra cost share exceeds 25% of price")
+    if m.identity_daemons > b.max_identity_daemons:
+        failures.append(
+            f"identity plane runs {m.identity_daemons} extra daemons > budget "
+            f"{b.max_identity_daemons} (SPIRE rejected; authbox in-process)"
+        )
+    if m.service_token_minutes > b.max_service_token_minutes:
+        failures.append(
+            f"service token lifetime {m.service_token_minutes}min > budget "
+            f"{b.max_service_token_minutes}min"
+        )
     data_gib = DATA_TIB * 1024
     if m.tenants * b.tenant_quota_gib + b.backups_reserve_gib > data_gib:
         failures.append(
@@ -203,7 +224,8 @@ def main() -> int:
             print(f"  FAIL {f}")
         return 1
     print("  all budgets hold: capacity, overhead, isolation, metering,")
-    print("  backup SLA, observability footprint, unit economics")
+    print("  backup SLA, observability footprint, unit economics,")
+    print("  identity-plane leanness")
     return 0
 
 

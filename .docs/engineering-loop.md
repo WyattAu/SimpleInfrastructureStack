@@ -92,6 +92,43 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 2 — iteration 11: workload identity (2026-10-14)
+
+RESEARCH: SPIFFE/SPIRE docs (spiffe.io: SVID overview + the
+"comparisons" page that taxonomises identity providers vs secret stores
+vs meshes). SPIFFE's differentiator over plain OIDC identity providers is
+ATTESTATION - identity issued from where a workload runs (node + workload
+attestation), killing the static bootstrap credential ("credential zero").
+SPIRE = stateful server + per-node agent + per-workload registration
+entries. Service meshes (Istio/Consul) embed SPIFFE-class identity behind
+sidecars.
+
+ANALYZE — other engines: SPIFFE is the right answer at many-workloads,
+cross-infrastructure scale (Teleport/GCP/OpenShift adopt it). At our
+scale - one VM, all services on one kernel, ~5 estate services - it adds
+two daemons and a registration surface to solve a problem we do not have:
+our services already run in a single trust domain with a shared control
+plane. By SPIFFE's own taxonomy authbox IS an identity provider; what
+authbox lacked was SPIFFE's core *property* - short credential lifetime
+(authbox issued 1h tokens; the issuer half defaults were fine but the
+policy was unwritten). The attestation equivalent at one-host scale is
+placement: loopback-only listeners + 0600 systemd-credential files prove
+where a process runs. SPIRE reject recorded (2 standing daemons); Istio/
+Consul reject implied (sidecars, K8s-shaped).
+
+IMPLEMENT (spec + lean proof): `.docs/hosting-architecture.md` security
+model gains item 8 "Workload identity": service-to-service auth stays on
+authbox, but NEW estate services issue 15-minute access tokens
+(auto-renewed client_credentials, never static API keys); Keycloak keeps
+user identity; revisit triggers = second host or tenant->estate calls.
+lean-model.py gains two budgets: identity plane adds zero standing
+daemons (SPIRE reject encoded) and service token lifetime <= 60 min
+(model input tightened to 15).
+
+LEAN PROOF: exit 0 with the two new identity budgets holding.
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Aether probe — runtime runs, actor-SDK docs gap found (2026-10-12, time-boxed)
 
 **What works today (verified on the workstation):**

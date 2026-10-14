@@ -131,6 +131,19 @@ vmbr1 (tenant bridge, 10.10.10.0/24, host = 10.10.10.1)
    `hosting_secrets_tpm_creds` (default false until the DR rehearsal
    covers it); when enabled, plaintext never touches the host disk.
 7. **Unattended-upgrades** for the security pocket-list.
+8. **Workload identity** (research loop iter 11): SPIFFE/SPIRE evaluated and
+   rejected for the platform - SPIRE's distinguishing feature over plain
+   OIDC identity providers is workload ATTESTATION (no static bootstrap
+   credential), but it costs a stateful server plus a per-node agent, for
+   a fleet that is one VM with a handful of estate services. On one host,
+   placement IS attestation: loopback-only listeners + 0600
+   systemd-credential files prove where a process runs. What we adopt is
+   SPIFFE's *properties*, not its machinery: service-to-service auth uses
+   short-lived tokens from authbox (15-minute access tokens for new
+   estate services, auto-renewed via client_credentials; never long-lived
+   static API keys), Keycloak keeps user-facing identity unchanged.
+   Revisit triggers: a second hosting host (cross-node identity) or
+   tenants needing to call estate services directly.
 
 ### Isolation tiers (research loop iteration 1)
 
