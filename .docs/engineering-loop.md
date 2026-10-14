@@ -92,6 +92,39 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 2 — iteration 18: flowtable reject + IPv6 fence gap closed (2026-10-14)
+
+RESEARCH: nftables wiki flowtable page (conntrack-based fastpath; flows
+offload after the first reply; offloaded packets bypass the classic
+forward path; family inet/ip6 supported; hardware offload needs NIC
+support); Docker IPv6 docs (daemon ipv6/fixed-cidr-v6, ip6tables
+default-on, dynamic ULA allocation from fd00::/8 with random 40-bit
+global ID when no v6 pools configured).
+
+ANALYZE — other engines: flowtable is the kernel-native fastpath (the
+Cilium/eBPF fastpath is its userspace cousin) — both REJECTED here: an
+offloaded flow skips per-packet forward-chain evaluation, which is
+exactly the property a multi-tenant fence must keep (rule changes apply
+to established flows immediately; expiry-cached fastpaths do not). At a
+0.5-core edge the CPU win buys nothing. But the flowtable research
+surfaced a REAL spec gap of the iter-1/8 flaw class: the tenant fence
+was family `ip` (IPv4-only). Docker IPv6 enablement — plausible for
+IPv6-capable customer sites — auto-assigns fd00::/8 ULAs whose egress
+the fence never evaluated.
+
+IMPLEMENT (spec + ansible): fence table ip -> table inet with a v6
+source set (hosting_docker_address_pools_v6, default fd00::/8) and
+private6 destination set (fc00::/7 ULA + fe80::/10 link-local); rule
+inert until v6 networks exist; v6 enablement can never bypass it.
+Verified: template rendered and `nft -c` validated clean inside a user
+netns. Lean model: no budget change (fence remains ~20 lines of
+kernel-native config).
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: nft -c -f (netns) OK; ANSIBLE_CONFIG=ansible/ansible.cfg
+ansible-playbook --syntax-check clean; python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 2 — iteration 17: metering + native histograms (2026-10-14)
 
 RESEARCH: Prometheus "Histograms and summaries" practice doc (official

@@ -18,8 +18,13 @@
 
 flush ruleset
 
-# Tenant egress fence: deny docker bridges -> RFC1918. Drops only.
-table ip tenant_fence {
+# Tenant egress fence: deny docker bridges -> private ranges. Drops only.
+# Research loop iter 18: the table is family `inet` so IPv6 tenants are
+# fenced too — Docker ULA sources (fd00::/8 default) cannot reach ULA or
+# link-local v6 destinations. Turning on Docker IPv6 networking can never
+# silently bypass the fence; global-to-global tenant v6 egress stays open
+# (mirrors the v4 rule: internet allowed, private denied).
+table inet tenant_fence {
     set rfc1918 {
         type ipv4_addr
         flags interval
@@ -32,11 +37,24 @@ table ip tenant_fence {
         elements = { {{ hosting_docker_address_pools | map(attribute='base') | join(', ') }} }
     }
 
+    set private6 {
+        type ipv6_addr
+        flags interval
+        elements = { fc00::/7, fe80::/10 }
+    }
+
+    set tenant_sources6 {
+        type ipv6_addr
+        flags interval
+        elements = { {{ hosting_docker_address_pools_v6 | map(attribute='base') | join(', ') }} }
+    }
+
     chain forward {
         type filter hook forward priority -5; policy accept;
 
         ct state established accept
         ip saddr @tenant_sources ip daddr @rfc1918 counter drop
+        ip6 saddr @tenant_sources6 ip6 daddr @private6 counter drop
     }
 }
 

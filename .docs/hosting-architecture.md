@@ -162,6 +162,22 @@ vmbr1 (tenant bridge, 10.10.10.0/24, host = 10.10.10.1)
   cannot reach tenants through it.
 - Inbound public traffic terminates at docker01:80/443 only (Caddy).
 
+**Network policy research (loop iter 18):** two verdicts. (1) nftables
+flowtables (conntrack fastpath, software or NIC offload) rejected: an
+offloaded flow bypasses per-packet forward-chain evaluation - the one
+property a tenant fence must never lose (a rule change would not apply
+to established flows until expiry), and the CPU saving is irrelevant at
+a 0.5-core edge with 10 tenants. eBPF fastpaths (Cilium class) remain
+rejected for the same reason. (2) The fence itself had a latent gap of
+the iter-1/8 class: it was family `ip`, so IPv4-only - enabling Docker
+IPv6 networking (daemon `ipv6: true`, auto-ULA fd00::/8 per Docker
+docs) would have silently bypassed it for tenant v6 egress. The fence is
+now family `inet`: tenant ULA sources cannot reach ULA/link-local v6
+destinations (`hosting_docker_address_pools_v6`, default fd00::/8), the
+rule is inert while no v6 networks exist, and v6 enablement can never
+silently bypass it. Global-to-global tenant v6 egress stays open,
+mirroring the v4 rule.
+
 ### Security model, in order
 
 1. **nftables input baseline** on docker01: drop by default; SSH only from

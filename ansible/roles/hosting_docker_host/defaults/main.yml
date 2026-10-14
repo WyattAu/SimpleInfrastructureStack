@@ -47,6 +47,16 @@ hosting_docker_address_pools:
   - base: 172.20.0.0/14
     size: 20
   - base: 172.26.0.0/15
+    size: 24
+
+# IPv6 tenant pools (research loop iter 18): the fence's v6 source set.
+# fd00::/8 covers every ULA Docker auto-assigns when IPv6 networking is
+# enabled; the fence drops tenant ULA -> ULA/link-local. No v6 networks
+# exist today, so the rule is inert until then — this default exists so
+# that enabling v6 can never silently bypass the fence.
+hosting_docker_address_pools_v6:
+  - base: fd00::/8
+    size: 64
     size: 22
 
 # SSH hardening: management interface only sees key auth (cloud-init sets
