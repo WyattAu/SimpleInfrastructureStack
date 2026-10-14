@@ -92,6 +92,47 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 2 — iteration 14: backup chunking frontier (2026-10-14)
+
+RESEARCH: arXiv CDC query, newest first. (1) "Benchmarking
+Content-Defined Chunking Algorithms for Data Deduplication"
+(arXiv:2610.13704, ICDE'27): isolates 8 base chunkers; AE most balanced
+across throughput/dedup-ratio/chunk-size/variance; derives parameter
+formulas for AE/RAM/MII; uncovers a LONGSTANDING ERROR in the widely
+reproduced AE parameterization (chunks 13-39% smaller than intended,
+inflating published dedup numbers). (2) VectorCDC follow-up
+(arXiv:2508.05797, ACM TOS; FAST'25 predecessor): SIMD acceleration of
+hashless CDC = 8.35x-26.2x vs vector-accelerated, 15.3x-207x vs plain.
+(3) Chonkers (arXiv:2509.11121): provable chunk-size + edit-locality
+guarantees. (4) Chunking attacks on backup services
+(arXiv:2504.02095, Alexeev/Percival/Zhang): parameter-extraction attacks
+against CDC-based backup services -> confirmation side channels for
+target files.
+
+ANALYZE — other engines: kopia/restic-class tools chase chunker
+throughput; the benchmark says even the best chunker gains evaporate at
+our scale because our backups are not chunking-bound (iter 4 measured
+12min vs 30min SLA). The 207x-throughput class is real for backup
+PROVIDERS, not for one nightly sweep. The paper that matters is the
+attack one: our single restic repo dedups across tenants by design, and
+CDC dedup is a confirmation side channel. Mitigating facts: restic's
+chunker polynomial is per-repo random (not a fixed service-wide
+parameter like the attacked services), exploitation needs repo-oracle
+access, and repo access = operator tier (RESTIC_PASSWORD on docker01;
+the TPM2-creds path from iter 5 shrinks it). Verdict: single repo
+stands; chunker swap rejected again (third time, now with 2025-2026
+evidence); research-chunker caution recorded (the AE parameterization
+bug is exactly why we don't chase paper claims).
+
+IMPLEMENT (spec): backup section gains the iter-14 research bullet
+(side-channel property documented, "tenants browse their own backups"
+flagged as requiring per-tenant repos first); iter-4 bullet restored as
+its own entry. Lean model backup line annotated (no budget change).
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 2 — iteration 13: TSDB compression + Prometheus 3.0 (2026-10-14)
 
 RESEARCH: Chimp (VLDB'22, DOI 10.14778/3551793.3551852) — streaming

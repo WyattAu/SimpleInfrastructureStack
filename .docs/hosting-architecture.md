@@ -224,9 +224,29 @@ API surface does not change.
 
 - Per tenant: `ops/tenant-backup.sh` — restic snapshot tagged
   `tenant:<slug>` into `/srv/backups/restic`, copied offsite to B2.
-- **Backup research (loop iter 4):** restic's Rabin chunking (512 KiB
-  avg) vs kopia's FastCDC-class chunking was evaluated — FastCDC wins on
-  chunking throughput but switching tools buys nothing here: measured
+- **Backup research (loop iter 14):** the CDC research frontier (fresh
+  ICDE'27 benchmark arXiv:2610.13704; VectorCDC FAST'25/ACM-TOSS follow-up
+  arXiv:2508.05797) confirms AE-class chunkers as most balanced and SIMD
+  vectorization as an 8-26x chunking-throughput win - but chunking
+  throughput is NOT our bottleneck (iter 4: 12 min vs 30 min SLA), and the
+  same benchmark lineage exposed a longstanding AE parameterization error
+  reproduced across papers and tools: a caution against adopting research
+  chunker defaults. Chunker swap stays rejected. The 2025 chunking-attack
+  paper (arXiv:2504.02095, Alexeev/Percival/Zhang) is the finding that
+  DOES apply: content-defined chunking + cross-file dedup creates
+  confirmation side channels (an attacker who can query dedup behaviour
+  can test whether a target file exists in a backup). Our exposure: the
+  restic repo dedups across tenants by design (storage win) and the
+  repo-side chunker polynomial is per-repo random; exploitation requires
+  repo-oracle access, which means operator-tier credentials
+  (RESTIC_PASSWORD on docker01 - the same exposure systemd-creds TPM2
+  closes). Recorded: single shared repo stands; no tenant ever gets
+  repo-adjacent access; the side-channel property is documented so a
+  future "tenants browse their own backups" feature knows it must move to
+  per-tenant repos first.
+- **Backup research (loop iter 4):** restic's Rabin chunking vs
+  kopia's FastCDC-class chunking was evaluated — switching tools buys
+  nothing here: measured
   backups run ~12 min against a 30-min SLA budget and dedup is not the
   bottleneck. The real gaps were operational and are now fixed in the
   nightly sweep: retention is **enforced weekly** (was opt-in via

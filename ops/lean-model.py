@@ -116,7 +116,7 @@ class ModelInputs:
     # entry names the iteration that set it).
     isolation_overhead_frac: float = 0.02   # iter 1: tier-0 userns-remap (~0-2%); tier-1 per-tenant rootless same class; gVisor 10-25% is OPT-IN and priced separately
     metering_cpu: float = 0.02              # iter 3: cadvisor scrape pipeline
-    backup_minutes_std_tenant: int = 12     # iter 4: restic incremental, warm cache; weekly prune+check scheduled inside the window budget
+    backup_minutes_std_tenant: int = 12     # iter 4: restic incremental, warm cache; weekly prune+check scheduled inside the window budget; iter 14: chunker stays (chunking not the bottleneck), cross-tenant dedup side channel documented
     tsdb_gib_30d: float = 4.0               # iter 6: prometheus 15s, 10 tenants; iter 13: budget holds under Prometheus 3.x (upgrade, not engine swap)
     infra_cost_per_tenant_gbp: float = 9.0  # iter 10: power+disk+B2 share
     identity_daemons: int = 0               # iter 11: authbox is in-process; SPIRE rejected
