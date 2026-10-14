@@ -92,6 +92,36 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 2 — iteration 17: metering + native histograms (2026-10-14)
+
+RESEARCH: Prometheus "Histograms and summaries" practice doc (official
+guidance: "if you can, use native histograms" - one composite series vs
+_sum/_count/N bucket series, exponential buckets, ad-hoc quantiles,
+always aggregatable; NHCB = server-side conversion of classic
+histograms; native needs protobuf exposition today, OpenMetrics v2 text
+underway; quantile-error model documented); OpenCost/CNCF overview
+(allocation-based cost allocation is the industry default; on-prem and
+Docker paths exist).
+
+ANALYZE — other engines: every serious cost platform (OpenCost,
+Kubecost, cloud showback) prices by ALLOCATION because usage is
+gameable/noisy - the platform's iter-3 fallback policy is confirmed as
+industry-standard, not a cop-out; the primary RSS-usage meter stands
+because our add-on pricing needs a defensible usage signal and tiers
+already cap allocation. The zero-cost adoption is NHCB: the TrueNAS
+Prometheus 3.x (iter 13 upgrade) ingests estate classic histograms as
+native - single series each, free TSDB headroom, no app change. Rust
+estate crates cannot emit true native histograms yet (protobuf
+exposition) - metrics-kit watch item for OpenMetrics v2.
+
+IMPLEMENT (spec): observability section gains the iter-17 metering
+research paragraph (NHCB policy + pricing-model confirmation + Rust
+watch item). Lean model metering line annotated.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 2 — iteration 16: PSI supervision + sched_ext (2026-10-14)
 
 RESEARCH: kernel PSI docs (some/full stall ratios, avg10/60/300,

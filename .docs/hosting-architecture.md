@@ -129,6 +129,21 @@ cardinality pain on the TrueNAS Prometheus, not benchmark tables.
 Upgrade policy: Prometheus 2.55 -> 3.x on TrueNAS with the migration
 guide (rollback only to 2.55), 8 GiB TSDB budget unchanged.
 
+**Metering research (loop iter 17):** Prometheus official guidance is
+now "if you can, use native histograms" - one time series per histogram
+(dynamic exponential buckets, ad-hoc quantiles, aggregatable) instead of
+_sum/_count/one-series-per-bucket, with NHCB (native histograms with
+custom buckets) ingesting classic histograms server-side when the
+instrumentation library cannot emit them yet (Rust estate crates: watch
+item for metrics-kit once OpenMetrics v2 text exposition lands). Policy:
+enable native-histogram support on the TrueNAS Prometheus 3.x so estate
+classic histograms (e.g. hosting_backup_duration_seconds) store as
+single series - TSDB headroom for free, no app change. On pricing:
+OpenCost/CNCF confirms allocation-based pricing is the industry default
+precisely because usage memory is noisy; the platform's flat-tier +
+RSS-usage add-on metering (iter 3) stands, with the recorded allocation
+fallback unchanged if disputes arise.
+
 ### Network
 
 ```text
