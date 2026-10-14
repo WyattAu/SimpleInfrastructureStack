@@ -92,6 +92,42 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 2 — iteration 12: edge TLS, post-quantum + ACME profiles (2026-10-14)
+
+RESEARCH: Cloudflare "state of the post-quantum Internet" (X25519MLKEM768
+hybrid deployed at scale; ML-KEM-768 server ops ~45k/s vs X25519 ~19k/s
+- PQ key agreement is FASTER than classical; signatures/certificates are
+the slow migration, PQ public certs realistically 2026+); Go 1.24 release
+notes (crypto/tls enables X25519MLKEM768 BY DEFAULT when CurvePreferences
+is nil; crypto/mlkem ships in-tree; also Go-side ECH server support);
+Let's Encrypt profiles page (classic 90d / tlsserver 45d / shortlived
+~160h, no-revocation; ACME profiles still an IETF draft; CA/B BR caps
+certificate lifetimes at 47 days from 2029-03-15).
+
+ANALYZE — other engines: Cloudflare/Fly-class operators turned on PQ key
+agreement as a config line once their TLS stack shipped it; the edge
+binary's TLS library now decides the platform's PQ posture, not our
+config. Caddy-on-Go>=1.24 therefore gives the platform PQ key agreement
+for free — the iteration question was whether to CONFIGURE anything:
+no. The larger-ClientHello middlebox breakage class (tldr.fail) does not
+apply: the customer edge terminates directly on 80/443. ACME profiles:
+the platform's zero-human renewal loop is exactly what the industry's
+mandatory 47-day future requires; `shortlived` (~6-day) certificates are
+the interesting cutting edge — they remove revocation machinery entirely
+— but require flawless automation, so they are an opt-in tier, not the
+default.
+
+IMPLEMENT (spec): hosting-architecture.md edge section gains the iter-12
+verdict: PQ key agreement arrives with the Go toolchain (verify on Caddy
+upgrade; no config), PQ certificates explicitly out of scope, ACME
+profile policy = classic now / tlsserver when Caddy exposes it /
+shortlived opt-in. Lean model gains a PQ handshake CPU-delta budget
+(0.05 cores; measured delta ~0 because ML-KEM-768 is faster).
+
+LEAN PROOF: exit 0 with the new edge budget holding.
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 2 — iteration 11: workload identity (2026-10-14)
 
 RESEARCH: SPIFFE/SPIRE docs (spiffe.io: SVID overview + the

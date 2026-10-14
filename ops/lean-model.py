@@ -94,6 +94,12 @@ class LeanBudgets:
     # Service access tokens must stay short-lived (minutes), SPIFFE-style.
     max_service_token_minutes: int = 60
 
+    # --- edge / TLS (iter 12) ---------------------------------------------
+    # Post-quantum key agreement (X25519MLKEM768) is DEFAULT in Go 1.24+
+    # TLS (Caddy inherits it). Budget: any measured handshake-CPU delta
+    # from enabling PQ must stay under this core fraction at 10 tenants.
+    max_pq_handshake_cpu_delta: float = 0.05
+
     # --- unit economics ---------------------------------------------------
     # Standard tier price (GBP/month) and the hard floor: infrastructure
     # cost per tenant-month must stay below 25% of the standard price.
@@ -115,6 +121,7 @@ class ModelInputs:
     infra_cost_per_tenant_gbp: float = 9.0  # iter 10: power+disk+B2 share
     identity_daemons: int = 0               # iter 11: authbox is in-process; SPIRE rejected
     service_token_minutes: int = 15         # iter 11: short-lived service tokens (was 60)
+    pq_handshake_cpu_delta: float = 0.0     # iter 12: ML-KEM-768 ~2x faster than X25519 server-side; delta ~0
 
 
 def check(b: LeanBudgets, m: ModelInputs) -> list[str]:
@@ -195,6 +202,11 @@ def check(b: LeanBudgets, m: ModelInputs) -> list[str]:
         failures.append(
             f"service token lifetime {m.service_token_minutes}min > budget "
             f"{b.max_service_token_minutes}min"
+        )
+    if m.pq_handshake_cpu_delta > b.max_pq_handshake_cpu_delta:
+        failures.append(
+            f"PQ handshake CPU delta {m.pq_handshake_cpu_delta:.2f} cores > "
+            f"budget {b.max_pq_handshake_cpu_delta:.2f}"
         )
     data_gib = DATA_TIB * 1024
     if m.tenants * b.tenant_quota_gib + b.backups_reserve_gib > data_gib:

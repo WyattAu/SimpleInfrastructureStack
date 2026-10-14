@@ -46,7 +46,28 @@ internal job; the customer-facing edge is deliberately separate. `vane`
 (the in-house Go gateway) is the intended long-term replacement — its
 Caddyfile routes translate 1:1.
 
-**Edge research (loop iter 2):** Pingora (Cloudflare's Rust proxy
+**Edge TLS research (loop iter 12):** the cutting edge here is free, not
+bought. (1) Post-quantum key agreement: X25519MLKEM768 (the hybrid
+Cloudflare/Chrome standard; harvest-now-decrypt-later is the actual
+threat) is enabled BY DEFAULT in Go 1.24+ crypto/tls - Caddy inherits it
+with zero config, and ML-KEM-768 is generally FASTER than X25519
+server-side (~45k ops/s vs ~19k; Cloudflare 2024 data). Post-quantum
+CERTIFICATES are a different migration (WebPKI/HSM-bound, not before
+~2026) and are the CA's problem, not the edge's - no action. Recorded
+risk: the larger ClientHello breaks a thin tail of buggy middleboxes
+(tldr.fail), but our path is direct 80/443 with no middleboxes. (2) ACME
+profiles: Let's Encrypt now offers `classic` (90d default), `tlsserver`
+(45d, leaner cert, CN/SKI/KU stripped) and `shortlived` (~6.7d, no
+revocation machinery needed) via the ACME-profiles draft; CA/Baseline
+Requirements cap certificate lifetimes at 47 days from March 2029, so
+fully-automated renewal stops being optional industry-wide. Caddy already
+renews with zero human involvement, which is exactly the posture the
+short-lifetime world requires. Policy: stay on `classic` until Caddy
+exposes profile selection on docker01, then move new routes to
+`tlsserver`; `shortlived` is the opt-in tier for tenants who want
+revocation-by-expiry.
+
+ Pingora (Cloudflare's Rust proxy
 framework) was evaluated and rejected for this platform's size: it is a
 framework, not a proxy — no ACME wiring, no config surface, pre-1.0
 without API stability — so adopting it means writing and maintaining a
