@@ -92,6 +92,46 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 2 — iteration 16: PSI supervision + sched_ext (2026-10-14)
+
+RESEARCH: kernel PSI docs (some/full stall ratios, avg10/60/300,
+poll()-able threshold triggers, per-cgroup cpu/memory/io.pressure);
+systemd PRESSURE design doc (v254+: MemoryPressureWatch= sets
+$MEMORY_PRESSURE_WATCH per service, cgroup PSI file delegated to the
+unit, sd_event_add_memory_pressure + trim callbacks; GLib 2.90 native
+support); kernel sched_ext docs (BPF scheduler class, mainline 6.12,
+scx_flatcg = hierarchical cgroup weights, bypass mode, ABI
+INSTABILITY explicitly documented).
+
+ANALYZE — other engines: Meta/Borg-class operators built dynamic
+management on PSI (the signal we already alert on); sched_ext is the
+scheduler cutting edge and scx_flatcg even mirrors iter 7's weight
+model — but it is rejected: unstable kfuncs by explicit documentation,
+kernel 6.12+ (spec base is Ubuntu 24.04), and the fair class already
+enforces cpu.weight; it solves latency-pacing problems a 12-vCPU server
+does not have. The fitting cut: the systemd PSI supervision protocol
+cuts both ways — enabling MemoryPressureWatch on our units is free but
+worthless until an app acts on it, so pressure-reactive trimming goes
+to the estate-crate backlog (shutdown-kit/worker-kit), not the host.
+Also adopted: a LOCAL PSI guard in the tenant watchdog (avg60
+thresholds: memory full 10%, io full 40%, cpu some 80% — above the
+nightly window's yield-adjusted footprint), so saturation pages even
+when the TrueNAS scrape path is dead. systemd-oomd/ManagedOOM rejected
+(docker hard limits + OOM killer bind the blast radius; not another
+daemon). BUG CAUGHT in the process: watchdog.sh emitted
+hosting.watchdog.degraded TWICE with two different escaping paths
+(merge artifact) — fixed to single emit.
+
+IMPLEMENT (spec + ansible): hosting-architecture.md gains the iter-16
+research paragraph under isolation tiers; watchdog.sh.j2 gains PSI
+check #4 + healthy-line PSI telemetry + single degraded emit. Lean
+model backup-window comment cites the local guard.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: bash -n clean on the rendered template; psi_avg60 parsing
+exercised against the live kernel (/proc/pressure).
+
 ### Hosting research loop round 2 — iteration 15: Landlock control-plane sandboxing (2026-10-14)
 
 RESEARCH: kernel.org Landlock docs (unprivileged stackable LSM;

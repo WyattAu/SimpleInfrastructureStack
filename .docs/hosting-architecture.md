@@ -231,6 +231,26 @@ Hosting-api impact: it shells out to `docker compose`; tier 1 swaps that
 for `DOCKER_HOST=unix:///run/user/<uid>/docker.sock` per tenant — the
 API surface does not change.
 
+**Resource-governance research (loop iter 16):** the cutting edge in CPU
+scheduling is sched_ext (BPF-defined scheduler classes, mainline 6.12;
+scx_flatcg implements hierarchical cgroup weight scheduling) — rejected:
+documented ABI instability ("subject to change without warning between
+kernel versions"), needs 6.12+ (past the spec's Ubuntu 24.04 base), and
+the fair class already honors the cpu.weight shares iter 7 deployed; a
+BPF scheduler solves desktop/gaming latency problems a 12-vCPU server
+does not have. Revisit only if measured unfairness appears that PSI
+cannot explain. The cutting edge that fits is the PSI supervision
+protocol: systemd (254+) exposes per-service memory.pressure with
+$MEMORY_PRESSURE_WATCH; kernel PSI itself is already the platform's
+saturation guard (iter 7's node_pressure alert, now joined by a LOCAL
+PSI check in the tenant watchdog — coarse memory-full/io-full/cpu-some
+avg60 thresholds that fire even if the TrueNAS scrape path is dead).
+Pressure-reactive cache trimming enters the estate-crate backlog
+(shutdown-kit/worker-kit reading $MEMORY_PRESSURE_WATCH) rather than the
+host: no unit change without an app that acts on the signal.
+systemd-oomd/ManagedOOM rejected: docker hard limits + OOM killer
+already bound the blast radius; another daemon is not lean.
+
 ### Backups and recovery
 
 - Per tenant: `ops/tenant-backup.sh` — restic snapshot tagged

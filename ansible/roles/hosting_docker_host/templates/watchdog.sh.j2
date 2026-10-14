@@ -55,18 +55,30 @@ fi
 AGE=$((NOW - $(cat "$OFFSITE_LOG" 2>/dev/null || echo 0)))
 [ "$AGE" -gt 90000 ] && failures="$failures\n- OFFSITE BACKUP STALE: $((AGE / 3600))h since last success"
 
+# 4. Local resource pressure (kernel PSI — research loop iter 16). The
+#    TrueNAS node_pressure alerts stay the tuned watch; this is the
+#    coarse local guard that still fires if the scrape path is dead.
+#    Thresholds sit above the nightly backup window's normal footprint
+#    (the sweep yields at CPUWeight/IOWeight=20).
+psi_avg60() { # psi_avg60 <cpu|memory|io> <some|full>
+    grep -m1 "^$2" "/proc/pressure/$1" 2>/dev/null \
+        | grep -o 'avg60=[0-9.]*' | cut -d= -f2 | cut -d. -f1
+}
+MEM_FULL=$(psi_avg60 memory full); IO_FULL=$(psi_avg60 io full); CPU_SOME=$(psi_avg60 cpu some)
+[ "${MEM_FULL:-0}" -ge 10 ] && failures="$failures\n- MEMORY PRESSURE: full=${MEM_FULL}% avg60 (thrashing)"
+[ "${IO_FULL:-0}" -ge 40 ] && failures="$failures\n- IO PRESSURE: full=${IO_FULL}% avg60"
+[ "${CPU_SOME:-0}" -ge 80 ] && failures="$failures\n- CPU PRESSURE: some=${CPU_SOME}% avg60 (sustained oversubscription)"
+
 if [ -n "$failures" ]; then
     curl -s -H "Title: HOSTING WATCHDOG: degraded" -H "Priority: high" \
         -d "$(echo -e "$failures")" "$NTFY" > /dev/null
-    FAILURES_JSON=$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$(echo -e "$failures")" 2>/dev/null || echo '{}')
-    emit_event "hosting.watchdog.degraded" "{\"failures\": $FAILURES_JSON, \"at\": \"$(date -Is)\"}"
     FAILURES_JSON=$(printf '%s' "$failures" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null || echo '"{}"')
     emit_event "hosting.watchdog.degraded" "{\"failures\": $FAILURES_JSON, \"at\": \"$(date -Is)\"}"
     echo "ALERT SENT:$failures"
     exit 1
 fi
 
-echo "watchdog OK (bad=$BAD offsite_age=${AGE}s)"
+echo "watchdog OK (bad=$BAD offsite_age=${AGE}s psi_mem_full=${MEM_FULL:-0}% io_full=${IO_FULL:-0}% cpu_some=${CPU_SOME:-0}%)"
 
 # Dual-emit: healthy heartbeat to eventbusd (research loop wave 2).
 emit_event "hosting.watchdog.healthy" "{\"at\": \"$(date -Is)\"}"

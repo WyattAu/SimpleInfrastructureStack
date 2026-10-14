@@ -158,7 +158,9 @@ def check(b: LeanBudgets, m: ModelInputs) -> list[str]:
     # Backup-window check (iter 7): the nightly window may oversubscribe
     # silicon ONLY if the backup yields (CPUWeight/IOWeight low, enforced
     # in the sweep unit) and a PSI alert guards sustained pressure. Both
-    # are implemented; flip this False if either is ever removed.
+    # are implemented; iter 16 added the LOCAL watchdog PSI guard
+    # (memory-full/io-full/cpu-some avg60) beside the TrueNAS
+    # node_pressure alert. Flip this False if either is ever removed.
     backup_yields = True
     if (
         m.tenants * m.tenant_vcpu + platform_cpu + backup_cpu > VCPUS
