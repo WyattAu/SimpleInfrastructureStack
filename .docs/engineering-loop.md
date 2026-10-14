@@ -92,6 +92,53 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 2 — synthesis (iterations 11-20, 2026-10-14)
+
+Ten research->analyze->implement->verify iterations over the hosting
+spec, papers/docs first each time. Score: **5 spec flaws or gaps found
+and fixed, 9 cutting-edge options rejected with recorded reasons,
+3 adopted (2 free-by-default, 1 crate backlog), 0 budgets broken; the
+lean proof gained 3 new budgets and still exits 0.**
+
+Adopted:
+- SPIFFE properties without SPIRE (iter 11): 15-min service tokens,
+  zero identity daemons, placement-as-attestation.
+- PQ key agreement (iter 12): arrives free with Go>=1.24 TLS (Caddy
+  inherits X25519MLKEM768); ACME profile policy recorded for the 47-day
+  certificate future.
+- Prometheus 3.x upgrade (iter 13) + NHCB ingestion (iter 17): engine
+  efficiency via upgrade, not migration; native histograms as storage
+  policy.
+- Landlock fs-type deny lists on estate host units (iter 15): kernel
+  LSM, one config line, kill-switched.
+- Local PSI guard in the watchdog (iter 16) + kernel-drift check
+  (iter 19): two silent-failure classes closed (unseen saturation,
+  unactivated kernel patches).
+- Standard Webhooks for outbound estate senders (iter 20; webhookkit
+  backlog).
+
+The round's headline catches were LATENT, not visible: the tenant fence
+was IPv4-only (iter 18 — Docker v6 enablement would have silently
+bypassed it), the watchdog double-emitted degraded events (iter 16),
+and unattended-upgrades never forced kernel activation (iter 19). All
+fixed with kernel-native or one-line enforcement.
+
+Rejects (each "newer/fancier solving a bigger platform's problem", now
+with fresh evidence): SPIRE (iter 11), PQ certificates (12, not ours to
+ship), Chimp/Elf TSDB formats (13), CDC chunker swaps incl. VectorCDC
+(14, third rejection with 2025-26 benchmark + attack evidence),
+sched_ext (16, ABI instability), systemd-oomd (16), flowtable/eBPF
+fastpaths (18, bypasses the fence), sysupdate A/B + livepatch (19,
+wrong image model / subscription), GitOps + Kamal (20, wrong
+convergence target).
+
+Verification state: lean model exit 0 (identity, PQ-delta, TSDB,
+capacity, isolation, metering, backup SLA, storage, unit-economics
+budgets); ansible --syntax-check clean; watchdog template bash -n
+clean (PSI parsing exercised against the live kernel); fence validated
+with nft -c in a user netns. SIS changes are LOCAL ONLY (auto-deploy
+repo — review, then push deliberately).
+
 ### Hosting research loop round 2 — iteration 20: deploy pipeline + Standard Webhooks (2026-10-14)
 
 RESEARCH: Standard Webhooks spec v1.0 (full text: signature over
@@ -1899,6 +1946,8 @@ priced through `billing-kit`:
 | 7 | Firecracker per-tenant microVM spike (staging VM) | isolation growth path, validated before it is needed |
 | 8 | vane evaluation as edge replacement on staging | own-stack moat; routes translate from Caddyfile 1:1 |
 | 9 | estate republish wave (telemetry-init, testkit, then dependents) | repay git-skew debt; unblocks crates.io-only consumers |
+| 10 | webhookkit: Standard Webhooks v1 sender support (iter 20) | outbound estate webhooks get signatures + idempotency keys |
+| 11 | shutdown-kit/worker-kit: PSI pressure-reactive trim (iter 16) | read $MEMORY_PRESSURE_WATCH, release caches on pressure events |
 
 ## Research queue
 
