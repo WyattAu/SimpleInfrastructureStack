@@ -92,6 +92,37 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 2 — iteration 19: host patching (2026-10-14)
+
+RESEARCH: systemd-sysupdate man page (atomic A/B/A/B/C... updates of
+partitions/files/directories; separate download + reboot timers;
+cryptographic verification; PARTITIONS must pre-exist via systemd-repart;
+still flagged experimental); kernel livepatch docs (function-level
+patching with a real consistency model - reliable stacktrace, per-task
+convergence, force caveats; distributor-supplied cumulative patch
+modules); systemd v254 soft-reboot (userspace-only reboot, fd passing).
+
+ANALYZE — other engines: the container-host cutting edge is the atomic
+OS class (CoreOS/Flatcar/MicroOS - sysupdate is the DIY tool for that
+world). Rejected: our VM is a cloud-image ext4 boot, not A/B; migrating
+the image scheme for one host buys rollback speed we do not need because
+the DR drill IS our rollback (tenants stop -> backup -> reboot ->
+restore, rehearsed quarterly). Livepatch rejected: Ubuntu Pro
+subscription + only postpones the reboot. The real gap was silent
+kernel drift: unattended-upgrades installs kernels, nothing forces the
+activation reboot, so "we applied patches" could mean "we are running
+code from months ago" — invisible to every existing check.
+
+IMPLEMENT (spec + ansible): security-model item 7 gains the iter-19
+verdicts; watchdog.sh.j2 gains check 5 (kernel drift: newest installed
+/boot/vmlinuz-* vs running, >7-day grace via a stamp in
+/etc/sis-hosting, then page with the reboot-window procedure).
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: bash -n clean on the rendered template; ansible --syntax-check
+clean; lean model exit 0.
+
 ### Hosting research loop round 2 — iteration 18: flowtable reject + IPv6 fence gap closed (2026-10-14)
 
 RESEARCH: nftables wiki flowtable page (conntrack-based fastpath; flows

@@ -203,6 +203,21 @@ mirroring the v4 rule.
    `hosting_secrets_tpm_creds` (default false until the DR rehearsal
    covers it); when enabled, plaintext never touches the host disk.
 7. **Unattended-upgrades** for the security pocket-list.
+   **Patching research (loop iter 19):** the cutting edge for container
+   hosts is atomic A/B OS updating (systemd-sysupdate; the Fedora
+   CoreOS/Flatcar/MicroOS class) and kernel livepatching (Ubuntu Pro) —
+   both rejected for now: sysupdate needs a partition-based A/B image
+   layout (the cloud-image VM is not A/B; rebuilding the image scheme
+   for one VM is not lean), livepatch needs a distributor subscription
+   and only defers the reboot, not removes it. The honest gap was
+   silent kernel drift: unattended-upgrades INSTALLS kernels but only a
+   reboot activates them, so "patched" could quietly mean "running
+   code from 2024". The tenant watchdog now pages when the running
+   kernel has been older than the newest installed one for >7 days
+   (reboot window = tenants stop, backup, reboot, restore — rehearsed
+   as the DR drill). systemd soft-reboot (v254+, userspace-only reset)
+   noted as a future fast-path for userspace-only updates; revisit
+   sysupdate when the estate ships its own image-based OS.
 8. **Workload identity** (research loop iter 11): SPIFFE/SPIRE evaluated and
    rejected for the platform - SPIRE's distinguishing feature over plain
    OIDC identity providers is workload ATTESTATION (no static bootstrap

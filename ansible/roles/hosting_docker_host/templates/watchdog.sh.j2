@@ -69,6 +69,21 @@ MEM_FULL=$(psi_avg60 memory full); IO_FULL=$(psi_avg60 io full); CPU_SOME=$(psi_
 [ "${IO_FULL:-0}" -ge 40 ] && failures="$failures\n- IO PRESSURE: full=${IO_FULL}% avg60"
 [ "${CPU_SOME:-0}" -ge 80 ] && failures="$failures\n- CPU PRESSURE: some=${CPU_SOME}% avg60 (sustained oversubscription)"
 
+# 5. Kernel drift (research loop iter 19): unattended-upgrades installs
+#    kernels; only a reboot activates them. Page when the running kernel
+#    has been older than the newest installed one for over 7 days, so
+#    "we applied patches" can never silently mean "we are not patched".
+RUNNING="vmlinuz-$(uname -r)"
+NEWEST=$(ls -1 /boot/vmlinuz-* 2>/dev/null | sort -V | tail -1)
+DRIFT_STAMP="{{ hosting_env_dir }}/.kernel-drift-since"
+if [ -n "$NEWEST" ] && [ "$RUNNING" != "$NEWEST" ]; then
+    [ -f "$DRIFT_STAMP" ] || date +%s > "$DRIFT_STAMP"
+    DRIFT=$(( NOW - $(cat "$DRIFT_STAMP") ))
+    [ "$DRIFT" -gt 604800 ] && failures="$failures\n- KERNEL DRIFT: running $(uname -r), installed $NEWEST for $((DRIFT / 86400))d — schedule a reboot window (tenants resume from backups)"
+else
+    rm -f "$DRIFT_STAMP"
+fi
+
 if [ -n "$failures" ]; then
     curl -s -H "Title: HOSTING WATCHDOG: degraded" -H "Priority: high" \
         -d "$(echo -e "$failures")" "$NTFY" > /dev/null
