@@ -92,6 +92,39 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 2 — iteration 15: Landlock control-plane sandboxing (2026-10-14)
+
+RESEARCH: kernel.org Landlock docs (unprivileged stackable LSM;
+filesystem-hierarchy rules, TCP bind/connect port rules since ABI 4, UDP
+since ABI 10, abstract-socket/signal scoping since ABI 6, audit logging
+flags; one-way - restrictions only stack); systemd release notes
+(RestrictFileSystems= exposes Landlock to units since v253; v254 also
+shipped MemoryPressureWatch PSI hooks and soft-reboot - noted for iters
+16/19); current unit templates reviewed (hosting-api/dashboard already
+carry NoNewPrivileges + ProtectSystem=strict).
+
+ANALYZE — other engines: gVisor/Kata/Firecracker (tier 2/3) are VM-class
+boundaries for TENANTS and priced as such; Podman/docker seccomp profiles
+guard containers, not the host units around them. The unguarded surface
+was the control plane itself: hosting-api runs as root on the tenant host
+(known tier-0 exposure), with path-based protection but no kernel
+fs-type boundary. Landlock is the cutting edge that fits: enforced by the
+LSM, unprivileged, zero daemons, and systemd turns it into one config
+line. Adopted as a DENY list (nfs/cifs/fuse/sshfs - classes the units
+never touch) so the classic allow-list procfs/sysfs footguns don't apply.
+Kill switch: hosting_unit_landlock_hardening (default true; spec pins
+Ubuntu 24.04 = systemd 255, Landlock default-enabled).
+
+IMPLEMENT (spec + ansible): hosting-architecture.md security model item
+9; all four estate host units gain the conditional
+RestrictFileSystems=~nfs cifs fuse sshfs; role default added with
+rationale. Lean model control_cpu annotated (zero-cost control).
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: python3 ops/lean-model.py exit 0; ansible-playbook --syntax-check
+clean (hosting_bootstrap.yml).
+
 ### Hosting research loop round 2 — iteration 14: backup chunking frontier (2026-10-14)
 
 RESEARCH: arXiv CDC query, newest first. (1) "Benchmarking

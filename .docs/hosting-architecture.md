@@ -185,6 +185,17 @@ vmbr1 (tenant bridge, 10.10.10.0/24, host = 10.10.10.1)
    static API keys), Keycloak keeps user-facing identity unchanged.
    Revisit triggers: a second hosting host (cross-node identity) or
    tenants needing to call estate services directly.
+9. **Control-plane sandboxing** (research loop iter 15): Landlock (the
+   kernel's unprivileged stackable LSM; ABI now covers filesystem
+   hierarchies, TCP/UDP port rules, IPC scoping and audit logging) is
+   exposed to unit files as `RestrictFileSystems=` since systemd 253.
+   The estate's host units (hosting-api, dashboard, watchdog, backup
+   sweep) carry a kernel-native fs-type deny list (nfs/cifs/fuse/sshfs)
+   behind `hosting_unit_landlock_hardening` - an escape that reaches a
+   networked or FUSE filesystem hits the LSM, not trust. Zero daemons,
+   one config line per unit; gVisor/Kata stay in the isolation tiers as
+   the VM-class options for TENANTS (tier 2/3) - Landlock is the
+   control-plane's own cheap layer, not a tenant boundary.
 
 ### Isolation tiers (research loop iteration 1)
 

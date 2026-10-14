@@ -35,7 +35,7 @@ DATA_TIB = 1.5
 # enough that the vast majority of purchased capacity sells.
 PLATFORM_OVERHEAD = {
     "edge_cpu": 0.5,        # Caddy, one core-fraction (iter 2: reload-driven onboarding; Pingora/River rejected at this scale)
-    "control_cpu": 0.5,     # hosting-api + dashboard
+    "control_cpu": 0.5,     # hosting-api + dashboard; iter 15: units gain Landlock fs-type deny lists (zero cost, kernel LSM)
     "metrics_cpu": 0.5,     # prometheus exporter pipeline
     "backup_cpu": 1.0,      # restic window (peak)
     "edge_ram_gib": 0.5,

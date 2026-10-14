@@ -16,3 +16,7 @@ Nice=5
 CPUWeight=20
 IOWeight=20
 MemoryHigh=1G
+{% if hosting_unit_landlock_hardening | bool %}
+# Research loop iter 15: kernel Landlock fs-type deny list (systemd 253+).
+RestrictFileSystems=~nfs cifs fuse sshfs
+{% endif %}

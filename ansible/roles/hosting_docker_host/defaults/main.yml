@@ -32,6 +32,15 @@ hosting_docker_log_max_files: 3
 # when they declare it.
 hosting_docker_userns_remap: true
 
+# Control-plane unit sandboxing (research loop iter 15): Landlock-based
+# fs-type deny lists on the estate's host units (RestrictFileSystems=,
+# systemd 253+; kernel Landlock is default-enabled on Ubuntu 24.04+).
+# Denies remote/FUSE filesystem classes the units never touch — an escape
+# that mounts or reaches an NFS/CIFS/FUSE mount finds it blocked by the
+# kernel LSM, not by trust. Flip off if a unit ever legitimately needs a
+# networked filesystem.
+hosting_unit_landlock_hardening: true
+
 # The internal tenant bridge is 10.10.10.0/24 — keep Docker's own pools
 # well clear of it and of the data_net ranges used on TrueNAS.
 hosting_docker_address_pools:

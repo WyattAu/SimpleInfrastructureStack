@@ -5,3 +5,7 @@ After=docker.service
 [Service]
 Type=oneshot
 ExecStart={{ hosting_bin_dir }}/watchdog.sh
+{% if hosting_unit_landlock_hardening | bool %}
+# Research loop iter 15: kernel Landlock fs-type deny list (systemd 253+).
+RestrictFileSystems=~nfs cifs fuse sshfs
+{% endif %}
