@@ -46,6 +46,22 @@ internal job; the customer-facing edge is deliberately separate. `vane`
 (the in-house Go gateway) is the intended long-term replacement — its
 Caddyfile routes translate 1:1.
 
+**Edge WAF research (loop iter 24):** the L7 inspection cutting edge is
+OWASP Coraza (Go WAF library, ModSecurity Seclang-compatible, full CRS
+support; the Caddy connector means a custom xcaddy-built edge binary) —
+rejected as the DEFAULT: a custom edge build to answer unmeasured
+attacks repeats the iter-2 Pingora mistake, CRS tuning is a per-tenant
+false-positive treadmill, and body inspection costs edge CPU from the
+0.5-core budget. The threat model says default-off: tenants are vetted
+(tier 0), run upstream-maintained apps, and scanner/volumetric noise is
+already handled by the CrowdSec estate (community blocklists via the
+cf-workers bouncer). Adopted posture: CrowdSec IP reputation is the
+default edge defense; Coraza+CRS is the OPT-IN tier (priced like the
+gVisor tier) with triggers = a tenant demands WAF, a tenant app takes a
+publicly-exploitable-class CVE, or `vane` (the in-house gateway, backlog
+#8) reaches buildable state — Coraza-as-library is the natural embed for
+vane, where a custom binary is already the plan.
+
 **Edge TLS research (loop iter 12):** the cutting edge here is free, not
 bought. (1) Post-quantum key agreement: X25519MLKEM768 (the hybrid
 Cloudflare/Chrome standard; harvest-now-decrypt-later is the actual

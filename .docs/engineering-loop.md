@@ -92,6 +92,38 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 3 — iteration 24: edge WAF / bot defense (2026-10-16)
+
+RESEARCH: OWASP Coraza docs (Go WAF library, ModSecurity Seclang-
+compatible, 100% CRS-compatible, OWASP production project; deployment
+shapes = library/sidecar/proxy; the Caddy connector is a custom
+xcaddy-built binary; transaction model = phase 1 headers + phase 2
+body with disruptive deny). CrowdSec bouncer docs URLs 404'd — verdict
+grounded on the in-repo estate instead: security-crowdsec +
+security-cf-workers-bouncer are deployed and health-checked (community
+blocklist IP reputation already at the edge).
+
+ANALYZE — other engines: WAF-at-edge is table stakes for managed
+platforms (Cloudflare WAF etc.) because they run UNTRUSTED tenants'
+custom code. Our threat model differs: tier-0 vetted tenants running
+upstream-maintained apps, auth-gated where applicable. The measured
+attack surface (scanner noise, credential stuffing, volumetric) is IP-
+reputation-shaped — CrowdSec's lane — while CRS's value (payload
+injection on custom code) targets code we don't host yet. Coraza-as-
+DEFAULT would repeat iter-2's Pingora lesson (custom edge build for an
+unmeasured problem) AND tax the 0.5-core edge budget.
+
+IMPLEMENT (spec): edge section gains the iter-24 verdict — CrowdSec IP
+reputation stays the default edge defense; Coraza+CRS recorded as the
+OPT-IN tier (priced like gVisor tier 2) with concrete triggers
+(tenant demand, exploited-class CVE in a tenant app, or vane
+buildable — Coraza-as-library is vane's natural WAF embed).
+
+LEAN PROOF: unchanged, exit 0 (opt-in tiers sit outside the shared
+capacity budget, same rule as gVisor).
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 3 — iteration 23: watchdog dead-man switch (2026-10-16)
 
 RESEARCH: healthchecks.io docs (the dead-man's-switch monitoring model:
