@@ -92,6 +92,42 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 3 — iteration 23: watchdog dead-man switch (2026-10-16)
+
+RESEARCH: healthchecks.io docs (the dead-man's-switch monitoring model:
+listen for pings, keep silent while they arrive, alert when they STOP -
+Up/Late/Down states with grace time; explicitly NOT the same as
+uptime probing); in-repo topology review (docker01 watchdog heartbeats
+hosting.watchdog.healthy/.degraded to eventbusd every 15 min — the
+heartbeat channel already exists; the meta-watchdog runs on CachyOS,
+different host entirely, and already talks to eventbusd).
+
+ANALYZE — other engines: every serious cron/backup monitor is a dead
+man's switch (healthchecks.io, Cronitor, Grafana Cloud's silent-alert
+detection) precisely because absence-of-signal is unmonitorable from
+inside the failing system. The platform's gap: if docker01 died, the
+watchdog died with it, and NOTHING would page — the watchdog itself
+was unwatched. No new service needed: the beat already flows to
+eventbusd and the meta-watchdog already reads eventbusd. Found while
+here: sis-watchdog.sh carries a HARDCODED eventbus bearer token in the
+repo — flagged as debt (backlog #13: move to SOPS like the other
+secrets).
+
+IMPLEMENT (spec + ops): hosting-architecture.md watchdog bullet gains
+the dead-man note; sis-watchdog.sh gains the heartbeat check (age over
+hosting.watchdog.* events; page on >2700s staleness = two missed beats
++ slack, on never-emitted, and on unreadable query — fail-visible like
+SCRAPE_DOWN=unknown; healthy path now reports heartbeat_age).
+
+LEAN PROOF: unchanged, exit 0 (zero new services — the inverse check
+rides the existing eventbusd + meta-watchdog).
+
+VERIFY: bash -n clean; python parser exercised against both ISO-8601
+Z and +00:00 shapes (age computed from max timestamp); lean model
+exit 0. DEPLOY-TIME verification owed: confirm eventbusd's exact
+events-query path (?topic= wildcard) on first run — an unreadable path
+fails visible, not silent.
+
 ### Hosting research loop round 3 — iteration 22: config drift + reconciliation (2026-10-16)
 
 RESEARCH: OpenGitOps principles v1.0 (declarative / versioned+immutable
@@ -2015,6 +2051,7 @@ priced through `billing-kit`:
 | 10 | webhookkit: Standard Webhooks v1 sender support (iter 20) | outbound estate webhooks get signatures + idempotency keys |
 | 11 | shutdown-kit/worker-kit: PSI pressure-reactive trim (iter 16) | read $MEMORY_PRESSURE_WATCH, release caches on pressure events |
 | 12 | EIR: cosign sign in the build matrix (iter 21) | tenant-provision fail-closed gate is inert until builds are signed |
+| 13 | sis-watchdog.sh: hardcoded eventbus token -> SOPS (iter 23 finding) | repo-committed bearer token; same SOPS contract as every other secret |
 
 ## Research queue
 

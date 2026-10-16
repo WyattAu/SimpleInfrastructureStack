@@ -46,6 +46,49 @@ eval "$REMOTE_REPORT"
 [ "${DRIFT_DIRTY:-0}" -gt 0 ] && failures="$failures\n- CHECKOUT DRIFT: ${DRIFT_DIRTY} uncommitted file(s) on the TrueNAS checkout — deploy will WIPE them (upstream first)"
 [ "${DRIFT_AHEAD:-0}" -gt 0 ] && failures="$failures\n- CHECKOUT DRIFT: ${DRIFT_AHEAD} local commit(s) ahead of origin — deploy will reset them away (push or rebase)"
 
+# --- dead-man switch (research loop iter 23) ---------------------------------
+# docker01's watchdog heartbeats hosting.watchdog.* to eventbusd every
+# 15 minutes. A dead host or dead timer is SILENT by construction, so the
+# ABSENCE of the beat is itself the alert (healthchecks.io model: Late,
+# then Down after grace). 2700s = two missed 15-min beats + slack. An
+# unreadable query fails visible, like SCRAPE_DOWN=unknown.
+HEARTBEAT_INFO=$(curl -s --max-time 8 -H "Authorization: Bearer $EVENTBUS_TOKEN" \
+  "$EVENTBUS/events?topic=hosting.watchdog" | python3 -c '
+import sys, json, datetime
+try:
+    events = json.load(sys.stdin)
+    if not isinstance(events, list):
+        raise ValueError("unexpected shape")
+    stamps = []
+    for e in events:
+        if isinstance(e, dict) and e.get("timestamp"):
+            try:
+                stamps.append(datetime.datetime.fromisoformat(str(e["timestamp"]).replace("Z", "+00:00")))
+            except ValueError:
+                pass
+    if not stamps:
+        print("none")
+    else:
+        now = datetime.datetime.now(datetime.timezone.utc)
+        print(f"age={int((now - max(stamps)).total_seconds())}")
+except Exception:
+    print("unreadable")
+' 2>/dev/null)
+case "$HEARTBEAT_INFO" in
+  age=*) HB_AGE=${HEARTBEAT_INFO#age=} ;;
+  *)     HB_AGE="$HEARTBEAT_INFO" ;;
+esac
+[ "$HB_AGE" = "unreadable" ] && failures="$failures\n- WATCHDOG HEARTBEAT UNREADABLE: eventbusd heartbeat query failed (wrong path? token?)"
+[ "$HB_AGE" = "none" ] && failures="$failures\n- WATCHDOG HEARTBEAT MISSING: docker01 watchdog has never emitted (hosting_eventbus_* wiring on docker01?)"
+case "$HB_AGE" in
+  ""|unreadable|none) ;;
+  *)
+    if [ "$HB_AGE" -gt 2700 ] 2>/dev/null; then
+      failures="$failures\n- DOCKER01 WATCHDOG SILENT: last heartbeat $((HB_AGE / 60))min ago — host down or watchdog timer dead"
+    fi
+    ;;
+esac
+
 emit_event() {
   # emit_event <topic> <payload-json>; failure is never fatal
   curl -s --max-time 5 -X POST "$EVENTBUS/publish/$1" \
@@ -61,6 +104,6 @@ if [ -n "$failures" ]; then
   emit_event "sis.watchdog.degraded" "{\"failures\": $FAILURES_JSON, \"at\": \"$(date -Is)\"}"
   echo "ALERT SENT:$failures"
 else
-  emit_event "sis.watchdog.healthy" "{\"at\": \"$(date -Is)\", \"offsite_age\": ${OFFSITE_AGE:-0}, \"fleet_bad\": ${FLEET_BAD:-0}, \"scrape_down\": ${SCRAPE_DOWN:-0}}"
-  echo "ALL WATCHDOG CHECKS PASSED (offsite_age=${OFFSITE_AGE:-?}s fleet_bad=${FLEET_BAD:-0} scrape_down=${SCRAPE_DOWN:-0} headscale=${HEADSCALE:-ok})"
+  emit_event "sis.watchdog.healthy" "{\"at\": \"$(date -Is)\", \"offsite_age\": ${OFFSITE_AGE:-0}, \"fleet_bad\": ${FLEET_BAD:-0}, \"scrape_down\": ${SCRAPE_DOWN:-0}, \"heartbeat_age\": ${HB_AGE:-0}}"
+  echo "ALL WATCHDOG CHECKS PASSED (offsite_age=${OFFSITE_AGE:-?}s fleet_bad=${FLEET_BAD:-0} scrape_down=${SCRAPE_DOWN:-0} headscale=${HEADSCALE:-ok} heartbeat_age=${HB_AGE:-?})"
 fi

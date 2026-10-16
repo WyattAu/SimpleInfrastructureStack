@@ -358,6 +358,16 @@ producer signature, so the first signed image is verified from birth.
 - Nightly sweep (`sis-hosting-tenant-backup.timer`, 03:30) with ntfy alert
   on any tenant failure; watchdog (`sis-hosting-watchdog.timer`, 15 min)
   alerts on unhealthy containers, dead edge, or stale offsite (>25h).
+  **Dead-man research (loop iter 23):** a watchdog on the host it
+  watches cannot report the host's own death - silence is ambiguous
+  (healthy vs dead). The healthchecks.io model (expect a ping, page on
+  its ABSENCE after grace) closes this: docker01's watchdog heartbeats
+  `hosting.watchdog.*` to eventbusd every 15 minutes, and the CachyOS
+  meta-watchdog - which runs on different silicon entirely - pages if
+  the last beat is >2700s old (two missed beats + slack), if the
+  heartbeat has never existed, or if the eventbusd query itself is
+  unreadable. Arming requires `hosting_eventbus_url`/`token` wired into
+  the docker01 role (the heartbeat publisher).
 - **Node loss** = reinstall Proxmox per this runbook, `terraform apply`,
   `ansible-playbook hosting_bootstrap.yml`, `restic restore` per tenant.
   Rehearse this before the first paying customer (see checklist).
