@@ -1,0 +1,46 @@
+---
+# Sync the proxy dynamic routes from the git-tracked source to the
+# appdata path that traefik bind-mounts (research loop iter 22).
+#
+# This closes the durability gap from the 2026-10-11 post-deploy 404
+# incident: the live dynamic.yml was a stale hand-edited appdata COPY and
+# nothing in the deploy refreshed it. The repo copy under
+# stacks/proxy/config/dynamic.yml is canonical from here on.
+#
+# Traefik runs with providers.file.watch=true, so a changed file is
+# picked up live — no container restart needed. Non-critical: failure
+# here must NOT fail the deploy (rescue + warn, same contract as the
+# Homepage sync).
+
+- name: Sync proxy dynamic routes from git to appdata
+  block:
+    - name: Ensure proxy appdata directory exists
+      ansible.builtin.file:
+        path: "{{ infra_data_path }}/proxy"
+        state: directory
+        mode: "0755"
+    - name: Checksum repo copy vs appdata copy
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ infra_base_path }}/proxy/config/dynamic.yml"
+        - "{{ infra_data_path }}/proxy/dynamic.yml"
+      register: dyn_yml
+    - name: Copy canonical dynamic.yml into appdata when changed
+      ansible.builtin.copy:
+        src: "{{ infra_base_path }}/proxy/config/dynamic.yml"
+        dest: "{{ infra_data_path }}/proxy/dynamic.yml"
+        remote_src: true
+        mode: "0644"
+      when: not (dyn_yml.results[1].stat.exists | default(false)) or
+            (dyn_yml.results[0].stat.checksum | default('')) !=
+            (dyn_yml.results[1].stat.checksum | default(''))
+      register: dyn_sync
+    - name: Report dynamic route sync
+      ansible.builtin.debug:
+        msg: "proxy dynamic.yml synced from git (traefik file provider watches it)"
+      when: dyn_sync is defined and dyn_sync.changed | default(false)
+  rescue:
+    - name: Warn on proxy route sync failure
+      ansible.builtin.debug:
+        msg: "proxy dynamic.yml sync failed — skipping (non-critical)"

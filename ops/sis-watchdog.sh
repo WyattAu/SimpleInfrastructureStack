@@ -21,6 +21,16 @@ echo "FLEET_BAD=$BAD"
 curl -s --max-time 8 http://192.168.1.3:8080/health 2>/dev/null | grep -q pass && echo "HEADSCALE=ok" || echo "HEADSCALE=down"
 SD=$(curl -sG --max-time 8 "http://172.16.7.200:8428/api/v1/query" --data-urlencode 'query=count(up == 0)' | python3 -c 'import sys,json; r=json.load(sys.stdin)["data"]["result"]; print(r[0]["value"][1] if r else 0)' 2>/dev/null)
 echo "SCRAPE_DOWN=${SD:-unknown}"
+# Config-drift checks (research loop iter 22): deploy.sh does
+# `git reset --hard origin/main`, so uncommitted edits or local commits
+# on the TrueNAS checkout are wiped silently at the next push. The Oct-11
+# incident class. Any drift here must be upstreamed or deliberately
+# discarded — silence is NOT health for a force-synced checkout.
+REPO=/mnt/pool_HDD_x2/infra/stacks
+DIRTY=$(git -C "$REPO" status --porcelain 2>/dev/null | wc -l)
+AHEAD=$(git -C "$REPO" rev-list origin/main..HEAD --count 2>/dev/null || echo 0)
+echo "DRIFT_DIRTY=${DIRTY:-unknown}"
+echo "DRIFT_AHEAD=${AHEAD:-0}"
 REMOTE
 scp -q /tmp/sis-remote-check.sh truenas_admin@192.168.1.3:/tmp/sis-remote-check.sh >/dev/null 2>&1
 REMOTE_REPORT=$(ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new truenas_admin@192.168.1.3 'bash /tmp/sis-remote-check.sh' 2>/dev/null)
@@ -33,6 +43,8 @@ eval "$REMOTE_REPORT"
 [ "${HEADSCALE:-ok}" != "ok" ] && failures="$failures\n- HEADSCALE CONTROL PLANE DOWN"
 [ "${SCRAPE_DOWN:-unknown}" = "unknown" ] && failures="$failures\n- MONITORING BLIND: VictoriaMetrics query failed"
 [ "${SCRAPE_DOWN:-0}" -gt 2 ] && failures="$failures\n- SCRAPES FAILING: ${SCRAPE_DOWN} targets down"
+[ "${DRIFT_DIRTY:-0}" -gt 0 ] && failures="$failures\n- CHECKOUT DRIFT: ${DRIFT_DIRTY} uncommitted file(s) on the TrueNAS checkout — deploy will WIPE them (upstream first)"
+[ "${DRIFT_AHEAD:-0}" -gt 0 ] && failures="$failures\n- CHECKOUT DRIFT: ${DRIFT_AHEAD} local commit(s) ahead of origin — deploy will reset them away (push or rebase)"
 
 emit_event() {
   # emit_event <topic> <payload-json>; failure is never fatal

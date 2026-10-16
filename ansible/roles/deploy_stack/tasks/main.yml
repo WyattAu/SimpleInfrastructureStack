@@ -21,6 +21,10 @@
   ansible.builtin.include_tasks: sync_homepage.yml
   when: "'utility' in stacks"
 
+- name: Sync proxy dynamic routes from git to appdata (iter 22)
+  ansible.builtin.include_tasks: sync_proxy_dynamic.yml
+  when: "'proxy' in stacks"
+
 - name: Deploy stack
   ansible.builtin.shell:
     cmd: >

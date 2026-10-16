@@ -390,6 +390,24 @@ keep fast-fail retries (4x/30s) because eventbusd holds durability; the
 days-long backoff schedules apply to customer-facing senders when the
 estate grows them.
 
+### Config drift
+
+**Drift research (loop iter 22):** the OpenGitOps principles v1.0
+(declarative, versioned+immutable, pulled, CONTINUOUSLY RECONCILED)
+name the property the legacy deploy path lacked: reconciliation. Our
+deploy is a force-sync (`git reset --hard` + compose/ansible), which
+makes drift SILENT by construction — the Oct-11 incident was exactly
+this class (live hotfixes in the checkout that the next deploy would
+wipe; a hand-edited appdata dynamic.yml diverging from the tracked
+copy). K8s reconcilers solve this with agents diffing desired vs
+actual; the lean equivalent is two checks at the force-sync boundary:
+the meta-watchdog now reports uncommitted/ahead state on the TrueNAS
+checkout (any drift pages, because a force-sync WILL destroy it), and
+the deploy pipeline syncs `stacks/proxy/config/dynamic.yml` into
+appdata (traefik's watched file provider picks it up live) — the repo
+copy is canonical, hand-edits to the live file get overwritten with a
+diff on next deploy instead of silently diverging.
+
 ---
 
 ## Bare-metal runbook (order matters)

@@ -92,6 +92,38 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 3 — iteration 22: config drift + reconciliation (2026-10-16)
+
+RESEARCH: OpenGitOps principles v1.0 (declarative / versioned+immutable
+/ pulled / continuously reconciled); in-repo incident review (Oct-11
+post-deploy 404: stale hand-edited appdata dynamic.yml + checkout
+hotfixes that deploy.sh's git reset --hard would have wiped — both
+already logged as debt, neither fixed until now).
+
+ANALYZE — other engines: Flux/Argo reconcile by continuously diffing
+desired vs actual and re-applying; a force-sync deploy (git reset
+--hard) is reconciliation's evil twin: it APPLIES desired state but
+destroys any divergence silently. The lean fix is not an agent — it is
+making the two known drift surfaces loud at the force-sync boundary:
+(1) checkout divergence (uncommitted files, local-ahead commits) now
+reports from the meta-watchdog's existing TrueNAS remote bundle — any
+drift pages because the next push WILL destroy it; (2) the proxy
+dynamic.yml canonical-copy gap is CLOSED in the deploy pipeline
+(sync_proxy_dynamic.yml: stat checksums, copy on change, traefik
+file-provider watch picks it up live, rescue-warn contract like the
+Homepage sync).
+
+IMPLEMENT (spec + ansible + ops): hosting-architecture.md gains a
+"Config drift" section; deploy_stack role gains sync_proxy_dynamic.yml
+wired before stack deploy; sis-watchdog.sh remote bundle gains
+DRIFT_DIRTY/DRIFT_AHEAD with page-on-any-drift rules.
+
+LEAN PROOF: unchanged, exit 0 (both checks ride existing machinery:
+one SSH bundle, one ansible task).
+
+VERIFY: bash -n clean; ansible-playbook --syntax-check site.yml clean;
+lean model exit 0.
+
 ### Hosting research loop round 3 — iteration 21: image supply chain (2026-10-16)
 
 RESEARCH: sigstore/cosign verify docs (signature binds signer to image
