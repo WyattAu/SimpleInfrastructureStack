@@ -194,7 +194,28 @@ rule is inert while no v6 networks exist, and v6 enablement can never
 silently bypass it. Global-to-global tenant v6 egress stays open,
 mirroring the v4 rule.
 
+### DNS and certificate authorization
+
+**DNS/revocation research (loop iter 25):** the Web PKI has left OCSP
+behind - Let's Encrypt publishes revocation info as CRLs only (no OCSP
+responder), so Caddy's OCSP stapling degrades to a harmless no-op on
+our certs, and revocation strength now scales DOWN with certificate
+lifetime (the iter-12 `shortlived` profile is the real revocation
+story). The remaining DNS-side control is CAA (RFC 8659): policy -
+(1) apex CAA `0 issue "letsencrypt.org"` on the registered domain and
+on every customer domain at onboarding (cuts off every other public
+CA's validation process); (2) strengthen with `;accounturi=<our ACME
+account URL>` once the account exists, so a temporary domain hijack
+WITHOUT our ACME account key cannot issue at all; (3) `validationmethods`
+restriction considered and dropped - Caddy legitimately falls back
+between http-01 and tls-alpn-01, and pinning the method trades real
+renewal resilience for a marginal hardening. DNSSEC: optional at the
+registrar, not a platform dependency (a SERVFAIL-ing DNSSEC setup can
+BREAK ACME via CAA lookups - only enable it deliberately, then watch
+dnsviz).
+
 ### Security model, in order
+
 
 1. **nftables input baseline** on docker01: drop by default; SSH only from
    the mgmt LAN; 80/443 public; metrics scrapeable only from vmbr1.
@@ -447,6 +468,11 @@ diff on next deploy instead of silently diverging.
 - [ ] Companies House, ICO registration, insurance done (see service catalogue)
 - [ ] `secrets/hosting.env.encrypted` created and its `RESTIC_PASSWORD`
       recorded in the password manager **and** on paper in the safe
+- [ ] CAA record on the registered domain: `0 issue "letsencrypt.org"`
+      (iter 25; add `;accounturi=<ACME account URL>` once the account
+      exists — pin issuance to our account so a domain hijack alone
+      cannot mint certificates). Every customer domain gets the same at
+      onboarding.
 
 ### 1. BIOS/firmware
 

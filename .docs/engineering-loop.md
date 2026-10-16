@@ -92,6 +92,36 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 3 — iteration 25: CAA + post-OCSP revocation (2026-10-16)
+
+RESEARCH: Let's Encrypt CAA docs (RFC 8659; issue/issuewild tags;
+closest-record-wins subdomain override; the accounturi parameter pins
+issuance to one ACME account — a domain hijack without our account key
+cannot issue; validationmethods parameter; SERVFAIL/NOTIMP failure
+modes incl. the DNSSEC-breaks-CAA-lookup class); LE revoking docs
+(updated July 2025: revocation info is CRLs only — the OCSP
+end-of-life is done; browsers check CRLs where they check at all).
+
+ANALYZE — other engines: post-OCSP, the whole industry's revocation
+posture shifted to (a) CRLs nobody fetches and (b) SHORT LIFETIMES as
+the real revocation — iter 12's tlsserver/shortlived policy is now the
+load-bearing control, no config change. CAA adoption: the cutting edge
+is accounturi pinning (Cloudflare-class operators pin to their ACME
+accounts); plain letsencrypt.org-only CAA is the boring baseline. Both
+are DNS records at the registrar — operator actions, not software;
+the platform's job is to REQUIRE them at the right moments.
+
+IMPLEMENT (spec): hosting-architecture.md gains a "DNS and certificate
+authorization" section (CAA policy: apex + every customer domain,
+accounturi pinning once the account exists, validationmethods
+explicitly rejected to preserve Caddy's challenge fallback, DNSSEC
+handled-with-care note); the §0 pre-server checklist gains the CAA
+line so it exists before the first issuance.
+
+LEAN PROOF: unchanged, exit 0 (DNS records, not machinery).
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 3 — iteration 24: edge WAF / bot defense (2026-10-16)
 
 RESEARCH: OWASP Coraza docs (Go WAF library, ModSecurity Seclang-
