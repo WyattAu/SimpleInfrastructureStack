@@ -175,6 +175,34 @@ cat > "${TENANT_DIR}/.gitignore" <<'GITIGNORE'
 data/
 GITIGNORE
 
+# --- image signature gate (research loop iter 21) ---------------------------
+# Compose-class hosts have no verify-on-pull: Docker Content Trust is
+# deprecated and the enforcement engines (Connaisseur, sigstore policy
+# controller) are all Kubernetes admission webhooks. The gate is therefore
+# here, at the provisioning boundary. Fail-closed when armed: with
+# TENANT_COSIGN_KEY pointing at the EIR cosign public key, EVERY image in
+# the rendered stack must carry a valid signature before anything is
+# pulled. Unset (today: EIR does not sign yet — backlog #12) it logs and
+# skips, so arming is a one-env-var change once the first signed build lands.
+TENANT_COSIGN_KEY="${TENANT_COSIGN_KEY:-}"
+if [ -n "${TENANT_COSIGN_KEY}" ]; then
+    if ! command -v cosign >/dev/null 2>&1; then
+        echo "TENANT_COSIGN_KEY is set but cosign is not installed — refusing to provision unverified images" >&2
+        exit 1
+    fi
+    info "verifying image signatures (key: ${TENANT_COSIGN_KEY})"
+    while IFS= read -r image; do
+        [ -n "$image" ] || continue
+        info "  cosign verify $image"
+        if ! cosign verify --key "${TENANT_COSIGN_KEY}" "$image" > /dev/null; then
+            echo "signature verification FAILED for $image — provisioning aborted" >&2
+            exit 1
+        fi
+    done < <("${TENANT_DIR}/compose.sh" config --images 2>/dev/null)
+else
+    warn "TENANT_COSIGN_KEY unset — image signature gate skipped (EIR cosign signing is backlog #12)"
+fi
+
 # --- start ------------------------------------------------------------------
 if [ "$START" -eq 1 ]; then
     info "starting stack (compose.sh up -d)"

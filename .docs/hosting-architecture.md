@@ -297,6 +297,29 @@ host: no unit change without an app that acts on the signal.
 systemd-oomd/ManagedOOM rejected: docker hard limits + OOM killer
 already bound the blast radius; another daemon is not lean.
 
+### Image supply chain
+
+Every tenant-facing image comes from the EvergreenImageRegistry (EIR,
+our own GHCR namespace) - builds are scanned and attested in-repo;
+upstream images are digest-pinned (renovate `pinDigests`, and
+`versions.digests` for the estate).
+
+**Supply-chain research (loop iter 21):** the enforcement frontier is
+admission-control (sigstore policy controller, Connaisseur) - all
+Kubernetes-bound; Docker has never shipped verify-on-pull (Docker
+Content Trust/Notary v1 is deprecated), so compose-class hosts verify
+nothing anywhere in the industry. Cosign verification itself is
+mature: a signature binds the signer identity/key to the image digest,
+verifiable with one command against any registry. The adopted model:
+(1) the trust boundary is EIR ownership + digest pinning for upstream;
+(2) `ops/tenant-provision.sh` carries a fail-closed cosign gate
+(`TENANT_COSIGN_KEY`): when armed, every image in the rendered stack
+must verify before a single byte is pulled - the one enforcement point
+a non-Kubernetes host actually controls; (3) it is inert until EIR
+signs its builds (backlog #12: cosign sign in the EIR build matrix),
+which is the correct order - the consumer gate arrives before the
+producer signature, so the first signed image is verified from birth.
+
 ### Backups and recovery
 
 - Per tenant: `ops/tenant-backup.sh` — restic snapshot tagged

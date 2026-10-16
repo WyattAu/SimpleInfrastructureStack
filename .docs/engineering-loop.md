@@ -92,6 +92,40 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 3 — iteration 21: image supply chain (2026-10-16)
+
+RESEARCH: sigstore/cosign verify docs (signature binds signer to image
+digest; keyless needs Fulcio/Rekor + OIDC identity flags; key-pair mode
+is one command against any registry; transparency-log bundle supports
+offline verification); consumer-side reality checked in-repo (tenant
+templates reference EIR images by mutable tag; renovate pinDigests=true
+and versions.digests cover upstream images only; deploy.sh pulls without
+any verification).
+
+ANALYZE — other engines: the enforcement frontier (Connaisseur,
+sigstore policy controller, Kyverno verify-images) is Kubernetes
+admission control — out of scope by architecture. Docker itself never
+shipped verify-on-pull (DCT/Notary v1 deprecated; nothing replaced it
+outside K8s). Verdict: this is a problem the compose-class world
+genuinely has NOT solved; the only enforcement point a single host
+controls is its own provisioning boundary. Also honest about ordering:
+consumer-side verification is meaningless until EIR signs its builds,
+so the gate ships inert and EIR signing becomes backlog #12 — gate
+first, producer signature second, so the first signed image is
+verified from birth.
+
+IMPLEMENT (spec + ops): hosting-architecture.md gains an "Image supply
+chain" section (EIR as trust boundary, digest-pinned upstream, the
+provisioning-boundary gate, the K8s-only-enforcement verdict);
+tenant-provision.sh gains the fail-closed cosign gate
+(TENANT_COSIGN_KEY, `compose.sh config --images` resolution, refuses
+with cosign missing when armed, warns-and-skips when unset).
+
+LEAN PROOF: unchanged, exit 0 (zero daemons — the gate is a
+provision-time step).
+
+VERIFY: bash -n clean; python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 2 — synthesis (iterations 11-20, 2026-10-14)
 
 Ten research->analyze->implement->verify iterations over the hosting
@@ -1948,6 +1982,7 @@ priced through `billing-kit`:
 | 9 | estate republish wave (telemetry-init, testkit, then dependents) | repay git-skew debt; unblocks crates.io-only consumers |
 | 10 | webhookkit: Standard Webhooks v1 sender support (iter 20) | outbound estate webhooks get signatures + idempotency keys |
 | 11 | shutdown-kit/worker-kit: PSI pressure-reactive trim (iter 16) | read $MEMORY_PRESSURE_WATCH, release caches on pressure events |
+| 12 | EIR: cosign sign in the build matrix (iter 21) | tenant-provision fail-closed gate is inert until builds are signed |
 
 ## Research queue
 
