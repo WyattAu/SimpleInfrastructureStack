@@ -92,6 +92,49 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 3 — synthesis (iterations 21-30, 2026-10-16)
+
+Ten more research->analyze->implement->verify iterations, covering the
+parts rounds 1-2 had not: supply chain, drift, dead-man monitoring,
+edge defense, DNS/PKI, restore verification, rate limiting, secret
+rotation, snapshot growth. Score: **7 implementations, 5 rejects with
+recorded evidence, 2 real finds (a repo-committed bearer token, and the
+still-open dynamic.yml debt — now closed), 0 budgets broken; lean
+proof exit 0.**
+
+Adopted (implemented):
+- Fail-closed cosign gate at the provisioning boundary (iter 21;
+  inert until EIR signs — backlog #12). Compose-class hosts verify
+  nothing industry-wide; this host now has the one enforcement point
+  it controls.
+- Drift made loud (iter 22): checkout dirty/ahead pages via the
+  meta-watchdog; proxy dynamic.yml synced from git in the deploy
+  (closes the Oct-11 incident class for good).
+- Dead-man switch (iter 23): the meta-watchdog pages when docker01's
+  eventbusd heartbeat goes stale — the watchdog is watched, from
+  different silicon, on absence-of-signal.
+- CAA + accounturi pinning in the bootstrap checklist (iter 25);
+  post-OCSP posture recorded (short lifetimes are the revocation).
+- Monthly restore drill in the sweep (iter 26): verified restores, not
+  just verified repositories.
+- Secrets rotation runbook (iter 28): updatekeys identity replacement
+  bridged by the recovery identity, --rotate for DEK hygiene.
+- Rate-limit stack confirmed three-layer (iter 27); snapshot tier
+  engine chosen timer-over-daemon (iter 29); Coraza recorded as the
+  opt-in WAF tier and vane's natural embed (iter 24).
+
+The round's pattern, consistent with rounds 1-2: the cutting edge that
+fits is almost always an ABSENCE-detection or PROOF mechanism (drift
+paging, heartbeat expectation, restore drill) rather than a new
+service, and every custom-binary proposal (Coraza default,
+caddy-ratelimit, zrepl daemon) lost to the boring kernel/systemd-native
+equivalent. New debt recorded: backlog #12 (EIR cosign signing),
+#13 (hardcoded eventbus token -> SOPS).
+
+Verification state: lean model exit 0; site.yml + hosting_bootstrap.yml
+syntax-clean; all ops scripts bash -n clean; SIS changes are LOCAL ONLY
+(auto-deploy repo — review, then push deliberately).
+
 ### Hosting research loop round 3 — iteration 29: ZFS snapshot tier engine (2026-10-16)
 
 RESEARCH: zrepl docs (0.7.0: one-stop replication daemon — pull/push
