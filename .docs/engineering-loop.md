@@ -92,6 +92,35 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 3 — iteration 27: edge rate limiting (2026-10-16)
+
+RESEARCH: brandur.org GCRA article (time-bucket vs leaky-bucket vs GCRA
+- single-state theoretical-arrival-time, no drip process, smooth
+pacing; Stripe/Heroku production via the Throttled library — the same
+algorithm throttle-kit ships to hosting-api); mholt/caddy-ratelimit
+README (sliding-window ring buffers, O(Kn) proxy memory, xcaddy custom
+build required, distributed mode approximate/eventually-consistent,
+Retry-After + jitter, and the ipv6_prefix lesson: per-IP keys are
+porous under v6 /64s).
+
+ANALYZE — other engines: Stripe/Cloudflare-class platforms rate limit
+at MULTIPLE layers, and each layer answers a different question: floods
+(reputation), fairness (scheduling), API contracts (token buckets/GCRA
+in the app). The platform already HAS all three layers (CrowdSec,
+cpu_shares, throttle-kit GCRA). An edge rate_limit layer would answer
+"absorb floods in the proxy" — a question CrowdSec already answers at
+our scale, bought at the cost of a custom Caddy build (the iter-2/24
+objection, third instance). The genuinely valuable find is the v6
+prefix-grouping pattern for the future vane limiter.
+
+IMPLEMENT (spec): edge section gains the iter-27 verdict (three-layer
+stack confirmed; caddy-ratelimit rejected; ipv6-prefix keying recorded
+as a vane requirement; revisit = measured abuse).
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 3 — iteration 26: restore drills as code (2026-10-16)
 
 RESEARCH: restic restore docs (restore latest --tag / --path selection,

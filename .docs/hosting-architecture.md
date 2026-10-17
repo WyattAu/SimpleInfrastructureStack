@@ -62,6 +62,22 @@ publicly-exploitable-class CVE, or `vane` (the in-house gateway, backlog
 #8) reaches buildable state — Coraza-as-library is the natural embed for
 vane, where a custom binary is already the plan.
 
+**Rate-limit research (loop iter 27):** the platform's rate limiting is
+a three-layer stack, and research says it is the right shape. (1)
+Flood/scanner abuse: CrowdSec IP reputation (iter 24). (2)
+Tenant-vs-tenant fairness: cgroup cpu_shares (iter 7). (3) API fairness:
+GCRA in-process via throttle-kit (the same single-state
+theoretical-arrival-time algorithm Stripe/Heroku run; smooth pacing, no
+background drip process, O(1) state per key). caddy-ratelimit (mholt)
+was evaluated for an edge layer: it needs a custom xcaddy build (the
+iter-2/24 objection again), holds O(Kn) ring-buffer memory in the
+proxy, and its distributed mode is approximate - rejected at this
+scale. One recorded lesson for any FUTURE edge limiter (vane): per-IP
+keys are porous under IPv6 (one /64 = effectively unlimited keys), so
+edge limiting must group by ipv4/ipv6 network prefix - caddy-ratelimit's
+ipv6_prefix option is the pattern to copy. Revisit trigger: measured
+abuse that reputation + cgroups cannot contain.
+
 **Edge TLS research (loop iter 12):** the cutting edge here is free, not
 bought. (1) Post-quantum key agreement: X25519MLKEM768 (the hybrid
 Cloudflare/Chrome standard; harvest-now-decrypt-later is the actual
