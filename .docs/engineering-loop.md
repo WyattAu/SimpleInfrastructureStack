@@ -92,6 +92,36 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 3 — iteration 29: ZFS snapshot tier engine (2026-10-16)
+
+RESEARCH: zrepl docs (0.7.0: one-stop replication daemon — pull/push
+over TCP+TLS/SSH, resumable send/recv + bookmarks + holds, snapshot
+pre/post hooks with database builtins, pruning rule system, Prometheus
+endpoint; "no stability guarantee on RPC protocol"); sanoid shape
+(timer-driven perl + config-file policy; syncoid as a separately
+invoked replication script) — repo URLs 404'd, verdict grounded on the
+daemon-vs-timer architectural difference rather than version claims.
+
+ANALYZE — other engines: Proxmox shops snapshot either with zrepl
+(daemon, transport-oriented) or sanoid-class timers; TrueNAS has its
+own GUI tooling for its pools. The decisive question: what JOB does the
+snapshot tier do? Answer: instant per-tenant rollback (oops recovery)
++ RPO 24h -> ~15min as a PAID feature (iter 9's growth path). It does
+NOT do offsite or DR — restic+B2 owns that, and a same-pool copy is
+not durability. zrepl's transport machinery therefore duplicates a job
+we already pay restic to do; the timer shape matches every other
+schedule in this platform (sweep, watchdog, prune).
+
+IMPLEMENT (spec): Storage section gains the snapshot-tier verdict
+(sanoid-class timers on tank, fading policy, SNAPSHOTS ARE NOT BACKUPS
+carved into the promise language, restore drill stays the
+recoverability proof).
+
+LEAN PROOF: unchanged, exit 0 (tier is opt-in growth; nothing runs
+today).
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 3 — iteration 28: secrets rotation (2026-10-16)
 
 RESEARCH: the rotation primitives verified against the ACTUAL tooling

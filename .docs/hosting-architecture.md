@@ -176,8 +176,24 @@ precisely because usage memory is noisy; the platform's flat-tier +
 RSS-usage add-on metering (iter 3) stands, with the recorded allocation
 fallback unchanged if disputes arise.
 
-### Network
+**Snapshot-tier research (loop iter 29):** the growth path's engine
+choice, made before it is needed. zrepl (Go, 0.7.0) is a one-stop
+replication DAEMON: pull/push transports (TCP+TLS/SSH), resumable
+send/recv, bookmarks, pre/post-snapshot hooks with MySQL/Postgres
+builtins, Prometheus endpoint - rejected for this tier: its transport
+layer duplicates the job restic+B2 already owns (offsite), and a
+permanent daemon buys nothing for local snapshots. sanoid's shape
+(timers + a config file; syncoid as a separate invoked script) is the
+lean fit for the PVE node. Policy recorded now so the paid tier is
+priced honestly later: per-tenant ZFS datasets on `tank` +
+sanoid-class timer snapshots (frequent/ hourly/ daily fading) give
+instant per-tenant rollback ("oops" recovery) and drop effective RPO
+from 24h to ~15min; SNAPSHOTS ARE NOT BACKUPS - same-pool copies never
+count toward the durability promise, restic+B2 stays the only offsite
+and DR artifact, and the iter-26 restore drill remains the proof of
+recoverability.
 
+### Network
 ```text
 business router ── vmbr0 (mgmt/WAN, 192.168.0.0/24)
                        │
