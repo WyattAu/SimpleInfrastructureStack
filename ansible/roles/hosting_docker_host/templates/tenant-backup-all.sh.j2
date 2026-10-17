@@ -70,5 +70,50 @@ if [ "$(date +%u)" = "7" ]; then
     fi
 fi
 
+# --- restore drill (research iter 26) ----------------------------------------
+# An unverified backup is a wish (the DR section says rehearse quarterly;
+# nobody schedules it, so the sweep does). First Sunday of each month:
+# actually RESTORE one tenant's latest snapshot to a scratch tree and
+# prove it came back (compose file present, files exist), then delete the
+# scratch. Rotation is deterministic per month (month index % tenant
+# count) so every tenant gets a full-restore proof over time. The drill
+# runs inside the yielding sweep unit; page on failure with DRILL wording
+# - restores are the artifact customers actually pay for.
+if [ "$(date +%u)" = "7" ] && [ "$(date +%-d)" -le 7 ]; then
+    mapfile -t all_tenants < <(find "$TENANT_ROOT" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null | sort)
+    drill_candidates=()
+    for t in "${all_tenants[@]}"; do
+        [ -x "$TENANT_ROOT/$t/compose.sh" ] && drill_candidates+=("$t")
+    done
+    if [ "${#drill_candidates[@]}" -gt 0 ]; then
+        drill_tenant="${drill_candidates[$(( $(date +%-m) % ${#drill_candidates[@]} ))]}"
+        drill_dir="{{ hosting_data_mount }}/backups/restore-test/$drill_tenant"
+        echo "[$(date -Is)] monthly restore drill: $drill_tenant"
+        rm -rf "$drill_dir"
+        mkdir -p "$drill_dir"
+        drill_start=$(date +%s)
+        drill_ok=1
+        if ! env RESTIC_REPOSITORY="$LOCAL_REPO" \
+            RESTIC_PASSWORD_FILE="/etc/sis-hosting/restic-password" \
+            restic restore latest --tag "tenant:$drill_tenant" --target "$drill_dir"; then
+            drill_ok=0
+            drill_why="restic restore FAILED"
+        else
+            drill_secs=$(( $(date +%s) - drill_start ))
+            total_files=$(find "$drill_dir" -type f 2>/dev/null | wc -l)
+            compose_found=$(find "$drill_dir" -maxdepth 4 \( -name 'docker-compose.yml' -o -name 'compose.sh' \) 2>/dev/null | head -1)
+            [ "$total_files" -ge 1 ] || { drill_ok=0; drill_why="restore came back EMPTY"; }
+            [ -n "$compose_found" ] || { drill_ok=0; drill_why="no compose file in restored tree"; }
+        fi
+        if [ "$drill_ok" -eq 1 ]; then
+            echo "[$(date -Is)] restore drill OK: $drill_tenant (${drill_secs}s, $total_files files restored + verified)"
+        else
+            curl -s -H "Title: HOSTING: RESTORE DRILL FAILED" -H "Priority: high" \
+                -d "tenant:$drill_tenant — $drill_why. The backup cannot be trusted; run the DR drill by hand NOW" "$NTFY" > /dev/null
+        fi
+        rm -rf "$drill_dir"
+    fi
+fi
+
 date +%s > "$OFFSITE_LOG"
 echo "[$(date -Is)] all tenant backups OK (offsite copy done)"

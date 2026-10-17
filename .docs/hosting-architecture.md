@@ -405,6 +405,16 @@ producer signature, so the first signed image is verified from birth.
   heartbeat has never existed, or if the eventbusd query itself is
   unreadable. Arming requires `hosting_eventbus_url`/`token` wired into
   the docker01 role (the heartbeat publisher).
+- **Restore drills are code (loop iter 26):** "rehearse this before the
+  first paying customer" was a wish nobody could schedule - so the sweep
+  does it. First Sunday of each month, one tenant's latest snapshot is
+  actually restored to a scratch tree (`restic restore latest --tag
+  tenant:<slug>`) and proven (files exist, compose file came back), then
+  deleted; rotation is deterministic per month so every tenant gets a
+  full-restore proof over time, the drill runs inside the yielding sweep
+  unit, and a failed drill pages with RESTORE DRILL FAILED. Verified
+  restores, not just verified repositories (iter 4's `restic check`
+  proves the repo; this proves the customer artifact).
 - **Node loss** = reinstall Proxmox per this runbook, `terraform apply`,
   `ansible-playbook hosting_bootstrap.yml`, `restic restore` per tenant.
   Rehearse this before the first paying customer (see checklist).

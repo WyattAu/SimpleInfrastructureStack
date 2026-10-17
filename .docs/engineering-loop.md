@@ -92,6 +92,38 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 3 — iteration 26: restore drills as code (2026-10-16)
+
+RESEARCH: restic restore docs (restore latest --tag / --path selection,
+<snapshot>:<subfolder> syntax, --dry-run verification semantics,
+--overwrite content-check modes; no undocumented flags relied on);
+in-repo review (the sweep already enforces retention + `restic check`
+weekly per iter 4 — but nothing ever RESTORES; the DR drill is a manual
+quarterly checklist item that has no scheduler).
+
+ANALYZE — other engines: backup-verification is the standard enterprise
+answer to "backups you can't restore" (Veeam SureBackup class: automated
+restore + bootability checks inside the backup product). The
+compose-class world mostly stops at repo integrity (exactly what iter 4
+shipped). The honest gap: `restic check` proves the REPOSITORY; only a
+real restore proves the CUSTOMER ARTIFACT. Lean implementation: the
+sweep already owns the Sunday window and the yielding unit — a monthly
+drill rides the same machinery: deterministic rotation (month index %
+tenant count), restore latest to a scratch tree, prove (>=1 file,
+compose file present), report, clean up, page on failure. No new
+services, no new timers.
+
+IMPLEMENT (spec + ansible): Backups section gains the restore-drills
+bullet; tenant-backup-all.sh.j2 gains the first-Sunday drill block
+(marked iter 26).
+
+LEAN PROOF: backup window budget unchanged — the drill is bounded by
+repo locality (local repo restore, minutes at fleet scale) and runs in
+the yielding unit the model already accounts for.
+
+VERIFY: bash -n clean on the rendered sweep; the find-based proof
+checks exercised against a fixture tree; lean model exit 0.
+
 ### Hosting research loop round 3 — iteration 25: CAA + post-OCSP revocation (2026-10-16)
 
 RESEARCH: Let's Encrypt CAA docs (RFC 8659; issue/issuewild tags;
