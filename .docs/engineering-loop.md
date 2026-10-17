@@ -92,6 +92,35 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 3 — iteration 28: secrets rotation (2026-10-16)
+
+RESEARCH: the rotation primitives verified against the ACTUAL tooling
+on this machine (sops 3.13.3 --help: `updatekeys` re-wraps file data
+keys to current .sops.yaml recipients; `--rotate`/`rotate` generates a
+new data encryption key per file; age 1.3.2 present) plus the in-repo
+.sops.yaml shape (secrets encrypted to TWO age identities - admin +
+recovery - in one key_group).
+
+ANALYZE — other engines: Vault/Infisical have first-class rotation
+(dedicated rotation endpoints, dynamic secrets) — that capability is
+part of what paying for a secret server buys; the SOPS+age class
+rotates by re-encryption, which at ~20 files is a two-command
+operation. The two-identity key_group is the load-bearing design: the
+recovery identity bridges any admin-identity replacement, so rotation
+is zero-risk against lockout. Ordering matters and is now written
+down: add-then-updatekeys-then-verify-then-delete — never delete
+before verify. The TPM2-creds path needs no rotation (re-sealed at
+every bootstrap from plaintext).
+
+IMPLEMENT (spec): security-model item 6 gains the rotation runbook
+(identity replacement via updatekeys, DEK rotation via --rotate,
+triggers: compromise / key changes / annual-with-DR-rehearsal).
+
+LEAN PROOF: unchanged, exit 0 (rotation is commands, not services).
+
+VERIFY: python3 ops/lean-model.py exit 0; sops/age versions confirmed
+present (3.13.3 / 1.3.2).
+
 ### Hosting research loop round 3 — iteration 27: edge rate limiting (2026-10-16)
 
 RESEARCH: brandur.org GCRA article (time-bucket vs leaky-bucket vs GCRA

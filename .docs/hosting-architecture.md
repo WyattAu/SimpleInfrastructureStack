@@ -255,6 +255,19 @@ dnsviz).
    start; zero extra daemons). Implemented behind
    `hosting_secrets_tpm_creds` (default false until the DR rehearsal
    covers it); when enabled, plaintext never touches the host disk.
+   **Rotation runbook (loop iter 28):** every secret is encrypted to
+   TWO age identities (admin + recovery, one sops key_group - any one
+   member can decrypt), so rotation is a zero-downtime, no-risk
+   operation: generate a replacement identity, add it to `.sops.yaml`,
+   `sops updatekeys secrets/*.env.encrypted` (re-wraps each file's data
+   key to the current recipients; sops 3.13+), verify a decrypt with
+   the NEW identity, then securely delete the retired identity file -
+   the recovery identity bridges the whole window. `sops --rotate`
+   additionally re-keys each file's data key (annual hygiene; content
+   untouched). Triggers: control-node identity compromise (immediate),
+   key-material changes, or annually alongside the DR rehearsal. The
+   TPM2-creds path re-seals from plaintext at every bootstrap and needs
+   no rotation itself.
 7. **Unattended-upgrades** for the security pocket-list.
    **Patching research (loop iter 19):** the cutting edge for container
    hosts is atomic A/B OS updating (systemd-sysupdate; the Fedora
