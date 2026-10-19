@@ -92,6 +92,36 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 4 — iteration 33: UK GDPR data governance (2026-10-18)
+
+RESEARCH: ICO security guidance hub ("Personal data breaches: a guide"
+- the 72h-to-ICO / without-undue-delay-to-individuals duties;
+encryption guidance; self-assessment checklists). Deeper ICO page
+URLs 404'd - the section leans on the fetched breach/encryption
+guidance plus the regulation's well-established articles (5(1)(e)
+storage limitation, 28 processor DPA, 32 security of processing,
+33/34 breach notification).
+
+ANALYZE: the platform has been ACCIDENTALLY COMPLIANT — every duty
+maps to machinery a previous iteration shipped: retention = the
+enforced 7d/5w/12m prune (iter 4), erasure = the deprovision receipt
+(iter 10), security of processing = fence+creds+TLS+audit (iters
+5/8/12/18), detection = the watchdogs. What was MISSING is the
+written-down mapping: roles (processor for tenant content vs
+controller for operational data), the retention schedule table with
+its enforcement column, and the breach-runbook pointer. The only NEW
+obligation surface: a signed Art 28 DPA per customer before first
+data.
+
+IMPLEMENT (spec): hosting-architecture.md gains a "Data governance"
+section (roles, retention table mapped to enforcers, breach runbook,
+Art-32 mapping); the §0 checklist gains the DPA-template line beside
+the existing ICO registration.
+
+LEAN PROOF: unchanged, exit 0 (compliance mapping, not machinery).
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 4 — iteration 32: DB consistency / PITR tier (2026-10-18)
 
 RESEARCH: pgBackRest 2.60 (PGDG project, Oct 2026: parallel

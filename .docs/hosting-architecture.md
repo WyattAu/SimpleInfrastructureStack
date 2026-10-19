@@ -325,6 +325,40 @@ dnsviz).
    the VM-class options for TENANTS (tier 2/3) - Landlock is the
    control-plane's own cheap layer, not a tenant boundary.
 
+### Data governance
+
+UK GDPR duties the platform already carries structurally, now written
+down (ICO security guidance: "Personal data breaches: a guide" +
+encryption guidance; UK GDPR arts. 5(1)(e), 28, 32-34):
+
+- **Roles**: for TENANT CONTENT the platform is a processor - a
+  signed data-processing agreement (Art 28) is a prerequisite for the
+  first customer, alongside the ICO registration already on the
+  checklist. For OPERATIONAL data (billing, auth/decision logs,
+  contacts) the platform is its own controller; the customer-facing
+  privacy notice covers that.
+- **Retention schedule** (storage limitation, Art 5(1)(e)) - mapped to
+  the machinery that already enforces it, not aspirational:
+
+  | Data | Retention | Enforced by |
+  | --- | --- | --- |
+  | Tenant content | contract term + 30d grace, then erased (deprovision receipt = the erasure artifact) | `tenant-lifecycle.sh` (iter 10) |
+  | Tenant data inside backups | expires on the 7d/5w/12m schedule - erasure completes when the last snapshot containing it ages out; the receipt records that date | weekly forget/prune (iter 4) |
+  | Access/decision audit log | 12 months (security purpose) | authbox tamper-audit |
+  | Deploy/watchdog events | 90 days | eventbusd replay window |
+  | Metrics | 30 days | TrueNAS Prometheus retention |
+
+- **Breach runbook** (Art 33/34): detection rides the existing
+  watchdogs and incident docs; on a personal-data breach, notify the
+  ICO within 72h of awareness where it risks rights and freedoms, and
+  affected tenants without undue delay where risk is high. The
+  incident doc gains a breach section at next use - no new
+  infrastructure.
+- **Security-of-processing** (Art 32) is the platform's existing
+  control set read through the regulation: restic client-side
+  encryption, the TPM2-creds path (iter 5), TLS at the edge (iter 12),
+  the tenant fence (iter 8/18), and tamper-evident audit logging.
+
 ### Isolation tiers (research loop iteration 1)
 
 Research basis: gVisor architecture docs (userspace application kernel;
@@ -565,6 +599,8 @@ diff on next deploy instead of silently diverging.
       exists — pin issuance to our account so a domain hijack alone
       cannot mint certificates). Every customer domain gets the same at
       onboarding.
+- [ ] Processor DPA template drafted (iter 33; UK GDPR Art 28) — signed
+      with each customer before the first tenant data lands.
 
 ### 1. BIOS/firmware
 
