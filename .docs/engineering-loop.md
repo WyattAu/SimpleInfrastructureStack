@@ -92,6 +92,37 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 4 — iteration 34: power resilience (NUT) (2026-10-18)
+
+RESEARCH: NUT 2.8.x user manual (layered design: device driver ->
+upsd server -> upsmon monitoring client; low-battery automatic
+shutdown semantics (FSD propagation); redundancy and security notes;
+master/slave netclient mode for guests).
+
+ANALYZE: an on-prem business server's most likely PHYSICAL threat is
+a power cut, and the runbook had zero power content — the failure
+mode is not "downtime", it is an unclean ext4/ZFS state on the data
+disk the whole business rides on (and a possibly-corrupt restic repo
+mid-write). The standard machinery is NUT, and its master/slave shape
+maps exactly onto the existing topology: the PVE host owns the UPS
+cable (master), docker01 is a netclient slave — shutdown ordering
+then falls out of the dependency (guests stop cleanly first, host
+last). Live-restore (iter 31) is the second line: even a hard cut
+with battery exhaustion leaves containers recoverable. Runtime sizing
+rule recorded: >= 2x the measured shutdown path, because a cut DURING
+the nightly backup window must degrade to "delayed backup", not
+"dead repo".
+
+IMPLEMENT (spec/runbook): §0 checklist gains the UPS sizing/cabling
+item; §2 PVE post-install gains the NUT master config sketch;
+§7 smoke checklist gains the OL/slave-connected check; the drill
+instruction (upsmon -c fsd) folds into the existing DR rehearsal.
+
+LEAN PROOF: unchanged, exit 0 (an appliance + apt packages; no new
+services on docker01 beyond nut-client).
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 4 — iteration 33: UK GDPR data governance (2026-10-18)
 
 RESEARCH: ICO security guidance hub ("Personal data breaches: a guide"

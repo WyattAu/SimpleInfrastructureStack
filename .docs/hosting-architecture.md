@@ -601,6 +601,13 @@ diff on next deploy instead of silently diverging.
       onboarding.
 - [ ] Processor DPA template drafted (iter 33; UK GDPR Art 28) — signed
       with each customer before the first tenant data lands.
+- [ ] **UPS fitted** (iter 34: on-prem means power cuts are the most
+      likely physical threat): double-conversion unit sized for the
+      full build, runtime >= 2x the measured graceful-shutdown path
+      (tenants stop -> VMs down -> host off, ~5 min) so a cut during
+      the nightly backup window degrades to a delayed backup, not a
+      dead ZFS pool; USB (or SNMP) cable to the PVE host; Network UPS
+      Tools (NUT 2.8.x) as the shutdown machinery below.
 
 ### 1. BIOS/firmware
 
@@ -626,6 +633,28 @@ diff on next deploy instead of silently diverging.
   echo "options zfs zfs_arc_max=8589934592" > /etc/modprobe.d/zfs.conf
   update-initramfs -u -k all
   ```
+
+- **NUT master** (iter 34) — the PVE host owns the UPS cable and serves
+  power state to its guests (NUT 2.8.x, apt `nut`):
+
+  ```bash
+  # /etc/nut/ups.conf:  [ups] driver = usbhid-ups port = auto
+  # /etc/nut/upsd.conf: LISTEN 0.0.0.0 3493   (mgmt LAN only)
+  # /etc/nut/upsd.users: [upsmon] password = <sops secret>  upsmon master
+  # /etc/nut/upsmon.conf:
+  #   MONITOR ups@localhost 1 upsmon <pass> master
+  #   SHUTDOWNCMD "/sbin/shutdown -h now"   # PVE stops its VMs first
+  #   MINSUPPLIES 1
+  systemctl enable --now nut-driver nut-server nut-monitor
+  upsc ups@localhost ups.status   # expect: OL (online)
+  ```
+
+  Guest VMs (docker01) run `nut-client` as upsmon SLAVEs pointing at
+  the PVE mgmt IP: when the battery hits the low-battery threshold,
+  upsmon raises FSD everywhere and the ordering falls out of the
+  dependency - guests shut down (systemd stops docker cleanly), THEN
+  the host. Runtime sizing above covers the whole path; test it with
+  `upsmon -c fsd` during the DR rehearsal.
 
 ### 3. ZFS data pool + bridges
 
@@ -705,6 +734,8 @@ The playbook refuses to run against anything but `docker01`.
 - [ ] `/srv` mounted (`findmnt /srv`), restic repo initialised:
       `RESTIC_REPOSITORY=/srv/backups/restic RESTIC_PASSWORD_FILE=/etc/sis-hosting/restic-password restic init`
 - [ ] Watchdog timer ran clean: `journalctl -u sis-hosting-watchdog -n 5`
+- [ ] `upsmon` on docker01 reports the shared UPS as OL and slave-connected
+      (iter 34): `upsc ups@<pve-mgmt-ip> ups.status`
 - [ ] Caddy serving: `curl -I http://<public-ip>` (ACME works once DNS exists)
 
 ### 8. First tenant
