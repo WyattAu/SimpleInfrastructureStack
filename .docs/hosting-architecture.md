@@ -229,6 +229,23 @@ vmbr1 (tenant bridge, 10.10.10.0/24, host = 10.10.10.1)
   cannot reach tenants through it.
 - Inbound public traffic terminates at docker01:80/443 only (Caddy).
 
+**Edge IPv6 readiness (loop iter 37):** the IETF v6ops 6mops draft
+(IPv6-mostly networks, v10 Sept 2026) documents where clients are
+going: mobile carriers run v6-only with NAT64/464XLAT today and
+enterprise/public Wi-Fi is migrating the same way (DHCPv4 Option 108
+withholding v4 from v6-capable devices). An A-ONLY site remains
+reachable through NAT64+DNS64, but DNS64 is DNSSEC-incompatible and
+IPv4-literal clients suffer — AAAA presence is quietly becoming a
+reachability QUALITY issue, not a nicety. The platform's posture is
+"ready by configuration, nothing to build": Caddy serves dual-stack
+with no config; the nftables baseline is family `inet` (ICMPv6 + 80/443
+open; SSH deliberately stays v4 mgmt-only); the tenant fence covers
+Docker v6 egress (iter 18). The single gate is the ISP: the §0
+checklist now asks for prefix delegation alongside the CGNAT check.
+Policy: when PD exists, add AAAA records at onboarding, verify inbound
+v6 with the same smoke tests, and re-check the metering/ACL surfaces
+that key on client IPs (CrowdSec lists, GCRA keys are v6-aware already).
+
 **Network policy research (loop iter 18):** two verdicts. (1) nftables
 flowtables (conntrack fastpath, software or NIC offload) rejected: an
 offloaded flow bypasses per-packet forward-chain evaluation - the one
@@ -631,6 +648,9 @@ diff on next deploy instead of silently diverging.
 - [ ] Business broadband installed, **static IP or DHCP reservation**
       confirmed NOT CGNAT (test: router WAN IP == what `curl ifconfig.me`
       returns from inside the LAN)
+- [ ] ISP **IPv6 prefix delegation** confirmed or explicitly unavailable
+      (iter 37: AAAA readiness — Caddy/fence/input-chain are already
+      dual-stack; only DNS and the ISP are missing pieces)
 - [ ] Ports 80/443 reachable from outside (test with a laptop hotspot)
 - [ ] Companies House, ICO registration, insurance done (see service catalogue)
 - [ ] `secrets/hosting.env.encrypted` created and its `RESTIC_PASSWORD`

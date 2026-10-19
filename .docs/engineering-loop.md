@@ -92,6 +92,34 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 4 — iteration 37: edge IPv6 readiness (2026-10-18)
+
+RESEARCH: IETF draft-ietf-v6ops-6mops-10 (IPv6-mostly networks, Sept
+2026: DHCPv4 Option 108 withholds v4 from v6-capable endpoints; NAT64/
+464XLAT carries them to v4-only destinations; DNS64 documented as
+DNSSEC-incompatible and a long-term dead end; enterprise/public Wi-Fi
+rollout guidance).
+
+ANALYZE: iter 18 fenced tenant-side v6; this iteration asked the
+customer-side question: can mobile/v6-mostly clients REACH the edge?
+Answer: yes through NAT64, but degraded (DNS64's DNSSEC clash,
+v4-literal clients) — AAAA presence is becoming a reachability-quality
+issue. Audit result: the platform is ready by configuration and has
+nothing to build — Caddy is dual-stack by default, the nftables input
+baseline is family inet with ICMPv6 + 80/443 open (SSH deliberately
+v4-only), the fence handles Docker v6. The single missing piece is the
+ISP's prefix delegation, an operator procurement fact, so it goes on
+the §0 checklist beside the CGNAT check.
+
+IMPLEMENT (spec): Network section gains the readiness verdict (incl.
+the onboarding policy: AAAA at onboarding once PD exists + re-check of
+IP-keyed surfaces — CrowdSec lists, GCRA keys, both already v6-aware);
+§0 checklist gains the PD line.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 4 — iteration 36: staging environment (2026-10-18)
 
 RESEARCH: in-repo topology (one production TrueNAS, force-sync deploys,
