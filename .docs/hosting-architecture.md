@@ -478,6 +478,25 @@ modes.
   unit, and a failed drill pages with RESTORE DRILL FAILED. Verified
   restores, not just verified repositories (iter 4's `restic check`
   proves the repo; this proves the customer artifact).
+- **PITR tier research (loop iter 32):** the default backup is nightly
+  stop-the-stack restic - RPO 24h, consistency proven by the
+  restart-healthy gate, window budgeted, recoverability proven by the
+  iter-26 drill. For tenants whose CONTRACT demands RPO << 24h, the
+  growth tier is continuous WAL archiving, and the engine is
+  **pgBackRest** (2.60, a PostgreSQL Global Development Group project):
+  page-checksum validation, backup-completeness semantics that WAIT for
+  the WAL segments that make a backup consistent, async WAL push/get,
+  encrypted repositories on S3-compatible stores (B2 exposes exactly
+  that), and ransomware recovery via versioned object storage. WAL-G
+  (Go, multi-DB incl. MariaDB/Redis) is the alternative and wins only
+  if a MariaDB tenant buys the tier first. Design constraints recorded
+  now: PITR artifacts live in PER-TENANT repository prefixes (the
+  iter-14 side-channel rule), `archive_timeout=300` sets the RPO
+  ceiling (~5 min), the PITR tier's monthly restore drill replays to a
+  POINT IN TIME, and - unlike the snapshot tier - PITR does not remove
+  the nightly file-consistency stop for non-DB paths. Trigger: a signed
+  contract with RPO < 24h; priced as an add-on like the isolation/WAF
+  tiers.
 - **Node loss** = reinstall Proxmox per this runbook, `terraform apply`,
   `ansible-playbook hosting_bootstrap.yml`, `restic restore` per tenant.
   Rehearse this before the first paying customer (see checklist).

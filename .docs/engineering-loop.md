@@ -92,6 +92,38 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 4 — iteration 32: DB consistency / PITR tier (2026-10-18)
+
+RESEARCH: pgBackRest 2.60 (PGDG project, Oct 2026: parallel
+full/diff/incr at file AND block level, page-checksum validation,
+backup waits for the WAL that makes it consistent, async WAL push/get,
+multiple repos incl. S3-compatible + encryption + ransomware recovery
+via versioned object stores); WAL-G (Go, multi-DB: PG/MySQL/MariaDB/
+Mongo beta/Redis beta, S3-class storage, delta backups, 248 open
+issues); in-repo check: the backup sweep already speaks S3 to B2
+(B2_ENDPOINT_HOST as s3:https://...), so either engine lands on the
+existing offsite.
+
+ANALYZE — other engines: managed Postgres (RDS/Cloud SQL) sell PITR
+as the DEFAULT because their RPO promise is minutes. The platform's
+default tier deliberately is NOT that: stop-the-stack nightly is
+CONSISTENT BY CONSTRUCTION (no crash-consistency caveats), 12 of 30
+budget minutes, drilled. PITR is a product tier triggered by contract,
+not a default posture — and its consistency story is subtle enough
+(page checksums, WAL-completeness waits) that picking the boring,
+PGDG-blessed tool matters more than picking the newer one. pgBackRest
+over WAL-G unless a non-postgres DB buys the tier first. The iter-14
+per-tenant rule applies to PITR artifacts too.
+
+IMPLEMENT (spec): Backups section gains the PITR-tier bullet (engine
+choice, per-tenant prefixes, archive_timeout=300 -> RPO ~5min,
+point-in-time drill requirement, contract trigger, priced add-on).
+
+LEAN PROOF: unchanged, exit 0 (opt-in tier outside the shared budget,
+same rule as gVisor/WAF tiers).
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 4 — iteration 31: daemon hardening + a latent brick caught (2026-10-18)
 
 RESEARCH: Docker live-restore docs (containers survive daemon crashes/
