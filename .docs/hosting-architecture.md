@@ -22,11 +22,30 @@ Code layout:
 ### One Docker VM, not a VM per tenant
 
 docker01 runs every tenant stack, isolated by: separate Docker networks,
-separate bind-mounted data trees under `/srv/tenants/<slug>`, resource
+separate bind-mounted data trees under `/srv/tenants`, resource
 limits per service, and non-root users. Growth path — when a tenant needs
 hard isolation or outgrows shared capacity, it gets its own VM (docker02)
 created from the same Terraform; nothing about the tenant tooling changes
 except `TENANT_ROOT`.
+
+**Staging research (loop iter 36):** the platform has no staging - every
+deploy is a force-sync to the one production host, gated only by
+validation. App-deploy tooling with first-class staging destinations
+validates the shape, and the pieces already exist here: docker02 from
+the same Terraform module, a second inventory group, and flagsd - the
+cutover control plane - gating which destination receives a deploy.
+Adopted role for docker02 when the EPYC node arrives: STAGING, not a
+second production (config validation, tenant-onboarding dry runs, the
+DR-rehearsal restore target, tier-1 rootless spikes) - deliberately
+NOT performance testing. Capacity honesty: a staging VM is a
+0.5-vCPU/2-GiB line item INSIDE the lean model's capacity check
+(staging_cpu, currently 0 until the host exists) - at full build-out
+10 tenants + platform + staging lands exactly at the 12-vCPU ceiling,
+so staging and the tenth revenue tenant coexist only because the
+backup window borrows compressible headroom; growth past ten tenants
+means a second production node, which is the documented growth path
+anyway.
+
 
 ### No OPNsense VM for the pilot
 

@@ -92,6 +92,32 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 4 — iteration 36: staging environment (2026-10-18)
+
+RESEARCH: in-repo topology (one production TrueNAS, force-sync deploys,
+zero staging; the spec's docker02 growth path already exists in the
+Terraform module); app-deploy tooling with first-class staging
+destinations as the shape reference; the platform's OWN cutover
+machinery (flagsd) recognized as the destination gate.
+
+ANALYZE: "staging" for this platform is NOT a small production - it is
+a CONFIG-validation, DR-rehearsal and onboarding-dry-run target. The
+honest cost question was the lean model's: does staging fit the 12
+vCPU? Answer: as a 0.5-vCPU line item, 10 tenants + platform + staging
+= exactly 12.0 - legal, but with zero slack, which itself documents
+that growth past ten tenants means a second PRODUCTION node (the
+documented growth path), not a bigger staging.
+
+IMPLEMENT (spec + lean proof): the docker02 growth path gains its
+staging role, trigger (EPYC arrival) and explicit exclusions (no perf
+testing); lean-model gains `staging_cpu` (0.0 now, 0.5 when live)
+inside the capacity check. Verified the flip: model holds at exactly
+the ceiling with staging armed.
+
+LEAN PROOF: exit 0 with the new capacity term.
+
+VERIFY: lean model run + staged-flip assertion both clean.
+
 ### Hosting research loop round 4 — iteration 35: Podman tier-1 refresh (2026-10-18)
 
 RESEARCH: current Podman docs (rootless-first posture throughout —

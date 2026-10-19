@@ -112,6 +112,11 @@ class ModelInputs:
     tenants: int = 10
     tenant_vcpu: float = 1.0
     tenant_ram_gib: float = 4.0
+    # Staging VM (iter 36): 0 until docker02-staging exists on the EPYC
+    # node; 0.5 vCPU when live. Counts INSIDE the capacity check - at
+    # 10 tenants + platform + staging the box sits exactly at the
+    # 12-vCPU ceiling, which the model asserts.
+    staging_cpu: float = 0.0
     # Measured/estimated overheads (updated per research iteration; each
     # entry names the iteration that set it).
     isolation_overhead_frac: float = 0.02   # iter 1: tier-0 userns-remap (~0-2%); tier-1 per-tenant rootless same class; gVisor 10-25% is OPT-IN and priced separately
@@ -150,10 +155,10 @@ def check(b: LeanBudgets, m: ModelInputs) -> list[str]:
     cpu_frac = platform_cpu / VCPUS
     ram_frac = platform_ram / RAM_GIB
 
-    if m.tenants * m.tenant_vcpu + platform_cpu > VCPUS:
+    if m.tenants * m.tenant_vcpu + platform_cpu + m.staging_cpu > VCPUS:
         failures.append(
             f"capacity: {m.tenants} tenants x {m.tenant_vcpu} vCPU + "
-            f"{platform_cpu} platform exceeds {VCPUS} vCPU"
+            f"{platform_cpu} platform + {m.staging_cpu} staging exceeds {VCPUS} vCPU"
         )
     # Backup-window check (iter 7): the nightly window may oversubscribe
     # silicon ONLY if the backup yields (CPUWeight/IOWeight low, enforced
