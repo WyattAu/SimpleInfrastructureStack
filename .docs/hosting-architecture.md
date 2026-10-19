@@ -402,6 +402,24 @@ signs its builds (backlog #12: cosign sign in the EIR build matrix),
 which is the correct order - the consumer gate arrives before the
 producer signature, so the first signed image is verified from birth.
 
+**Daemon hardening research (loop iter 31):** two daemon-wide additions
+adopted: `no-new-privileges: true` (setuid/sgid escalation blocked by
+default in EVERY container - per-service compose settings still win, so
+this only catches whatever forgets to set it) and `live-restore: true`
+(dockerd restarts and patch upgrades stop being a tenant outage; per
+Docker docs: patch releases only, no swarm here, long daemon downtime
+can fill the 64K FIFO log buffer). Two classic hardening flags
+explicitly REJECTED with reasons: `icc: false` (kills intra-compose
+traffic - every tenant app talks service-to-service) and
+`userland-proxy: false` (loopback-only publishes - 127.0.0.1:port,
+which many stacks use - stop working without it). THE REAL CATCH was
+not a flag: render-validation of the daemon.json template exposed a
+string-concatenation bug that produced INVALID JSON (`],` + `,"userns-
+remap"` = double comma) - the first docker01 bootstrap would have
+failed dockerd at the EPYC rehearsal. The config is now built as a
+dict and serialized with to_nice_json, render-tested in both remap
+modes.
+
 ### Backups and recovery
 
 - Per tenant: `ops/tenant-backup.sh` — restic snapshot tagged

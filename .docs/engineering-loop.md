@@ -92,6 +92,43 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 4 — iteration 31: daemon hardening + a latent brick caught (2026-10-18)
+
+RESEARCH: Docker live-restore docs (containers survive daemon crashes/
+upgrades; patch releases only; `systemctl reload docker` applies config
+without a restart; 64K FIFO log-buffer caveat for long daemon
+downtime); Docker Engine security docs (daemon root + unix socket =
+crown jewels; default capability drop; userns opt-in; DCT trust-pinning
+exists in daemon.json but Notary-class DCT is deprecated — iter 21's
+verdict already covers the signing path).
+
+ANALYZE: no-new-privileges as a daemon-wide DEFAULT closes the
+"whatever forgot to set it" class at zero cost; live-restore turns
+dockerd patch upgrades from a tenant blip into a non-event.
+`icc: false` and `userland-proxy: false` — the two other classic
+daemon flags — both rejected with concrete breakage (intra-compose
+traffic; loopback-only publishes which our own tenant templates rely
+on). THE FIND: while editing the daemon.json template I render-tested
+it — the old string-concatenation jinja produced `],` followed by
+`,"userns-remap"`, i.e. a DOUBLE COMMA: invalid JSON. docker01 has
+never booted (EPYC hardware pending), so `--syntax-check` (YAML-only)
+could never see it — the first bootstrap would have failed dockerd at
+the rehearsal, exactly the kind of latent defect this loop exists to
+catch.
+
+IMPLEMENT (ansible): daemon.json now built as a dict +
+`to_nice_json` (structurally valid by construction); adds
+no-new-privileges + live-restore behind `hosting_docker_live_restore`
+(default true, kill-switch documented). Verified: rendered via an
+ansible localhost play in BOTH remap modes — valid JSON, keys correct.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: render-validation (the check that found the bug) clean in all
+combinations; ansible --syntax-check clean; lean model exit 0. LESSON
+recorded: every template that emits JSON/YAML gets render-validated,
+not just syntax-checked.
+
 ### Hosting research loop round 3 — synthesis (iterations 21-30, 2026-10-16)
 
 Ten more research->analyze->implement->verify iterations, covering the

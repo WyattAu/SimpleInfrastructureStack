@@ -41,6 +41,15 @@ hosting_docker_userns_remap: true
 # networked filesystem.
 hosting_unit_landlock_hardening: true
 
+# Daemon-wide container hardening (research loop iter 31):
+#   no-new-privileges — setuid/setgid escalation blocked by default in
+#   every container (per-service compose settings still win).
+#   live-restore — dockerd restarts/upgrades leave containers running
+#   (patch releases only per Docker docs; major YY.MM upgrades and
+#   daemon-option changes can still require a manual container stop).
+#   First enable still costs one daemon restart.
+hosting_docker_live_restore: true
+
 # The internal tenant bridge is 10.10.10.0/24 — keep Docker's own pools
 # well clear of it and of the data_net ranges used on TrueNAS.
 hosting_docker_address_pools:

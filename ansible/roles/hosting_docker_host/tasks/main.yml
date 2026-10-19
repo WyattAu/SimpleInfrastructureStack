@@ -68,19 +68,27 @@
     state: present
     update_cache: true
 
-- name: Docker daemon configuration (log rotation, address pools, userns-remap)
+- name: Docker daemon configuration (log rotation, address pools, userns-remap, hardening)
+  # Research loop iter 31: built as a DICT then to_nice_json. The previous
+  # string-concatenation template rendered `],` + `,"userns-remap"` — a
+  # double comma, i.e. INVALID JSON, which would have failed dockerd at
+  # first bootstrap (found by render-validation before the EPYC bring-up).
   ansible.builtin.copy:
     dest: /etc/docker/daemon.json
     mode: "0644"
-    content: |
-      {
-        "log-driver": "json-file",
-        "log-opts": { "max-size": "{{ hosting_docker_log_max_size }}", "max-file": "{{ hosting_docker_log_max_files }}" },
-        "default-address-pools": {{ hosting_docker_address_pools | to_nice_json }}{{ ',' if hosting_docker_userns_remap else '' }}
-      {% if hosting_docker_userns_remap %}
-        ,"userns-remap": "default"
-      {% endif %}
-      }
+    content: "{{ daemon_config | to_nice_json }}"
+  vars:
+    daemon_base:
+      log-driver: json-file
+      log-opts:
+        max-size: "{{ hosting_docker_log_max_size }}"
+        max-file: "{{ hosting_docker_log_max_files }}"
+      default-address-pools: "{{ hosting_docker_address_pools }}"
+      no-new-privileges: true
+      live-restore: "{{ hosting_docker_live_restore | bool }}"
+    daemon_config: >-
+      {{ daemon_base
+         | combine({'userns-remap': 'default'} if (hosting_docker_userns_remap | bool) else {}) }}
   notify: Restart docker
 
 - name: Verify the dockremap subordinate ranges exist
