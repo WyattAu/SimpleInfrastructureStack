@@ -454,6 +454,28 @@ failed dockerd at the EPYC rehearsal. The config is now built as a
 dict and serialized with to_nice_json, render-tested in both remap
 modes.
 
+**Tier-1 refresh (loop iter 35):** the growth target is now a concrete
+design, validated against current Podman (5.x). Each tenant gets its
+own host user with a DEDICATED subuid/subgid range plus a systemd user
+session (`loginctl enable-linger`) running `podman.socket`; stacks are
+quadlets or `docker compose` against that user's socket
+(`DOCKER_HOST=unix:///run/user/<uid>/podman/podman.sock` - the hosting-
+api swap designed in iter 1, unchanged). Podman 5's default rootless
+networking is pasta (passt), which replaced slirp4netns; loopback-only
+port publishes - the platform's edge pattern - work natively. Quadlet
+puts tenant services under systemd USER units, which plugs into the
+iter-7 cgroup weight governance and journald logging directly. What
+tier-1 buys remains the iter-1 fix: per-tenant UID ranges end the
+userns-remap aliasing, and no root daemon sits in the container path.
+The COST the tier table under-recorded: METERING - cAdvisor's
+container discovery (iters 3/17) does not see rootless containers the
+same way under user-slice cgroup nesting; tier-1 migration therefore
+carries a metering work item (per-slice accounting via systemd
+exporter or cAdvisor cgroup driver changes) and the RSS meter must be
+re-validated before any tenant moves. Migration trigger unchanged: the
+first tenant that needs real cross-tenant containment, spiked first on
+a scratch VM (backlog #7).
+
 ### Backups and recovery
 
 - Per tenant: `ops/tenant-backup.sh` — restic snapshot tagged

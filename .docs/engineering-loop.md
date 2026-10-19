@@ -92,6 +92,37 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 4 — iteration 35: Podman tier-1 refresh (2026-10-18)
+
+RESEARCH: current Podman docs (rootless-first posture throughout —
+non-root samples, rootless containers have no host-visible IP, port
+publishing via the rootless network stack; pasta/passt replaced
+slirp4netns as Podman 5's default rootless networking; podman.socket
+per-user systemd service; quadlet systemd generator).
+
+ANALYZE: iter 1 named the growth target but left it abstract; this
+iteration concretized it into the exact swap the platform needs —
+per-tenant user + dedicated subuid range + per-user podman.socket +
+DOCKER_HOST swap (the iter-1 hosting-api design unchanged) — and
+confirmed the loopback-publish pattern survives rootless. The
+genuinely NEW finding is the integration cost the tier table
+under-recorded: METERING. cAdvisor's discovery (iters 3/17 — RSS
+metering, the billing input) does not see rootless containers under
+user-slice cgroup nesting the same way; a tier-1 migration therefore
+carries a metering work item and a meter re-validation gate BEFORE any
+tenant moves. Also a governance WIN: quadlet puts tenant services in
+systemd user units, which iter-7's weight model and journald reach
+natively.
+
+IMPLEMENT (spec): isolation-tiers section gains the tier-1 refresh
+paragraph (concrete design, pasta, quadlet, the metering caveat and
+re-validation gate, unchanged migration trigger).
+
+LEAN PROOF: unchanged, exit 0 (tier is growth; overhead estimate
+~0-2% stands).
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 4 — iteration 34: power resilience (NUT) (2026-10-18)
 
 RESEARCH: NUT 2.8.x user manual (layered design: device driver ->
