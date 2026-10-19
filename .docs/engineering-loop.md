@@ -92,6 +92,34 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 4 — iteration 39: deploy performance (2026-10-18)
+
+RESEARCH: Ansible configuration reference (ANSIBLE_PIPELINING:
+"reduces the number of network operations required to execute a module
+on the remote server... very significant performance improvement";
+caveats: conflicts with become unless requiretty is disabled in
+sudoers — absent from modern Ubuntu by default; silently disabled if
+ANSIBLE_KEEP_REMOTE_FILES is set; INTERPRETER_PYTHON auto_silent kills
+the per-play interpreter-discovery warnings).
+
+ANALYZE: the deploy is ~24 stacks x multiple tasks against one host
+through the webhook; every task historically paid an extra SSH
+round-trip to stage a module file. Forks/fact-caching were evaluated
+and rejected: forks do nothing meaningful on a 1-2 host inventory, and
+a persistent fact cache trades stale-fact risk (a rebooted host's
+stale mounts) for one setup round-trip per deploy — bad trade for a
+config-management deploy. Pipelining is the one setting with real
+per-task payoff and no correctness cost here.
+
+IMPLEMENT (ansible): ansible.cfg gains interpreter_python=auto_silent
+and [connection] pipelining=True with the documented caveats inline.
+
+LEAN PROOF: unchanged, exit 0 (deploy minutes are free latency win,
+no budget surfaces).
+
+VERIFY: ansible-config dump shows both settings loaded from the repo
+cfg; --syntax-check clean.
+
 ### Hosting research loop round 4 — iteration 38: second offsite / 3-2-1 (2026-10-18)
 
 RESEARCH: restic "working with repositories" docs (the `copy` command:
