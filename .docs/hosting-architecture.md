@@ -589,6 +589,23 @@ a scratch VM (backlog #7).
   the nightly file-consistency stop for non-DB paths. Trigger: a signed
   contract with RPO < 24h; priced as an add-on like the isolation/WAF
   tiers.
+- **Second offsite (loop iter 38):** against the 3-2-1-1-0 rule the
+  platform currently holds TWO copies (local restic on the tank mirror;
+  B2 offsite) - the missing third copy is also a SINGLE-VENDOR risk
+  (B2 credentials could delete the only offsite). The mechanism is
+  restic's own `copy` command: a second repository at a DIFFERENT
+  provider's S3-compatible endpoint, initialized with `--copy-chunker-
+  params` for cross-repo dedup, its OWN repo password (separate
+  compromise blast radius), fed weekly by `restic copy --from-repo`
+  (idempotent - already-copied snapshots skip). The copy destination
+  is NEVER auto-pruned: forget runs on it only at the annual rehearsal,
+  making it effectively append-only against credential-driven deletion.
+  Object Lock on the B2 bucket was considered and REJECTED: it fights
+  the automated prune (locked objects block retention deletion ->
+  unbounded cost) and does nothing about single-vendor risk, which is
+  the actual threat. Trigger: the first paying customer (same gate as
+  the DR rehearsal). The "0 errors" leg is already shipped - the weekly
+  `restic check` and the monthly restore drill (iters 4/26).
 - **Node loss** = reinstall Proxmox per this runbook, `terraform apply`,
   `ansible-playbook hosting_bootstrap.yml`, `restic restore` per tenant.
   Rehearse this before the first paying customer (see checklist).

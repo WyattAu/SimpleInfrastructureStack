@@ -92,6 +92,35 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 4 — iteration 38: second offsite / 3-2-1 (2026-10-18)
+
+RESEARCH: restic "working with repositories" docs (the `copy` command:
+inter-repo snapshot transfer, idempotent skip of already-copied
+snapshots, `init --from-repo --copy-chunker-params` for cross-repo
+dedup, separate passwords per repo, full read+write bandwidth per
+snapshot; `check --read-data-subset` semantics re-confirmed).
+
+ANALYZE — other engines: the 3-2-1-1-0 rule (Veeam-class practice)
+maps cleanly: copy 1 = local restic, copy 2 = B2, copy 3 = MISSING and
+the single-vendor risk is real (B2 credentials could delete the only
+offsite — the iter-14 side-channel analysis already noted repo access
+is operator-tier, but the provider side is also single-keyed). Two
+candidate fixes compared: Object Lock on B2 (REJECTED: fights the
+automated prune — locked objects block retention deletion, unbounded
+cost — and stays single-vendor) vs a second restic repo at a different
+provider fed by `restic copy` (ADOPTED as design, trigger-gated on the
+first paying customer). The never-auto-prune copy destination is the
+append-only property that makes it ransomware/credential-tolerant.
+
+IMPLEMENT (spec): Backups section gains the second-offsite bullet
+(design, init/copy commands, no-auto-prune rule, Object Lock reject
+with reason, trigger).
+
+LEAN PROOF: unchanged, exit 0 (storage delta lands with the first
+customer; infra_cost_per_tenant already carries the B2 share).
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 4 — iteration 37: edge IPv6 readiness (2026-10-18)
 
 RESEARCH: IETF draft-ietf-v6ops-6mops-10 (IPv6-mostly networks, Sept
