@@ -92,6 +92,53 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 4 — synthesis (iterations 31-40, 2026-10-18)
+
+Ten more research->analyze->implement->verify iterations over the parts
+no prior round had touched: the Docker daemon itself, database
+consistency, data-governance law, physical power, the tier-1 runtime
+design, staging, IPv6 reachability, offsite diversity, deploy
+latency. Score: **8 implementations, 5 rejects with recorded reasons,
+1 LATENT BRICK caught before it could fire, 1 new budget term,
+lean proof exit 0.**
+
+The headline is iteration 31: render-validation of the daemon.json
+template exposed a string-concatenation bug that produced INVALID JSON
+(`],` + `,"userns-remap"`) - docker01 has never booted, so a YAML-only
+syntax check could never see it; the first EPYC bootstrap would have
+failed dockerd. Fixed by building the config as a dict +
+to_nice_json, render-tested in both remap modes. Lesson recorded:
+templates that emit JSON/YAML get render-validated, not just
+syntax-checked.
+
+Adopted (implemented): daemon-wide no-new-privileges + live-restore
+(31); the §0 checklist now demands CAA records (25, round 3), an ISP
+v6-prefix answer (37), a DPA template (33) and a sized UPS (34) before
+first boot; NUT master/slave shutdown ordering in the runbook (34);
+staging_cpu in the capacity check with the exactly-at-ceiling
+assertion verified (36); pipelining in ansible.cfg (39). Designs
+recorded trigger-gated: pgBackRest PITR tier (32), restic-copy second
+offsite with an append-only destination (38), the tier-1 Podman design
+with its metering re-validation gate (35).
+
+Rejects (with reasons on record): icc:false and userland-proxy:false
+(31 - would break intra-compose traffic and loopback publishes),
+WAL-G for PITR (32 - PGDG pedigree wins unless a MariaDB tenant buys
+the tier), Object Lock on B2 (38 - fights the prune, stays
+single-vendor), fact-caching and forks (39 - stale-fact risk and
+no-op on a 1-2 host inventory).
+
+Round-4 pattern, consistent with rounds 1-3: the highest-value finds
+are defects and gaps invisible to the existing checks (a template
+that syntax-checks but renders garbage; a watchdog nobody watches; a
+fence that v4-only), and the adopted mechanisms are always boring -
+dict serialization, config lines, checklist items, timers.
+
+Verification state: lean model exit 0 (incl. staging term); site.yml +
+hosting_bootstrap.yml syntax-clean; all ops scripts bash -n clean;
+ansible-config shows the new connection settings loaded; SIS changes
+are LOCAL ONLY (auto-deploy repo — review, then push deliberately).
+
 ### Hosting research loop round 4 — iteration 39: deploy performance (2026-10-18)
 
 RESEARCH: Ansible configuration reference (ANSIBLE_PIPELINING:
