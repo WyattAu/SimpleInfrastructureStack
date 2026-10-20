@@ -92,6 +92,42 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 5 — iteration 41: external uptime probe (2026-10-19)
+
+RESEARCH: monitoring-topology audit of the platform — TrueNAS
+Prometheus/VictoriaMetrics (inside), docker01 watchdog (inside),
+meta-watchdog on CachyOS (same premises, same ISP). In-repo precedent:
+SIS already runs scheduled GitHub Actions workflows (vulnerability-scan
+cron) and ntfy is reachable from anywhere (ntfy.sh, public topics).
+
+ANALYZE — other engines: external uptime checks are a product
+(UptimeRobot/Pingdom class) because the failure they catch — path from
+the internet to the edge — is unobservable from inside, exactly the
+iter-23 lesson one level up. Paying for it is absurd when the
+platform's own CI (GitHub Actions runners) IS an off-site Linux fleet
+on a cron schedule. Design choices recorded: probe the edge canary
+(forgejo 200), 3 attempts over ~90s (the tunnel's blip history made
+single-probe paging predictably noisy — the deploy-retry hardening was
+the same lesson), offset cron from the internal watchdog so vantage
+points don't probe in lockstep, page-only-on-confirmed-failure,
+log-only when the secret is unset (visible-not-silent), and explicit
+acceptance that GitHub-outage silence is tolerable because the inside
+watchdogs still run. eventbusd was considered as a second emit target
+and rejected: it lives inside the LAN — unreachable from the external
+vantage, which is the entire point of this probe.
+
+IMPLEMENT (ops + spec): .github/workflows/external-probe.yml (cron
+7,22,37,52 * * * *; strict-YAML validated, no duplicate keys); the
+dead-man note in hosting-architecture.md gains the external-vantage
+paragraph. Probe logic exercised live against the real edge (HTTP 200,
+first attempt).
+
+LEAN PROOF: unchanged, exit 0 (zero infrastructure; the off-site fleet
+is GitHub's, on the free tier).
+
+VERIFY: strict duplicate-rejecting YAML validation passed; live probe
+green.
+
 ### Hosting research loop round 4 — synthesis (iterations 31-40, 2026-10-18)
 
 Ten more research->analyze->implement->verify iterations over the parts

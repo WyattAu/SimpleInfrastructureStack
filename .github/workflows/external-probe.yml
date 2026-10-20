@@ -1,0 +1,70 @@
+---
+# External uptime probe (research loop iter 41).
+#
+# Every monitor on the platform runs INSIDE the network, so an ISP or
+# router failure silences the monitors along with the service. This
+# workflow is the off-site vantage point: GitHub's runners probe the
+# PUBLIC edge from outside and page ntfy (which is reachable externally)
+# only on CONFIRMED failure - three attempts over ~90s, because the
+# tunnel has a known blip history and single-probe pages were noise.
+#
+# Arming: set the NTFY_PROBE_URL repository secret (full ntfy publish
+# URL incl. topic). Unset, the probe logs failures in the workflow run
+# history but cannot page - visible, not silent.
+#
+# Silence of THIS workflow itself (GitHub outage) is tolerable: the
+# internal watchdogs still run, and they monitor the edge from inside.
+
+name: External Probe
+
+on:
+  schedule:
+    # Every 15 minutes, offset from the internal watchdog (:00/15) so the
+    # two vantage points do not probe in lockstep.
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-probe
+  cancel-in-progress: false
+
+jobs:
+  probe-edge:
+    name: Probe public edge
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe with retries
+        id: probe
+        run: |
+          ok=0
+          for attempt in 1 2 3; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' \
+              --max-time 10 "https://forgejo.wyattau.com/" || echo "000")
+            echo "attempt $attempt: HTTP $code"
+            if [ "$code" = "200" ]; then
+              ok=1
+              break
+            fi
+            sleep 30
+          done
+          echo "ok=$ok" >> "$GITHUB_OUTPUT"
+      - name: Page on confirmed failure
+        if: steps.probe.outputs.ok != '1'
+        env:
+          NTFY_PROBE_URL: ${{ secrets.NTFY_PROBE_URL }}
+        run: |
+          echo "[$(date -u +%FT%TZ)] EDGE UNREACHABLE from external vantage after 3 attempts"
+          if [ -n "$NTFY_PROBE_URL" ]; then
+            curl -sS --max-time 10 \
+              -H "Title: EXTERNAL PROBE: public edge unreachable" \
+              -H "Priority: high" \
+              -d "forgejo.wyattau.com failed 3x from GitHub's network (HTTP codes above). Internal monitors may also be blind - check ISP/router/edge." \
+              "$NTFY_PROBE_URL" > /dev/null
+          else
+            echo "NTFY_PROBE_URL not set - paging disabled (log-only mode)"
+          fi
+          exit 1

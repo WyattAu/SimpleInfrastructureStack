@@ -559,7 +559,16 @@ a scratch VM (backlog #7).
   the last beat is >2700s old (two missed beats + slack), if the
   heartbeat has never existed, or if the eventbusd query itself is
   unreadable. Arming requires `hosting_eventbus_url`/`token` wired into
-  the docker01 role (the heartbeat publisher).
+  the docker01 role (the heartbeat publisher). **External vantage
+  (iter 41):** every monitor above still runs INSIDE the network - an
+  ISP or router failure silences the monitors along with the service.
+  The `external-probe` GitHub Actions workflow (every 15 min, offset
+  from the internal watchdog) probes the public edge from GitHub's
+  network and pages ntfy - reachable externally - only on CONFIRMED
+  failure (3 attempts over ~90s; the tunnel has a real blip history).
+  Silence of the probe itself (GitHub outage) is tolerable: the
+  internal watchdogs still cover the inside. Arming: `NTFY_PROBE_URL`
+  repository secret; unset = log-only mode, visible in run history.
 - **Restore drills are code (loop iter 26):** "rehearse this before the
   first paying customer" was a wish nobody could schedule - so the sweep
   does it. First Sunday of each month, one tenant's latest snapshot is
