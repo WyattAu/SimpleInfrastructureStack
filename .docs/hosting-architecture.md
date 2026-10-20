@@ -512,7 +512,30 @@ re-validated before any tenant moves. Migration trigger unchanged: the
 first tenant that needs real cross-tenant containment, spiked first on
 a scratch VM (backlog #7).
 
+**Tier-3 refresh (loop iter 44):** Firecracker is alive and hardening
+in exactly the direction multi-tenancy needs - v1.17.0 (Sept 2026)
+ships PCI device hotplug (developer preview), virtio-mem hotplug,
+bzImage guest boot, 6.18 guest-kernel support, VMClock snapshot
+safety, and T2S-class CPU templates that clear side-channel bits
+(FB_CLEAR); the virtio PCI transport CVE-2026-5747 was patched across
+four release branches within days of disclosure. The NSDI'20 paper's
+headline numbers stand (Lambda/Fargate production, millions of
+workloads; ~5 MiB VMM overhead, ~125 ms boot). What the refresh adds
+to the tier's design: (1) snapshot/restore becomes the tenant
+cold-start mechanism (boot-from-snapshot in milliseconds - the Fly.io
+pattern); (2) virtio-mem/balloon enables resizing a tenant without
+reboot; (3) the jailer (chroot + seccomp + namespaces) remains the
+wrapping boundary. One honest restatement: a microVM tenant is a VM
+BOUNDARY, not compose tenancy - tier-3 serves the untrusted-code tier
+as live single-purpose environments, and compose-based tenants would
+need a guest runtime inside (docker-in-microVM), which changes the
+management shape. The spike (backlog #7) now has concrete targets:
+jailer-sealed microVM, snapshot-restore boot, nested-KVM check on the
+EPYC, and a metering story (microVMs report their own memory/cpu via
+virtio-balloon, sidestepping the tier-1 cAdvisor problem).
+
 ### Backups and recovery
+
 
 - Per tenant: `ops/tenant-backup.sh` — restic snapshot tagged
   `tenant:<slug>` into `/srv/backups/restic`, copied offsite to B2.

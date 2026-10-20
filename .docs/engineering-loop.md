@@ -92,6 +92,39 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 5 — iteration 44: Firecracker tier-3 refresh (2026-10-19)
+
+RESEARCH: the NSDI'20 Firecracker paper (Agache et al., AWS: built
+because the virtualization-security vs container-overhead tradeoff was
+"unacceptable to public infrastructure providers"; deployed for Lambda
+AND Fargate, millions of workloads, trillions of requests/month) plus
+current releases: v1.17.0 (Sept 2026) — PCI device hotplug (preview),
+virtio-mem hotplug + balloon, bzImage boot, 6.18 guest kernels, VMClock
+snapshot safety, T2S CPU template hardening (FB_CLEAR), transparent
+huge pages; CVE-2026-5747 (virtio PCI transport) patched across four
+release branches within days.
+
+ANALYZE — other engines: Fly.io's machines are exactly this shape
+(snapshot-restore boot, per-tenant VMs) and the 2020 paper's numbers
+still hold; the project's security cadence (CVE response speed, CPU
+templates) is the strongest signal that tier-3 remains the right tool
+for untrusted code. New for our design: snapshot-restore as tenant
+cold-start, virtio-mem resize-without-reboot, and a METERING answer
+that sidesteps the tier-1 cAdvisor problem (microVMs self-report via
+virtio-balloon). One honest restatement recorded: a microVM tenant is
+a VM boundary, not compose tenancy - compose stacks would need a
+guest runtime inside, changing the management shape; tier-3 is for
+live single-purpose untrusted environments.
+
+IMPLEMENT (spec): isolation-tiers gains the tier-3 refresh paragraph;
+backlog #7's spike gains concrete targets (jailer-sealed microVM,
+snapshot-restore boot, nested-KVM check, balloon metering).
+
+LEAN PROOF: unchanged, exit 0 (tier-3 is future, ~5 MiB + guest kernel
+per tenant as recorded).
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 5 — iteration 43: docker disk hygiene (2026-10-19)
 
 RESEARCH: docker system prune reference (`image prune -a --filter
