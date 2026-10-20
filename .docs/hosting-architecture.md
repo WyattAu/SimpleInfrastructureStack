@@ -615,6 +615,14 @@ a scratch VM (backlog #7).
   the actual threat. Trigger: the first paying customer (same gate as
   the DR rehearsal). The "0 errors" leg is already shipped - the weekly
   `restic check` and the monthly restore drill (iters 4/26).
+- **Disk hygiene (loop iter 43):** renovate's tag bumps leave every old
+  image on disk, and `/var/lib/docker` lives on the SYSTEM disk - not
+  the quota'd data disk (iter 9's per-tenant quota does not see it).
+  Monthly, inside the yielding sweep window: unused images older than
+  14 days (the rollback window) and dead containers older than 7 days
+  are pruned; volumes are NEVER pruned (customer data). The other half
+  is loudness: the tenant watchdog pages at 85% on both the system and
+  data disks, so growth is seen whether or not the prune ran.
 - **Node loss** = reinstall Proxmox per this runbook, `terraform apply`,
   `ansible-playbook hosting_bootstrap.yml`, `restic restore` per tenant.
   Rehearse this before the first paying customer (see checklist).

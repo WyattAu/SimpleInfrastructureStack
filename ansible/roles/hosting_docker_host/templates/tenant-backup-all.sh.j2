@@ -70,6 +70,21 @@ if [ "$(date +%u)" = "7" ]; then
     fi
 fi
 
+# --- image hygiene (research iter 43) ----------------------------------------
+# Renovate bumps tags constantly; every old tag stays on disk and
+# /var/lib/docker lives on the SYSTEM disk (100 GiB), not the quota'd
+# data disk. Monthly (first Sunday, inside the yielding window): drop
+# unused images older than 14 days (the rollback window) and dead
+# containers older than 7 days. Volumes are NEVER pruned here - that is
+# customer data. The disk watchdog (iter 43) makes slow growth loud
+# regardless.
+if [ "$(date +%u)" = "7" ] && [ "$(date +%-d)" -le 7 ]; then
+    echo "[$(date -Is)] monthly docker hygiene:"
+    docker system df || true
+    docker image prune -a -f --filter "until=336h" || true
+    docker container prune -f --filter "until=168h" >/dev/null || true
+fi
+
 # --- restore drill (research iter 26) ----------------------------------------
 # An unverified backup is a wish (the DR section says rehearse quarterly;
 # nobody schedules it, so the sweep does). First Sunday of each month:

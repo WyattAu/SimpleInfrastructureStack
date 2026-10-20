@@ -84,6 +84,16 @@ else
     rm -f "$DRIFT_STAMP"
 fi
 
+# 6. Disk pressure (research loop iter 43): the system disk carries
+#    /var/lib/docker (unbounded image growth) and the data disk carries
+#    tenant trees (quota'd per-tenant, not in aggregate). Page at 85%
+#    so the monthly image prune and operator action have room to work.
+disk_pct() { df -P "$1" 2>/dev/null | awk 'NR==2 {gsub(/%/, "", $5); print $5}'; }
+ROOT_PCT=$(disk_pct /)
+DATA_PCT=$(disk_pct "{{ hosting_data_mount }}")
+[ "${ROOT_PCT:-0}" -ge 85 ] && failures="$failures\n- SYSTEM DISK ${ROOT_PCT}% full (docker images live here; monthly prune runs in the backup sweep)"
+[ "${DATA_PCT:-0}" -ge 85 ] && failures="$failures\n- DATA DISK ${DATA_PCT}% full (tenants + restic repo)"
+
 if [ -n "$failures" ]; then
     curl -s -H "Title: HOSTING WATCHDOG: degraded" -H "Priority: high" \
         -d "$(echo -e "$failures")" "$NTFY" > /dev/null
@@ -93,7 +103,7 @@ if [ -n "$failures" ]; then
     exit 1
 fi
 
-echo "watchdog OK (bad=$BAD offsite_age=${AGE}s psi_mem_full=${MEM_FULL:-0}% io_full=${IO_FULL:-0}% cpu_some=${CPU_SOME:-0}%)"
+echo "watchdog OK (bad=$BAD offsite_age=${AGE}s psi_mem_full=${MEM_FULL:-0}% io_full=${IO_FULL:-0}% cpu_some=${CPU_SOME:-0}% disk=${ROOT_PCT:-?}%/${DATA_PCT:-?}%)"
 
 # Dual-emit: healthy heartbeat to eventbusd (research loop wave 2).
 emit_event "hosting.watchdog.healthy" "{\"at\": \"$(date -Is)\"}"

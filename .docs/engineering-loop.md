@@ -92,6 +92,35 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 5 — iteration 43: docker disk hygiene (2026-10-19)
+
+RESEARCH: docker system prune reference (`image prune -a --filter
+until=<duration>` removes ALL unused images incl. tagged ones past the
+age; `container prune` for dead containers; volumes excluded unless
+--volumes is passed - the data-loss flag this platform will never pass;
+`system df` for visibility).
+
+ANALYZE: the noisy-neighbor quota work (iter 9) guards /srv per
+tenant; NOTHING guarded the system disk, where /var/lib/docker
+accumulates one retired tag per renovate bump on the 100 GiB rpool
+volume - a slow host-level outage with no alarm. Fix is two halves per
+the loop's standing doctrine (mechanism + loudness): a monthly prune
+bounded to the 14-day rollback window (old tags re-pull on demand;
+acceptable) inside the yielding sweep, and a watchdog check that pages
+at 85% on BOTH disks so growth is loud even without the prune.
+`docker system prune` wholesale was rejected (touches networks and
+stopped containers the operator may want for incident inspection);
+volumes are never pruned, period.
+
+IMPLEMENT (ansible): tenant-backup-all.sh.j2 gains the first-Sunday
+hygiene block (system df logged + image/container prune); watchdog.sh.j2
+gains check 6 (df -P thresholds, healthy line reports both disks).
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: bash -n clean on both rendered templates; disk_pct exercised
+live; lean model exit 0.
+
 ### Hosting research loop round 5 — iteration 42: Keycloak realm-as-code (2026-10-19)
 
 RESEARCH: adorsys/keycloak-config-cli (1.2k stars; declarative,
