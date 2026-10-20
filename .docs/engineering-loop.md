@@ -92,6 +92,37 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 5 — iteration 42: Keycloak realm-as-code (2026-10-19)
+
+RESEARCH: adorsys/keycloak-config-cli (1.2k stars; declarative,
+idempotent realm import via the Admin API; files are the Keycloak
+EXPORT format stored in git; remote-state management, var substitution
+with env/secret injection, Keycloak-version-matched tags); in-repo
+audit: iam stack runs Keycloak 26.6.2 (EIR) + postgres 17, realm built
+by hand through the UI, config lives ONLY in the database.
+
+ANALYZE — other engines: config-cli is the industry's realm-as-code
+answer, but it imports git -> realm, which makes the UI a
+second-class write path that gets reverted - wrong direction for a
+single operator who legitimately clicks. The iter-22 drift doctrine
+has two directions and this gap needed the OTHER one: capture reality
+into the canonical store. Adopted: `ops/keycloak-realm-export.sh`
+(kc.sh export inside the running container - postgres MVCC gives a
+consistent read; volatile internal UUIDs stripped so the mirror diffs
+cleanly; users deliberately NOT exported - GDPR-personal data is
+governed by the retention table, not git). config-cli recorded as the
+UPGRADE path with its trigger: multi-realm, authbox rollout, or
+staging (iter 36) needing reproducible realm bootstrap.
+
+IMPLEMENT (ops): keycloak-realm-export.sh (docker exec + kc.sh export
+--dir --realm + python strip/normalize); backlog #14 for the TrueNAS
+timer + auto-commit that gives it a cadence.
+
+LEAN PROOF: unchanged, exit 0 (a script, not a service).
+
+VERIFY: bash -n clean; the strip logic exercised against a fixture
+realm (ids removed, config intact); lean model exit 0.
+
 ### Hosting research loop round 5 — iteration 41: external uptime probe (2026-10-19)
 
 RESEARCH: monitoring-topology audit of the platform — TrueNAS
@@ -2632,6 +2663,7 @@ priced through `billing-kit`:
 | 11 | shutdown-kit/worker-kit: PSI pressure-reactive trim (iter 16) | read $MEMORY_PRESSURE_WATCH, release caches on pressure events |
 | 12 | EIR: cosign sign in the build matrix (iter 21) | tenant-provision fail-closed gate is inert until builds are signed |
 | 13 | sis-watchdog.sh: hardcoded eventbus token -> SOPS (iter 23 finding) | repo-committed bearer token; same SOPS contract as every other secret |
+| 14 | TrueNAS timer: nightly keycloak-realm-export.sh + auto-commit (iter 42) | realm mirror decays without a cadence; the script exists, the schedule does not |
 
 ## Research queue
 
