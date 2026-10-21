@@ -337,6 +337,14 @@ dnsviz).
    start; zero extra daemons). Implemented behind
    `hosting_secrets_tpm_creds` (default false until the DR rehearsal
    covers it); when enabled, plaintext never touches the host disk.
+   **Cloud credential scoping (iter 49):** runtime B2 credentials are
+   STANDARD application keys - single bucket, `tenants/` file-name
+   prefix, minimal capabilities (delete retained only because the
+   weekly retention IS the policy; the iter-38 append-only second
+   offsite is the deletion counterweight) - and the account master key
+   never appears in SOPS or any env file; each additional consumer gets
+   its own prefix-scoped key, so one leaked runtime key cannot reach
+   another consumer's objects.
    **Rotation runbook (loop iter 28):** every secret is encrypted to
    TWO age identities (admin + recovery, one sops key_group - any one
    member can decrypt), so rotation is a zero-downtime, no-risk

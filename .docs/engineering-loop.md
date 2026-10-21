@@ -101,6 +101,36 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 5 — iteration 49: cloud credential scoping (2026-10-20)
+
+RESEARCH: Backblaze application-keys docs (STANDARD keys: single-bucket
+scoping, file-name prefix restriction, capability list incl.
+read/write/delete/share, optional expiry; standard keys SURVIVE master
+key rotation; master key = all buckets, all capabilities, shown once).
+In-repo check: secrets/hosting.env.example shipped generic B2 key
+placeholders with no scoping policy.
+
+ANALYZE: the host that holds RESTIC_PASSWORD also held (potentially)
+B2 credentials that could delete EVERY offsite snapshot and every
+other consumer's objects in the account — the same tier-0 escape
+chains directly to offsite destruction. The scoping primitive is
+built into the provider and costs nothing: one standard key per
+CONSUMER (docker01-backup: HostingTenantsBackup + `tenants/` prefix +
+list/read/write/delete/share), master key banished to the password
+manager (never SOPS — iter 28 rotation would invalidate it anyway).
+The honest trade-off recorded: `deleteFiles` stays on the runtime key
+because the weekly retention pass (iter 4) IS the design — deletion
+resilience comes from the iter-38 append-only second offsite at a
+different provider, not from hobbling retention.
+
+IMPLEMENT (spec + secrets): security-model item 6 gains the scoping
+policy; hosting.env.example gains the key requirements as comments so
+the next operator cannot provision it wrong.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 5 — iteration 48: edge security headers (2026-10-20)
 
 RESEARCH: OWASP Secure Headers Project (OSHP) header set; in-repo
