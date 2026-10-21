@@ -46,6 +46,22 @@ backup window borrows compressible headroom; growth past ten tenants
 means a second production node, which is the documented growth path
 anyway.
 
+**Capacity exit triggers (loop iter 47):** the lean model is static;
+these measured conditions are what override it, and every sensor they
+need already exists. T1 - demand: a signed tenth tenant starts
+PROCUREMENT of the second production node (lead time must not be the
+capacity plan). T2 - saturation: 30-day sustained node_pressure cpu
+"some" avg60 > 20% OUTSIDE the backup window (the yield design
+tolerates windowed saturation by design; sustained pressure outside it
+is real demand, and the iter-16 watchdog + TrueNAS PSI alerts are the
+sensors). T3 - memory: platform+tenant RSS sustained > 70% of 96 GiB
+(cAdvisor gauges; memory is NOT the binding constraint at ten tenants
+- CPU is). T4 - storage: recurring 85% watchdog pages on the data disk
+(iter 43) = zvol growth on tank, before any second node. Any trigger
+fires a capacity review against the lean model with MEASURED inputs
+replacing the estimates - the model's numbers are hypotheses the fleet
+tests, per the loop contract.
+
 
 ### No OPNsense VM for the pilot
 

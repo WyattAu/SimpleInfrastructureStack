@@ -117,6 +117,12 @@ class ModelInputs:
     # 10 tenants + platform + staging the box sits exactly at the
     # 12-vCPU ceiling, which the model asserts.
     staging_cpu: float = 0.0
+    # Capacity exits (iter 47): the model's inputs are hypotheses the
+    # fleet tests. Measured overrides - 30d sustained PSI cpu some
+    # avg60 > 20% outside the backup window, RSS > 70% of 96 GiB, or
+    # recurring 85% data-disk pages - each fire a capacity review with
+    # measured inputs replacing these estimates (see spec, "Capacity
+    # exit triggers").
     # Measured/estimated overheads (updated per research iteration; each
     # entry names the iteration that set it).
     isolation_overhead_frac: float = 0.02   # iter 1: tier-0 userns-remap (~0-2%); tier-1 per-tenant rootless same class; gVisor 10-25% is OPT-IN and priced separately

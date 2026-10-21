@@ -101,6 +101,35 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 5 — iteration 47: capacity exit triggers (2026-10-20)
+
+RESEARCH: in-repo sensor audit — everything a capacity review needs is
+already instrumented by prior iterations: node_pressure PSI (iter 16,
+local watchdog + TrueNAS alerts), per-tenant RSS meters (iters 3/17),
+disk thresholds (iter 43 watchdog), the demand pipeline itself.
+
+ANALYZE: a static model with no exit criteria either ossifies ("the
+budget says 10 tenants forever") or gets overridden by vibes. The
+four triggers separate DEMAND (signed tenant #10 = start procurement —
+lead time is not a capacity plan), SATURATION (sustained PSI outside
+the backup window — the yielding design deliberately tolerates
+windowed saturation, so the OUTSIDE-window condition is what
+distinguishes real demand from the modeled nightly borrow), MEMORY
+(not binding at 10 tenants, CPU is — recorded so nobody buys RAM
+first), and STORAGE (disk pages = zvol growth on tank BEFORE any
+second node). Each trigger fires a review with measured inputs
+replacing estimates — consistent with the loop contract's "the
+roadmap is a hypothesis until iteration proves otherwise".
+
+IMPLEMENT (spec + lean proof): "Capacity exit triggers" paragraph in
+the one-VM section; the model's staging comment extended with the
+measured-override conditions.
+
+LEAN PROOF: unchanged, exit 0 (no budget moved; the policy governs
+WHEN budgets may be revised).
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 5 — iteration 46: Rust estate supply chain (2026-10-20)
 
 RESEARCH: cargo-deny (EmbarkStudios, 2.5k stars: four checks -
