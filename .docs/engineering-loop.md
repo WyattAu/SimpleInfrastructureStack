@@ -41,6 +41,15 @@ when it thins.
 - New Rust repos follow `OmniRust-template` posture: workspace `crates/*`,
   edition 2021, tier-a lints (deny panic/unwrap/expect/unsafe, pedantic),
   Apache-2.0.
+- **Rust supply chain (research iter 46):** every estate repo carries
+  [cargo-deny](https://github.com/EmbarkStudios/cargo-deny) in CI
+  (`cargo-deny-action`; advisories = RustSec, licenses, sources, bans —
+  blocking). cargo-audit is redundant (same RustSec DB, advisories check
+  covers it). cargo-vet DEFERRED: audit-sharing accrues to multi-dev
+  orgs, and a solo operation's audit IS its dogfooding; trigger to
+  revisit = external contributors on estate crates or third-party
+  consumers requesting attestation. Retrofit of existing repos =
+  backlog #15.
 - Published-crates.io deps preferred; git deps are debt to be repaid by
   republishing upstream.
 - Websites/frontends: Astro + SolidJS (`pediment` for tokens/components).
@@ -91,6 +100,35 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 ---
 
 ## Iteration log
+
+### Hosting research loop round 5 — iteration 46: Rust estate supply chain (2026-10-20)
+
+RESEARCH: cargo-deny (EmbarkStudios, 2.5k stars: four checks -
+advisories against the RustSec database, licenses, bans (incl.
+duplicate-version detection), sources; official GitHub Action; the
+README's "we can't take responsibility" note is irrelevant to its
+mechanical value); cargo-vet (Mozilla: audit SHARING across projects,
+relative audits via version diffs, deferred audits as a ratchet,
+trusted publishers, first-party-code distinction).
+
+ANALYZE — other engines: the Rust supply-chain stack has three layers
+- advisories (RustSec), policy linting (deny), human vetting (vet).
+For the estate: deny is mechanical and adopts outright as the CI gate
+(one Action, blocking, zero ongoing thought); audit is REDUNDANT (its
+RustSec check is inside deny); vet is the interesting one and the
+DEFER is honest - its value is sharing audits across a community of
+consumers, and with one developer the "trusted entity" is me auditing
+myself, while the estate's real audit loop is dogfooding (every crate
+consumed by live services). Triggers recorded: external contributors
+or third-party consumers requesting attestation.
+
+IMPLEMENT (loop doc): standing rules gain the supply-chain rule
+(cargo-deny blocking in every estate repo's CI; vet deferral with
+triggers); backlog #15 retrofits the existing fleet.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: python3 ops/lean-model.py exit 0.
 
 ### Hosting research loop round 5 — iteration 45: authenticated time (NTS) (2026-10-20)
 
@@ -2759,6 +2797,7 @@ priced through `billing-kit`:
 | 12 | EIR: cosign sign in the build matrix (iter 21) | tenant-provision fail-closed gate is inert until builds are signed |
 | 13 | sis-watchdog.sh: hardcoded eventbus token -> SOPS (iter 23 finding) | repo-committed bearer token; same SOPS contract as every other secret |
 | 14 | TrueNAS timer: nightly keycloak-realm-export.sh + auto-commit (iter 42) | realm mirror decays without a cadence; the script exists, the schedule does not |
+| 15 | Retrofit estate repos with cargo-deny CI (iter 46 standing rule) | advisories/licenses/sources checks are the estate's dependency gate; template sets it for new repos only |
 
 ## Research queue
 
