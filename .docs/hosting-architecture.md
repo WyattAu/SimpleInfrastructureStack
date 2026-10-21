@@ -78,8 +78,10 @@ below already anticipates it.
 Certificates per tenant domain with zero per-tenant config, one auditable
 static file, no provider machinery. SIS's internal Traefik keeps doing its
 internal job; the customer-facing edge is deliberately separate. `vane`
-(the in-house Go gateway) is the intended long-term replacement — its
-Caddyfile routes translate 1:1.
+(the in-house Rust edge gateway — thread-per-core, io_uring, GCRA filter
+reusing the estate's own throttle-kit, zero-loss hot upgrade) is the
+intended long-term replacement; the migration story is per-route, not
+Caddyfile-translation as first assumed.
 
 **Edge WAF research (loop iter 24):** the L7 inspection cutting edge is
 OWASP Coraza (Go WAF library, ModSecurity Seclang-compatible, full CRS

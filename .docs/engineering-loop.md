@@ -41,15 +41,14 @@ when it thins.
 - New Rust repos follow `OmniRust-template` posture: workspace `crates/*`,
   edition 2021, tier-a lints (deny panic/unwrap/expect/unsafe, pedantic),
   Apache-2.0.
-- **Rust supply chain (research iter 46):** every estate repo carries
-  [cargo-deny](https://github.com/EmbarkStudios/cargo-deny) in CI
-  (`cargo-deny-action`; advisories = RustSec, licenses, sources, bans —
-  blocking). cargo-audit is redundant (same RustSec DB, advisories check
-  covers it). cargo-vet DEFERRED: audit-sharing accrues to multi-dev
-  orgs, and a solo operation's audit IS its dogfooding; trigger to
-  revisit = external contributors on estate crates or third-party
-  consumers requesting attestation. Retrofit of existing repos =
-  backlog #15.
+- **Rust supply chain (research iter 46, CORRECTED 2026-10-21):**
+  `engineering-standards` is the authoritative CI home — the shared
+  gate matrix runs cargo-deny per push AND cargo-audit weekly
+  scheduled (the weekly run is NOT redundant: it catches advisories
+  published after the last push), plus the estate L0-L3 layer check.
+  The loop doc defers to that repo for Rust CI policy; cargo-vet rides
+  the OmniRust-template for new repos, deferred for retrofits
+  (backlog #15 -> tracked by engineering-standards adoption).
 - Published-crates.io deps preferred; git deps are debt to be repaid by
   republishing upstream.
 - Websites/frontends: Astro + SolidJS (`pediment` for tokens/components).
@@ -59,9 +58,26 @@ when it thins.
 
 ## Dogfooding matrix
 
-Estate crates (all published on crates.io) and who consumes them. Goal:
-every shipping stack sits on estate crates, and every estate crate has ≥2
-consumers.
+**Estate reality check (2026-10-21):** the estate has grown to ~161
+published crates across vertical stacks (audiobook, spreadsheet, DSP,
+fonts, automotive CAN/A2L/XCP, docs, GUI, agentic tooling) plus the
+infrastructure kits this platform consumes. Canonical trackers:
+
+- `estate-integration` — cross-crate composition proof: 56/161 crates
+  composed across 30 suites, 32 in debt (DOGFOOD-COVERAGE.md is the
+  source of truth for what composes; exact-pinned deps so failures are
+  attributable to real drift).
+- `engineering-standards` — the shared gate matrix (tier a/b/c CI:
+  build --locked, clippy -D warnings + pedantic, llvm-cov >=90/80/70%,
+  semver-checks, loom/miri on qualifying crates, cargo-deny per push,
+  cargo-audit WEEKLY SCHEDULED, estate L0-L3 layer check). The loop
+  doc's iter-46 rule is superseded by this repo: weekly cargo-audit is
+  NOT redundant with per-push cargo-deny (it catches advisories
+  published after the last push), and OmniRust-template now ships
+  deny+vet for new repos.
+
+Platform-consumed estate crates and who consumes them (the platform
+slice of the matrix; the full list lives in estate-integration):
 
 | Estate crate (crates.io name) | Consumers | Status |
 | --- | --- | --- |
@@ -69,24 +85,36 @@ consumers.
 | `metrics-kit` 0.2 | hosting-api (via telemetry-init), hosting-api gauges | live |
 | `healthkit` 1.2 | hosting-api (/healthz + /readyz), deploy-webhook-rs, flagsd, eventbusd, authbox | live |
 | `envstack` 0.2 | hosting-api (layered config) | live |
-| `throttle-kit` 1.1 (repo: ratelimit) | hosting-api (GCRA /api) | live |
+| `throttle-kit` 1.1 (repo: ratelimit) | hosting-api (GCRA /api); NEW: vane's rate-limit filter | live |
 | `webhookkit` 1.1 | deploy-webhook-rs (deploy HMAC) | live |
 | `billing-kit` 0.2 | hosting-api metering (usage pricing) | live |
 | `flag-kit` 0.2 | flagsd (the cutover control plane) | live |
 | `eventbus-kit` 0.3.6 (repo: eventbus, lib `typed_eventbus`) | eventbusd; watchdog dual-emit consumer | live |
-| `oauth-toolkit` 0.4 | authbox (JWKS validation); ES256/RS256 issuer primitives | live |
-| `tamper-audit` 0.2 (repo: auditlog) | authbox decision log | live |
-| `webauthn-kit` 0.4 | hosting-api passkeys | live |
+| `oauth-toolkit` 0.4 | authbox (JWKS validation); ES256/RS256 issuer primitives; chisel-auth (PKCE loopback) | live |
+| `tamper-audit` 0.2 (repo: auditlog) | authbox decision log; chisel-audit (document vocabulary over the chain) | live |
+| `webauthn-kit` 0.4 | hosting-api passkeys; chisel-auth v0.2 seam | live |
 | `worker-kit` 0.3 | hosting-api nightly sweep | live |
 | `shutdown-kit` 0.3 | hosting-api graceful drain | live |
 | `pediment` | hosting-dashboard (tokens vendored until npm publish) | partial |
 | `ferro` | SIS production; `files` tenant template | live |
-| `Tachyon` | SIS production | live |
+| `Tachyon` | SIS production; consolidated into docs-core (ADR-0004) | live |
 | EIR images | 34+ SIS containers; all tenant templates | live |
 | `aether-core` 2.0 | probe pending (see queue) | probe |
 
-Consumers wanted (offer these crates to them): `civitforge`, `clawdius`,
-`kestrel`, `aether-core`.
+**Now real (deferred primitives that shipped):** `ledger-kit`
+(derived-balance double-entry, decimal money, outbox-backed journal,
+tamper-evident) and `outbox-kit` (at-least-once dispatch, parked
+retries, replay) — the hosting-api metering/journal path (backlog #6)
+is UNBLOCKED; `accessctl` (Cedar-backed RBAC + Axum middleware) —
+authbox roadmap step 2 unblocked; `aperture-vault` (M0: content-
+addressed store; Immich-compatible API target) — the photos tenant
+template's estate-native candidate; `chisel-platform`/`chisel-doc` —
+composed product platform, future flagship tenant; `vane` — NOW RUST
+(not Go as the spec still said), thread-per-core io_uring, GCRA
+reusing throttle-kit, zero-loss hot upgrade — backlog #8's evaluation
+is materially changed.
+
+
 
 **Naming traps (crates.io ≠ repo dir ≠ lib name):** `ratelimit` repo ->
 `throttle-kit`; `eventbus` repo -> `eventbus-kit` (lib
@@ -100,6 +128,50 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 ---
 
 ## Iteration log
+
+### Estate reconciliation — the repo fleet survey (2026-10-21, pre-round-6)
+
+TRIGGER: new repos landing on the WyattAu GitHub; the loop's estate
+picture (~15 crates) was stale.
+
+SURVEY: ~161 published crates across vertical stacks (audiobook,
+spreadsheet, DSP, fonts, automotive CAN/A2L/XCP/DBC, docs, GUI/a11y,
+agentic tooling) plus the infra kits. The load-bearing discoveries for
+THIS platform:
+
+- `engineering-standards` — shared gate-matrix CI (tier a/b/c;
+  cargo-deny per push + cargo-audit weekly + L0-L3 layer check +
+  semver-checks + loom/miri). CORRECTS iter 46: the weekly audit is
+  not redundant with per-push deny (post-push advisories); the loop
+  doc now defers Rust CI policy to that repo.
+- `estate-integration` — the composition proof (56/161 crates, 30
+  suites, exact-pinned) — becomes the canonical dogfood tracker; the
+  loop doc's matrix is now the PLATFORM SLICE only.
+- `ledger-kit` + `outbox-kit` — the deferred billing primitives SHIPPED
+  (derived balances, outbox-backed journal, at-least-once dispatch
+  with parked retries). hosting-api metering v2 is unblocked
+  (backlog #16).
+- `accessctl` — Cedar-backed RBAC middleware; authbox roadmap step 2
+  unblocked (backlog #18).
+- `aperture-vault` — M0 (CAS store); Immich-compatible API target;
+  photos tenant template candidate (backlog #17).
+- `chisel-platform`/`chisel-doc` — a composed product platform
+  (tamper-audit, cas-kit, oauth-toolkit, webauthn-kit seams) — the
+  future flagship tenant for the hosting platform.
+- `vane` — is RUST, not the Go gateway the spec still described:
+  thread-per-core, io_uring + mio fallback, radix-trie lock-free
+  routing with EBR swap, GCRA filter reusing throttle-kit, kernel
+  splice L4, zero-loss hot upgrade via SCM_RIGHTS, SHM sidecar
+  transport (~2.8 µs). Spec description corrected; evaluation
+  posture changed (backlog #19): the moat argument is now concrete,
+  evaluation on staging (iter 36's docker02) at first capacity
+  pressure.
+
+RECONCILED: dogfooding matrix rewritten (platform slice + canonical
+trackers), standing rules corrected, spec vane paragraph corrected,
+backlog re-ranked (#16-#19 added). Round 6 will consume these: the
+estate-platform interface (metering v2, aperture tenant, vane
+evaluation) is now the natural frontier.
 
 ### Hosting research loop round 5 — synthesis (iterations 41-50, 2026-10-20)
 
@@ -2923,7 +2995,11 @@ priced through `billing-kit`:
 | 12 | EIR: cosign sign in the build matrix (iter 21) | tenant-provision fail-closed gate is inert until builds are signed |
 | 13 | sis-watchdog.sh: hardcoded eventbus token -> SOPS (iter 23 finding) | repo-committed bearer token; same SOPS contract as every other secret |
 | 14 | TrueNAS timer: nightly keycloak-realm-export.sh + auto-commit (iter 42) | realm mirror decays without a cadence; the script exists, the schedule does not |
-| 15 | Retrofit estate repos with cargo-deny CI (iter 46 standing rule) | advisories/licenses/sources checks are the estate's dependency gate; template sets it for new repos only |
+| 15 | Retrofit estate repos with engineering-standards CI (was: cargo-deny retrofit; iter 46 corrected 2026-10-21) | the shared gate matrix is the standard; repos predating it predate the matrix |
+| 16 | hosting-api metering v2: billing-kit -> ledger-kit journal + outbox-kit dispatch (UNBLOCKED 2026-10-21) | ledger-kit/outbox-kit shipped; derived balances + tamper-evident journal replace the ad-hoc billing window |
+| 17 | photos tenant template: aperture-vault when it reaches multi-node/MB-grade status (currently M0 CAS) | estate-native Immich replacement; Immich stays until aperture covers ingest->browse |
+| 18 | authbox step 2: accessctl (Cedar RBAC) per-route enforcement | accessctl shipped; authbox roadmap item 2 unblocked |
+| 19 | vane edge evaluation refresh (Rust, io_uring, GCRA, hot upgrade) | vane is no longer "future Go gateway"; evaluate against Caddy on staging (iter 36's docker02) at first real capacity pressure |
 
 ## Research queue
 
