@@ -134,7 +134,21 @@ exposes profile selection on docker01, then move new routes to
 `tlsserver`; `shortlived` is the opt-in tier for tenants who want
 revocation-by-expiry.
 
- Pingora (Cloudflare's Rust proxy
+**Edge headers (loop iter 48):** audited against the OWASP Secure
+Headers Project: the per-tenant origin block already sets the
+UNIVERSAL subset - HSTS (max-age 1y, deliberately WITHOUT
+includeSubDomains: customers may run subdomains of their domain that
+this edge does not serve), nosniff, Referrer-Policy
+strict-origin-when-cross-origin, and Server suppression. Everything
+else on the OSHP list is APP territory and stays there: CSP differs
+per tenant app (ferro carries its own), X-Frame-Options/frame-ancestors
+would break tenants that legitimately embed, and Cross-Origin-Opener-
+Policy can break OAuth popup flows (Keycloak). X-XSS-Protection is
+correctly absent (removed by browsers). The gap was verification, not
+configuration: the smoke checklist now asserts the headers on a live
+origin, so a Caddyfile regression cannot silently strip them.
+
+**Edge research (loop iter 2):** Pingora (Cloudflare's Rust proxy
 framework) was evaluated and rejected for this platform's size: it is a
 framework, not a proxy — no ACME wiring, no config surface, pre-1.0
 without API stability — so adopting it means writing and maintaining a
@@ -895,6 +909,9 @@ The playbook refuses to run against anything but `docker01`.
 - [ ] Watchdog timer ran clean: `journalctl -u sis-hosting-watchdog -n 5`
 - [ ] `upsmon` on docker01 reports the shared UPS as OL and slave-connected
       (iter 34): `upsc ups@<pve-mgmt-ip> ups.status`
+- [ ] `curl -sI https://<first-tenant-domain>` shows the iter-48 header
+      set (Strict-Transport-Security, X-Content-Type-Options,
+      Referrer-Policy) and no `Server` header
 - [ ] Caddy serving: `curl -I http://<public-ip>` (ACME works once DNS exists)
 
 ### 8. First tenant

@@ -101,6 +101,31 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 5 — iteration 48: edge security headers (2026-10-20)
+
+RESEARCH: OWASP Secure Headers Project (OSHP) header set; in-repo
+audit of the hosting_edge Caddyfile template.
+
+ANALYZE: the edge ALREADY implements the correct universal subset -
+HSTS (1y), nosniff, Referrer-Policy, -Server - and correctly excludes
+everything app-specific: CSP is per-app (ferro carries its own),
+frame-options breaks tenants that legitimately embed, COOP can break
+Keycloak popup flows, X-XSS-Protection is browser-removed. Two
+judgment calls recorded: HSTS deliberately WITHOUT includeSubDomains
+(customers may have subdomains this edge does not serve), and no
+preload submission (sticky for years, wrong for a young platform).
+The gap was verification, not configuration — nothing asserted the
+headers survive a Caddyfile edit. BONUS FIND: an orphaned mid-sentence
+in the spec (" Pingora (Cloudflare's...") — the iter-2 research label
+had been consumed by a round-2 edit; restored.
+
+IMPLEMENT (spec): edge section gains the iter-48 headers note; §7
+smoke checklist gains the live-origin header assertion.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 5 — iteration 47: capacity exit triggers (2026-10-20)
 
 RESEARCH: in-repo sensor audit — everything a capacity review needs is
