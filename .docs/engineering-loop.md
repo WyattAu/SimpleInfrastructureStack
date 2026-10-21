@@ -101,6 +101,48 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 5 — synthesis (iterations 41-50, 2026-10-20)
+
+Ten more iterations over the last uncovered surfaces: monitoring
+vantage, identity-provider config, host disk, the untrusted tier,
+time, the estate's own dependencies, capacity policy, browser-facing
+headers, and cloud credentials. Score: **6 implementations, 4 design
+verdicts recorded, 2 backlog items, 1 editing casualty restored,
+lean proof exit 0.**
+
+Adopted (implemented): the external-probe workflow - an off-site
+vantage probing the public edge from GitHub's fleet, paging only on
+confirmed failure (41; live-tested green); the Keycloak realm mirror -
+kc.sh export into git in the CAPTURE direction, users deliberately
+excluded as GDPR-personal (42); monthly docker image/container prune
+bounded to the rollback window plus 85% disk watchdogs on both disks
+(43); NTS-authenticated time for PVE and docker01 with the hardened
+chrony recipe (45); cargo-deny as a blocking standing rule for every
+estate repo, cargo-audit declared redundant, cargo-vet deferred with
+triggers (46); the B2 credential scoping policy with the master key
+banished from all env files (49).
+
+Verdicts recorded: Firecracker tier-3 refreshed (v1.17 hardening,
+snapshot-restore boot, balloon metering; VM-boundary-vs-compose
+restatement) (44); capacity exit triggers T1-T4 wired to the sensors
+previous iterations already installed (47); OSHP headers audited -
+the universal subset was already correct and the gap was VERIFICATION,
+now on the smoke checklist (48).
+
+The five-round pattern, now confirmed across 50 iterations: the
+highest-value finds are invisible to every existing check (an invalid
+daemon.json that syntax-checked fine, a fence that was v4-only, a
+watchdog nobody watched, headers nobody asserted), and the adopted
+mechanisms stay boring - timers, config lines, checklists, mirror
+scripts. New debt: backlog #14 (realm-export timer), #15 (cargo-deny
+retrofit).
+
+Verification state: lean model exit 0 (incl. staging term); both
+playbooks syntax-clean; all ops scripts bash -n clean; external-probe
+workflow strict-YAML valid AND its probe logic exercised live against
+the real edge; SIS changes are LOCAL ONLY (auto-deploy repo - review,
+then push deliberately).
+
 ### Hosting research loop round 5 — iteration 49: cloud credential scoping (2026-10-20)
 
 RESEARCH: Backblaze application-keys docs (STANDARD keys: single-bucket
