@@ -92,6 +92,39 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 5 — iteration 45: authenticated time (NTS) (2026-10-20)
+
+RESEARCH: chrony FAQ (NTS since chrony 4.0, RFC 8915; the full
+hardened-client recipe: `nts` + `minsources` + `maxchange 100 0 0` +
+`maxdrift`/`maxslewrate` limits; `chronyc -N authdata` verification
+(non-zero KeyID/Type/KLen); the NTS chicken-and-egg - certificate time
+checks fail on a badly-wrong clock, solved by RTC sync + makestep;
+timesyncd explicitly cannot detect falsetickers and "should be used
+only with trusted reliable servers"); attack model documented by the
+FAQ itself: MITM can fake/delay/drop packets to create arbitrary
+offsets, breaking DNSSEC, Kerberos, TLS, WireGuard - and every
+timestamp-checking surface in this platform.
+
+ANALYZE: the platform's time consumers are exactly the attacked class:
+authbox JWT exp/nbf checks, throttle-kit GCRA windows (a shifted clock
+extends or collapses rate-limit buckets), ACME validity windows,
+tamper-evident audit chains, backup schedules. Default Ubuntu timesyncd
++ unauthenticated pool NTP is the weak default everywhere. The
+hardening costs one config file per host: NTS-authenticated sources
+from two independent operators (Cloudflare + Netnod), minsources 2,
+maxchange panic, no auto-restart after a panic (per the FAQ, so an
+attacker can't grind the daemon). Guests inherit the host clock via
+kvm-clock but still bound local skew with their own chrony.
+
+IMPLEMENT (spec/runbook): the PVE post-install gains the NTS block
+(sources file, restart, authdata verification) applied to BOTH the PVE
+host and docker01, with the chicken-and-egg note.
+
+LEAN PROOF: unchanged, exit 0 (chrony is already installed on PVE;
+one package on docker01).
+
+VERIFY: python3 ops/lean-model.py exit 0.
+
 ### Hosting research loop round 5 — iteration 44: Firecracker tier-3 refresh (2026-10-19)
 
 RESEARCH: the NSDI'20 Firecracker paper (Agache et al., AWS: built

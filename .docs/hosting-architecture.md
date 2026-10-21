@@ -767,6 +767,31 @@ diff on next deploy instead of silently diverging.
   upsc ups@localhost ups.status   # expect: OL (online)
   ```
 
+- **Authenticated time (NTS)** (iter 45) — everything downstream trusts
+  the clock: JWT exp/nbf validation, GCRA rate limiting, TLS/ACME
+  windows, log correlation. Unauthenticated NTP (or timesyncd, which
+  cannot detect falsetickers at all) lets a MITM steer the clock. PVE
+  ships chrony; replace its sources with NTS-authenticated ones
+  (chrony >= 4.0, RFC 8915):
+
+  ```bash
+  # /etc/chrony/sources.d/nts.sources on the PVE host AND docker01:
+  #   server time.cloudflare.com iburst nts
+  #   server gbg1.ntp.netnod.se iburst nts
+  #   server mm1.ntp.netnod.se iburst nts
+  #   minsources 2
+  #   maxchange 100 0 0      # panic on absurd offsets; do NOT auto-restart
+  #   makestep 1 3
+  #   rtcsync
+  systemctl restart chrony
+  chronyc -N authdata   # expect non-zero KeyID/Type/KLen per server
+  ```
+
+  Guests inherit a correct host clock via kvm-clock, but run chrony
+  with NTS anyway to bound guest-local skew. NTS chicken-and-egg is
+  covered: VMs have no battery-backed RTC, so `rtcsync`+`makestep`
+  keep boot time close enough for the NTS-KE certificate check.
+
   Guest VMs (docker01) run `nut-client` as upsmon SLAVEs pointing at
   the PVE mgmt IP: when the battery hits the low-battery threshold,
   upsmon raises FSD everywhere and the ordering falls out of the
