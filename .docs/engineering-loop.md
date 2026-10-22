@@ -129,6 +129,40 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 6 — iteration 56: authbox + accessctl scoping (2026-10-22)
+
+RESEARCH: authbox's issuer read closely — the /token endpoint is
+SINGLE-CLIENT: one client_id/secret in App state, constant-time
+compared, one identity for the whole estate. accessctl read: Role
+hierarchy (Viewer<Editor<Admin) with has_at_least, Cedar PolicySet +
+schema/entities/authorize, Axum RequireRole<Role> middleware behind a
+RoleMarker trait (consumers map THEIR token claims to roles).
+
+ANALYZE — the roadmap item "accessctl policy enforcement per route"
+was mis-scoped by me in wave 3b: authbox has no user-facing routes
+needing RBAC (machines authenticate with credentials; jwks/discovery/
+healthz are public by contract). The REAL gap the platform has is
+upstream of RBAC: authbox cannot issue DISTINCT identities to DISTINCT
+callers. Until /token supports multiple clients — a client registry
+with per-client role claims, accessctl's Role vocabulary embedded in
+the issued token and echoed by /verify — hosting-api, a future
+chisel-platform, and any new estate service all share ONE service
+identity. That is the actual blocker for the estate identity loop
+(iter 11/55's design), and accessctl is the natural claim vocabulary
+once it exists (RoleMarker maps token role -> middleware).
+
+DESIGN RECORDED (implementation queued, security-plane change gets its
+own iteration): client registry (id/secret/role, SOPS-rendered like
+HOSTING_API_TOKEN today), /token issues role claim from accessctl's
+vocabulary, /verify echoes it, discovery advertises the claim name;
+Cedar policies optional v2 (role->capability checks live in consumers
+via accessctl middleware, not in the issuer — the issuer stays a
+simple authority). No implementation this iteration.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: read-only design iteration.
+
 ### Hosting research loop round 6 — iteration 55: chisel tenant design (2026-10-22)
 
 RESEARCH: chisel-platform cloned and read (library-stage: chisel-auth =
