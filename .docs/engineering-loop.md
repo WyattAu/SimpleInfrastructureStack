@@ -129,6 +129,39 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 6 — iteration 55: chisel tenant design (2026-10-22)
+
+RESEARCH: chisel-platform cloned and read (library-stage: chisel-auth =
+closed Role/Capability/Claims vocabulary over tokenkit — no service
+binary yet; chisel-assets = CAS wrapper over cas-kit; chisel-audit =
+document vocabulary over tamper-audit; script-gate-kit live; jobs/
+observe planned per the README table). The desktop editor itself
+(chisel-doc) is a CLIENT, never hosted.
+
+DESIGN (the tenant template sketch, recorded now so the services land
+hosting-ready): ONE service binary (auth API + assets API + jobs
+worker) + embedded SQLite + a CAS object volume — the aperture shape,
+deliberately: no Postgres, no Redis, one upgrade surface, one-file
+index backups that tenant-backup.sh already handles. Estate synergies
+that make chisel the FLAGSHIP tenant candidate: (1) authbox is its
+OIDC issuer — chisel-auth's desktop-login seam points at authbox's
+ES256 JWKS, closing an all-estate identity loop (and giving authbox
+its first real relying party); (2) the tamper-evident document audit
+chain is the tenant-visible Art-32/audit evidence (iter 33's data
+governance, made product); (3) outbox-kit dispatch -> eventbusd makes
+tenant document events observable on the estate bus; (4) metering is
+the standard cAdvisor-label path — no special cases. Hosting
+sequencing: the template waits for the services binary + chisel-jobs/
+observe; design gate recorded here so the compose template is a
+fill-in, not a design exercise, when it lands.
+
+No implementation this iteration (chisel-platform's own roadmap
+governs; hosting changes nothing in that repo).
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: read-only design iteration.
+
 ### Hosting research loop round 6 — iteration 54: platform-slice coverage audit (2026-10-22)
 
 RESEARCH: estate-integration pulled read-only (a WIP "Round 21 lead
