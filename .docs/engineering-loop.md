@@ -129,6 +129,15 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 7 — iteration 62: hosting-api 0.6.0 (2026-10-23)
+
+HOUSEKEEPING: version bumped 0.5.0 -> 0.6.0 (new module, endpoint,
+close job, and the load_config FIX = minor bump under semver-checks
+rules); README gains the 0.6.0 changelog block. Backlog #16 marked
+DONE by this round (the ledger path shipped in iter 51-51's commits;
+the remaining operator action is review + push + the first real
+HOSTING_LEDGER_DB deploy). Full suite green post-bump (52 tests).
+
 ### Hosting research loop round 7 — iteration 61: vane response-headers design (2026-10-23)
 
 RESEARCH: vane's dataplane read at the response seam. The discovery
@@ -3408,7 +3417,7 @@ priced through `billing-kit`:
 | 13 | sis-watchdog.sh: hardcoded eventbus token -> SOPS (iter 23 finding) | repo-committed bearer token; same SOPS contract as every other secret |
 | 14 | TrueNAS timer: nightly keycloak-realm-export.sh + auto-commit (iter 42) | realm mirror decays without a cadence; the script exists, the schedule does not |
 | 15 | Retrofit estate repos with engineering-standards CI (was: cargo-deny retrofit; iter 46 corrected 2026-10-21) | the shared gate matrix is the standard; repos predating it predate the matrix |
-| 16 | hosting-api metering v2: billing-kit -> ledger-kit journal + outbox-kit dispatch (UNBLOCKED 2026-10-21) | ledger-kit/outbox-kit shipped; derived balances + tamper-evident journal replace the ad-hoc billing window |
+| ~~16~~ | hosting-api metering v2 — DONE (round 6/7 iters 51+62, 0.6.0) | ledger-kit journal + outbox replay + nightly close shipped; deploy action: set HOSTING_LEDGER_DB |
 | 17 | photos tenant template: aperture-vault when it reaches multi-node/MB-grade status (currently M0 CAS) | PROBED GREEN (iter 52: M0-M5 shipped, Immich API live-verified incl. dedup + bit-identical roundtrip); template gates: web-UI story, watch folders, then compose template |
 | 18 | authbox step 2: accessctl (Cedar RBAC) per-route enforcement | accessctl shipped; authbox roadmap item 2 unblocked |
 | 19 | vane edge evaluation refresh (Rust, io_uring, GCRA, hot upgrade) | PROBED (iter 53): edge-complete EXCEPT a response-header stage (iter-48 headers have no surface); staging evaluation on docker02 with headers as work item 1 |
