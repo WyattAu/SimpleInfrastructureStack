@@ -129,6 +129,57 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 6 — iteration 51: metering v2 + a shipped-config bug caught (2026-10-22)
+
+RESEARCH: ledger-kit + outbox-kit APIs read against the local clones
+(`OutboxJournal` mirrors postings into an outbox store — crash-safe by
+ordering, replay via `restore()`; `Ledger::post` idempotent via claim
+keys; `SqliteStore` behind outbox-kit's `sqlite` feature, rusqlite
+bundled = musl-friendly; `DispatchSender` = object-safe async closure).
+Current metering audited: `UsageCollector` is in-memory by design;
+`reset_window` discarded closed windows — no durable billing artifact
+existed.
+
+IMPLEMENT (hosting-api, commits fc4d55c+43c7c34, LOCAL ONLY — push
+pending): new `ledger.rs` — `UsageLedger` (tenant.<slug> debits,
+platform.metering-revenue credits; zero-charge windows deliberately
+not posted; idempotency token in the memo + a journal pre-check makes
+the JOURNAL the durable claim, because the ledger's claim store is
+in-process and dies with it — found by the restart test, fixed, test
+kept); `nightly.rs` gains the metering-window-close job (cron 03:15
+UTC, AFTER the backup sweep so the window's own CPU lands in its day;
+a failed post does NOT reset the window — the next close retries the
+same key); `main.rs` spawns the outbox replay at boot;
+`GET /api/tenants/{t}/ledger` serves derived balance + postings
+(durable flag exposed). Tests: 41 unit (3 new: post-once+balance,
+zero-skip, sqlite-reopen+restore-replay) + 11 integration, clippy
+tier-a clean, fmt clean. Verified against the REAL binary with a
+SQLite journal: boot, healthz, empty durable statement, 401 on a bad
+token, SQLite file on disk.
+
+THE CATCH: the real-binary verification kept failing with
+"HOSTING_API_TOKEN not set" no matter the environment. Root cause, now
+proven by a test in envstack's own matrix (commit f000881, local):
+`EnvLayer::json()` LOWERCASES every env-var name when it builds its
+tree, but `ConfigStack::get` resolves paths case-sensitively — and
+hosting-api's `load_config` queried UPPERCASE keys. Every env lookup
+in main silently resolved to None since the wave-1 envstack adoption
+(0.5.0): the API booted with its token IGNORED (fail-closed saved us —
+/api was CLOSED, not open) and TENANT_ROOT ignored (the default
+happens to match production). Tests never caught it because they
+inject AppState directly and never exercise load_config; the loop's
+real-binary verify step did. Fixed consumer-side (lowercase query
+keys, documented in main.rs); envstack upstream hardening
+(case-insensitive resolve or docs) = backlog #20; noted inconsistency:
+HOSTING_CADVISOR_URL/HOSTING_LEDGER_DB read via std::env directly
+(works; would miss a TOML-file-only config).
+
+LEAN PROOF: unchanged, exit 0 (the journal replaces memory, adds one
+SQLite file in the platform's own budget).
+
+VERIFY: 52 tests green; real-binary live check green; envstack probe
+test green; SIS lean model exit 0.
+
 ### Estate reconciliation — the repo fleet survey (2026-10-21, pre-round-6)
 
 TRIGGER: new repos landing on the WyattAu GitHub; the loop's estate
@@ -3000,6 +3051,7 @@ priced through `billing-kit`:
 | 17 | photos tenant template: aperture-vault when it reaches multi-node/MB-grade status (currently M0 CAS) | estate-native Immich replacement; Immich stays until aperture covers ingest->browse |
 | 18 | authbox step 2: accessctl (Cedar RBAC) per-route enforcement | accessctl shipped; authbox roadmap item 2 unblocked |
 | 19 | vane edge evaluation refresh (Rust, io_uring, GCRA, hot upgrade) | vane is no longer "future Go gateway"; evaluate against Caddy on staging (iter 36's docker02) at first real capacity pressure |
+| 20 | envstack upstream: case-sensitivity footgun (iter 51 finding) | EnvLayer lowercases keys, get() is case-sensitive — any consumer querying UPPERCASE gets silent None; harden resolve_json or document loudly |
 
 ## Research queue
 
