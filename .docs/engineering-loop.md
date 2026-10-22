@@ -129,6 +129,32 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 7 — iteration 61: vane response-headers design (2026-10-23)
+
+RESEARCH: vane's dataplane read at the response seam. The discovery
+that changes the migration cost estimate: vane ALREADY has a per-route
+response-header injection stage — for CORS (`Conn.cors_headers`,
+`CorsAction::Actual` -> `cors::inject_into_head` at every relayed-head
+branch: gzip, h2, alt-svc, plain). The platform's OSHP headers need
+that stage generalized, not built.
+
+IMPLEMENT (vane, commit 524992b8, LOCAL ONLY): a design proposal —
+docs/response-headers-design.md — with the exact seams cited by line,
+the `[routes.response_headers]` add/remove config sketch, the wiring
+plan (policy staged on Conn beside cors; removes-then-adds applied
+after CORS at each inject site; locally-answered responses take the
+same policy so HSTS is hostname-consistent incl. 404/429), the test
+plan, and non-goals. Deliberately a PROPOSAL, not a patch: it is a
+lock-free security-critical dataplane with its own research loop
+(docs/research-loop-2026-10.md), and an untested dataplane patch at
+session depth is risk without review. The proposal is reviewable and
+unblocks backlog #19's staging evaluation the moment it lands.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: seams verified against proxy.rs source (line-cited in the
+proposal); proposal committed in vane.
+
 ### Hosting research loop round 7 — iteration 60: envstack hardening (2026-10-23)
 
 IMPLEMENT (envstack, commits af9a185+8412359, LOCAL ONLY — closes
