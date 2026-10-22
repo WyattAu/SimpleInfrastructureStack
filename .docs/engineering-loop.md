@@ -129,6 +129,44 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 7 — synthesis (iterations 59-63, 2026-10-23)
+
+Round 7 was the ESTATE-CONTRIBUTION round: every iteration landed
+commits in estate repos, advancing the exact blockers round 6
+identified. Score: **2 shipped features (authbox multi-client
+registry; envstack case-insensitive resolve), 1 upstream design
+proposal (vane response-headers stage), 1 release (hosting-api
+0.6.0), backlog #16 closed and #20 closed, lean proof exit 0.**
+
+- authbox `69c14fd` — the multi-client registry from the iter-56
+  design: AUTHBOX_CLIENTS id:secret:role triples (accessctl
+  vocabulary, fail-closed parsing), role claims as Keycloak
+  realm_access (the shape /verify already spoke), /verify-local
+  echoes roles, legacy single-client env falls back at Admin.
+  Distinct estate identities are now issu-able — the iter-55 chisel
+  identity loop and any future service can hold their own identity.
+- envstack `af9a185` — resolve_json falls back to the lowercased
+  path segment; the load_config footgun is now closed at the SOURCE
+  for every estate consumer, not just the one consumer that
+  corrected its keys. 0.2.2 publish noted for the operator.
+- vane `524992b8` — the response-headers stage DESIGN (line-cited
+  seams, config sketch, test plan, non-goals) committed as a
+  proposal for vane's own loop to implement; staging evaluation
+  (#19) unblocks the moment it lands.
+- hosting-api `1a2399c` — 0.6.0 with the changelog; #16 closed.
+
+Round-7 pattern: once round 6's live probes established ground truth,
+the contributions could be surgical — a registry exactly where the
+issuer needed one, a fallback exactly where the resolver was
+case-blind, a design exactly at the seam the dataplane already had.
+No rewrites; every change threaded an existing shape.
+
+Verification state: SIS lean proof exit 0; playbooks/scripts clean;
+authbox 9 tests + clippy/fmt clean; envstack 68 tests + clippy/fmt
+clean; hosting-api 52 tests + clippy/fmt clean at 0.6.0. ESTATE
+CHANGES LOCAL (authbox, envstack, vane, hosting-api) — push each
+deliberately after review. SIS local-only as always.
+
 ### Hosting research loop round 7 — iteration 62: hosting-api 0.6.0 (2026-10-23)
 
 HOUSEKEEPING: version bumped 0.5.0 -> 0.6.0 (new module, endpoint,
