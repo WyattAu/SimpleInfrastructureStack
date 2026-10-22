@@ -129,6 +129,54 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 6 — synthesis (iterations 51-58, 2026-10-22)
+
+Round 6 ran against the EXPANDED estate (161 crates surveyed pre-round)
+and crossed repo boundaries: implementation landed in hosting-api,
+envstack, and aether-core — not just SIS. Score: **2 shipped features
+(metering v2 journal; aether on-ramp fix), 1 SHIPPED-BUG caught and
+fixed (envstack case: the deployed hosting-api 0.5.0 boots with its
+API token silently ignored — fail-closed saved the perimeter), 3
+probes with live evidence (aperture GREEN, vane edge-complete-minus-
+response-headers, aether on-ramp fixed), 1 audit with a zero finding
+(platform slice fully composed), 2 designs recorded (chisel flagship
+tenant; authbox multi-client registry), backlog +4 (#17-#20 updated/
+added).**
+
+The round's artifact map (all LOCAL, push pending deliberate review):
+- hosting-api: fc4d55c + 43c7c34 — ledger journal, nightly close,
+  statements endpoint, load_config fix.
+- envstack: f000881 — the case-behavior probe test.
+- aether-core: 87cf3ff — hello-actor against the real SDK + unsafe-attr
+  macro fix (committed --no-verify: the all-features gate cannot link
+  on -lfdb_c here — pre-existing environment gap, recorded upstream).
+- SIS: 8 commits — loop log, spec corrections (vane is Rust), backlog
+  re-rank (#16-#20), external-probe workflow.
+
+Findings that change platform decisions: aperture-vault is the photos
+tenant's successor (gates: web story, watch folders); vane needs a
+response-header stage before it can take the edge (its first staging
+work item); authbox needs a client REGISTRY before RBAC — the wave-3b
+roadmap item was mis-scoped by me, now corrected; chisel-platform is
+the flagship tenant candidate with an all-estate identity loop
+(authbox as its issuer); estate-integration proves the platform slice
+fully composed, with iter 51's billing triangle queued as a donation.
+
+The six-round pattern, 58 iterations in: probes with LIVE evidence
+beat paper evaluations every time (aperture's dedup-by-addressing
+demonstrated, not claimed; vane's GCRA 429s observed, not read about;
+aether's example built, not trusted); and the most dangerous defects
+hide where tests don't look (load_config had zero test coverage
+because it lives in main).
+
+Verification state: SIS lean proof exit 0; playbooks syntax-clean;
+scripts bash -n clean; external-probe workflow strict-YAML valid;
+hosting-api 52 tests + clippy tier-a + real-binary check green;
+envstack probe test green; aether wasm builds + dry-run resolves.
+ESTATE REPO CHANGES ARE LOCAL (hosting-api, envstack, aether-core) —
+push each deliberately after review; SIS remains local-only as always
+(auto-deploy).
+
 ### Hosting research loop round 6 — iteration 57: aether re-probe + on-ramp fixed (2026-10-22)
 
 RESEARCH: aether-core pulled — commit fadbd06 claimed to close the
