@@ -129,6 +129,35 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 6 — iteration 54: platform-slice coverage audit (2026-10-22)
+
+RESEARCH: estate-integration pulled read-only (a WIP "Round 21 lead
+pipeline" suite — Cargo.toml/lock + tests/lead_pipeline.rs — lives
+uncommitted in that clone; the aborting pull PROTECTED it; left
+untouched). DOGFOOD-COVERAGE.md audited: 43 suites, 56/161 composed,
+16 debt.
+
+AUDIT RESULT — the platform slice is FULLY COVERED: every crate the
+hosting platform consumes (healthkit, envstack, throttle-kit,
+webhookkit, billing-kit, ledger-kit, outbox-kit, eventbus-kit,
+oauth-toolkit, webauthn-kit, worker-kit, shutdown-kit, telemetry-init,
+metrics-kit, flag-kit, tamper-audit, breaker, idempotency-kit) appears
+in the coverage table's auth/money/net/obsv layers. The 16 debt crates
+are all vertical-stack or niche (parsers, model-router, poolkit,
+uds-kit) — none are platform dependencies. The estate's own debt
+narrative is honest about it ("parsers with no shared surface").
+
+DONATION CANDIDATE: iter 51's hosting-api work IS a composition proof
+the suite lacks — ledger-kit × outbox-kit × billing-kit as a
+`billing_triangle` suite (post window -> journalled posting -> derived
+balance, incl. the restart-replay). Recording as a candidate so the
+suite can absorb it when the WIP round lands (repo untouched this
+iteration out of respect for the in-flight work).
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: read-only audit; no code touched.
+
 ### Hosting research loop round 6 — iteration 53: vane probe (2026-10-22)
 
 RESEARCH: vane cloned, built clean (0.5.3, 11 crates: kernel, router,
