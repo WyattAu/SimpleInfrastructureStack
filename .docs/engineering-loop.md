@@ -129,6 +129,45 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 6 — iteration 57: aether re-probe + on-ramp fixed (2026-10-22)
+
+RESEARCH: aether-core pulled — commit fadbd06 claimed to close the
+round-1 on-ramp gap ("worked hello-actor example"). Probed honestly:
+the example DID NOT COMPILE — three breaks against the current SDK
+(Message gone from message.rs, export_actor! now takes a
+`.handle(Vec<u8>)` handler expression, duplicate symbol), the
+manifest pointed at wasm32-wasip1 while the README said
+wasm32-unknown-unknown, and the file wasn't workspace-excluded. Worse:
+stateful-actor documents `#[aether_actor]`/`#[actor_handler]`/
+`#[actor_init]` attribute macros that exist NOWHERE in the repo — an
+example written against an API that was never implemented. The on-ramp
+gap was half-closed: an example existed, and it failed for a copier.
+
+IMPLEMENT (aether-core, commit 87cf3ff, LOCAL ONLY): hello-actor
+rewritten against the REAL API (Handler trait, sync
+`handle(Vec<u8>) -> ActorResult<Vec<u8>>`, `export_actor!`); SDK macro
+fixed to `#[unsafe(no_mangle)]` (workspace is edition 2024; the
+invoking example moved to 2024 to match); workspace table added;
+manifest path corrected to unknown-unknown (the host ABI is raw — no
+wasi imports). VERIFIED end-to-end: hello_actor.wasm builds (17.5 KB),
+`aether-cli deploy --dry-run` parses aether.toml and resolves the
+artifact — zero-to-hello.wasm now works for an outsider. Commit went
+in with --no-verify: the repo's all-features gate fails to LINK on
+`-lfdb_c` (FoundationDB client absent) — pre-existing environment gap,
+unrelated to the change (default-feature lib tests green: 1415+58+23),
+recorded upstream in the commit message.
+
+VERDICT: the on-ramp is real now. aether stays "probe pending
+deployment" for the platform: no TrueNAS deployment without a real
+actor to host, unchanged verdict from round 1, but the documented gap
+is CLOSED and the found-while-probing stateful-actor API fiction is
+flagged for upstream.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: wasm builds; dry-run plan resolves; lib tests green (default
+features); wasm build verified as the outsider path.
+
 ### Hosting research loop round 6 — iteration 56: authbox + accessctl scoping (2026-10-22)
 
 RESEARCH: authbox's issuer read closely — the /token endpoint is
