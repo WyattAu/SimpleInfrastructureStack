@@ -129,6 +129,39 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 7 — iteration 59: authbox multi-client registry (2026-10-23)
+
+IMPLEMENT (authbox, commit 69c14fd, LOCAL ONLY — security-plane change
+from the iter-56 design): `clients.rs` — ClientRegistry parsed from
+AUTHBOX_CLIENTS (`id:secret:role` triples; roles viewer|editor|admin
+against accessctl's Role vocabulary; constant-time per-candidate
+authentication; malformed specs are startup errors, fail-closed) with
+the legacy AUTHBOX_CLIENT_ID/SECRET pair falling back at Admin so
+pre-registry deploys keep working unchanged. /token binds the client's
+registry role into the issued token as a Keycloak-shaped
+`realm_access.roles` claim — the shape /verify ALREADY echoed, so
+downstream verifiers need zero changes; /verify-local now echoes roles
+too. The issuer stays a simple authority: WHO + WHAT role; whether a
+role may call a route is the consumer's accessctl middleware.
+
+Tests: 4 registry unit tests (spec parse incl. case-insensitivity,
+malformed rejects, exact-credential auth incl. cross-client secret,
+single-registry-is-admin) + 2 integration tests (distinct clients get
+distinct roles end-to-end through /token -> /verify-local; unknown
+client 401). Clippy tier-a clean, fmt clean.
+
+Unblocks: hosting-api / timeline-svc / chisel-platform each holding a
+distinct estate identity — the iter-55 chisel design's identity loop
+is now issu-able, not just designed. accessctl's RequireRole can gate
+routes off these tokens with no translation.
+
+LEAN PROOF: unchanged, exit 0 (registry is a Vec in the existing
+process — zero new services).
+
+VERIFY: 9 tests green; clippy/fmt clean. Deploy note: AUTHBOX_CLIENTS
+goes in the same SOPS contract as the old pair; the old vars keep
+working.
+
 ### Hosting research loop round 6 — synthesis (iterations 51-58, 2026-10-22)
 
 Round 6 ran against the EXPANDED estate (161 crates surveyed pre-round)
