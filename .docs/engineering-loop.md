@@ -129,6 +129,43 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 7 — iteration 64: the identity loop closes — and oauth-toolkit's ES256 gap surfaces (2026-10-23)
+
+IMPLEMENT (hosting-api b95082e + oauth-toolkit 291da9f, LOCAL ONLY):
+hosting-api /api now accepts authbox-issued JWTs — dual-accept with the
+legacy static token (operator break-glass; a non-JWT string can never
+validate as OIDC, so the fallthrough is structurally safe). Mode arms
+on HOSTING_OIDC_ISSUER (+AUDIENCE, +JWKS_URI override); tokens must
+carry the Admin realm role. Failed OIDC validation falls THROUGH to the
+legacy check (first middleware draft hard-401'd non-Admin tokens past
+the legacy path — the fixture test caught the precedence error before
+commit).
+
+THE CATCH — the biggest of the session: the fixture test 401'd the
+Admin JWT no matter what. Root cause, fixed upstream in oauth-toolkit
+(291da9f): `OidcValidator::validate_token` HARDCODED
+`Validation::new(Algorithm::RS256)` while iterating cached JWKS keys —
+every ES256 token (everything authbox issues) was unvalidatable BY THE
+CRATE'S OWN VALIDATOR, despite the crate documenting ES256 support.
+The issuer/validator pair was algorithm-mismatched by construction:
+authbox's shadow design could issue but never enforce its own tokens.
+Fix: algorithm-aware cache (kty -> RS256/ES256/EdDSA), EC key support
+via from_ec_components, per-key Validation. oauth-toolkit suite green
+(72+10+6); hosting-api consumes it via [patch.crates-io] until 0.4.1
+publishes (remove-on-publish noted inline).
+
+Also learned en route: envstack's lookup fix (iter 60) made the OIDC
+env vars resolve through EITHER spelling — the iter-51-era consumer fix
+stays correct on both.
+
+Tests: hosting-api 53 green (12 integration incl. the new fixture-IdP
+test: Admin grants, Viewer 401s, legacy token intact). oauth-toolkit
+88 green with the new algorithm matrix.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: full suites green both repos; clippy tier-a + fmt clean both.
+
 ### Hosting research loop round 7 — synthesis (iterations 59-63, 2026-10-23)
 
 Round 7 was the ESTATE-CONTRIBUTION round: every iteration landed
