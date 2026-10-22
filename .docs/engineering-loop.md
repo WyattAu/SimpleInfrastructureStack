@@ -129,6 +129,59 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 6 — iteration 53: vane probe (2026-10-22)
+
+RESEARCH: vane cloned, built clean (0.5.3, 11 crates: kernel, router,
+filters, tls, control, observe, shm, proto, plugins, client-sdk,
+proxy), config reference + filters source read against the platform's
+actual Caddyfile surface.
+
+CONFIG COVERAGE vs our edge needs: per-host routes + ACME v2 http-01
+(tls-alpn-01 rejected at load - fine, we terminate 80) with hourly
+renewal checks that know Let's Encrypt's 5-duplicates/week limit and
+hot-swap material without restart; clusters with loopback backends,
+unix sockets, health probes, LB policies; docker-label AND file
+providers (the machine-driven tenant onboarding maps to a written
+route file); unknown-keys-are-startup-errors (`vane validate`, live-
+confirmed); access_log as JSON lines with W3C trace_id and
+drop-counting under load; [rate_limit] = AGGREGATE GCRA across workers
+(the iter-27 edge-limit requirement, already shipped in vane);
+[jwt] bearer auth at the edge; adaptive concurrency (Gradient2-class
+load shedding - beyond Caddy); mTLS listeners with per-route SPIFFE
+prefix authorization (iter 11's identity story, at the edge); L4 splice
+passthrough; h2 listener; unix-socket backends; SCM_RIGHTS hot
+upgrade; Prometheus admin plane with bearer auth; Wasm plugin slots;
+PROXY protocol; post-quantum + mesh-mTLS design docs.
+
+PROBE (live): validate OK; proxied GET through vane to an upstream
+(200, access-log line with ts/duration/upstream/trace_id); GCRA fired
+429s on burst with `upstream: null` (rejected pre-routing, logged) -
+functional dataplane, rate limiting, and logging all confirmed live.
+Probe-rig caveats recorded honestly: single-threaded python
+HTTPServer + vane's pooled connections produced 502/000 tails (rig
+artifact - real backends speak keep-alive), and my pkill patterns
+self-matched twice; the health subsystem marking the backend down
+after failures is the feature working, not a defect.
+
+GAP (the one that matters for migration): the filter pipeline is
+REQUEST-side only - there is no response-header stage, so the
+platform's per-tenant security headers (iter 48: HSTS, nosniff,
+Referrer-Policy, Server-strip) have NO vane surface today. Migration
+options: upstream a response-filter stage in vane (estate's own repo),
+Wasm plugin, or keep headers app-side per tenant. Also noted: gzip
+only (no zstd), http-01 only.
+
+VERDICT (backlog #19): vane is real, actively engineered, and
+edge-complete for us EXCEPT response headers. The staging evaluation
+(iter 36's docker02) stands, with the response-header stage as its
+first work item. Caddy stays on docker01 until vane passes staging
+with headers solved.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: build clean; validate clean; live proxy/GCRA/access-log
+confirmed; admin port listening.
+
 ### Hosting research loop round 6 — iteration 52: aperture-vault probe (2026-10-22)
 
 RESEARCH: aperture-vault cloned and read (SPEC.md + SPEC-STATUS.md).
@@ -3094,7 +3147,7 @@ priced through `billing-kit`:
 | 16 | hosting-api metering v2: billing-kit -> ledger-kit journal + outbox-kit dispatch (UNBLOCKED 2026-10-21) | ledger-kit/outbox-kit shipped; derived balances + tamper-evident journal replace the ad-hoc billing window |
 | 17 | photos tenant template: aperture-vault when it reaches multi-node/MB-grade status (currently M0 CAS) | PROBED GREEN (iter 52: M0-M5 shipped, Immich API live-verified incl. dedup + bit-identical roundtrip); template gates: web-UI story, watch folders, then compose template |
 | 18 | authbox step 2: accessctl (Cedar RBAC) per-route enforcement | accessctl shipped; authbox roadmap item 2 unblocked |
-| 19 | vane edge evaluation refresh (Rust, io_uring, GCRA, hot upgrade) | vane is no longer "future Go gateway"; evaluate against Caddy on staging (iter 36's docker02) at first real capacity pressure |
+| 19 | vane edge evaluation refresh (Rust, io_uring, GCRA, hot upgrade) | PROBED (iter 53): edge-complete EXCEPT a response-header stage (iter-48 headers have no surface); staging evaluation on docker02 with headers as work item 1 |
 | 20 | envstack upstream: case-sensitivity footgun (iter 51 finding) | EnvLayer lowercases keys, get() is case-sensitive — any consumer querying UPPERCASE gets silent None; harden resolve_json or document loudly |
 
 ## Research queue
