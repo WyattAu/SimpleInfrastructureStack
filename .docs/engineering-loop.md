@@ -129,6 +129,28 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 7 — iteration 60: envstack hardening (2026-10-23)
+
+IMPLEMENT (envstack, commits af9a185+8412359, LOCAL ONLY — closes
+backlog #20): `resolve_json` falls back to the LOWERCASED path segment
+when an exact lookup misses. The layer tree stores env names
+lowercased; consumers querying the natural spelling now resolve either
+way — exact match wins, lowercase is the documented fallback, and the
+behavior is locked by a ConfigStack-level matrix test (any real env
+var resolves through `get()`). This makes the fix durable for every
+estate consumer, not just hosting-api's corrected keys (which remain
+correct and are now doubly safe). 57+7+4 tests green, fmt/clippy clean.
+
+Version note for the operator: this is envstack 0.2.1 -> 0.2.2
+semver-compatible; publish after review so dependents pick it up from
+crates.io (hosting-api's local build already benefits via the workspace
+path once repointed — currently it uses the published 0.2 line with
+the consumer-side lowercase keys, which work on either version).
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: full envstack suite green; fmt/clippy clean.
+
 ### Hosting research loop round 7 — iteration 59: authbox multi-client registry (2026-10-23)
 
 IMPLEMENT (authbox, commit 69c14fd, LOCAL ONLY — security-plane change
