@@ -129,6 +129,43 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 7 — final synthesis (iterations 59-64, 2026-10-23)
+
+Five iterations, all estate-repo contributions, closing the two
+blockers round 6 flagged and surfacing a third that only integration
+testing could see. Score: **3 shipped features, 1 upstream design
+proposal, 2 cross-crate bugs fixed (oauth-toolkit ES256 validator; the
+envstack case footgun), 1 release (hosting-api 0.6.0), backlog #16 and
+#20 closed, lean proof exit 0.**
+
+The round's arc — the identity loop is now closed IN CODE:
+authbox ISSUES multi-client role-bearing tokens (iter 59) ->
+oauth-toolkit VALIDATES them (iter 64's algorithm fix — before it,
+the validator could not accept the issuer's own ES256 output) ->
+hosting-api ENFORCES Admin roles on /api while keeping the operator
+break-glass token (iter 64). The envstack resolve fallback (iter 60)
+makes the configuration surface safe for every consumer. vane's
+response-headers stage is designed and awaiting upstream
+implementation (iter 61 proposal, backlog #19). chisel's tenant
+design is recorded awaiting its services binary (iter 55).
+
+Commits this round (ALL LOCAL, push deliberately):
+- authbox 69c14fd — multi-client registry.
+- envstack af9a185+8412359 — resolve fallback + matrix test.
+- oauth-toolkit 291da9f — algorithm-aware JWKS validation.
+- hosting-api b95082e + 1a2399c — OIDC mode, 0.6.0.
+- vane 524992b8 — response-headers design proposal.
+- SIS: 7 commits (loop log, backlog re-rank).
+
+Verification state: SIS lean proof exit 0; authbox 9 tests, envstack
+68, oauth-toolkit 88, hosting-api 53 — all green, clippy tier-a and
+fmt clean everywhere. hosting-api carries [patch.crates-io]
+oauth-toolkit until 0.4.1 publishes (remove-on-publish noted inline).
+The next natural round: publish 0.2.2/0.4.1/0.6.0 after review, wire
+AUTHBOX_CLIENTS + HOSTING_OIDC_ISSUER into the deploy contracts, and
+the estate's first real identity cutover — authbox enforcement, not
+shadow.
+
 ### Hosting research loop round 7 — iteration 64: the identity loop closes — and oauth-toolkit's ES256 gap surfaces (2026-10-23)
 
 IMPLEMENT (hosting-api b95082e + oauth-toolkit 291da9f, LOCAL ONLY):
