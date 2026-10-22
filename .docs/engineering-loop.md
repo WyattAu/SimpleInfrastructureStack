@@ -129,6 +129,50 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 6 — iteration 52: aperture-vault probe (2026-10-22)
+
+RESEARCH: aperture-vault cloned and read (SPEC.md + SPEC-STATUS.md).
+The M0 label undersells it: M0-M5 SHIPPED — BLAKE3 CAS store (streaming
+ingest, dedup by construction, corruption detection, GC), asset probe
+(EXIF/GPS, PNG, MP4 via estate mp4-core), SQLite/WAL index (timeline,
+sentinel-day grouping), auth (Argon2 verifiers, session JWTs,
+share-link capability tokens, enumeration defence), ingest pipeline
+(hash-while-stream -> dedup short-circuit -> probe -> index),
+Immich-compatible API, sync-on-demand thumbnails with CAS-cached
+derivatives (a deliberate refusal of a job queue for instant work).
+M5 is the honest-engineering exhibit: io_uring-under-CAS was PLANNED,
+REFUTED BY MEASUREMENT (12 µs of 266 ms, 0.0045% — the cost is page-
+cache copies the hasher needs), and pivoted to the Immich backup flow;
+the measurement lives as an example.
+
+PROBE (live, real binary): add-user bootstrap (no signup dance) ->
+serve -> ping -> login (Immich-shaped response, accessToken) ->
+multipart upload 201 AND raw-octet upload 200 (both client contracts,
+same endpoint) -> timeline buckets -> search/metadata returns the
+asset under a CONTENT-ADDRESS id -> re-upload of identical bytes left
+statistics at images:1 (dedup short-circuited by addressing) ->
+thumbnail 200 (real JPEG) -> original roundtrip BIT-IDENTICAL
+(CMP-clean). 35 Immich-compatible routes total. Two estate-hygiene
+finds: the local mp4-core clone was stale (0.2 vs aperture's 0.3) and
+dsp-spectral needed a pull — stale local clones break downstream
+builds; pulls applied.
+
+VERDICT: viable TODAY as the photos tenant's app for MOBILE-FIRST
+tenants — the Immich mobile app endpoints exist and the CAS properties
+(dedup, integrity, one-file-index backup) map directly onto the
+tenant-backup model. Template-promotion gates: (1) the web story —
+Immich's web client will NOT run against aperture; tenants are
+mobile-only until aperture ships a web surface or the template
+documents the split; (2) watch folders (SPEC: planned); (3) compose
+template + quota + edge route (the standard provisioner path). Immich
+stays the template default until gates 1-2 close (backlog #17
+updated).
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: live probe green end-to-end; cargo test suite green across
+all crates (13+4+17+14+5+5+4...).
+
 ### Hosting research loop round 6 — iteration 51: metering v2 + a shipped-config bug caught (2026-10-22)
 
 RESEARCH: ledger-kit + outbox-kit APIs read against the local clones
@@ -3048,7 +3092,7 @@ priced through `billing-kit`:
 | 14 | TrueNAS timer: nightly keycloak-realm-export.sh + auto-commit (iter 42) | realm mirror decays without a cadence; the script exists, the schedule does not |
 | 15 | Retrofit estate repos with engineering-standards CI (was: cargo-deny retrofit; iter 46 corrected 2026-10-21) | the shared gate matrix is the standard; repos predating it predate the matrix |
 | 16 | hosting-api metering v2: billing-kit -> ledger-kit journal + outbox-kit dispatch (UNBLOCKED 2026-10-21) | ledger-kit/outbox-kit shipped; derived balances + tamper-evident journal replace the ad-hoc billing window |
-| 17 | photos tenant template: aperture-vault when it reaches multi-node/MB-grade status (currently M0 CAS) | estate-native Immich replacement; Immich stays until aperture covers ingest->browse |
+| 17 | photos tenant template: aperture-vault when it reaches multi-node/MB-grade status (currently M0 CAS) | PROBED GREEN (iter 52: M0-M5 shipped, Immich API live-verified incl. dedup + bit-identical roundtrip); template gates: web-UI story, watch folders, then compose template |
 | 18 | authbox step 2: accessctl (Cedar RBAC) per-route enforcement | accessctl shipped; authbox roadmap item 2 unblocked |
 | 19 | vane edge evaluation refresh (Rust, io_uring, GCRA, hot upgrade) | vane is no longer "future Go gateway"; evaluate against Caddy on staging (iter 36's docker02) at first real capacity pressure |
 | 20 | envstack upstream: case-sensitivity footgun (iter 51 finding) | EnvLayer lowercases keys, get() is case-sensitive — any consumer querying UPPERCASE gets silent None; harden resolve_json or document loudly |
