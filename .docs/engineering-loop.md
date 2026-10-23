@@ -129,6 +129,30 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 8 — iteration 66: accessctl adoption (2026-10-24)
+
+IMPLEMENT (hosting-api, commit f5b42a8, LOCAL ONLY — backlog #18
+consumer adoption): the /api Admin gate now checks the token's roles
+through accessctl's Role hierarchy (`has_at_least(&Role::Admin)`)
+instead of a literal `"Admin"` string compare. Semantics for today are
+identical (Admin is the top of the vocabulary) but the check is now
+HIERARCHY-aware: the day the estate adds a role above Admin, or
+consumers normalize role spellings, the gate composes without edits.
+Unknown role names are skipped, not errors. 53 tests green, clippy/
+fmt clean.
+
+The full consumer chain now reads estate-native end to end: authbox
+issues accessctl-vocabulary roles (iter 59) -> oauth-toolkit validates
+the token (iter 64 fix) -> hosting-api checks hierarchy via accessctl
+(iter 66). #18 closes as "consumed"; the Cedar PolicySet side of
+accessctl stays available for future attribute rules and is
+deliberately not wired into the simple role gate (one authority, one
+vocabulary, no parallel policy systems).
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: 53 tests green; clippy/fmt clean.
+
 ### Hosting research loop round 8 — iteration 65: vane response-headers stage IMPLEMENTED (2026-10-24)
 
 IMPLEMENT (vane, commit ddc26364, LOCAL ONLY): the iter-61 proposal
