@@ -3638,7 +3638,7 @@ priced through `billing-kit`:
 | 11 | shutdown-kit/worker-kit: PSI pressure-reactive trim (iter 16) | read $MEMORY_PRESSURE_WATCH, release caches on pressure events |
 | 12 | EIR: cosign sign in the build matrix (iter 21) | tenant-provision fail-closed gate is inert until builds are signed |
 | 13 | sis-watchdog.sh: hardcoded eventbus token -> SOPS (iter 23 finding) | repo-committed bearer token; same SOPS contract as every other secret |
-| 14 | TrueNAS timer: nightly keycloak-realm-export.sh + auto-commit (iter 42) | realm mirror decays without a cadence; the script exists, the schedule does not |
+| ~~14~~ | realm-export cadence — DONE (round 8 iter 68) | export runs stamp-gated (daily) inside the meta-watchdog's SSH bundle, lands in appdata (restic-covered, drift-safe); stale >26h pages |
 | 15 | Retrofit estate repos with engineering-standards CI (was: cargo-deny retrofit; iter 46 corrected 2026-10-21) | the shared gate matrix is the standard; repos predating it predate the matrix |
 | ~~16~~ | hosting-api metering v2 — DONE (round 6/7 iters 51+62, 0.6.0) | ledger-kit journal + outbox replay + nightly close shipped; deploy action: set HOSTING_LEDGER_DB |
 | 17 | photos tenant template: aperture-vault when it reaches multi-node/MB-grade status (currently M0 CAS) | PROBED GREEN (iter 52: M0-M5 shipped, Immich API live-verified incl. dedup + bit-identical roundtrip); template gates: web-UI story, watch folders, then compose template |
@@ -3659,3 +3659,24 @@ priced through `billing-kit`:
   (EIR already attests — enforce on the consumer side)
 
 Cutover test: flag enabled 100% at this commit — next push exercises the flag-gated execution (flock serializes the twins).
+
+### Hosting research loop round 9 — iteration 68: realm-export cadence (2026-10-25)
+
+IMPLEMENT (SIS, local): backlog #14 closed in-repo. Two moves:
+(1) ops/keycloak-realm-export.sh default output moved OFF the deploy
+checkout INTO the sis appdata tree — the mirror now lives where
+backups live (nightly restic covers it), and an uncommitted file can
+never trip the iter-22 checkout-drift checks; (2) the meta-watchdog's
+SSH bundle now owns the cadence: stamp-gated (export file mtime
+>24h) daily run via its existing TrueNAS SSH path, freshness paging
+at >26h, run-failure paging, and the age in the healthy heartbeat.
+The schedule lives in code the loop owns — no TrueNAS cron nobody
+reviews. Git auto-commit deliberately DROPPED from the design: the
+deploy key is pull-only (by construction) and the restic copy is the
+durability story.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: bash -n clean on the watchdog; the export file age arithmetic
+exercised (stat -c %Y); loop log updated.
+

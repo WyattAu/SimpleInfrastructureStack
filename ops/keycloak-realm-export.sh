@@ -19,7 +19,11 @@
 set -euo pipefail
 
 REALM="${1:-company-realm}"
-OUT="${2:-/mnt/pool_HDD_x2/infra/stacks/stacks/iam/realm-export}"
+# Default home: the sis appdata tree — covered by the nightly restic
+# sweep, and deliberately NOT the deploy checkout (an uncommitted file
+# there would trip the iter-22 drift check; the mirror lives where
+# backups live, not where force-sync lives).
+OUT="${2:-/mnt/pool_HDD_x2/tank/datasources/sis/appdata/iam/realm-export}"
 CONTAINER="${KEYCLOAK_CONTAINER:-iam-keycloak}"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT

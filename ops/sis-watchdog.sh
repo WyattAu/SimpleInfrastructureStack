@@ -31,6 +31,28 @@ DIRTY=$(git -C "$REPO" status --porcelain 2>/dev/null | wc -l)
 AHEAD=$(git -C "$REPO" rev-list origin/main..HEAD --count 2>/dev/null || echo 0)
 echo "DRIFT_DIRTY=${DIRTY:-unknown}"
 echo "DRIFT_AHEAD=${AHEAD:-0}"
+
+# Realm-config mirror (research loop round 8 iter 68): the Keycloak
+# realm export is run HERE — stamp-gated to daily — so the cadence
+# lives in code the loop owns, not in a TrueNAS cron nobody reviews.
+# Freshness is then checked like every other artifact: stale >26h pages.
+EXPORT_OUT=/mnt/pool_HDD_x2/tank/datasources/sis/appdata/iam/realm-export
+EXPORT_FILE="$EXPORT_OUT/company-realm-realm.json"
+EXPORT_AGE=$(( NOW - $(stat -c %Y "$EXPORT_FILE" 2>/dev/null || echo 0) ))
+if [ "$EXPORT_AGE" -gt 86400 ]; then
+    if ssh -o ConnectTimeout=10 truenas_admin@192.168.1.3 \
+        "bash /mnt/pool_HDD_x2/infra/stacks/ops/keycloak-realm-export.sh" \
+        >>/tmp/sis-realm-export.log 2>&1;
+    then
+        EXPORT_AGE=0
+        echo "REALM_EXPORT=refreshed"
+    else
+        echo "REALM_EXPORT=failed"
+    fi
+else
+    echo "REALM_EXPORT=fresh"
+fi
+echo "REALM_EXPORT_AGE=$EXPORT_AGE"
 REMOTE
 scp -q /tmp/sis-remote-check.sh truenas_admin@192.168.1.3:/tmp/sis-remote-check.sh >/dev/null 2>&1
 REMOTE_REPORT=$(ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new truenas_admin@192.168.1.3 'bash /tmp/sis-remote-check.sh' 2>/dev/null)
@@ -45,6 +67,8 @@ eval "$REMOTE_REPORT"
 [ "${SCRAPE_DOWN:-0}" -gt 2 ] && failures="$failures\n- SCRAPES FAILING: ${SCRAPE_DOWN} targets down"
 [ "${DRIFT_DIRTY:-0}" -gt 0 ] && failures="$failures\n- CHECKOUT DRIFT: ${DRIFT_DIRTY} uncommitted file(s) on the TrueNAS checkout — deploy will WIPE them (upstream first)"
 [ "${DRIFT_AHEAD:-0}" -gt 0 ] && failures="$failures\n- CHECKOUT DRIFT: ${DRIFT_AHEAD} local commit(s) ahead of origin — deploy will reset them away (push or rebase)"
+[ "${REALM_EXPORT:-fresh}" = "failed" ] && failures="$failures\n- REALM EXPORT FAILED: keycloak-realm-export.sh errored (see /tmp/sis-realm-export.log on CachyOS)"
+[ "${REALM_EXPORT_AGE:-0}" -gt 93600 ] && failures="$failures\n- REALM EXPORT STALE: ${REALM_EXPORT_AGE}h since last successful export (identity config mirror decaying)"
 
 # --- dead-man switch (research loop iter 23) ---------------------------------
 # docker01's watchdog heartbeats hosting.watchdog.* to eventbusd every
@@ -104,6 +128,6 @@ if [ -n "$failures" ]; then
   emit_event "sis.watchdog.degraded" "{\"failures\": $FAILURES_JSON, \"at\": \"$(date -Is)\"}"
   echo "ALERT SENT:$failures"
 else
-  emit_event "sis.watchdog.healthy" "{\"at\": \"$(date -Is)\", \"offsite_age\": ${OFFSITE_AGE:-0}, \"fleet_bad\": ${FLEET_BAD:-0}, \"scrape_down\": ${SCRAPE_DOWN:-0}, \"heartbeat_age\": ${HB_AGE:-0}}"
-  echo "ALL WATCHDOG CHECKS PASSED (offsite_age=${OFFSITE_AGE:-?}s fleet_bad=${FLEET_BAD:-0} scrape_down=${SCRAPE_DOWN:-0} headscale=${HEADSCALE:-ok} heartbeat_age=${HB_AGE:-?})"
+  emit_event "sis.watchdog.healthy" "{\"at\": \"$(date -Is)\", \"offsite_age\": ${OFFSITE_AGE:-0}, \"fleet_bad\": ${FLEET_BAD:-0}, \"scrape_down\": ${SCRAPE_DOWN:-0}, \"heartbeat_age\": ${HB_AGE:-0}, \"realm_export_age\": ${REALM_EXPORT_AGE:-0}}"
+  echo "ALL WATCHDOG CHECKS PASSED (offsite_age=${OFFSITE_AGE:-?}s fleet_bad=${FLEET_BAD:-0} scrape_down=${SCRAPE_DOWN:-0} headscale=${HEADSCALE:-ok} heartbeat_age=${HB_AGE:-?} realm_export_age=${REALM_EXPORT_AGE:-?})"
 fi
