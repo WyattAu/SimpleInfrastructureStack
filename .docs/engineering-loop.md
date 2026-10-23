@@ -129,6 +129,31 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 9 — iteration 67: aperture watch folders (2026-10-24)
+
+IMPLEMENT (aperture-vault, commit 184ece9, LOCAL ONLY): `aperture-server
+watch <vault-root> <directory> [interval-secs]` — the SPEC's stated
+import mechanism, now real. Design notes: initial scan immediately,
+then every interval (default 300s); each pass re-walks the tree (ingest
+is idempotent by checksum, so a pass costs one stat walk plus what is
+new); failures logged and retried next pass (a bad file must not kill
+the watcher); scan runs in spawn_blocking holding the index mutex —
+the same single-writer discipline as the CLI path. Errors fold into
+the retry loop (join failure = retry next pass), never exit.
+
+LIVE PROBE: watcher up -> initial scan 0 -> file dropped into the
+watched dir -> next pass "1 ingested" -> following pass "1 already
+present". Idempotency visible in the logs, exactly the property the
+tenant contract needs.
+
+Closes the second #17 gate (watch folders). Remaining for the photos
+template: the web-UI story (product decision) — mobile-only tenants
+are unblocked NOW.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: live probe green; clippy clean; fmt clean.
+
 ### Hosting research loop round 8 — synthesis (iterations 65-66, 2026-10-24)
 
 A deliberately short round: both iterations finished the highest-
