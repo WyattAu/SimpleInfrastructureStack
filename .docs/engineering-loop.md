@@ -129,6 +129,34 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 8 — synthesis (iterations 65-66, 2026-10-24)
+
+A deliberately short round: both iterations finished the highest-
+ranked backlog items instead of opening new fronts. Score: **2
+shipped features, 1 dataplane bug found+fixed by an e2e test
+(remove_from_head eating the head terminator), backlog #18 and #19's
+work item 1 closed, lean proof exit 0.**
+
+- vane ddc26364 — the response-headers stage, implemented exactly per
+  the iter-61 proposal (config -> RouteEntry policy -> Conn staging ->
+  apply_response_policy at every relayed-head branch), with the
+  terminator bug the e2e test caught on its first run. Backlog #19 is
+  now hardware-gated only (docker02 staging).
+- hosting-api f5b42a8 — the /api Admin gate checks accessctl's role
+  hierarchy; #18 closes as "consumed". The issuer -> validator ->
+  enforcement chain is estate-native end to end: authbox vocabulary,
+  oauth-toolkit validation, accessctl hierarchy.
+
+Remaining backlog: #17 (aperture template gates — web story + watch
+folders, product decisions), #14/#15 (timers/CI adoption, operator
+actions). The next natural fronts are deployment-shaped (EPYC
+hardware, publish 0.2.2/0.4.1/0.6.0) rather than code-shaped.
+
+Verification state: SIS lean proof exit 0; playbooks/scripts clean;
+vane workspace green (e2e 26 incl. the new policy test), clippy/fmt
+clean; hosting-api 53 tests green. ESTATE CHANGES LOCAL (vane,
+hosting-api) — push deliberately after review.
+
 ### Hosting research loop round 8 — iteration 66: accessctl adoption (2026-10-24)
 
 IMPLEMENT (hosting-api, commit f5b42a8, LOCAL ONLY — backlog #18
@@ -3589,7 +3617,7 @@ priced through `billing-kit`:
 | 15 | Retrofit estate repos with engineering-standards CI (was: cargo-deny retrofit; iter 46 corrected 2026-10-21) | the shared gate matrix is the standard; repos predating it predate the matrix |
 | ~~16~~ | hosting-api metering v2 — DONE (round 6/7 iters 51+62, 0.6.0) | ledger-kit journal + outbox replay + nightly close shipped; deploy action: set HOSTING_LEDGER_DB |
 | 17 | photos tenant template: aperture-vault when it reaches multi-node/MB-grade status (currently M0 CAS) | PROBED GREEN (iter 52: M0-M5 shipped, Immich API live-verified incl. dedup + bit-identical roundtrip); template gates: web-UI story, watch folders, then compose template |
-| 18 | authbox step 2: accessctl (Cedar RBAC) per-route enforcement | accessctl shipped; authbox roadmap item 2 unblocked |
+| ~~18~~ | authbox identity loop + accessctl adoption — DONE (round 7 iters 59/64, round 8 iter 66) | authbox issues accessctl-vocabulary roles; oauth-toolkit validates; hosting-api gates via has_at_least(Admin). Cedar PolicySet reserved for future attribute rules |
 | 19 | vane edge evaluation refresh — response-headers stage LANDED (iter 65, vane ddc26364); remaining: Caddy-parity checklist + GCRA/adaptive soak on docker02 staging | evaluation runs the moment staging hardware exists |
 | 20 | envstack upstream: case-sensitivity footgun (iter 51 finding) | EnvLayer lowercases keys, get() is case-sensitive — any consumer querying UPPERCASE gets silent None; harden resolve_json or document loudly |
 
