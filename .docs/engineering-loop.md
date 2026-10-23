@@ -3705,3 +3705,44 @@ LEAN PROOF: unchanged, exit 0.
 VERIFY: bash -n clean on the watchdog; the export file age arithmetic
 exercised (stat -c %Y); loop log updated.
 
+
+### Hosting research loop round 10 — iteration 69: the identity loop LIVE, two-process (2026-10-25)
+
+THE verification the whole identity arc was building toward: real
+authbox and real hosting-api as separate processes over real
+discovery/JWKS HTTP, four-way credential matrix live-checked (Admin
+JWT 200 / Viewer JWT 401 / legacy token 200 / anonymous 401).
+
+The probe caught THREE real defects the fixture test could not:
+1. **authbox discovery was not OidcDiscovery-shaped** — authorization/
+   userinfo endpoints are REQUIRED fields in oauth-toolkit's
+   OidcDiscovery, but a client-credentials-only issuer legitimately
+   has neither. Fixed in oauth-toolkit (5158f7d): both fields are now
+   Option — an issuer without interactive flows is a legitimate OIDC
+   issuer.
+2. **authbox aud contract** — /token stamped aud = the CLIENT's own
+   id, but consumers validate aud against THEIR name. Fixed
+   (authbox 18459c4): per-request `audience` form field >
+   AUTHBOX_DEFAULT_AUDIENCE env > client id (the legacy single-client
+   shape, which only worked because client and consumer shared a
+   name).
+3. **hosting-api issuer normalization** — Url::parse().to_string()
+   added a trailing "/" to root-only issuer URLs; iss comparison is
+   string equality, so "http://host:port" tokens failed against
+   "http://host:port/" config. Fixed (1360011): validate the URL,
+   pass the operator's spelling through. The fixture test missed all
+   three because its issuer carried a path AND its discovery was
+   hand-built with the right fields.
+
+Commits: authbox 18459c4; oauth-toolkit 5158f7d (88 tests); hosting-api
+1360011 (53 tests) — all LOCAL, push deliberately.
+
+LESSON, the strongest of the session: a green fixture test proves the
+fixture. Only two real processes over real HTTP prove the CONTRACT —
+and contracts are where distributed systems break.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: live matrix green after fixes; oauth-toolkit 88 tests; both
+binaries clean.
+
