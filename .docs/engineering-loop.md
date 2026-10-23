@@ -3660,6 +3660,31 @@ priced through `billing-kit`:
 
 Cutover test: flag enabled 100% at this commit — next push exercises the flag-gated execution (flock serializes the twins).
 
+### Hosting research loop round 9 — synthesis (iterations 67-68, 2026-10-25)
+
+Round 9 closed the last two code-shaped backlog items. Score:
+**2 shipped features, 2 backlog items closed (#17 gate 2 + #14), 0
+regressions, lean proof exit 0.**
+
+- aperture 184ece9 — `aperture-server watch`: the SPEC's import
+  mechanism, live-proven (drop -> ingest -> already-present).
+  Photos-template gate 2 closed; mobile-only tenants unblocked now.
+- SIS b3f025d — the realm-export cadence runs stamp-gated inside the
+  meta-watchdog's existing SSH path (daily), lands in appdata
+  (restic-covered, drift-safe by construction), pages on failure or
+  staleness. Git auto-commit dropped on purpose: pull-only deploy key
+  + restic = the durability story.
+
+After 9 rounds / 68 iterations, the backlog is entirely product- or
+deployment-shaped: #17's web-UI story (product), #15 CI adoption
+(operator), EPYC hardware for staging/cutover, publish 0.2.2/0.4.1/
+0.6.0 after review, and the deploy contracts (AUTHBOX_CLIENTS +
+HOSTING_OIDC_ISSUER + HOSTING_LEDGER_DB). The loop's next natural
+trigger is reality: first tenant, first hardware, first publish.
+
+Verification state: SIS lean proof exit 0; scripts/playbooks clean;
+aperture watch live-proven; watchdog bash -n clean.
+
 ### Hosting research loop round 9 — iteration 68: realm-export cadence (2026-10-25)
 
 IMPLEMENT (SIS, local): backlog #14 closed in-repo. Two moves:
