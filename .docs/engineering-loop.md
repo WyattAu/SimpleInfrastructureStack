@@ -129,6 +129,40 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 8 — iteration 65: vane response-headers stage IMPLEMENTED (2026-10-24)
+
+IMPLEMENT (vane, commit ddc26364, LOCAL ONLY): the iter-61 proposal
+became code, end to end across four layers — vane-control
+(ResponseHeadersConfig: add map + remove list, unknown keys rejected
+at parse), vane-router (ResponseHeaderPolicy resolved onto
+RouteEntry/RouteBuilder), vane-proxy (policy staged on the Conn beside
+CORS; applied via the new cors::apply_response_policy at every
+relayed-head branch: gzip h2, h2 cors, gzip, alt-svc/cors, plain; the
+plain zero-copy relay takes the owned-copy path when a policy is set),
+plus a remove_from_head pass (case-insensitive, all occurrences).
+
+BUG FOUND BY THE E2E TEST: remove_from_head consumed the head
+terminator (\r\n\r\n) during its rebuild, so every LATER injection
+(CORS-including paths, and the adds pass) silently bailed — removals
+worked, adds vanished. Fixed by restoring the terminator; the e2e now
+proves adds AND removes on one response (HSTS + nosniff in, upstream
+Server + X-Powered-By out).
+
+Full workspace green (e2e 26, proxy_unit 125, h2 8, control 78...);
+clippy workspace-clean; fmt clean. Also updated: 12 RouteBuilder/
+RouteEntry/test construction sites, RouteBuilder gains the field,
+XDS/providers default it.
+
+This was backlog #19's work item 1 — with it landed, the staging
+evaluation (iter 36's docker02) is UNBLOCKED: vane can now carry the
+platform's OSHP header set, and the Caddy parity checklist has one
+fewer entry.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: workspace tests green; clippy clean; fmt clean; e2e asserts
+adds + removes on one response.
+
 ### Hosting research loop round 7 — final synthesis (iterations 59-64, 2026-10-23)
 
 Five iterations, all estate-repo contributions, closing the two
