@@ -3566,7 +3566,7 @@ priced through `billing-kit`:
 | ~~16~~ | hosting-api metering v2 — DONE (round 6/7 iters 51+62, 0.6.0) | ledger-kit journal + outbox replay + nightly close shipped; deploy action: set HOSTING_LEDGER_DB |
 | 17 | photos tenant template: aperture-vault when it reaches multi-node/MB-grade status (currently M0 CAS) | PROBED GREEN (iter 52: M0-M5 shipped, Immich API live-verified incl. dedup + bit-identical roundtrip); template gates: web-UI story, watch folders, then compose template |
 | 18 | authbox step 2: accessctl (Cedar RBAC) per-route enforcement | accessctl shipped; authbox roadmap item 2 unblocked |
-| 19 | vane edge evaluation refresh (Rust, io_uring, GCRA, hot upgrade) | PROBED (iter 53): edge-complete EXCEPT a response-header stage (iter-48 headers have no surface); staging evaluation on docker02 with headers as work item 1 |
+| 19 | vane edge evaluation refresh — response-headers stage LANDED (iter 65, vane ddc26364); remaining: Caddy-parity checklist + GCRA/adaptive soak on docker02 staging | evaluation runs the moment staging hardware exists |
 | 20 | envstack upstream: case-sensitivity footgun (iter 51 finding) | EnvLayer lowercases keys, get() is case-sensitive — any consumer querying UPPERCASE gets silent None; harden resolve_json or document loudly |
 
 ## Research queue
