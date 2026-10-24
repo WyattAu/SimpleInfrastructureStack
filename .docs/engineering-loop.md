@@ -129,6 +129,33 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 12 — iteration 71: CI retrofit sweep, platform repos (2026-10-25)
+
+IMPLEMENT (backlog #15 progress — 6 repos this iteration): the estate
+gate matrix (`engineering-standards` rust-kit reusable workflow) now
+covers every platform-critical Rust repo:
+
+- authbox 0204abc — **tier a** (the identity plane earns the full
+  matrix: pedantic, >=90% coverage, deny panic/unwrap)
+- envstack 51a56ca — **tier b** (replaces its hand-rolled check/test
+  CI)
+- hosting-api, deploy-webhook-rs, eventbusd, flagsd — **tier b**
+  (platform services)
+
+Recipe is one file per repo (`.github/workflows/quality.yml` calling
+the shared workflow with the tier input); committed locally in each
+repo, push deliberately.
+
+MID-ROUND INFRASTRUCTURE NOTE: the session's tooling restarted mid-
+sweep (twice). The restart wedged the git MCP server (every call
+times out) and dropped the shell/file tools from the catalog briefly —
+both recovered (shell returned; commits completed via it). The sweep
+of the LONG TAIL (~35 vertical-stack repos: parsers, DSP, fonts,
+automotive, spreadsheets, agentic tooling) remains, with the exact
+one-file recipe recorded here; those repos are single-crate and
+tier-c-appropriate. Deferred to a dedicated sweep session — mechanical,
+not thought-shaped.
+
 ### Hosting research loop round 11 — iteration 70: worker-kit PSI watcher (2026-10-26)
 
 IMPLEMENT (worker-kit, commit 869c9bd, LOCAL ONLY — backlog #11, the
