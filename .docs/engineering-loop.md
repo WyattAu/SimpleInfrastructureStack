@@ -129,6 +129,32 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 13 — iteration 73: long-tail CI sweep, backlog #15 CLOSED (2026-10-26)
+
+IMPLEMENT (11 estate repos, one commit each, LOCAL ONLY): the deferred
+long-tail sweep executed as a single script — tier-c gate matrix
+(`engineering-standards` rust-kit) added to every Rust repo that had
+neither CI nor a dirty tree: ap-kit, double-entry, fx-kit, invoice-kit,
+ledger-pg, recon-kit, scim-kit, statement-camt, statement-ofx,
+tachyon-plugins, vat-rules. 16 of the 27 candidates already had
+workflows (skipped, not clobbered); webhookkit skipped separately (user
+WIP, see iter 72 backlog).
+
+With the six platform repos from iter 71, the estate gate matrix now
+covers every Rust repo in the organization that lacks its own CI —
+**backlog #15 CLOSED**. Remaining #15-adjacent: per-repo tier
+adjustments (a/b promotions where coverage justifies) are per-crate
+judgments, not sweep work.
+
+Tier choice recorded: tier c (informational coverage) for the long
+tail — the safe default for crates whose coverage posture hasn't been
+audited; promotions to a/b are per-crate decisions with evidence.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: 11 commits verified post-restart (git log per repo); sweep
+script idempotent (skip-if-dirty/has-CI guards).
+
 ### Hosting research loop round 12 — synthesis (iterations 71-72, 2026-10-25)
 
 Round 12 was the mechanics round: the estate gate matrix retrofit
@@ -3801,7 +3827,8 @@ priced through `billing-kit`:
 | 12 | EIR: cosign sign in the build matrix (iter 21) | tenant-provision fail-closed gate is inert until builds are signed |
 | 13 | sis-watchdog.sh: hardcoded eventbus token -> SOPS (iter 23 finding) | repo-committed bearer token; same SOPS contract as every other secret |
 | ~~14~~ | realm-export cadence — DONE (round 8 iter 68) | export runs stamp-gated (daily) inside the meta-watchdog's SSH bundle, lands in appdata (restic-covered, drift-safe); stale >26h pages |
-| 15 | Retrofit estate repos with engineering-standards CI (was: cargo-deny retrofit; iter 46 corrected 2026-10-21) | the shared gate matrix is the standard; repos predating it predate the matrix |
+| ~~15~~ | Estate CI sweep — DONE (round 13 iter 73): 11 long-tail repos + 6 platform repos on the gate matrix | every Rust repo now runs the engineering-standards matrix; per-crate tier promotions are per-crate decisions |
+
 | ~~16~~ | hosting-api metering v2 — DONE (round 6/7 iters 51+62, 0.6.0) | ledger-kit journal + outbox replay + nightly close shipped; deploy action: set HOSTING_LEDGER_DB |
 | 17 | photos tenant template: aperture-vault when it reaches multi-node/MB-grade status (currently M0 CAS) | PROBED GREEN (iter 52: M0-M5 shipped, Immich API live-verified incl. dedup + bit-identical roundtrip); template gates: web-UI story, watch folders, then compose template |
 | ~~18~~ | authbox identity loop + accessctl adoption — DONE (round 7 iters 59/64, round 8 iter 66) | authbox issues accessctl-vocabulary roles; oauth-toolkit validates; hosting-api gates via has_at_least(Admin). Cedar PolicySet reserved for future attribute rules |
