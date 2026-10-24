@@ -36,6 +36,15 @@ hosting_watchdog_schedule: "*-*-* *:00/15:00"  # every 15 min
 #     domain: docs.acme.example
 #     port: 18080           # local publish port (127.0.0.1:<port>)
 hosting_tenants: []
+# Identity loop (round 7/8): authbox on the estate issues Admin JWTs
+# hosting-api accepts beside the legacy break-glass token. The issuer
+# is the TrueNAS dogfood authbox (loopback via vmbr1); unset = legacy
+# token only.
+hosting_oidc_issuer: "http://192.168.1.3:9005"
+hosting_oidc_audience: "hosting-api"
+# Durable metering journal (round 6): closed billing windows survive
+# restarts. Lives on the data mount next to the backups it bills for.
+hosting_ledger_db: "{{ hosting_data_mount }}/backups/jobs/ledger.db"
 # Estate eventbusd (dogfood wave 2): durable watchdog/deploy events.
 # Same secret class as hosting_ntfy_url (loopback-only service).
 hosting_eventbus_url: "http://127.0.0.1:9004"

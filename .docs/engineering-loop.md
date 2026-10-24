@@ -129,6 +129,37 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 10 — iteration 70: deploy contracts wired (2026-10-25)
+
+IMPLEMENT (SIS, local): the identity loop's deploy contracts, so the
+code shipped in rounds 7-8 is actually reachable in production.
+
+- authbox stack (stacks/dogfood): legacy single-client env replaced by
+  the registry — `AUTHBOX_CLIENTS=hosting-api:${AUTHBOX_CLIENT_SECRET}:
+  admin` (the existing secret becomes the admin client's credential, so
+  the hosting-api integration survives the upgrade unchanged);
+  `AUTHBOX_DEFAULT_AUDIENCE=account`; issuer corrected to the
+  listener root (the /authbox path suffix pointed discovery at a route
+  authbox doesn't serve). Compose `config` validated.
+- hosting-api systemd unit: conditional `HOSTING_OIDC_ISSUER/AUDIENCE`
+  + `HOSTING_LEDGER_DB` environment lines (unset = prior behavior);
+  group_vars/hosting.yml carries the real values — issuer points at
+  the TrueNAS dogfood authbox over vmbr1, ledger lands next to the
+  backups it bills for.
+- The image caveat, recorded: the deployed authbox:0.2.0 predates the
+  registry — the stack upgrade needs an authbox image rebuild
+  (backlog #21) and is deliberately part of the next deploy window,
+  not this commit.
+
+Cutover note: with these wired, the EPYC bring-up checklist gains
+"verify authbox JWT → hosting-api 200" as a smoke item (the iter-69
+matrix, replayed against production).
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: compose config valid; ansible --syntax-check clean; env
+example synchronized.
+
 ### Hosting research loop round 9 — iteration 67: aperture watch folders (2026-10-24)
 
 IMPLEMENT (aperture-vault, commit 184ece9, LOCAL ONLY): `aperture-server
@@ -3645,6 +3676,7 @@ priced through `billing-kit`:
 | ~~18~~ | authbox identity loop + accessctl adoption — DONE (round 7 iters 59/64, round 8 iter 66) | authbox issues accessctl-vocabulary roles; oauth-toolkit validates; hosting-api gates via has_at_least(Admin). Cedar PolicySet reserved for future attribute rules |
 | 19 | vane edge evaluation refresh — response-headers stage LANDED (iter 65, vane ddc26364); remaining: Caddy-parity checklist + GCRA/adaptive soak on docker02 staging | evaluation runs the moment staging hardware exists |
 | 20 | envstack upstream: case-sensitivity footgun (iter 51 finding) | EnvLayer lowercases keys, get() is case-sensitive — any consumer querying UPPERCASE gets silent None; harden resolve_json or document loudly |
+| 21 | authbox image rebuild + dogfood stack bump (round 10 iter 70) | deployed 0.2.0 predates the client registry; stack env is wired, image is not |
 
 ## Research queue
 

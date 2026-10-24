@@ -11,6 +11,16 @@ Environment=TENANT_ROOT={{ hosting_data_mount }}/tenants
 Environment=HOSTING_JOBS_DIR={{ hosting_data_mount }}/backups/jobs
 Environment=HOSTING_LISTEN=127.0.0.1:8484
 Environment=HOSTING_BACKUP_SCRIPT={{ hosting_bin_dir }}/tenant-backup.sh
+# Identity loop (round 7/8, iters 59/64): authbox-issued Admin JWTs join
+# the legacy break-glass token on /api. Ledger journal persists closed
+# metering windows. Both optional — unset keeps prior behavior.
+{% if hosting_oidc_issuer is defined and hosting_oidc_issuer %}
+Environment=HOSTING_OIDC_ISSUER={{ hosting_oidc_issuer }}
+Environment=HOSTING_OIDC_AUDIENCE={{ hosting_oidc_audience | default('hosting-api') }}
+{% endif %}
+{% if hosting_ledger_db is defined and hosting_ledger_db %}
+Environment=HOSTING_LEDGER_DB={{ hosting_ledger_db }}
+{% endif %}
 {% if hosting_secrets_tpm_creds | bool %}
 RuntimeDirectory=sis-hosting
 RuntimeDirectoryMode=0700
