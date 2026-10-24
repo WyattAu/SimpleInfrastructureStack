@@ -129,6 +129,31 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 11 — iteration 70: worker-kit PSI watcher (2026-10-26)
+
+IMPLEMENT (worker-kit, commit 869c9bd, LOCAL ONLY — backlog #11, the
+oldest estate backlog item, open since round 1 iter 16): worker-kit
+0.3.0 gains `pressure.rs` — a polling PSI watcher implementing the
+CONSUMPTION half of the systemd memory-pressure protocol: honors
+`$MEMORY_PRESSURE_WATCH` (the literal `/dev/null` disables, per the
+protocol), parses `/proc/pressure/memory`'s `some` averages, invokes a
+callback while `avg60` sits at or above the configured threshold
+(default 20% — far below the watchdog's human-paging 80%), retried on
+transient read failures, shutdown-aware, never exits.
+
+Design scope decisions: POLLPRI registration (the kernel's
+threshold-trigger path) deliberately deferred — tokio's AsyncFd spins
+on regular files, and a 5-second poll delivers the cache-trim use case
+without the complexity; the watcher is a signal SOURCE, not an actor —
+what to shed or trim is the consumer's policy. iter 16's original note
+("no unit change without an app that acts on the signal") is now
+answered: the signal-reader ships, apps opt in.
+
+Tests: 6 new (some-line parse, total-line rejection, malformed input,
+real-file shape, fire-above-threshold + shutdown, /dev/null
+never-fires). Full suite 47 green, clippy clean, fmt clean. 0.3.0 ->
+0.3.1 on publish.
+
 ### Hosting research loop round 10 — synthesis (iterations 70-72, 2026-10-25)
 
 The deployment-contract round: rounds 7-9 wrote the features; round 10
@@ -3714,7 +3739,7 @@ priced through `billing-kit`:
 | 8 | vane evaluation as edge replacement on staging | own-stack moat; routes translate from Caddyfile 1:1 |
 | 9 | estate republish wave (telemetry-init, testkit, then dependents) | repay git-skew debt; unblocks crates.io-only consumers |
 | 10 | webhookkit: Standard Webhooks v1 sender support (iter 20) | outbound estate webhooks get signatures + idempotency keys |
-| 11 | shutdown-kit/worker-kit: PSI pressure-reactive trim (iter 16) | read $MEMORY_PRESSURE_WATCH, release caches on pressure events |
+| ~~11~~ | worker-kit PSI pressure watcher — DONE (round 11 iter 70, worker-kit 869c9bd, 0.3.1 on publish) | polling watcher honors $MEMORY_PRESSURE_WATCH; consumers register callbacks to trim/shed |
 | 12 | EIR: cosign sign in the build matrix (iter 21) | tenant-provision fail-closed gate is inert until builds are signed |
 | 13 | sis-watchdog.sh: hardcoded eventbus token -> SOPS (iter 23 finding) | repo-committed bearer token; same SOPS contract as every other secret |
 | ~~14~~ | realm-export cadence — DONE (round 8 iter 68) | export runs stamp-gated (daily) inside the meta-watchdog's SSH bundle, lands in appdata (restic-covered, drift-safe); stale >26h pages |
