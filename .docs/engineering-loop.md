@@ -129,6 +129,54 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 10 — synthesis (iterations 70-72, 2026-10-25)
+
+The deployment-contract round: rounds 7-9 wrote the features; round 10
+wired them into the surfaces that make them reachable, and proved the
+whole chain live before writing a line.
+
+- Iter 69 (the centerpiece): the identity loop run LIVE across two
+  real processes — authbox issuing, hosting-api enforcing. The probe
+  caught THREE contract bugs no fixture could see: authbox discovery
+  not OidcDiscovery-shaped (oauth-toolkit required endpoints a
+  client-credentials issuer legitimately lacks), the aud contract
+  (authbox stamped the client's own id; consumers validate theirs),
+  and issuer normalization (Url::parse trailing slash broke iss
+  string-equality). All fixed at the source; the four-way credential
+  matrix is green live.
+- Iter 70: deploy contracts — authbox dogfood stack carries the client
+  registry + default audience (issuer path corrected; the existing
+  secret becomes the admin client's credential), hosting-api's unit
+  gains conditional OIDC/ledger env, group_vars carries the issuer and
+  ledger path. Authbox image rebuild = backlog #21.
+- Iter 71: service catalogue synchronized with the spec's actual
+  claims — restore drills, PQ key agreement, digest-pinned registry in
+  included-in-every-plan; PITR / snapshot / WAF / hardened-isolation
+  as the add-on table; aperture noted on the photo row.
+
+Backlog state after 10 rounds: #14, #16, #18, #20 CLOSED; #19
+hardware-gated; #17 web-story-only; #21 authbox image rebuild (new).
+Everything else is operator action: review + push 7 repos (unpushed
+commit counts in the ledger below), publish 0.2.2/0.4.1/0.6.0, wire
+the SOPS contracts.
+
+The ten-round lesson, stated once more because it kept being true:
+fixtures prove code, live probes prove contracts, and the boring
+mechanism — a timer, a config line, a stamp file, a crontab-free
+stamp gate — has won every single contest against the exciting one.
+
+Verification state: SIS lean proof exit 0; playbooks/scripts clean;
+compose config valid; the live identity matrix green. THE ESTATE'S
+LOCAL COMMITS (push deliberately, deploy repos last):
+- authbox: 2 unpushed (registry + audience contract)
+- envstack: 5 unpushed (resolve fallback + matrix test)
+- oauth-toolkit: 2 unpushed (optional discovery endpoints +
+  algorithm-aware validator)
+- hosting-api: 6 unpushed (ledger journal, OIDC mode, fixes, 0.6.0)
+- vane: 2 unpushed (response-headers stage + design)
+- aether-core: 4 unpushed (hello-actor on-ramp fix)
+- aperture-vault: 5 unpushed (watch subcommand)
+
 ### Hosting research loop round 10 — iteration 70: deploy contracts wired (2026-10-25)
 
 IMPLEMENT (SIS, local): the identity loop's deploy contracts, so the
