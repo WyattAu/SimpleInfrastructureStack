@@ -18,7 +18,7 @@ fee per organisation.
 | --- | --- | --- | --- |
 | **Document Management** | Paperless-ngx — scan, OCR, tag, full-text search, correspondences | pilot-ready | **£10/mo** |
 | **File Storage** | Ferro — our own Rust platform: WebDAV, S3, OIDC, Cedar authorisation, full-text search | needs auth wiring | **£12/mo** |
-| **Photo Library** | Immich — phone photo backup, albums, face/search (ML optional) | validate first | **£12/mo** |
+| **Photo Library** | Immich — phone photo backup, albums, face/search (ML optional); estate-native replacement (`aperture`) in progress | validate first | **£12/mo** |
 | **Office Bundle** | Documents + Files | — | **£20/mo** |
 
 Proposed add-ons: extra storage £2 per 50GB, additional user £1/user/mo,
@@ -26,10 +26,24 @@ off-site backup already included.
 
 ### Included in every plan
 
-- A dedicated subdomain with TLS
-- Nightly backups, with an off-site copy
-- Security-scanned, continuously patched container images
+- A dedicated subdomain with TLS (post-quantum key agreement; Let's
+  Encrypt certificates with automated renewal)
+- Nightly backups, with an off-site copy; monthly automated restore
+  drills (the backup is proven, not assumed)
+- Security-scanned, continuously patched container images from our own
+  registry; digest-pinned upstream images
 - A status notification when something breaks, and a human who reads it
+
+---
+
+## Optional add-ons
+
+| Add-on | What it is | Availability |
+| --- | --- | --- |
+| **Point-in-time recovery** | Database change archiving (WAL): restore to any moment, ~5 min data-loss ceiling instead of 24 h | Per contract; requires PostgreSQL |
+| **Snapshot tier** | Instant per-tenant rollback points (~15 min RPO) for accidental-deletion recovery | Requires the ZFS dataset tier |
+| **Web application firewall** | OWASP Core-Rule-Set inspection in front of your app | Opt-in; custom-built edge |
+| **Hardened isolation** | Per-tenant rootless runtime or microVM boundary | Per contract |
 
 ---
 
