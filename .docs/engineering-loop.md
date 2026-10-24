@@ -129,6 +129,37 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 12 — synthesis (iterations 71-72, 2026-10-25)
+
+Round 12 was the mechanics round: the estate gate matrix retrofit
+across the six platform-critical repos, committed locally in each
+(authbox 0204abc tier a; envstack 51a56ca, hosting-api, deploy-
+webhook-rs, eventbusd, flagsd tier b). The long tail (~35 vertical-
+stack repos) has the exact one-file recipe recorded above and is
+deferred to a dedicated mechanical sweep session.
+
+Backlog state after 12 rounds / 72 iterations:
+- #10 webhookkit Standard Webhooks sender — BLOCKED: the repo carries
+  the operator's own unpushed commit (adversarial verification suite)
+  diverged from origin; the rebase is theirs to land. Revisit after.
+- #17 aperture template — web-UI story only (product).
+- #21 authbox image rebuild — EIR build matrix.
+- Operator actions: review + push 9 repos (authbox 3, envstack 6,
+  oauth-toolkit 2, hosting-api 7, vane 2, aether-core 4,
+  aperture-vault 5 — counts at round close), publish envstack 0.2.2 /
+  oauth-toolkit 0.4.1 / worker-kit 0.3.1 / hosting-api 0.6.0, wire
+  the SOPS contracts (AUTHBOX_CLIENTS, AUTHBOX_DEFAULT_AUDIENCE,
+  HOSTING_OIDC_ISSUER, HOSTING_LEDGER_DB), #13 token to SOPS, #15
+  long-tail CI sweep, #12 realm-export timer install.
+
+Also survived two mid-round infrastructure restarts — the git MCP
+server wedged (every call times out) and the tool catalog was rebuilt
+twice; all work state survived because every iteration commits its
+artifact before moving on. That is the loop contract doing its job.
+
+The loop's state is fully recorded; the next trigger is reality
+(hardware, publishes, first tenant) or a product decision.
+
 ### Hosting research loop round 12 — iteration 71: CI retrofit sweep, platform repos (2026-10-25)
 
 IMPLEMENT (backlog #15 progress — 6 repos this iteration): the estate
