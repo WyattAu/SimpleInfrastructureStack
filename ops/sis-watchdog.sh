@@ -1,9 +1,22 @@
 #!/bin/bash
 # SIS meta-watchdog v5 - CachyOS-resident, independent of TrueNAS monitoring stack.
+#
+# Secrets (round 8 iter 77 — closes backlog #13): the eventbus bearer
+# token is read from a provisioned file, NOT this script. Provision with:
+#   install -m 600 <(sops -d secrets/watchdog-token.txt) /etc/sis-watchdog/eventbus-token
+# The file must contain only the token. A missing file degrades event
+# delivery to the remote-check-only path (fail visible, not silent).
 NTFY="https://ntfy.sh/wyattau-infra-0e92568ce5d04343c3b796ed558a04b9"
 # Estate eventbusd (dogfood wave 2): durable watchdog event history.
 EVENTBUS="http://192.168.1.3:9004"
-EVENTBUS_TOKEN="dfaa082b14da2ed417a7b497de8f08a686c4148021562fd6ff608fb3f3ea7230"
+TOKEN_FILE="/etc/sis-watchdog/eventbus-token"
+EVENTBUS_TOKEN=""
+if [ -r "$TOKEN_FILE" ]; then
+    EVENTBUS_TOKEN=$(tr -d '[:space:]' < "$TOKEN_FILE")
+else
+    echo "WATCHDOG DEGRADED: $TOKEN_FILE missing — eventbus events disabled" >&2
+    failures="MISSING TOKEN FILE: $TOKEN_FILE"
+fi
 failures=""
 
 # --- remote check bundle via script file (avoids nested-quoting failures) ---
@@ -115,6 +128,7 @@ esac
 
 emit_event() {
   # emit_event <topic> <payload-json>; failure is never fatal
+  [ -n "$EVENTBUS_TOKEN" ] || { echo "emit_event: no token, skipping $1" >&2; return 0; }
   curl -s --max-time 5 -X POST "$EVENTBUS/publish/$1" \
     -H "Authorization: Bearer $EVENTBUS_TOKEN" \
     -H "Content-Type: application/json" \
