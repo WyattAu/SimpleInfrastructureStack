@@ -59,6 +59,12 @@ If we terminate TLS at Cloudflare instead, use a proxied CNAME to the tunnel
 hostname and keep the origin certificate in mind — do not leave the origin
 open on :80/:443 (origin certificate mismatch).
 
+Also have the customer set a **CAA record** on their domain limiting
+issuance to Let's Encrypt (`0 issue "letsencrypt.org"`), with our ACME
+account URI once onboarded — a domain hijack alone then cannot mint
+certificates for them (see the hosting spec, "DNS and certificate
+authorization").
+
 Verify from outside the host, not from the host:
 
 ```bash
@@ -88,8 +94,11 @@ customer tenant.
 
 Then schedule it (one unit per tenant — see `ops/tenants/README.md`).
 
-**Before handover, prove a restore works on this template.** A backup that has
-never been restored is not a backup:
+**Restore is proven monthly, not on request.** The platform sweep runs an
+automated restore drill (one tenant per month, rotation deterministic),
+and the weekly retention pass enforces the 7d/5w/12m policy. Before
+handover, prove a restore works on this template anyway — the first
+restore of a new template is a template gate, not a favor:
 
 ```bash
 ./ops/tenant-backup.sh <tenant> --restore <snapshot-id>
@@ -121,20 +130,25 @@ custom work), and how to cancel.
 ## Exit
 
 Exit must be easy and rehearsed — it is the main thing distinguishing us from a
-platform that holds data hostage.
+platform that holds data hostage. Use the lifecycle script, not raw commands:
 
 ```bash
-./ops/tenant-backup.sh <tenant> --list                     # find the snapshot
-RESTIC_REPOSITORY=... restic export <snapshot-id> > <tenant>-export.tar
+./ops/tenant-lifecycle.sh suspend <tenant>     # stop + route strip + marker
+./ops/tenant-lifecycle.sh deprovision <tenant> # final backup REQUIRED, then export receipt
 ```
+
+Deprovisioning produces an **export receipt** (snapshot id, timestamp) before
+anything is deleted — the receipt is the customer's proof their data existed and
+was handed over. Backups containing their data age out on the 7d/5w/12m
+schedule; the receipt records the date erasure completes.
 
 Offer a live dump of the application data too (database dump plus the data
 directory), in open formats. Then:
 
 ```bash
 /srv/tenants/<tenant>/compose.sh down          # stop containers, keep data
-# once the customer confirms they have everything:
-rm -rf /srv/tenants/<tenant>                   # only after explicit confirmation
+# once the customer confirms they have everything, the lifecycle script's
+# deprovision step removes the tenant tree — only after explicit confirmation
 ```
 
 Give the customer their database dump and the export archive, confirm receipt,
