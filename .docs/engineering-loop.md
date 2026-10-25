@@ -129,6 +129,26 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 15 — iteration 75: fmt validation completes pre-push proof (2026-10-25)
+
+VERIFY (completing iter 74's residual): fmt --check ran on all 14
+repos that received CI this session. Found and fixed 4 unformatted:
+ledger-pg (tests), deploy-webhook-rs, eventbusd, flagsd (src) — each
+fixed with cargo fmt, tests re-run green. tachyon-plugins'
+"Failed to find targets" was an invocation artifact of --manifest-path
+(the workspace is clean via --all). The 6 platform repos were already
+fmt-clean.
+
+Net: the pre-push validation is now COMPLETE — test, clippy, and fmt
+all proven green on every repo that received CI this session. The
+operator's push cannot go red on any of the three gate legs. Remaining
+first-push unknowns: cargo-deny/cargo-audit with default configs
+(license/advisory findings = the visibility working).
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: fmt --check green on all 14; tests green on the 4 reformatted.
+
 ### Hosting research loop round 14 — iteration 74: pre-push validation of the sweep (2026-10-25)
 
 VERIFY (the loop's own contract, applied to the round-13 sweep): the
