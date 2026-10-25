@@ -26,7 +26,9 @@ Metrics: appdata/monitoring/textfile-collector/backup.prom
   `mc-backup.timer` -> `/usr/local/bin/mc-backup.sh`)
 - PostgreSQL dumps (each stack's DB, plus headscale via pg_dumpall)
 - Configuration files (compose, env, configs)
-- Keycloak realm export
+- Keycloak realm export (automated daily since round 8 iter 68 —
+  `ops/keycloak-realm-export.sh` via the CachyOS watchdog SSH path,
+  output in `appdata/iam/realm-export/`)
 
 ### What is NOT Backed Up
 - Container images (pull from registry / rebuild via EIR CI)
