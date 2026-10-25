@@ -129,6 +129,31 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+
+### Hosting research loop round 16 — synthesis (iterations 77-79, 2026-10-27)
+
+Round 16 closed the last security-shaped backlog item and validated the
+three service repos ahead of their first gate-matrix push.
+
+- **Iter 77 — #13 closed**: the eventbus bearer token left the repo;
+  sis-watchdog.sh reads it from /etc/sis-watchdog/eventbus-token
+  (provisioned from SOPS), and a missing file degrades event delivery
+  to remote-check-only, fail visible. The heartbeat emit skips
+  cleanly without a token.
+- **Iter 78 — pre-push validation**: deploy-webhook-rs, eventbusd, and
+  flagsd (the three service repos that received gate-matrix CI in
+  round 12 but were never test-validated) all pass cargo test. The
+  operator's push of these cannot go red on the test gate.
+
+Remaining backlog is product (#17 web story), hardware (#7 Firecracker,
+#19 vane staging soak, EPYC identity cutover), or operator (pushes,
+publishes, SOPS wiring, #21 authbox image rebuild, #12 timer install —
+superseded by the watchdog cadence, closable on next TrueNAS login).
+
+Verification state: SIS lean proof exit 0; scripts bash -n clean;
+authbox 9 tests + envstack 68 + oauth-toolkit 88 + hosting-api 53 all
+green; the live identity matrix green; vane workspace green.
+
 ### Hosting research loop round 15 — iteration 75: fmt validation completes pre-push proof (2026-10-25)
 
 VERIFY (completing iter 74's residual): fmt --check ran on all 14
@@ -3901,7 +3926,7 @@ priced through `billing-kit`:
 | 21 | authbox image rebuild + dogfood stack bump | deployed 0.2.0 predates the client registry |
 | 17 | aperture photos template — web-UI story only | watch folders landed; mobile-first tenants unblocked |
 | 19 | vane staging soak — hardware-gated | response-headers stage landed (vane ddc26364) |
-| 13 | sis-watchdog token -> SOPS | repo-committed bearer token |
+| ~~13~~ | sis-watchdog token -> file — DONE (round 16 iter 77) | token read from /etc/sis-watchdog/eventbus-token, provisioned from SOPS; repo is secret-free |
 | 12 | realm-export timer install on TrueNAS | script + watchdog cadence shipped; the TrueNAS-side crontab line is an SSH login |
 | 7 | Firecracker spike — staging VM | isolation growth path |
 
