@@ -129,6 +129,30 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 18 — synthesis (iteration 82, 2026-10-28)
+
+One iteration, one gap closed: the ledger endpoint now has router-level
+test coverage (posting id round-trips, balance derived, unknown tenant
+404). The identity/metering surface is the most security- and
+revenue-critical code in the platform; its test coverage now matches
+that claim at every layer — UsageLedger unit tests, the OutboxJournal
+reopen test, and the HTTP endpoint test.
+
+The remaining work is unchanged: operator pushes/publishes, EPYC
+hardware, product decisions. The loop stays in steady state until one
+of those fires.
+
+### Hosting research loop round 18 — iteration 81: ledger endpoint integration test (2026-10-27)
+
+TEST (hosting-api, local): the ledger endpoint shipped in iter 69 with
+unit tests on UsageLedger but no router-level proof. New integration
+test: record a window on the state's ledger, GET
+/api/tenants/acme/ledger through the real router, assert the posting id
+round-trips and the balance is derived; unknown tenants stay 404.
+serve() generalized to serve_with_ledger for ledger injection.
+
+54 tests green (41+13), clippy clean, fmt clean.
+
 
 ### Hosting research loop round 16 — synthesis (iterations 77-79, 2026-10-27)
 
