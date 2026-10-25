@@ -129,6 +129,27 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 14 — iteration 74: pre-push validation of the sweep (2026-10-25)
+
+VERIFY (the loop's own contract, applied to the round-13 sweep): the
+11 long-tail repos that received tier-c gate CI were pre-validated —
+cargo test AND cargo clippy --all-targets run green on every one
+(ap-kit 21+6, double-entry 14, fx-kit 7+1, invoice-kit 31, ledger-pg 6,
+recon-kit 12+4, scim-kit 84+6+1, statement-camt 8, statement-ofx 6,
+tachyon-plugins, vat-rules 10). The operator's push of these repos
+cannot go red on test or clippy gates.
+
+The tier-c gate on push will additionally run fmt --check, cargo-deny,
+and cargo-audit — those were not pre-run locally (deny.toml files
+don't exist in the long-tail repos; the shared workflow's deny step
+uses its default config). Residual risk: license/advisory findings at
+first push. Recorded, not blocking — the gate going red on those is
+the visibility working.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: this iteration IS the verification.
+
 ### Hosting research loop round 13 — synthesis (iteration 73, 2026-10-26)
 
 Round 13 closed backlog #15 — the last code-shaped estate item — with
