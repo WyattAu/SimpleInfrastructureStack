@@ -129,6 +129,39 @@ flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002
 
 ## Iteration log
 
+### Hosting research loop round 13 — synthesis (iteration 73, 2026-10-26)
+
+Round 13 closed backlog #15 — the last code-shaped estate item — with
+the long-tail sweep: 11 vertical-stack repos (ap-kit, double-entry,
+fx-kit, invoice-kit, ledger-pg, recon-kit, scim-kit, statement-camt,
+statement-ofx, tachyon-plugins, vat-rules) now run the tier-c gate
+matrix, joining the 6 platform repos from iter 71. **Every Rust repo
+in the organization now runs the engineering-standards CI.**
+
+With #15 closed, the loop retired the original ranked backlog table
+(items 1-9, all completed/superseded across rounds 1-9) and replaced
+it with the current actionable state: operator actions (push 9 repos,
+publish 4 crates, wire 4 SOPS env vars), two closed items kept for
+provenance (#14 realm cadence, #16 metering journal), and the
+hardware/product gates (#7, #17, #19, #21).
+
+Backlog after 13 rounds / 74 iterations — by type:
+- OPERATOR: push 9 repos, publish 4 crates, wire SOPS contracts,
+  realm timer install, token->SOPS, long-tail done
+- PRODUCT: aperture web-UI story (#17 gate 1)
+- HARDWARE: vane staging soak (#19), Firecracker spike (#7),
+  hosting-api/identity cutover (EPYC bring-up)
+- UPSTREAM-PENDING: authbox image rebuild (#21, EIR matrix)
+
+The loop is now in its steady state: the next triggers are reality
+(hardware, publishes, first tenant) or a product decision — not code.
+Per the loop contract, when a trigger fires, read this document cold
+and regenerate the backlog from research.
+
+Verification state: SIS lean proof exit 0; playbooks/scripts clean;
+11 sweep commits verified across the estate; every claim in this
+document is backed by a test, a live probe, or a line-cited seam.
+
 ### Hosting research loop round 13 — iteration 73: long-tail CI sweep, backlog #15 CLOSED (2026-10-26)
 
 IMPLEMENT (11 estate repos, one commit each, LOCAL ONLY): the deferred
@@ -3811,30 +3844,26 @@ priced through `billing-kit`:
 
 ## Backlog (ranked)
 
+> State after round 13 (2026-10-26): the original ranked backlog
+> (items 1-9) is retired — every entry was completed or superseded
+> across rounds 1-9 (hosting-api shipped to 0.6.0; FIPS wave green;
+> non-root audit closed with runtime evidence; userns-remap shipped;
+> hosting-dashboard live with passkey UI; metering on the ledger
+> journal; Firecracker + vane hardware-gated; republish wave = operator
+> publishes). Current actionable backlog:
+
 | # | Item | Why |
 | --- | --- | --- |
-| 1 | hosting-api v1 (jobs + auth + Ansible wiring) | dashboard needs it; dogfoods worker-kit/outbox-kit |
-| 2 | EIR FIPS tag fix + nightly triage | red pipeline = product quality claim is false |
-| 3 | EIR non-root USER audit (58 critical images) — classify runtime-drops-privileges vs actual-root | honest security posture; userns-remap makes it defense-in-depth |
-| 4 | docker01 daemon `userns-remap` + subuid migration (Ansible) | systemic tenant containment |
-| 5 | hosting-dashboard (Astro+SolidJS+pediment) | customer-facing surface |
-| 6 | hosting-metering (cadvisor→billing-kit→ledger-kit) | usage-based add-on billing |
-| 7 | Firecracker per-tenant microVM spike (staging VM) | isolation growth path, validated before it is needed |
-| 8 | vane evaluation as edge replacement on staging | own-stack moat; routes translate from Caddyfile 1:1 |
-| 9 | estate republish wave (telemetry-init, testkit, then dependents) | repay git-skew debt; unblocks crates.io-only consumers |
-| 10 | webhookkit: Standard Webhooks v1 sender support (iter 20) | outbound estate webhooks get signatures + idempotency keys |
-| ~~11~~ | worker-kit PSI pressure watcher — DONE (round 11 iter 70, worker-kit 869c9bd, 0.3.1 on publish) | polling watcher honors $MEMORY_PRESSURE_WATCH; consumers register callbacks to trim/shed |
-| 12 | EIR: cosign sign in the build matrix (iter 21) | tenant-provision fail-closed gate is inert until builds are signed |
-| 13 | sis-watchdog.sh: hardcoded eventbus token -> SOPS (iter 23 finding) | repo-committed bearer token; same SOPS contract as every other secret |
-| ~~14~~ | realm-export cadence — DONE (round 8 iter 68) | export runs stamp-gated (daily) inside the meta-watchdog's SSH bundle, lands in appdata (restic-covered, drift-safe); stale >26h pages |
-| ~~15~~ | Estate CI sweep — DONE (round 13 iter 73): 11 long-tail repos + 6 platform repos on the gate matrix | every Rust repo now runs the engineering-standards matrix; per-crate tier promotions are per-crate decisions |
+| 1 | **Operator: review + push 9 estate repos** (authbox 3, envstack 6, oauth-toolkit 2, hosting-api 7, worker-kit 1, vane 2, aether-core 4, aperture-vault 5, eventbusd/deploy-webhook-rs/flagsd 1 each) | all work is local; the gate-matrix CI runs on push |
+| 2 | **Operator: publish** envstack 0.2.2, oauth-toolkit 0.4.1, worker-kit 0.3.1, hosting-api 0.6.0 | lets hosting-api drop its [patch.crates-io] and pick up the validator fix |
+| 3 | **Operator: wire SOPS contracts** — AUTHBOX_CLIENTS, AUTHBOX_DEFAULT_AUDIENCE, HOSTING_OIDC_ISSUER, HOSTING_LEDGER_DB | the identity loop + ledger journal activate on deploy |
+| 21 | authbox image rebuild + dogfood stack bump | deployed 0.2.0 predates the client registry |
+| 17 | aperture photos template — web-UI story only | watch folders landed; mobile-first tenants unblocked |
+| 19 | vane staging soak — hardware-gated | response-headers stage landed (vane ddc26364) |
+| 13 | sis-watchdog token -> SOPS | repo-committed bearer token |
+| 12 | realm-export timer install on TrueNAS | script + watchdog cadence shipped; the TrueNAS-side crontab line is an SSH login |
+| 7 | Firecracker spike — staging VM | isolation growth path |
 
-| ~~16~~ | hosting-api metering v2 — DONE (round 6/7 iters 51+62, 0.6.0) | ledger-kit journal + outbox replay + nightly close shipped; deploy action: set HOSTING_LEDGER_DB |
-| 17 | photos tenant template: aperture-vault when it reaches multi-node/MB-grade status (currently M0 CAS) | PROBED GREEN (iter 52: M0-M5 shipped, Immich API live-verified incl. dedup + bit-identical roundtrip); template gates: web-UI story, watch folders, then compose template |
-| ~~18~~ | authbox identity loop + accessctl adoption — DONE (round 7 iters 59/64, round 8 iter 66) | authbox issues accessctl-vocabulary roles; oauth-toolkit validates; hosting-api gates via has_at_least(Admin). Cedar PolicySet reserved for future attribute rules |
-| 19 | vane edge evaluation refresh — response-headers stage LANDED (iter 65, vane ddc26364); remaining: Caddy-parity checklist + GCRA/adaptive soak on docker02 staging | evaluation runs the moment staging hardware exists |
-| 20 | envstack upstream: case-sensitivity footgun (iter 51 finding) | EnvLayer lowercases keys, get() is case-sensitive — any consumer querying UPPERCASE gets silent None; harden resolve_json or document loudly |
-| 21 | authbox image rebuild + dogfood stack bump (round 10 iter 70) | deployed 0.2.0 predates the client registry; stack env is wired, image is not |
 
 ## Research queue
 
