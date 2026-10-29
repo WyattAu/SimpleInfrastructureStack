@@ -3932,6 +3932,52 @@ priced through `billing-kit`:
 5. **EIR**: watch the next scheduled FIPS run (should stay 15/15);
    revisit openssl-fips when the Chainguard FIPS decision is made.
 
+### Iteration 11 — 2026-10-29 — publication round: estate pushed, crates live, patch dropped
+
+RESEARCH: cross-checked local versions against crates.io before
+publishing — oauth-toolkit 0.4.1 and worker-kit 0.3.1 were already on
+the registry (an earlier wave), so the session's fixes needed version
+bumps, not first publishes. crates.io was intermittently unreachable
+(curl to the API timed out); `cargo search` failed while `cargo
+publish` succeeded — the write path and the search API have different
+reachability. Lesson: verify publishes via the publish command's own
+"Published" line, not via search.
+
+ANALYZE: publishing oauth-toolkit 0.4.2 closes the loop that iter 69's
+live-matrix fixes opened — hosting-api's `[patch.crates-io]` path
+override existed only because the validator fix wasn't on the registry.
+A path patch is supply-chain debt: CI builds what the developer has
+checked out, not what the operator ships. Dropping it makes crates.io
+the single source for the estate dependency graph.
+
+IMPLEMENT:
+- oauth-toolkit 0.4.2 published (algorithm-aware JWKS validation,
+  optional discovery endpoints); pushed.
+- worker-kit 0.3.2 published (PSI memory-pressure watcher); pushed
+  after a rebase (remote had moved).
+- envstack 1.0.1 published (case-insensitive env resolution fallback);
+  pushed.
+- hosting-api: `[patch.crates-io]` section removed; oauth-toolkit
+  resolves to 0.4.2 from the registry; pressure-deferred metering
+  scraping shipped (Meterer pressure flag, refresh returns cached
+  totals under PSI stress — the consumer half of the systemd pressure
+  protocol); pushed.
+- hosting-api credentials note: the crates.io token lives at
+  `~/.cargo/credentials.toml` (not `credentials`); `ls ~/.cargo/credentials`
+  alone reports nothing and misleads.
+
+VERIFY: hosting-api 55 tests green (42 unit + 13 integration), clippy
+clean, fmt clean, builds from crates.io alone. All estate repos pushed
+and clean except aether-core (4 commits; push retried in background —
+11.9 MiB pack, earlier timeouts were transient network, not pack size).
+
+REMAINING (operator-shaped): aether-core push; SIS push (auto-deploys
+TrueNAS — review first); SOPS contract wiring (AUTHBOX_CLIENTS,
+AUTHBOX_DEFAULT_AUDIENCE, HOSTING_OIDC_ISSUER, HOSTING_LEDGER_DB);
+realm-export crontab on TrueNAS; EIR authbox image build (#21).
+
+LEAN PROOF: unchanged, exit 0.
+
 ## Backlog (ranked)
 
 > State after round 13 (2026-10-26): the original ranked backlog
