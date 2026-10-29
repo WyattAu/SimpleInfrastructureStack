@@ -4031,6 +4031,69 @@ badge) or it rots.
 
 LEAN PROOF: unchanged, exit 0.
 
+### Iteration 13 — 2026-10-29 — the never-run CI: aether-core's Python SDK gate, fixed end to end
+
+RESEARCH: with the dead action pins fixed (iter 12), the workflows
+executed for the first time — and each run exposed the next layer the
+repo had been shipping blind: the Python SDK job failed lint, then
+test collection, then pytest flags, across four pushes. Root pattern:
+**a CI gate that has never run is not a gate; it's a wish.** Nothing
+had ever validated the workflow, the requirements list, or the lint
+posture it implied.
+
+ANALYZE: three stacked failures, each masked by the previous:
+
+1. **Lint**: `pip install ruff` now means ruff ≥0.17, whose default
+   select expanded to ~819 rules. sdk-ci runs `ruff check` with **no
+   config** — an unpinned gate that can literally never pass a py39
+   codebase (the PEP 604/585 rules demand 3.10+ syntax). The SDK's
+   pyproject configures black/isort/mypy but not ruff: the lint
+   posture was aspirational fiction.
+2. **Test deps**: conftest imports the FastAPI fixture server
+   (`server/app.py`) and the suite drives it with httpx; pytest-cov
+   was required by CI flags — none declared in requirements.txt. Each
+   had to be discovered by a failed run because no human had run the
+   workflow's exact command against a clean checkout.
+3. **Version skew**: my workstation's older ruff/black/isort passed
+   while CI's failed. Reproduced CI exactly in a venv (ruff 0.17.3,
+   black 26.10.1, isort 9.0.2) — the only way to stop the whack-a-mole.
+
+IMPLEMENT:
+- `sdks/python/ruff.toml`: explicit select (E4/E7/E9, F, B, DTZ, SIM,
+  W) at target py39; UP/FA syntax-modernization rules deliberately off
+  until requires-python moves to 3.10+ (recorded in the config).
+  per-file-ignores with justifications (E402 bootstrap, F403 fixture
+  re-exports, B027 optional lifecycle hooks, B024 marker base).
+- Fixed ~85 real findings: 15 naive-datetime sites (DTZ — `utcnow()`
+  is the deleted-in-3.12 bug class), 12 missing exception chaining
+  (B904), unused loop vars, collapsible ifs/withs, ternary rewrite.
+- **Caught a ruff unsafe-fix bug by test**: SIM103 rewrote
+  `if not parsed.netloc: return False; return True` →
+  `return parsed.netloc` — truthy-equivalent but not value-equivalent;
+  `validate_url` returned the domain string instead of `True`, and
+  `assert validate_url(...) is True` failed. Restored via
+  `return bool(parsed.netloc)`. Lesson: "unsafe fixes" in ruff are
+  unsafe in exactly this way — only run them with tests in the loop.
+- Formatter fight resolved the durable way: black wrapped my long
+  `# noqa` lines, detaching them from ruff's diagnostic line —
+  oscillation. Suppressions belong in per-file-ignores, not on
+  wrap-fragile lines.
+- Declared the missing test deps: fastapi, httpx, pytest-cov.
+
+VERIFY: local, with CI's exact tool versions — 1158 tests pass, 17
+skipped; ruff/black/isort all clean. CI: **SDK CI green (2m44s)** —
+lint, type-check, tests, coverage upload all pass for the first time
+in the repo's history. Heavy Rust workflows still running at log time.
+
+LESSON: every gate must be executed at least once by the person who
+adds it — ideally from a clean checkout with pinned tool versions.
+Unpinned CI tooling drifts under you: `pip install ruff` is a
+moving target; the same discipline that pins action SHAs applies to
+linters. And truthiness is not equality: automated fixes that preserve
+truthiness can still violate `is True` contracts.
+
+LEAN PROOF: unchanged, exit 0.
+
 ## Backlog (ranked)
 
 > State after round 13 (2026-10-26): the original ranked backlog
