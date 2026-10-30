@@ -4166,6 +4166,74 @@ stack was hiding behind one of them.
 
 LEAN PROOF: unchanged, exit 0.
 
+### Iteration 15 — 2026-10-30 — FDB: from fiction to a real cluster, in six layers
+
+RESEARCH: after the workflow layer went green (iters 12–14), aether
+core's FDB Integration Tests — the job that exercises the estate's
+actual storage engine against a real FoundationDB server — took six
+more pushes to reach green. Each push peeled one more layer of
+never-executed assumptions.
+
+ANALYZE — the layers, in order:
+
+1. **Cluster-string mangling**: `cut -d: -f2` dropped the port from
+   the coordinator address (iter 12's first fix, still insufficient —
+   see layer 3).
+2. **The daemon flag that isn't**: fdbserver 7.3 has `--daemonize`?
+   No. `--daemon`? No. `-d`? That's `--datadir` — it consumed the
+   next argument. fdbserver 7.3 has **no daemon flag at all** (the
+   .deb ships fdbmonitor for that). Fix: `nohup … &`.
+3. **Hyphens are illegal in cluster names**: the fallback string
+   `aether-ci@127.0.0.1:4500` fails fdbcli 7.3.27's parser with 2104;
+   `aether:ci@127.0.0.1:4500` parses. Discovered by installing the
+   client locally and testing the exact strings — the local rehearsal
+   loop (install CI's own artifacts, run CI's own commands) is what
+   converts guesswork into evidence.
+4. **The .deb configures itself**: installing foundationdb-server's
+   postinst generates a cluster file AND starts a matching fdbserver
+   via fdbmonitor. Rewriting the file desyncs it from the running
+   server's in-memory credentials — "Unable to locate a cluster
+   controller". The diagnostics added to the wait loop (ps + logs +
+   cat) made this visible in one run. Fix: use the generated pair
+   untouched.
+5. **The Rust client never booted its network**: foundationdb 0.9
+   requires exactly one `boot()` before any API call; every client
+   call failed with "Action not possible before the network is
+   configured". Fix: `Once`-guarded boot with a leaked guard (the
+   documented library pattern). Verified locally: the error class
+   changed from network-not-configured to server-absent — the exact
+   signal that the fix worked.
+6. **A test buggier than the code it tests**: the range-scan test
+   wrote keys via `format!("{:?}", (prefix, i))` — Debug-tuple strings
+   like `("test_range_", 0)` that don't carry the scanned prefix —
+   then asserted 10 results. 8/9 tests passed on the first real run;
+   this one had never been executable. Fix: zero-padded real keys.
+
+IMPLEMENT: `once`-guarded boot in FdbClient::new; the setup step now
+uses the .deb's generated cluster file + fdbmonitor-managed server
+untouched; wait loop bounds every fdbcli call (`timeout 20`) and
+dumps process/log/cluster diagnostics on failure; range-scan test
+fixed. The `stateful-actor` example (previous push) rebuilt against
+the real SDK API with a local wasm32-wasip1 build proving it.
+
+VERIFY: **Aether CI green end to end** — Check, Test (1451 tests),
+Security Audit, Documentation, Code Coverage, Build, WASM E2E, and
+FDB Integration Tests 9/9 against a real fdbserver 7.3.27. Benchmarks
+✓ (two consecutive), Security ✓ (three consecutive), SDK CI ✓,
+Integration Tests ✓ (macOS + Linux all-features + E2E). The whole
+board converged on one head for the first time in the repo's history.
+
+LESSON: the fastest route through a never-run stack is (1) make the
+failure surface its own diagnostics, (2) reproduce locally with the
+exact artifacts CI uses, (3) change one layer per push. The
+local-rehearsal trick — installing CI's own .debs and running CI's
+own commands — turned three would-be push-and-pray cycles into
+verified fixes. And `timeout` on every external call is not optional:
+a hanging health check costs an hour; a bounded one costs twenty
+seconds and a precise error.
+
+LEAN PROOF: unchanged, exit 0.
+
 ## Backlog (ranked)
 
 > State after round 13 (2026-10-26): the original ranked backlog
