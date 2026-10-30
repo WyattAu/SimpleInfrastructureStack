@@ -4335,6 +4335,10 @@ full security module 187/187; clippy clean. CI: **Integration Tests
 green — stable/all-features job completed without hanging for the
 first time**, macOS green again with the -j 2 OOM mitigation
 (confirmed: identical inputs, only parallelism changed).
+FINAL BOARD on head fbafd28: **all seven workflows green** — Aether
+CI (incl. FDB Integration 9/9), Integration Tests, Docker
+Integration, Benchmarks, Security, Container, SDK CI. First
+all-green board in the repository's history.
 
 LESSON: flaky is a symptom with a cause; "passed this time" is not a
 fix. The path from flake to root cause was: name the test from the
