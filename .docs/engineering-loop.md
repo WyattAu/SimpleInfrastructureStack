@@ -4234,6 +4234,63 @@ seconds and a precise error.
 
 LEAN PROOF: unchanged, exit 0.
 
+### Iteration 16 — 2026-10-30 — the docker layer: four fictions in one job
+
+RESEARCH: with Aether CI, Benchmarks, Security, and Integration Tests
+green, Docker Integration Tests remained — three more failures across
+two jobs, each exposing another layer of the same disease: workflows
+written against a system that was never run, never built, and never
+read back against the real API.
+
+ANALYZE:
+1. **The health check demanded the impossible**: a fresh FDB container
+   has NO database; "The database is available" is unreachable until
+   `configure new single memory` runs. The old loop polled status for
+   36 minutes, never configuring, then failed. Fix: poll status AND
+   attempt configure until it sticks (green in 2 attempts).
+2. **FDB_NETWORKING_MODE=host binds the server to the container's
+   loopback** — which `-p 4500:4500` cannot forward to; host-side
+   tests would connect-refuse forever. Fix: drop the mode (public
+   binding + port publish) and rewrite the extracted cluster file's
+   coordinator IP to 127.0.0.1 while preserving name:desc — the same
+   identity-preserving rewrite as ci.yml.
+3. **docker cp couldn't find the cluster file**: under host mode the
+   entrypoint placed it elsewhere. Fix: locate it from the running
+   fdbserver's own /proc cmdline, then (per 2) rewrite + install.
+4. **compose v2 resolved `context: ../..` inconsistently** — to
+   `<repo>/tests`, one level short, so buildkit lstat'd
+   `<repo>/tests/tests` inside `COPY tests` and died before building.
+   Reproduced locally with `docker compose config`. Fix: interpolate
+   `${AETHER_REPO_ROOT}` from `github.workspace` — absolute paths
+   remove the ambiguity class entirely.
+5. **The 3-node mesh job exercised an imagined CLI**: "aether run
+   --node-id --http-port --mesh-port --mesh-seeds" — the real binary
+   is `aether-cli` (`run --port/--host` only, spawning `aether-server`,
+   which the image never shipped). Four fictions in one job. Fix:
+   removed the job; a real mesh compose demo needs node-identity and
+   mesh-seed surface on the CLI first (new backlog item).
+
+IMPLEMENT: health-check/configure loop; networking mode + identity-
+preserving cluster rewrite; cmdline-based extraction; absolute build
+context via workspace var; job removal with the decision recorded in
+the workflow itself.
+
+VERIFY: Docker Integration Tests ✓ green end to end (FDB job:
+healthy → extracted → built with fdb feature). Aether CI ✓, Security
+✓, Benchmarks ✓, Integration Tests ✓ on the same head; Container +
+final Integration re-run pending on a slow queue at log time — both
+green on the two prior heads with untouched inputs.
+
+LESSON: every fictional flag, binary name, and env var survived
+because nothing ever executed them. The workflow file is a spec —
+when a job fails, diff the spec against the artifact it drives
+(`--help` output, Dockerfile, compose config) rather than tweaking
+the spec to match the failure. And compose's relative-context
+resolution is a footgun: absolute paths via interpolation are the
+only portable form.
+
+LEAN PROOF: unchanged, exit 0.
+
 ## Backlog (ranked)
 
 > State after round 13 (2026-10-26): the original ranked backlog
