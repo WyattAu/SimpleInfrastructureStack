@@ -4291,6 +4291,61 @@ only portable form.
 
 LEAN PROOF: unchanged, exit 0.
 
+### Iteration 17 — 2026-10-30 — the real one: a production deadlock in the RBAC authorization cache
+
+RESEARCH: after the infrastructure layers went green (iters 12–16),
+the first genuinely FLAKY signal appeared: Integration Tests' stable
+/all-features job hung twice (60s-warning + 85 minutes of silence;
+then a second hang), while the identical command on nightly passed in
+8 minutes, twice. Same head, same command, different toolchain.
+Hung tests had no FAILED lines and no panic — the process never came
+back.
+
+ANALYZE: the diagnostics-in-the-wait-loop discipline moved upstream:
+libtest's "has been running for 60s" named the test
+(`security::test_rbac_policy::test_rbac_concurrent_evaluation`), and
+reading the code under it found a **two-lock ordering inversion** in
+`PolicyEvaluator`:
+
+- `get_cached`: holds `cache_timestamps.read()` while acquiring
+  `cache.write()`,
+- `cache_result`: holds `cache.write()` while acquiring
+  `cache_timestamps.write()`.
+
+Same lock pair, opposite orders — under contention, a cycle. The
+guards are owned values (RwLockReadGuard/WriteGuard): **NLL does not
+drop them at last use**; they live to end of scope, so the nesting is
+real regardless of borrow-checker folklore. Four threads hammering
+`is_allowed` hit the cycle nondeterministically; nightly's codegen
+timing dodged it repeatedly — the toolchain difference was noise
+wearing the costume of a cause.
+
+This is the authorization plane of the platform. A hung evaluator in
+production is an outage; under load, the same cycle is reachable from
+any concurrent policy evaluation.
+
+IMPLEMENT: copy the freshness decision out of the timestamps guard,
+drop it, then take the cache lock (get_cached); make cache_result
+scope its cache guard before taking timestamps. No nested acquisition
+of the pair anywhere — cycles become impossible rather than unlikely.
+
+VERIFY: local hammer — `test_rbac_concurrent_evaluation` 5/5 green
+with `--test-threads=8` + 5 exact repeats on stable-class rustc; the
+full security module 187/187; clippy clean. CI: **Integration Tests
+green — stable/all-features job completed without hanging for the
+first time**, macOS green again with the -j 2 OOM mitigation
+(confirmed: identical inputs, only parallelism changed).
+
+LESSON: flaky is a symptom with a cause; "passed this time" is not a
+fix. The path from flake to root cause was: name the test from the
+60s warning, read the locks it takes, and check whether ANY two code
+paths acquire the same pair in opposite orders. Two-lock deadlocks
+don't need exotic primitives — two std RwLocks and an unlucky
+interleave suffice. And guard-values live to end of scope: "the
+borrow ends early" intuition does not transfer to lock guards.
+
+LEAN PROOF: unchanged, exit 0.
+
 ## Backlog (ranked)
 
 > State after round 13 (2026-10-26): the original ranked backlog
