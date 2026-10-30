@@ -4094,6 +4094,78 @@ truthiness can still violate `is True` contracts.
 
 LEAN PROOF: unchanged, exit 0.
 
+### Iteration 14 — 2026-10-30 — never-run CI, part 2: the Rust gate — dead pins were only layer one
+
+RESEARCH: with workflow pins live (iter 12) and the Python SDK green
+(iter 13), the six heavy Rust workflows began actually executing —
+and failed on eight distinct, previously-invisible defects across
+five pushes. Every layer of aether-core's CI was fiction that had
+never executed: the workflows, their tool invocations, their feature
+flags, their platform matrix, and the runtime behavior they claimed
+to verify.
+
+ANALYZE — the failure stack, in the order CI exposed it:
+
+1. **Cluster-string mangling** (FDB Integration): `cut -d: -f2`
+   dropped the port from `name:desc@ip:4500` → `Connection string
+   invalid` on every fdbcli call, masked by `2>/dev/null` in the wait
+   loop. Fix: one sed rewriting `@ip:` → `@127.0.0.1:` with ports
+   preserved.
+2. **Benchmark fiction**: benchmarks.yml invoked
+   `--features "wasm,mesh,rkyv"` — `rkyv` is not a feature of any
+   package in the workspace; cargo errored before running anything and
+   `|| true` swallowed it, leaving benchmark-results.txt with only
+   rustup preamble. Then, with valid features, criterion's full suite
+   ran for hours and was SIGTERMed at the job budget. Fix: valid
+   feature set + one focused bench (`registry_bench`) with bounded
+   warm-up/measurement.
+3. **sbom-action/syft versioning**: v0.9.0 of the action pinned syft
+   v0.42.2, whose installer URL is dead (404). Bumped to v0.24.3 —
+   which exposed the next layer: modern syft removed the `dockerfile:`
+   source scheme entirely (`file:` is the replacement).
+4. **macOS platform bugs** (real code, latent since inception):
+   (a) mcp/file_tools compared canonicalized child paths against an
+   unresolved root — macOS's `/var/folders` → `/private/var/folders`
+   symlink made EVERY path appear outside the root; Linux's /tmp
+   symmetry hid it. Fix: canonicalize the root once, compare resolved
+   against resolved. (b) `is_expired` used `>` so ttl=0 with a
+   coarse-clock elapsed of 0 stayed alive; `>=` expresses the contract.
+   (c) my own fix (a) then exposed search-files' second unresolved-root
+   strip_prefix — the canonical root must thread through the walker.
+5. **Standalone-example isolation**: examples built with
+   `--manifest-path` need their own `[workspace]` table (ai-actor,
+   stateful-actor lacked it). And ai-actor depends on the full runtime
+   (tokio rt-multi-thread, quinn) — it is a host-side program, not a
+   WASM actor; the E2E loop now skips runtime-bound examples by
+   dependency.
+6. **github-action-benchmark needs a gh-pages branch to fetch** —
+   created as an orphan commit via plumbing (`git hash-object -w -t
+   tree /dev/null` + `commit-tree` + push).
+
+IMPLEMENT: five fix commits, each verified by type-check locally
+(`cargo check` — linking still blocked until libfdb_c was installed
+from CI's exact .deb into ~/.local/lib; linker path via
+~/.cargo/config.toml rustflags, runtime via LD_LIBRARY_PATH in the
+repo hooks — no sudo required).
+
+VERIFY: Security ✓ green (SBOM passes with syft v1.54); Container ✓;
+SDK CI ✓ (iter 13); macos file_tools failures 4/5 cleared, the fifth
+(search walker) fixed in the follow-up commit. Linux suite: 1414
+passed pre-fix on the same commit CI runs. Full board pending at log
+time.
+
+LESSON: **a CI gate is a stack of assumptions, and none of them are
+tested until the first run.** Dead action SHAs, dead installer URLs,
+removed source schemes, nonexistent features, wrong package targets,
+missing branches, symlinked temp dirs, coarse clocks — each sat
+behind the previous, invisible until the layer above was fixed. The
+only way through is chronological: fix, run, read, repeat. Never
+batch-blind-fix. And the deepest lesson: `|| true` and `2>/dev/null`
+are where error signals go to die — every masked failure in this
+stack was hiding behind one of them.
+
+LEAN PROOF: unchanged, exit 0.
+
 ## Backlog (ranked)
 
 > State after round 13 (2026-10-26): the original ranked backlog
