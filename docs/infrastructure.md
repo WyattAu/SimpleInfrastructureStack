@@ -2,40 +2,40 @@
 - `traefik_net`; ingress network. Only containers that serve HTTP/Traefik attach here.
 - `backend_net`; application network. Inter-service communication (exporters, metrics, internal APIs).
 - `data_net`; database network. PostgreSQL, MariaDB, Redis, Valkey instances only.
-|; | proxy-socket-proxy | tecnativa/docker-socket-proxy |; | proxy | Docker socket proxy for Traefik |
-|; | proxy-oauth2-proxy | quay.io/oauth2-proxy/oauth2-proxy | 4180 | proxy | Keycloak forwardAuth middleware |
-|; | proxy-cloudflare-ddns | favonia/cloudflare-ddns |; | proxy | Dynamic DNS updates (*/5 min) |
-|; | iam-postgres | postgres | 5432 | iam | Keycloak database |
-|; | monitoring-victorialogs | victoriametrics/victoria-logs | 9428 | monitoring | Log aggregation (Loki-compatible) |
-|; | monitoring-promtail | grafana/promtail |; | monitoring | Log shipper → VictoriaLogs |
-|; | monitoring-vmalert | victoriametrics/vmalert | 8880 | monitoring | Alerting engine (Prometheus-compatible) |
-|; | monitoring-alertmanager | prom/alertmanager | 9093 | monitoring | Alert routing → ntfy |
-|; | monitoring-node-exporter | prom/node-exporter | 9100 | monitoring | Host metrics |
-|; | monitoring-cadvisor | ghcr.io/google/cadvisor | 8080 | monitoring | Container metrics |
-|; | monitoring-postgres-exporter | quay.io/prometheuscommunity/postgres-exporter | 9187 | monitoring | 6x PostgreSQL instances |
-|; | monitoring-redis-exporter | oliver006/redis_exporter | 9121 | monitoring | 2 Redis/Valkey instances (Paperless Redis, Immich Valkey) |
-|; | monitoring-tempo | grafana/tempo | 3200, 4318 | monitoring | Distributed tracing |
-|; | monitoring-blackbox-exporter | prom/blackbox_exporter | 9115 | monitoring | Synthetic probes |
-|; | security-crowdsec | crowdsecurity/crowdsec | 8080 | security | Intrusion detection |
-|; | security-cf-workers-bouncer | crowdsecurity/cf-workers-bouncer |; | security | Cloudflare WAF bouncer |
-|; | operations-postgres-forgejo | postgres | 5432 | operations | Forgejo database |
-|; | operations-forgejo-runner | data.forgejo.org/forgejo/runner |; | operations | CI/CD runner |
-|; | collaboration-postgres | postgres | 5432 | collaboration | Synapse database |
-|; | storage-collaboration | owncloud/ocis | 9300 | storage | oCIS WOPI collaboration svc |
-|; | accounting-mariadb-akaunting | mariadb | 3306 | accounting | Akaunting database |
-|; | accounting-mariadb-exporter | prom/mysqld-exporter | 9104 | accounting | MariaDB metrics |
-|; | rss-postgres | postgres | 5432 | rss | FreshRSS database |
-|; | photos-ml | ghcr.io/immich-app/immich-machine-learning | 3003 | photos | ML image tagging |
-|; | photos-postgres | ghcr.io/immich-app/postgres | 5432 | photos | Immich database |
-|; | photos-valkey | valkey/valkey | 6379 | photos | Immich cache |
-|; | documents-postgres | postgres | 5432 | documents | Paperless database |
-|; | documents-redis | redis | 6379 | documents | Paperless cache |
-|; | infra-tunnel | cloudflare/cloudflared | 4788 | tunnel | Cloudflare Tunnel (host net) |
-|; | infra-webhook | infra-webhook (build) | 9000 | webhook | Deploy webhook receiver |
-|; | backup-restic | restic/restic |; | backup | Backup container |
-|; | backup-cron-trigger | (build) |; | backup | Cron scheduler |
-|; | updater-watchtower | containrrr/watchtower |; | updater | Update monitor (notify only) |
-|; | project-management-* | (multiple taiga images) |; | project-management | Project management |
+| - | proxy-socket-proxy | tecnativa/docker-socket-proxy | - | proxy | Docker socket proxy for Traefik |
+| - | proxy-oauth2-proxy | quay.io/oauth2-proxy/oauth2-proxy | 4180 | proxy | Keycloak forwardAuth middleware |
+| - | proxy-cloudflare-ddns | favonia/cloudflare-ddns | - | proxy | Dynamic DNS updates (*/5 min) |
+| - | iam-postgres | postgres | 5432 | iam | Keycloak database |
+| - | monitoring-victorialogs | victoriametrics/victoria-logs | 9428 | monitoring | Log aggregation (Loki-compatible) |
+| - | monitoring-promtail | grafana/promtail | - | monitoring | Log shipper → VictoriaLogs |
+| - | monitoring-vmalert | victoriametrics/vmalert | 8880 | monitoring | Alerting engine (Prometheus-compatible) |
+| - | monitoring-alertmanager | prom/alertmanager | 9093 | monitoring | Alert routing → ntfy |
+| - | monitoring-node-exporter | prom/node-exporter | 9100 | monitoring | Host metrics |
+| - | monitoring-cadvisor | ghcr.io/google/cadvisor | 8080 | monitoring | Container metrics |
+| - | monitoring-postgres-exporter | quay.io/prometheuscommunity/postgres-exporter | 9187 | monitoring | 6x PostgreSQL instances |
+| - | monitoring-redis-exporter | oliver006/redis_exporter | 9121 | monitoring | 2 Redis/Valkey instances (Paperless Redis, Immich Valkey) |
+| - | monitoring-tempo | grafana/tempo | 3200, 4318 | monitoring | Distributed tracing |
+| - | monitoring-blackbox-exporter | prom/blackbox_exporter | 9115 | monitoring | Synthetic probes |
+| - | security-crowdsec | crowdsecurity/crowdsec | 8080 | security | Intrusion detection |
+| - | security-cf-workers-bouncer | crowdsecurity/cf-workers-bouncer | - | security | Cloudflare WAF bouncer |
+| - | operations-postgres-forgejo | postgres | 5432 | operations | Forgejo database |
+| - | operations-forgejo-runner | data.forgejo.org/forgejo/runner | - | operations | CI/CD runner |
+| - | collaboration-postgres | postgres | 5432 | collaboration | Synapse database |
+| - | storage-collaboration | owncloud/ocis | 9300 | storage | oCIS WOPI collaboration svc |
+| - | accounting-mariadb-akaunting | mariadb | 3306 | accounting | Akaunting database |
+| - | accounting-mariadb-exporter | prom/mysqld-exporter | 9104 | accounting | MariaDB metrics |
+| - | rss-postgres | postgres | 5432 | rss | FreshRSS database |
+| - | photos-ml | ghcr.io/immich-app/immich-machine-learning | 3003 | photos | ML image tagging |
+| - | photos-postgres | ghcr.io/immich-app/postgres | 5432 | photos | Immich database |
+| - | photos-valkey | valkey/valkey | 6379 | photos | Immich cache |
+| - | documents-postgres | postgres | 5432 | documents | Paperless database |
+| - | documents-redis | redis | 6379 | documents | Paperless cache |
+| - | infra-tunnel | cloudflare/cloudflared | 4788 | tunnel | Cloudflare Tunnel (host net) |
+| - | infra-webhook | infra-webhook (build) | 9000 | webhook | Deploy webhook receiver |
+| - | backup-restic | restic/restic | - | backup | Backup container |
+| - | backup-cron-trigger | (build) | - | backup | Cron scheduler |
+| - | updater-watchtower | containrrr/watchtower | - | updater | Update monitor (notify only) |
+| - | project-management-* | (multiple taiga images) | - | project-management | Project management |
 | `traefik_net` | Ingress; public-facing containers only | Traefik, OAuth2-Proxy, all services with Traefik labels, well-known-server |
 | `backend_net` | Application; internal service communication | Socket-proxy, all apps, all exporters, CrowdSec, OAuth2-Proxy |
 | `data_net` | Database; PostgreSQL, MariaDB, Redis, Valkey | All databases, postgres-exporter, redis-exporter, mariadb-exporter |

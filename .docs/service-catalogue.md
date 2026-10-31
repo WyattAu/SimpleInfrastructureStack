@@ -2,9 +2,9 @@ not validated prices**; revise after the first three customers. Competitor
 | **Document Management** | Paperless-ngx; scan, OCR, tag, full-text search, correspondences | pilot-ready | **£10/mo** |
 | **File Storage** | Ferro; our own Rust platform: WebDAV, S3, OIDC, Cedar authorisation, full-text search | needs auth wiring | **£12/mo** |
 | **Photo Library** | Immich; phone photo backup, albums, face/search (ML optional); estate-native replacement (`aperture`) in progress | validate first | **£12/mo** |
-| **Office Bundle** | Documents + Files |; | **£20/mo** |
+| **Office Bundle** | Documents + Files | - | **£20/mo** |
 The differentiator is not the software; it is that we run hardened,
-| Plus | from £1,800 |; | 1.3% + 25p | 0.2% |
+| Plus | from £1,800 | - | 1.3% + 25p | 0.2% |
 instead of 2–6% of turnover"*; not *"we process your card payments for free."*
    daily, and patched automatically; and there is a human who notices when
    FIPS builds. Cost is per-image subscription; current list pricing is

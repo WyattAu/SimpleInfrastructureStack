@@ -2,11 +2,11 @@
 | Manifest Version | `16.0.0` (but Dockerfile label says `15.11.0`; **version mismatch**) |
 | Status | **STUB**; empty wolfi-base skeleton, no application binaries or code |
 ### `postgresql-exporter`: EIR 4 Versions Behind
-| Delta |; | 4 versions behind |
+| Delta | - | 4 versions behind |
 ### `redis`: EIR Slightly Behind
-| Delta |; | 8 patch releases behind |
+| Delta | - | 8 patch releases behind |
 ### `immich`: EIR Ancient (v1 vs v2)
-| Delta |; | Entire major version behind |
+| Delta | - | Entire major version behind |
 ### `synapse`: No Version Pin
 ### `taiga-back`: No Version Pin
 ### `taiga-front`: Version Mismatch
@@ -19,4 +19,4 @@
 ### `infra-webhook:latest`: Locally Built
 | EIR Has It | No; no webhook relay image in EIR |
 ## 6. SIS Custom `ghcr.io/wyattau/*` Images: Deduplication Decision
-| **Total items** | **14** |; |
+| **Total items** | **14** | - |
