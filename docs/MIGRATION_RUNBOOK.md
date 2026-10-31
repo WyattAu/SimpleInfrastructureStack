@@ -58,8 +58,8 @@ for minutes on large libraries; that is normal, give it time.
 Accepted-risk context (upstream is ahead, EIR image missing; verified in the
 Backup coverage per stack (from `stacks/backup/scripts/backup.sh`; per-stack
 restic tags + DB dumps; and `stacks/backup/scripts/run-backup.sh` -
-| project-management | **no appdata tag, no DB dump** | - | gap (not in this window) |
-| accounting | **no appdata tag, no DB dump** | - | gap (not in this window) |
-| ferro | no appdata tag, no DB dump (has a postgres sidecar) | - | gap (not in this window) |
+| project-management | **no appdata tag, no DB dump** |; | gap (not in this window) |
+| accounting | **no appdata tag, no DB dump** |; | gap (not in this window) |
+| ferro | no appdata tag, no DB dump (has a postgres sidecar) |; | gap (not in this window) |
 SOPS secret files: every stack has `secrets/<stack>.env.encrypted`; verified
 - [ ] Update the table at the top of this file as each stack completes; the

@@ -4,8 +4,8 @@
 3. **Entrypoint/CMD interaction**; EIR images use `ENTRYPOINT ["/shim", "run", "-c", "app"]` with `CMD ["-c", "app-binary", "--", "args"]`. SIS compose files that override `entrypoint:` or `cmd:` would bypass the shim entirely.
 Many EIR images use `scratch` as the final stage; the most minimal possible base:
 # EIR scratch image: sh doesn't exist
-| blackbox-exporter | - | scratch | ❌ No |
-| node-exporter | - | scratch | ❌ No |
+| blackbox-exporter |; | scratch | ❌ No |
+| node-exporter |; | scratch | ❌ No |
 # EIR image: CAP_DROP ALL means no SYS_ADMIN
 # EIR image: CAP_DROP ALL, no NET_ADMIN
 1. **traefik**; Most critical, validates shim pattern
