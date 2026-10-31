@@ -134,7 +134,7 @@ does not exist yet; `keycloak.org/docs/latest` release notes still stop at
 26.7.0 as of 2026-09-16).
 
 **Breaking changes** ([Keycloak 26.7.0 upgrading guide](https://www.keycloak.org/docs/26.7.0/upgrading/),
-[26.7.0 release announcement](https://www.keycloak.org/2026/07/keycloak-2670-released) : ships CVE fixes CVE-2026-9796, CVE-2026-9689, CVE-2026-9798, CVE-2026-11986):
+[26.7.0 release announcement](https://www.keycloak.org/2026/07/keycloak-2670-released): ships CVE fixes CVE-2026-9796, CVE-2026-9689, CVE-2026-9798, CVE-2026-11986):
 
 - `view-system` admin role removed (26.5.4-era role); server-info access now
   requires `manage-realm` in `master`.
@@ -352,7 +352,7 @@ the same tag.
 - pgvecto.rs support removed; already satisfied (VectorChord in use since the
   1.133-era migration; no `DB_VECTOR_EXTENSION` set).
 - Removed env vars: `IMMICH_MACHINE_LEARNING_PING_TIMEOUT`,
-  `MACHINE_LEARNING_PRELOAD__CLIP`, `MACHINE_LEARNING_PRELOAD__FACIAL_RECOGNITION` : none set in this compose. No action.
+  `MACHINE_LEARNING_PRELOAD__CLIP`, `MACHINE_LEARNING_PRELOAD__FACIAL_RECOGNITION`: none set in this compose. No action.
 - ML requires x86-64-v2 CPUs (numpy 2.4); virtually every mainstream x86-64
   CPU since ~2010 qualifies; no action expected for the TrueNAS host.
 - OAuth: insecure (http) issuer requests disallowed by default;

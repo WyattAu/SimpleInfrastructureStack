@@ -122,7 +122,7 @@ is materially changed.
 crates.io names; check the repo dir when navigating the workspace.
 
 **Dogfood services live on TrueNAS (stacks/dogfood + stacks/webhook):**
-flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002 : all estate-built, all shadow-verified, cutover via flagsd.
+flagsd :9003, eventbusd :9004, authbox :9005, deploy-webhook-rs :9002: all estate-built, all shadow-verified, cutover via flagsd.
 
 ---
 
@@ -2434,7 +2434,7 @@ no. The larger-ClientHello middlebox breakage class (tldr.fail) does not
 apply: the customer edge terminates directly on 80/443. ACME profiles:
 the platform's zero-human renewal loop is exactly what the industry's
 mandatory 47-day future requires; `shortlived` (~6-day) certificates are
-the interesting cutting edge; they remove revocation machinery entirely : but require flawless automation, so they are an opt-in tier, not the
+the interesting cutting edge; they remove revocation machinery entirely: but require flawless automation, so they are an opt-in tier, not the
 default.
 
 IMPLEMENT (spec): hosting-architecture.md edge section gains the iter-12
@@ -3277,7 +3277,7 @@ honest starting point for iterations 6/7 to fix.
 
 - Build FIPS Variants red: every job failed instantly. Two independent
   root causes (both fixed this iteration):
-  1. `IMAGE_PREFIX: ${{ github.repository_owner }}` → `WyattAu` (upper) : GHCR rejects uppercase repository names. Fixed by lowercasing into
+  1. `IMAGE_PREFIX: ${{ github.repository_owner }}` → `WyattAu` (upper): GHCR rejects uppercase repository names. Fixed by lowercasing into
      `GITHUB_ENV` per job, mirroring `_build-reusable.yml`.
   2. `build-keycloak-fips` referenced `images/keycloak/manifest.toml`,
      but an automated bump renamed the dir to `keycloak-quarkus/` and the
@@ -3573,7 +3573,7 @@ run conclusion against documented semantics.
 
 - Fourth phantom: the Oct 8 dispatched nightly (valid file, correct name)
   ran 25/25 jobs green with run conclusion failure. Evidence set now
-  spans four runs plus the one REAL failure (Oct 7 20:06, duplicate keys : mine, fixed). The community report draft in this document is current.
+  spans four runs plus the one REAL failure (Oct 7 20:06, duplicate keys: mine, fixed). The community report draft in this document is current.
 - **Experiment armed**: `ADVISORY_GATES_BLOCKING=true` repo variable set
   (Oct 8 15:59 UTC). The Oct 9 03:00 UTC scheduled run is the readout:
   green conclusion => the continue-on-error interaction was the cause
@@ -3797,7 +3797,7 @@ cascade:
    structure and all concluded `success`
 
 **The decisive object:** the nightly's own check suite
-(`102603491484`) concluded `failure` with `latest_check_runs_count: 25` : while all 25 member check-runs are `success`. GitHub's aggregation is
+(`102603491484`) concluded `failure` with `latest_check_runs_count: 25`: while all 25 member check-runs are `success`. GitHub's aggregation is
 internally inconsistent for this workflow.
 
 **Scale of the signal:** 0 successes in the last 100 nightly runs back to
@@ -3830,7 +3830,7 @@ Evidence:
    - every step of every job: success/skipped, zero failures/cancellations
    - run conclusion: failure
 2. Check suite 102603491484 (same run): conclusion=failure,
-   latest_check_runs_count=25, all 25 member check-runs conclusion=success : the suite's own conclusion contradicts its members.
+   latest_check_runs_count=25, all 25 member check-runs conclusion=success: the suite's own conclusion contradicts its members.
 3. No job-level `continue-on-error` masking: three jobs have
    `continue-on-error: ${{ vars.ADVISORY_GATES_BLOCKING != 'true' }}`
    with the repo variable = true, so the expression evaluates false
