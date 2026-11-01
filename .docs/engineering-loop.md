@@ -4346,6 +4346,31 @@ LEAN PROOF: unchanged, exit 0.
 
 ## Backlog (ranked)
 
+### New from the Nov 1 estate CI-health audit (iteration 18)
+
+1. **GitHub Actions billing** — PRIVATE repos (authbox, flagsd, eventbusd)
+   have jobs that never start: "recent account payments have failed or
+   your spending limit needs to be increased" (annotation on every job).
+   Operator action: GitHub Settings → Billing & plans. Until fixed, the
+   private repos' quality gates cannot run AT ALL.
+2. **hosting-api coverage exit-1 anomaly** — CI's `cargo llvm-cov
+   --fail-under-lines 80` exits 1 with TOTAL line coverage 80.43%
+   (3889/761) and all 55 tests passing; the identical command with the
+   identical cargo-llvm-cov 0.9.1 exits 0 locally. Suspects: LLVM-version
+   delta (CI 23.1.1) or a 0.9.1 threshold quirk. Investigation items:
+   pin cargo-llvm-cov in rust-kit to a verified version; capture
+   llvm-cov's own stderr verbosely in the job.
+3. **cargo-nextest adoption** (rust-kit) — per-test timeouts + retries;
+   would have caught the RBAC deadlock hang in minutes instead of 85.
+4. **invoice-kit 2.0.0 release** — the semver gate proved 1.1.x/1.2.0
+   shipped MAJOR changes (buyer_vat_id field; ReverseChargeWithoutBuyerVatId
+   variant). Bumped to 2.0.0 in-tree; not yet published to crates.io.
+5. **3-node mesh compose demo** — blocked on CLI node-identity/mesh-seed
+   flags (removed the fictional job from docker-integration.yml).
+6. **nightly.rs integration tests** — the metering-close closures need a
+   live-AppState harness; currently excluded from the coverage denominator
+   via coverage-ignore-regex (declared in hosting-api's quality wrapper).
+
 > State after round 13 (2026-10-26): the original ranked backlog
 > (items 1-9) is retired; every entry was completed or superseded
 > across rounds 1-9 (hosting-api shipped to 0.6.0; FIPS wave green;
