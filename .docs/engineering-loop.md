@@ -4407,7 +4407,10 @@ died on a lock that could not exist. Fix: re-init stores with vet
 0.10.2 ("Vetting Succeeded, 15 exempted" — exemptions as recorded
 audit debt), track the locks, re-push. Estate audit: ERROR 0; DRIFT
 1 — the **documented webhookkit hold** (1.1.2; 2.2.3 does not compile
-under its declared hmac 0.13 stack; 2.2.4 unpublished). invoice-kit
+under its declared hmac 0.13 stack; 2.2.4 unpublished). Addendum:
+estate-integration's OWN vet store needed the same treatment —
+`resync-vet-exemptions.py --write` appended 12 blocks for the
+released versions; CI green on 00e6848. invoice-kit
 2.0.0, group-kit 0.2.4, sales-tax 0.2.1, accounting-api 0.1.1/0.1.2,
 vat-return 0.1.11, vat-mtd 0.1.7, pay-kit 0.1.4 all live on
 crates.io; all repos pushed. The audit's 7 transient ERRORs
