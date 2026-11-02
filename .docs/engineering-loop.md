@@ -4419,6 +4419,24 @@ parallel agent's UI project (manifest: "Owned by its creating
 agent", Phase 3 landed 2026-11-02) and were resolved by that agent
 mid-loop.
 
+ADDENDUM 2 (same day) — the EIR reds are fixed AND dispatch-verified:
+- **Musl Rebuild phantom**: every job succeeded yet the run concluded
+  failure, with NO `rebuild-check` job in the API. Root cause:
+  `strategy.matrix: ${{ fromJSON(...) }}` was fed a JSON **ARRAY**
+  (`[{image}...]`); matrix expansion needs an **OBJECT**
+  (`{image:[...]}`). Zero valid dimensions → the job generates no
+  combinations and fails the run without ever appearing as a job.
+  Fixed at the source (discover emits `{"image":[...]}`); verified:
+  zero-candidate dispatch → success; single-image dispatch →
+  `Rebuild alertmanager` spawned, succeeded; Update Tracker + Create
+  PR ran green.
+- **Auto Version Bump**: the GITHUB_ENV banner fix verified by
+  dispatch — check-upstream ✓, bump ✓ through the has_changes=true
+  path, auto-merge ✓.
+- Backlog correction: cargo-nextest is ALREADY adopted in rust-kit
+  (install + `cargo nextest run --retries 1` + separate doctest step,
+  landed 2026-11-01 by the parallel session) — item 3 was stale.
+
 LESSON: (1) A gateway is a machine, not magic — when a whole LAN
 loses the internet at once, check who owns 192.168.1.1 and grep the
 kernel log for UFW BLOCK before touching the app. (2) An exact-pin
@@ -4448,8 +4466,10 @@ suite cannot compile — the gate that never ran again.
    integration tests (ledger/passkey/lib handlers). cargo-llvm-cov
    should rename the flag or rust-kit should pass
    `--fail-under-functions` explicitly.
-3. **cargo-nextest adoption** (rust-kit) — per-test timeouts + retries;
-   would have caught the RBAC deadlock hang in minutes instead of 85.
+3. ~~**cargo-nextest adoption** (rust-kit)~~ DONE (2026-11-01,
+   parallel session): rust-kit installs cargo-nextest and runs
+   `cargo nextest run --retries 1` with per-test isolation; doctests
+   run separately via `cargo test --doc`.
 4. ~~**invoice-kit 2.0.0 release**~~ DONE (iteration 19): published;
    consumer chain released and re-pinned (vat-return 0.1.11,
    vat-mtd 0.1.7, accounting-api 0.1.2, pay-kit 0.1.4;
