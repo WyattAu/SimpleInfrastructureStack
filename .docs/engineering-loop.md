@@ -4344,6 +4344,87 @@ borrow ends early" intuition does not transfer to lock guards.
 
 LEAN PROOF: unchanged, exit 0.
 
+### Iteration 19: 2026-11-02: Forgejo's tunnel was collateral — and the invoice-kit 2.0.0 chain, end to end
+
+RESEARCH: two triggers. (a) The Forgejo portal (git.wyattau.com) was
+down and needed NOW. (b) The estate audit reported pin drift:
+estate-integration pinned fx-kit =0.1.4 and invoice-kit =1.2.0 while
+2.0.0 had just published.
+
+ANALYZE (Forgejo): curl said Cloudflare **530** — tunnel origin, not
+DNS. Forgejo itself was healthy (LAN :3000 → 200, container up 5
+weeks). `infra-tunnel`'s logs: `failed to dial to edge with quic` +
+`lookup region1.v2.argotunnel.com: i/o timeout` — the NAS had NO
+outbound internet. Traceroute died after hop 1, and hop 1 was
+**192.168.1.1 = this workstation** (MAC match on the NAS's ARP entry):
+the machine is the LAN gateway, egress via USB tether/wifi. The kernel
+log held the verdict — 1,316 `[UFW BLOCK] IN=enp3s0 OUT=enp0s20f0u8`
+since **Nov 01 00:32:43**, the minute the default route moved from
+wlan0 to the tether. ufw (`DEFAULT_FORWARD_POLICY="DROP"`) dropped
+every forwarded packet out the NEW egress, and NO nat/masquerade rule
+existed anywhere (ufw before.rules had no *nat stanza; every firewalld
+zone `masquerade: no`). The LAN's internet was forwarded-but-unNATted
+packets with nowhere to go.
+
+IMPLEMENT (Forgejo, operator-run): ufw forward policy → ACCEPT
+(+ firewalld `public` masquerade enabled). Verification: NAS pings
+1.1.1.1 (9 ms), tunnel `/ready` → 200, git.wyattau.com → 200,
+SSH :2222 authenticates. Standing risk noted: **ufw and firewalld run
+simultaneously** — two firewall managers programming one kernel; the
+next egress change will re-trigger this class. Consolidation queued.
+
+ANALYZE (pin chain): bumping estate-integration to fx-kit =0.1.5
+failed — group-kit 0.2.3 pinned fx-kit =0.1.4. Releasing group-kit
+0.2.4 exposed sales-tax 0.2.0 → accounting-api (aliased `ledger_api`)
+0.1.0 → the whole ledger chain. And invoice-kit =2.0.0 failed with
+`E0308: expected &[Invoice], found &Vec<Invoice>` that deref coercion
+can NEVER fix: **vat-return 0.1.10 compiled against invoice-kit 1.x,
+so its `Invoice` is a distinct type** — rustc prints both as
+`invoice_kit::Invoice`, making a version conflict look like a type
+error at the call site.
+
+IMPLEMENT (the chain, each link tested before publish):
+sales-tax 0.2.1 (fx-kit 0.1.5; also began tracking Cargo.lock — the
+7th repo with it gitignored), group-kit 0.2.4, vat-return 0.1.11
+(invoice-kit 2.0.0; 6 tests green unchanged), vat-mtd 0.1.7 (11
+tests), accounting-api 0.1.1 → **0.1.2** (0.1.1 exposed that its
+post-rename test suite NEVER compiled — `tests/api.rs` still imported
+`ledger_api`; the rename commit didn't touch tests, and no gate had
+run them), pay-kit 0.1.4. estate-integration: fx-kit =0.1.5,
+group-kit =0.2.4, sales-tax =0.2.1, vat-return =0.1.11, vat-mtd
+=0.1.7, pay-kit =0.1.4, accounting-api alias =0.1.2, invoice-kit
+=2.0.0; `cargo tree -i invoice-kit` → single 2.0.0. Also scoped the
+typed_ids clippy allow (repo pattern) and committed the pre-existing
+accounting_stack allow that a parallel session left dirty.
+
+VERIFY: full `cargo test --no-run` clean; clippy --all-targets
+-D warnings clean; vat_filing/vat_period/payment_loop/invoicing
+suites green (18 tests). The released links' first CI push was RED —
+the same disease twice: the vet stores were the 0.4-era husk
+("incompatible version") and Cargo.lock was gitignored in
+vat-return/vat-mtd/pay-kit, so `cargo vet --locked` and the check job
+died on a lock that could not exist. Fix: re-init stores with vet
+0.10.2 ("Vetting Succeeded, 15 exempted" — exemptions as recorded
+audit debt), track the locks, re-push. Estate audit: ERROR 0; DRIFT
+1 — the **documented webhookkit hold** (1.1.2; 2.2.3 does not compile
+under its declared hmac 0.13 stack; 2.2.4 unpublished). invoice-kit
+2.0.0, group-kit 0.2.4, sales-tax 0.2.1, accounting-api 0.1.1/0.1.2,
+vat-return 0.1.11, vat-mtd 0.1.7, pay-kit 0.1.4 all live on
+crates.io; all repos pushed. The audit's 7 transient ERRORs
+(layout/paint/scene/text/window-kit, solid-bits/fx) belonged to a
+parallel agent's UI project (manifest: "Owned by its creating
+agent", Phase 3 landed 2026-11-02) and were resolved by that agent
+mid-loop.
+
+LESSON: (1) A gateway is a machine, not magic — when a whole LAN
+loses the internet at once, check who owns 192.168.1.1 and grep the
+kernel log for UFW BLOCK before touching the app. (2) An exact-pin
+bump is a transaction across the whole consumer graph: rustc's
+"different crate versions" error impersonates a type error, and the
+fix is releasing the intermediate links, not editing the call site.
+(3) A rename that doesn't update tests ships a crate whose test
+suite cannot compile — the gate that never ran again.
+
 ## Backlog (ranked)
 
 ### New from the Nov 1 estate CI-health audit (iteration 18)
@@ -4366,9 +4447,10 @@ LEAN PROOF: unchanged, exit 0.
    `--fail-under-functions` explicitly.
 3. **cargo-nextest adoption** (rust-kit) — per-test timeouts + retries;
    would have caught the RBAC deadlock hang in minutes instead of 85.
-4. **invoice-kit 2.0.0 release** — the semver gate proved 1.1.x/1.2.0
-   shipped MAJOR changes (buyer_vat_id field; ReverseChargeWithoutBuyerVatId
-   variant). Bumped to 2.0.0 in-tree; not yet published to crates.io.
+4. ~~**invoice-kit 2.0.0 release**~~ DONE (iteration 19): published;
+   consumer chain released and re-pinned (vat-return 0.1.11,
+   vat-mtd 0.1.7, accounting-api 0.1.2, pay-kit 0.1.4;
+   `cargo tree` confirms a single 2.0.0 in the graph).
 5. **3-node mesh compose demo** — blocked on CLI node-identity/mesh-seed
    flags (removed the fictional job from docker-integration.yml).
 6. **nightly.rs integration tests** — the metering-close closures need a
