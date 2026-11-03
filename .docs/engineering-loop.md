@@ -4534,6 +4534,57 @@ cause that "explains" consistent data is still unfalsified until
 someone re-reads the source. Also: a test suite can be green while
 its harness is broken, if no test walks the broken path.
 
+### Iteration 21: 2026-11-03: writing the custody policy found the defect the rack would have
+
+RESEARCH: the top engineering item on the roadmap was the
+key-rotation/custody policy — the paper gap between "EIR signs" and
+"the gate enforces". To write it honestly I read both ends: EIR's
+sign step (`cosign sign --yes`, no `--key`) and the tenant gate
+(`cosign verify --key "${TENANT_COSIGN_KEY}"`).
+
+ANALYZE: **the producer and consumer disagreed on the trust model.**
+EIR signs KEYLESS — Fulcio OIDC certificates bound to the GitHub
+workflow identity, recorded in Rekor. The gate verified against a
+STATIC public key that nobody ever generated. Armed as written, the
+fail-closed gate would have rejected **every EIR image** — the
+cosign loop could not have fired on the first gated tenant. Two
+stale claims rode along with it: "EIR does not sign yet (backlog
+#12)" in the script and the architecture doc, both false since
+2026-09-13. Found on paper, in an afternoon, instead of on EPYC at
+first-provision.
+
+IMPLEMENT: (1) `tenant-provision.sh` now arms exactly one mode —
+`TENANT_COSIGN_IDENTITY` (keyless regexp pinned to the EIR workflow
+identity + the GitHub OIDC issuer; nothing to generate, rotate, or
+leak) or `TENANT_COSIGN_KEY` (static, for offline/contract-driven
+deployments); both set = refuse; neither = warn+skip. (2)
+`.docs/key-custody-policy.md`: the keyless custody model (rotation =
+org credential hygiene; revocation = narrow the regexp; the accepted
+Sigstore/GitHub trust), the full static-key ceremony for the day it
+is armed (offline generation, SOPS+offline storage, annual+event
+rotation with the trust-window rule — the gate is NEVER disabled to
+rotate, re-sign before trust flips, annual restore test), and the
+authbox→EIR decision memo (recommendation: build privately, sign in
+EIR — option A — pending the billing fix). (3) The architecture
+doc's supply-chain model paragraph updated to the dual-mode truth.
+(4) estate-audit: exact pins of third-party crates (reqwest,
+tantivy) no longer report INFO when the pin resolves on crates.io —
+the audit is now ERROR 0 / DRIFT 1 / INFO 0, maximally quiet.
+
+VERIFY: `bash -n` + shellcheck clean (one pre-existing SC2012 info
+elsewhere); the audit change verified by running it — both INFO
+items resolve on crates.io and vanish; audit ERROR 0, DRIFT 1. SIS
+pushed dec4c39; engineering-standards f40d054. Build on Push (26.04
+base + 22 new actions) still queued at round end — smoke tests gate
+it.
+
+LESSON: the cheapest place to find an integration defect is the
+document that describes the integration. Writing the policy forced
+both ends of the trust relationship into one file, and the
+contradiction fell out immediately. Policies that describe systems
+are executable oracles in prose — write them against the code, not
+against the intention.
+
 ## Backlog (ranked)
 
 ### New from the Nov 1 estate CI-health audit (iteration 18)
