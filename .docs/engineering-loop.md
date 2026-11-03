@@ -4446,6 +4446,60 @@ fix is releasing the intermediate links, not editing the call site.
 (3) A rename that doesn't update tests ships a crate whose test
 suite cannot compile — the gate that never ran again.
 
+### Iteration 20: 2026-11-03: the table lied to me, not the flag — hosting-api back to tier b on real tests
+
+RESEARCH: with the release chain closed, the biggest open item was
+hosting-api's temporary tier c. Pulling the coverage JSON (not the
+text table) for an uncovered-function census produced numbers that
+contradicted iteration 18b: **lines are 1958/2497 = 78.41%**, and the
+80.43% I had attributed to lines is REGIONS (3889/761) — the text
+table's FIRST column. `--fail-under-lines 80` had been comparing
+78.41% all along. The flag never lied; my reading of the table did.
+(Empirical bracketing "75 passes, 79 fails" is exactly what 78.41%
+predicts — the data was consistent with the boring truth, and I
+bolted an exotic explanation onto it.)
+
+ANALYZE: the uncovered surface, from the JSON per-file census:
+lib.rs 59 functions (the readiness/jobs/ledger/passkey handlers),
+passkeys.rs 24 ( ceremony internals behind config), usage 10,
+ledger 7, tenants 4, jobs 3, backup 2. Tier b needed +42 lines /
++37 functions of genuinely executed behavior.
+
+IMPLEMENT: seven integration tests in tests/api.rs, harness-first:
+- `readyz_reports_real_dependency_health` + the 503 path — readiness
+  over the real dependency registry (backup-script executable,
+  job-store writable);
+- `passkey_ceremonies_are_503_without_configuration` — all five
+  ceremonies answer the same NotConfigured contract;
+- `jobs_surface_lists_and_details_records` — global + per-tenant
+  lists with **tenant isolation** asserted (globex must not see
+  acme's job), `unknown_job_id_is_404`;
+- `tenant_detail_reports_status_without_secrets`, the empty-ledger
+  statement (`durable:false`).
+
+The tests flushed two latent defects: (1) the test harness's jobs
+TempDir guard dropped when `serve()` returned — every later request
+checked writability of a DELETED directory, and no prior test ever
+exercised readiness, so the suite was green while the harness was
+broken (fixed: capture the path, `mem::forget` the OWNED guard);
+(2) `mem::forget(&guard)` is a no-op ownership-wise — forgetting a
+reference does not stop the owned value from dropping, which is
+exactly how bug (1) survived the first fix attempt.
+
+VERIFY: 20/20 integration tests; `--fail-under-lines 80` exit 0
+locally (82.90% regions / 82.38% lines / 76.47% functions); stable
+clippy -D warnings clean; fmt clean. Tier b restored in
+quality.yml with the corrected rationale. CI: **quality success at
+tier b on 1fea884**. Corrections propagated: the quality.yml comment,
+this doc's 18b entry context, and memory.
+
+LESSON: prefer the machine-readable source over the pretty table
+when two readings disagree — and when the boring explanation (78.41%
+< 80) fits the bracketing data exactly, take it. An exotic root
+cause that "explains" consistent data is still unfalsified until
+someone re-reads the source. Also: a test suite can be green while
+its harness is broken, if no test walks the broken path.
+
 ## Backlog (ranked)
 
 ### New from the Nov 1 estate CI-health audit (iteration 18)
@@ -4455,17 +4509,13 @@ suite cannot compile — the gate that never ran again.
    your spending limit needs to be increased" (annotation on every job).
    Operator action: GitHub Settings → Billing & plans. Until fixed, the
    private repos' quality gates cannot run AT ALL.
-2. **hosting-api coverage exit-1 anomaly — SOLVED (iteration 18b).**
-   Root cause: llvm-cov 0.9.1's `--fail-under-lines` evaluates
-   **FUNCTION** coverage (78.41% < 80), not line coverage (80.43%) —
-   empirically bracketed (threshold 75 passes, 79 fails) on the
-   CI-exact toolchain (1.99.1) after a cold `target/llvm-cov-target`
-   rebuild reproduced the CI failure locally. The flag name misleads.
-   Resolution: hosting-api temporarily tier c (70%, documented in the
-   wrapper); tier b returns after ~38 uncovered functions gain
-   integration tests (ledger/passkey/lib handlers). cargo-llvm-cov
-   should rename the flag or rust-kit should pass
-   `--fail-under-functions` explicitly.
+2. ~~**hosting-api coverage exit-1 anomaly**~~ RESOLVED + CORRECTED
+   (iteration 20): the flag was fine — lines were genuinely 78.41%;
+   the 18b "the flag misleads" diagnosis misread the text table
+   (first column is REGIONS). Tier b RESTORED on real tests (82.38%
+   lines, CI green 1fea884). Remaining known debt: functions 76.47%
+   (not gated); cargo-llvm-cov should print a LINES column header
+   that can't be confused with regions.
 3. ~~**cargo-nextest adoption** (rust-kit)~~ DONE (2026-11-01,
    parallel session): rust-kit installs cargo-nextest and runs
    `cargo nextest run --retries 1` with per-test isolation; doctests
