@@ -4437,6 +4437,36 @@ ADDENDUM 2 (same day) — the EIR reds are fixed AND dispatch-verified:
   (install + `cargo nextest run --retries 1` + separate doctest step,
   landed 2026-11-01 by the parallel session) — item 3 was stale.
 
+ADDENDUM 3 (2026-11-03) — the dependabot PRs were free gate-probes
+on a foreign branch, and both surfaced MAIN-borne debt the push-only
+runs never see:
+- **PR #50 (21 action bumps)**: actionlint red since SEPTEMBER — the
+  lint job runs only on PRs touching workflows, then lints the whole
+  tree, and `.github/workflows/_archive/` (run-history reference,
+  not runnable jobs) carried pre-existing expression defects on
+  main. Fix: moved `_archive/` to `.github/workflows-archive/`
+  (actionlint clean on main, 8c740fba3); the PR itself was
+  CONFLICTING and stale, closed via `@dependabot close` — it
+  recreates conflict-free.
+- **PR #31 (ubuntu 22.04 -> 26.04)**: three red checks, all main's
+  debt: prettier flagged 3 docs files; markdownlint had **106**
+  errors (bare URLs 44, fence languages 40, blank-line rules, one
+  missing table cell in ADR-004, malformed nested code spans,
+  duplicate DO/DO-NOT headings); `cargo audit` hit RUSTSEC-2026-
+  0338/0339/0340/0341/0342/0346 (quinn-proto/rustls) plus tokio
+  1.52.1 unsound — which would have failed MAIN's next Rust push
+  too. Fixes: lock bumps (quinn-proto 0.11.19, rustls 0.23.46,
+  tokio 1.54.1, rustls-webpki 0.103.16, webpki-roots 1.0.11,
+  anyhow 1.0.104; audit clean, 81 evergreenctl tests green),
+  markdownlint 106 -> 0, prettier clean. PR rebased -> **0 failing
+  checks**, auto-merge armed; nightly rebuild exercises the 26.04
+  base end to end (revert ready if smoke tests regress).
+
+LESSON: a lint job that runs only on PRs can be red-on-main for
+months while every push is green. Dependabot's PRs are the only
+thing that walks foreign trees through those gates — treat every
+red dependabot check as a main-health signal, not PR noise.
+
 LESSON: (1) A gateway is a machine, not magic — when a whole LAN
 loses the internet at once, check who owns 192.168.1.1 and grep the
 kernel log for UFW BLOCK before touching the app. (2) An exact-pin
