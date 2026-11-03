@@ -179,28 +179,57 @@ GITIGNORE
 # Compose-class hosts have no verify-on-pull: Docker Content Trust is
 # deprecated and the enforcement engines (Connaisseur, sigstore policy
 # controller) are all Kubernetes admission webhooks. The gate is therefore
-# here, at the provisioning boundary. Fail-closed when armed: with
-# TENANT_COSIGN_KEY pointing at the EIR cosign public key, EVERY image in
-# the rendered stack must carry a valid signature before anything is
-# pulled. Unset (today: EIR does not sign yet — backlog #12) it logs and
-# skips, so arming is a one-env-var change once the first signed build lands.
+# here, at the provisioning boundary. Fail-closed when armed — two arming
+# modes, because the producer and the consumer must agree on the trust
+# anchor:
+#
+#   TENANT_COSIGN_IDENTITY  KEYLESS (operative): EIR's build workflow has
+#     signed every pushed image with `cosign sign` (Fulcio OIDC + Rekor)
+#     since 2026-09-13, so signatures carry a certificate for the GitHub
+#     workflow that produced them. Arming with a certificate-identity
+#     regexp (e.g. '^https://github.com/WyattAu/EvergreenImageRegistry/')
+#     accepts only signatures minted by that identity — nothing to
+#     generate, store, rotate, or leak. See .docs/key-custody-policy.md.
+#   TENANT_COSIGN_KEY  STATIC KEY (alternative): verify against a cosign
+#     public key file — for deployments that must verify offline or that
+#     require a long-lived key by contract. The custody ceremony for this
+#     mode (generation, storage, rotation, revocation) is documented in
+#     .docs/key-custody-policy.md and applies the day this mode is armed.
+#
+# Unset (both) it logs and skips — the gate arrived before arming was
+# required, and arming is a one-env-var change.
+TENANT_COSIGN_IDENTITY="${TENANT_COSIGN_IDENTITY:-}"
 TENANT_COSIGN_KEY="${TENANT_COSIGN_KEY:-}"
-if [ -n "${TENANT_COSIGN_KEY}" ]; then
+if [ -n "${TENANT_COSIGN_IDENTITY}" ] || [ -n "${TENANT_COSIGN_KEY}" ]; then
     if ! command -v cosign >/dev/null 2>&1; then
-        echo "TENANT_COSIGN_KEY is set but cosign is not installed — refusing to provision unverified images" >&2
+        echo "cosign gate is armed but cosign is not installed — refusing to provision unverified images" >&2
         exit 1
     fi
-    info "verifying image signatures (key: ${TENANT_COSIGN_KEY})"
+    if [ -n "${TENANT_COSIGN_IDENTITY}" ] && [ -n "${TENANT_COSIGN_KEY}" ]; then
+        echo "arm exactly ONE cosign mode (TENANT_COSIGN_IDENTITY or TENANT_COSIGN_KEY), not both" >&2
+        exit 1
+    fi
     while IFS= read -r image; do
         [ -n "$image" ] || continue
-        info "  cosign verify $image"
-        if ! cosign verify --key "${TENANT_COSIGN_KEY}" "$image" > /dev/null; then
-            echo "signature verification FAILED for $image — provisioning aborted" >&2
-            exit 1
+        if [ -n "${TENANT_COSIGN_IDENTITY}" ]; then
+            info "  cosign verify (keyless, identity: ${TENANT_COSIGN_IDENTITY}) $image"
+            if ! cosign verify \
+                    --certificate-identity-regexp "${TENANT_COSIGN_IDENTITY}" \
+                    --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+                    "$image" > /dev/null; then
+                echo "signature verification FAILED for $image — provisioning aborted" >&2
+                exit 1
+            fi
+        else
+            info "  cosign verify (key: ${TENANT_COSIGN_KEY}) $image"
+            if ! cosign verify --key "${TENANT_COSIGN_KEY}" "$image" > /dev/null; then
+                echo "signature verification FAILED for $image — provisioning aborted" >&2
+                exit 1
+            fi
         fi
     done < <("${TENANT_DIR}/compose.sh" config --images 2>/dev/null)
 else
-    warn "TENANT_COSIGN_KEY unset — image signature gate skipped (EIR cosign signing is backlog #12)"
+    warn "cosign gate unarmed (set TENANT_COSIGN_IDENTITY for keyless EIR signatures, or TENANT_COSIGN_KEY for a static key) — image verification skipped"
 fi
 
 # --- start ------------------------------------------------------------------

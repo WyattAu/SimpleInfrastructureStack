@@ -504,13 +504,20 @@ nothing anywhere in the industry. Cosign verification itself is
 mature: a signature binds the signer identity/key to the image digest,
 verifiable with one command against any registry. The adopted model:
 (1) the trust boundary is EIR ownership + digest pinning for upstream;
-(2) `ops/tenant-provision.sh` carries a fail-closed cosign gate
-(`TENANT_COSIGN_KEY`): when armed, every image in the rendered stack
-must verify before a single byte is pulled - the one enforcement point
-a non-Kubernetes host actually controls; (3) it is inert until EIR
-signs its builds (backlog #12: cosign sign in the EIR build matrix),
-which is the correct order - the consumer gate arrives before the
-producer signature, so the first signed image is verified from birth.
+(2) `ops/tenant-provision.sh` carries a fail-closed cosign gate with
+TWO arming modes — `TENANT_COSIGN_IDENTITY` (operative: keyless;
+EIR's build workflow has signed every pushed image with Fulcio OIDC +
+Rekor since 2026-09-13, and the regexp pins trust to that identity, so
+there is no key to rotate or leak) and `TENANT_COSIGN_KEY` (static-key
+alternative for offline verification, under the ceremony in
+`.docs/key-custody-policy.md`) — and when armed, every image in the
+rendered stack must verify before a single byte is pulled: the one
+enforcement point a non-Kubernetes host actually controls; (3) writing
+the custody policy exposed that the producer (keyless) and the
+consumer (`--key`) modes were incompatible — an armed gate would have
+rejected every EIR image. Fixed 2026-11-03: the gate verifies with the
+matching method, and the rule is that producer signing-mode changes
+ship with the consumer gate change, proven on a scratch stack.
 
 **Daemon hardening research (loop iter 31):** two daemon-wide additions
 adopted: `no-new-privileges: true` (setuid/sgid escalation blocked by
