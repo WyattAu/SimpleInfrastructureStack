@@ -4459,8 +4459,12 @@ runs never see:
   tokio 1.54.1, rustls-webpki 0.103.16, webpki-roots 1.0.11,
   anyhow 1.0.104; audit clean, 81 evergreenctl tests green),
   markdownlint 106 -> 0, prettier clean. PR rebased -> **0 failing
-  checks**, auto-merge armed; nightly rebuild exercises the 26.04
-  base end to end (revert ready if smoke tests regress).
+  checks**, then approved and **MERGED** (squash, 2026-11-03). The
+  recreated action-bump PR (#51, 22 updates) ran the full gate green
+  on the fixed main and was approved + merged the same day; the
+  merge commit's Lint & Format Check passed on the new action
+  versions, and Build on Push (26.04 base + new actions) queues the
+  first full validation with smoke tests as the gate.
 
 LESSON: a lint job that runs only on PRs can be red-on-main for
 months while every push is green. Dependabot's PRs are the only
