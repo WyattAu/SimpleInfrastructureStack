@@ -4636,6 +4636,19 @@ tests pass and 1 fails on a fresh runner, suspect the test's clock
 before the code's logic: a sleep-then-assert is a race wearing a
 test's clothes.
 
+ADDENDUM (same round) — passkey handler surface covered, and the
+tests caught an API-shape defect: passkey client faults (invalid
+username, registration-after-bootstrap without authority, garbage
+ceremony response) were mapped to **500** via `Config`. Two error
+variants now carry them properly: `InvalidInput` → 400,
+`Unauthorized` → 401 (`Config` stays 500 for genuine server faults).
+Five tests with a real configured `PasskeyState` injected: challenge
+minting (bootstrap), the bootstrap rule (401 without authority), the
+session surface (`/me` resolves a live `X-Passkey-Session`; anonymous
+→ 404), finish-step validation, username-alphabet rejection. 25/25
+api + 42 lib; clippy clean under the exact CI command. CI success on
+`e288541`.
+
 ## Backlog (ranked)
 
 ### New from the Nov 1 estate CI-health audit (iteration 18)
