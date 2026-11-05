@@ -4585,6 +4585,57 @@ contradiction fell out immediately. Policies that describe systems
 are executable oracles in prose — write them against the code, not
 against the intention.
 
+### Iteration 22: 2026-11-04/05: FDB concurrency properties, the phantom's cousin on macOS, and the de-raced test
+
+RESEARCH: the FDB suite was 9 happy-path tests over the estate's
+storage engine. The untested surface was FDB's core promise:
+optimistic concurrency control — the property a ledger actually
+relies on.
+
+IMPLEMENT: four integration tests (`state/fdb.rs`), each asserting a
+property, not a call: (1) **conflict isolation** — two transactions
+on the same baseline, the losing commit MUST fail (a silent
+last-writer-wins is a lost update); (2) **CAS exactly-one-winner**
+under the same expected value; (3) **8x10 concurrent
+`atomic_increment`** landing on the exact total (commutative atomics,
+no lost increment); (4) **conflicting `transact()` both commit via
+OCC retry** — the final value is a serialized successor, never the
+initial. Plus a real fix the suite forced: `FdbClient::new`
+hardcoded `/etc/foundationdb/fdb.cluster`, silently ignoring the
+C API's own `FDB_CLUSTER_FILE` resolution — `None` now defers to the
+standard order, so the suite runs on hosts whose cluster file lives
+elsewhere (CI keeps the same behavior: no env set → deb-configured
+/etc file).
+
+VERIFY: local rebuild of the throwaway FDB stack (the old instance's
+cluster file had vanished — descriptor format learned: `desc:db@ip:port`,
+`@` not `:`), then **13/13** against the real fdbserver. fmt clean.
+Local stable clippy's 53 lib errors pre-date the change (verified via
+stash-run — same count, same errors). CI: Aether CI's **FDB
+Integration job success** on the pinned nightly; then the Integration
+Tests workflow failed on `macos-latest` — "was not acquired by Runner
+of type hosted", twice (the floating label migrated to the macOS 26
+arm64 fleet, which cannot acquire jobs). Pinned `macos-15` (same
+discipline as action SHAs: never floats). That surfaced ONE real
+test defect: `test_throttle_decision` raced `sleep(50ms)` against a
+200ms period — runner overshoot reset the usage and flapped the
+decision to Allow (1 failure in 1414 tests). De-raced: a 1s period
+with NO sleep gives remaining ~1s < the 5s threshold and elapsed ~0
+<< period, deterministically. Final board on `eec21d9`: Integration
+Tests **success**, FDB Integration **success**, Docker/Benchmarks/
+Security **success**; Container/Aether CI finishing.
+
+LESSON: (1) the property a storage engine sells is exactly the test
+that must exist — happy paths prove calls work, concurrency
+properties prove the reason to use it. (2) A suite can be
+environment-blocked so long that its own workaround (a hardcoded
+cluster path) becomes an invisible portability defect. (3) Floating
+labels fail at the worst time: `macos-latest` migrated mid-flight and
+took the job down with it — pin images like SHAs. (4) When 1414
+tests pass and 1 fails on a fresh runner, suspect the test's clock
+before the code's logic: a sleep-then-assert is a race wearing a
+test's clothes.
+
 ## Backlog (ranked)
 
 ### New from the Nov 1 estate CI-health audit (iteration 18)
