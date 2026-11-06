@@ -4649,6 +4649,57 @@ session surface (`/me` resolves a live `X-Passkey-Session`; anonymous
 api + 42 lib; clippy clean under the exact CI command. CI success on
 `e288541`.
 
+### Iteration 23: 2026-11-06: the mesh connect path never worked — three falsified hypotheses and an honest ledger
+
+RESEARCH: the backlogged "node-identity/mesh-seed CLI surface" — the
+product work the removed 3-node compose job demanded. The removed job
+had imagined `aether run --node-id --mesh-port --mesh-seeds`; worse,
+`run.rs` passed `--host` into a server that never accepted it.
+
+IMPLEMENT: (1) `aether-server` gains `--node-id/--mesh-port/
+--mesh-seeds` (mesh enabled only when identity+port are both set; the
+QUIC endpoint binds, each seed is dialed via `MeshNode::connect`,
+handles held for the process lifetime; invalid seed entries and
+bindings degrade with logged errors, never panic). (2) `aether run`
+gains the same flags and passes them through — `server_args()` is a
+unit-tested method (2 tests). (3) `--host` now actually exists on the
+server. (4) The core gained `test_two_node_seed_dial` — the first
+REAL two-node QUIC connection test in the module's history (the 11
+pre-existing tests are creation/registration/stats only).
+
+VERIFY (the falsification ledger — three hypotheses, three CI runs):
+- H1 "mTLS-by-default blocks handshakes": disabled → no effect.
+- H2 "per-node self-signed certs fail trust": shared certificate →
+  no effect.
+- H3 "missing ALPN (RFC 9001 mandates it)": added to both rustls
+  configs via the quinn idiom (`QuicServerConfig::try_from`) →
+  no effect on CI.
+- Environment was RULED OUT first: the failure is identical on CI's
+  standard-kernel ubuntu runners (1451 tests pass around it).
+
+OBSERVED (from CI, decisive): both endpoints exchange datagrams, the
+server's rustls never processes the ClientHello, no TLS alert is ever
+sent — the quinn 0.11.9 + rustls 0.23.37 in-process handshake fails
+internally. Local kernel (CachyOS 7.2.6) breaks even a minimal
+out-of-workspace quinn repro, so CI is the only valid judge.
+
+CLOSE: the seed-dial test is `#[ignore]`d with the full ledger in
+place (run locally: `cargo test --lib --features mesh -- --ignored
+test_two_node`); the CLI/wiring surface (which works and is
+tested: mesh 12/12, cli 149 incl. the arg-mapping tests) stays; the
+compose demo stays REMOVED until the dial passes. Next step is
+upstream-level: a quinn-level repro for the rustls/rustls-0.23.37
+in-process handshake, or a quinn 0.12/1.x upgrade trial. Final board
+on `ecddc5d`: Aether CI ✓ (incl. clippy on the new wiring), FDB ✓
+(inside it), Integration Tests ✓, Docker ✓, Benchmarks ✓, Security ✓;
+Container long-running.
+
+LESSON: the first real connection test in a module can falsify the
+whole module's purpose. Three falsified hypotheses cost three CI
+cycles — that is the loop working, not failing: each run replaced a
+guess with a fact, and the remaining fact ("quinn internals") is
+properly owned by upstream, not by this repo's config.
+
 ## Backlog (ranked)
 
 ### New from the Nov 1 estate CI-health audit (iteration 18)
