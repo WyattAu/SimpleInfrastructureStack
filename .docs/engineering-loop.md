@@ -4649,6 +4649,18 @@ session surface (`/me` resolves a live `X-Passkey-Session`; anonymous
 api + 42 lib; clippy clean under the exact CI command. CI success on
 `e288541`.
 
+ADDENDUM 2 — the nightly.rs harness item is CLOSED: the worker
+closures never needed a "live-AppState harness" — they run directly
+against fixture state (tenant dirs + stub backup script for the
+sweep; a stub cAdvisor + in-memory ledger for the metering close).
+Three tests: sweep records per-tenant outcomes and collects failures
+(the JobError carries them; records are run history), metering close
+posts the window into the ledger statement and resets it, and the
+replay is idempotent (one posting, not two). 45 lib + 25 api green;
+CI success on `9a7c303`. The coverage-ignore-regex entry for
+`(main|nightly).rs` can shrink to `main.rs` only if the ledger wants
+nightly.rs counted — the closures are now covered.
+
 ### Iteration 23: 2026-11-06: the mesh connect path never worked — three falsified hypotheses and an honest ledger
 
 RESEARCH: the backlogged "node-identity/mesh-seed CLI surface" — the
