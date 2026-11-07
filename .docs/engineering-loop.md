@@ -4695,6 +4695,10 @@ sent — the quinn 0.11.9 + rustls 0.23.37 in-process handshake fails
 internally. Local kernel (CachyOS 7.2.6) breaks even a minimal
 out-of-workspace quinn repro, so CI is the only valid judge.
 
+UPSTREAM: quinn-rs/quinn#2991 filed with the minimal standalone repro
+(clean deps, aws_lc_rs/ring both documented, shared cert + ALPN both
+sides, strace evidence of two-way datagram flow) — this issue is the
+mesh unblock tracker.
 CLOSE: the seed-dial test is `#[ignore]`d with the full ledger in
 place (run locally: `cargo test --lib --features mesh -- --ignored
 test_two_node`); the CLI/wiring surface (which works and is
