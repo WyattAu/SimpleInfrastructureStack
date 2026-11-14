@@ -1,3 +1,10 @@
+> **STATUS 2026-11-14: STALE.** The fleet migrated to real Tailscale
+> (`controlplane.tailscale.com`, MagicDNS `tail2d2a7d.ts.net`) — this
+> document describes the retired Headscale setup (server
+> `headscale.wyattau.com`, pre-auth key expired 2026-10-02). The NAS
+> (truenas-1) is NOT enrolled in the current tailnet. Enrollment now
+> goes through the Tailscale admin console auth keys.
+
 # Headscale VPN Enrollment Guide
 
 ## VPN Network Status
