@@ -4716,6 +4716,42 @@ cycles — that is the loop working, not failing: each run replaced a
 guess with a fact, and the remaining fact ("quinn internals") is
 properly owned by upstream, not by this repo's config.
 
+### Iteration 24: 2026-11-14: the ledger was wrong — accept-gating, not quinn
+
+CORRECTION: iteration 23's closing conclusion ("quinn 0.11.9 +
+rustls 0.23.37 in-process handshake fails internally; upstream-level
+investigation"; the addendum's "local kernel breaks even a minimal
+quinn repro") was WRONG, and the comment on quinn-rs/quinn#2991 had
+the answer before this ledger was written: **quinn's server handshake
+is accept-gated.** The server buffers incoming Initials as
+`Incoming` and does nothing — no ServerHello, no alert, no tracing —
+until the application polls `Endpoint::accept()`. The server wiring
+never polled it; the minimal repro never polled it. "Datagrams flow
+both ways, rustls never sees the ClientHello" is the exact documented
+signature, not a kernel defect.
+
+FIX: the server wiring spawns an accept loop on the mesh endpoint
+(poll `accept()`, hold each established connection — dropping a
+`Connecting` future aborts the handshake), and
+`test_two_node_seed_dial` does the same on node A before node B
+dials. UN-IGNORED.
+
+VERIFY: the seed dial passes locally and — decisive — in CI on ubuntu
+stable AND nightly runners (`test_two_node_seed_dial ... ok` on
+both). Full aether-core board green on `2ee5ca4` (Integration Tests
+✓, Aether CI ✓ incl. clippy on the new wiring, Docker ✓, Security ✓,
+Benchmarks ✓; Container long-running). A pre-existing flaky chaos
+test (`test_process_kill_restart`, one-off on ecddc5d) is tracked
+separately — it failed once on stable and passed on nightly in the
+same run. The upstream issue's accept-gating PR offer (diagnostic
+warn-once for buffered Initials) remains open for a follow-up.
+
+LESSON: when a minimal repro of your code reproduces your bug, that
+is NOT evidence your environment is broken — it is the bug working
+as designed. quinn's accept-gating is documented behavior; the
+diagnosis comment on the upstream issue had it before my ledger was
+written. Read the responses to your own filed issues.
+
 ## Backlog (ranked)
 
 ### New from the Nov 1 estate CI-health audit (iteration 18)
