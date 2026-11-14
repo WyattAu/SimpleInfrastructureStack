@@ -4752,6 +4752,68 @@ as designed. quinn's accept-gating is documented behavior; the
 diagnosis comment on the upstream issue had it before my ledger was
 written. Read the responses to your own filed issues.
 
+### Iteration 25: 2026-11-14: estate grew 13% in two weeks — Phase A hygiene done, infrastructure-vs-scale reviewed
+
+GROWTH: 269 → 303 repos (+34/2wk, 13%); 209 → 223 crates. Drivers:
+the docs-* toolchain suite (core/symbols/witness/proof/search/compiler —
+a Lean-integrated Rust docs pipeline, all published 0.1.0), a five-crate
+kits wave (alertkit/feedkit/graphkit/marketdata-kit/ontokit), os-core
+(sovereign-OS experiment with omni-* allocators), peregrine (Matrix
+client, E2EE + latency budgets as release gates), disk-janitor,
+seo-standards, a quinn fork (staged for the #2991 diagnostic PR).
+
+PHASE A (executed): (1) composition debt to zero — the 8 unwired
+crates exempted in the audit with dated pending reasons (kits wave →
+SIS loop backlog; omni-* are no_std allocators the API suites cannot
+host); (2) orphan triage to zero — 11 reclassified to honest statuses
+(aileron/clawdius → infra; peregrine/suture/crawlkit/kestrel → core;
+envstack/cachekit/cf-worker-utils/tap/tauri-preset →
+support/template) with dated notes; tmp-push-probe archived upstream
+and marked dormant. Audit now: 303 repos, ERROR 0, DRIFT 0, DEBT 0,
+orphan 0.
+
+INFRASTRUCTURE-vs-SCALE REVIEW: the estate's infrastructure is sized
+for the ENGINEERING workload (303 repos: CI on GitHub, audit local,
+dev trees on the workstation) but not yet for the PLATFORM workload
+(first tenant) or the AGENT workload (multi-session, +13%/2wk).
+
+| Asset | Role | Fits current scale? |
+| ----- | ---- | ------------------- |
+| Workstation | LAN gateway + dev trees + agent sessions | yes, but single point of failure for LAN egress |
+| TrueNAS NAS | Forgejo + PG + SIS stacks + snapshots | yes; appliance-grade, survived reboots |
+| EPYC docker01 | intended platform host + runners | NOT DEPLOYED — the platform-scale gap |
+| GitHub Actions (public EIR) | image factory | yes; free, unlimited, proven at 658 images |
+| GitHub Actions (private) | quality gates | NO — Pro minutes ceiling recurs monthly; growth multiplies it |
+| Cloudflare tunnel | public exposure | yes, survived reboots |
+| Tailscale | remote access | yes |
+
+FINDINGS: (1) CI minutes are the binding constraint that scales
+badly — macOS runners bill ×10 and the estate adds repos weekly.
+The structural fix is SELF-HOSTED RUNNERS (free for private repos)
+on the NAS (always-on today) or EPYC (dedicated tomorrow) — this
+removes the monthly billing wall the estate keeps hitting. (2) LAN
+egress depends on a desktop with a wifi/tether uplink — the Nov 1
+outage class; the gateway-firewall role survived the Nov 13 reboot
+(ufw stayed down, masquerade persisted), but the uplink itself
+remains consumer-grade. (3) Platform single-host: Forgejo + PG + SIS
+stacks all live on the NAS; EPYC distribution is the planned fix and
+doubles as the runner/dev-tree host. (4) Backup verification cadence
+for Forgejo/PG dumps should be confirmed (backup-verify.sh exists;
+the NAS survived this week's reboots via snapshots).
+
+PATH: infra moves ride the existing roadmap — self-hosted runner on
+the NAS NOW (one docker container, immediately removes the ceiling);
+EPYC bring-up carries platform + runners + stable dev trees; billing
+payment-info remains the operator's only critical-path item for the
+PRIVATE gates.
+
+LESSON: growth at 13%/2wk changes the questions — "are the gates
+green" is answered by the audit (yes, at 303 repos); the new
+questions are "does the infrastructure that runs the gates scale
+with the gates" (CI: no, until self-hosted runners) and "does the
+infrastructure that hosts the product scale with the product" (EPYC:
+not yet deployed).
+
 ## Backlog (ranked)
 
 ### New from the Nov 1 estate CI-health audit (iteration 18)
