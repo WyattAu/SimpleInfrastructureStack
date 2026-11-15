@@ -4814,15 +4814,136 @@ with the gates" (CI: no, until self-hosted runners) and "does the
 infrastructure that hosts the product scale with the product" (EPYC:
 not yet deployed).
 
+### Iteration 26: 2026-11-14: NAS on the tailnet — and the ghost-node factory behind it
+
+CONTEXT: the NAS (TrueNAS SCALE 25.04.2.4) was assumed unreachable and
+un-enrolled. Both were wrong: SSH worked (a stale key confusion), and a
+`tailscale` Docker container had been running for five weeks. The node
+was invisible from the workstation because its control-plane record had
+been deleted: `PollNetMap: initial fetch failed 404: node not found`.
+
+FIX: re-authenticated the container with its stored auth key. It
+registered as `truenas-1` at 100.124.36.11, online, zero health
+warnings; MagicDNS resolves and `tailscale ping` answers in 2ms over
+the LAN path.
+
+ROOT CAUSE FOUND WHILE VERIFYING: `tailscaled --state=mem:
+--statedir=/tmp`. containerboot defaults to in-memory state when
+TS_AUTHKEY is set, so every container restart re-authenticated with the
+key and registered a **new node** — the stale `truenas` record
+(100.108.170.51) is exactly that artifact, and the mounted
+`appdata/tailscale` volume was never used. Recreated the container with
+`TS_STATE_DIR=/var/lib/tailscale`: `tailscaled.state` (2582 bytes) now
+lives on the volume, and `docker restart` keeps the same node and IP.
+Verified: restart → `truenas-1` @ 100.124.36.11 unchanged.
+
+ALSO FIXED: the TrueNAS user record (id 33) stored six SSH keys, one
+pasted without its `ssh-ed25519 ` prefix — an unparseable line that
+sshd silently ignores. Removed at the source via `user.update`; the
+record now holds 5 well-formed keys. (The file is rewritten from the
+record, so editing `~/.ssh/authorized_keys` alone would not have stuck.)
+
+FALSE LEAD RECORDED: an intermittent tailnet SSH failure ("Server
+accepts key" then denied, `PAM:bad_ident`) looked key-specific — ferro
+worked, id_ed25519 did not. It was the tailnet flapping while
+tailscaled restarted; both keys pass 3/3 once settled. Do not conclude
+key-specific causation from a single interleaved comparison.
+
+DOCS: `.docs/headscale-enrollment.md` → `.docs/tailscale-enrollment.md`,
+rewritten for the real tailnet: node table, container config, why
+TS_STATE_DIR is mandatory, re-auth procedure, and the TrueNAS gotchas
+(UI on :8080 because Traefik owns 443; keys live in the user record;
+`Match User` block).
+
+REMAINING (operator, one click): delete the stale `truenas`
+(100.108.170.51) node in the Tailscale admin console; then
+`truenas-1` can be renamed to `truenas`.
+
+LESSON: a container that keeps identity in memory is a node factory —
+every restart mints a ghost, and the ghosts are invisible until
+something (SSH, docs, ACLs) pins an IP. Persistence is a configuration
+requirement, not a default.
+
+### Iteration 27: 2026-11-15: private CI left GitHub — Forgejo, a dead
+### config block, and the proof loop that caught it
+
+CONTEXT: the GitHub billing block had stalled private-repo verification
+for two weeks (flagsd/authbox/eventbusd showed only bitrot green while
+their quality gates never started). The operator bought a second
+server; the decision became architectural, not financial: private CI
+runs on the estate's own Forgejo, and GitHub keeps only mirrors.
+
+WORK, the migration: created `wyatt_admin/{flagsd,authbox,eventbusd}`
+via API (admin token to a 0600 key file); registered `nas-sis-rust` on
+the NAS (runner:6, host network, docker socket, capacity 1); built
+`sis-ci-rust:1` (rust:1-bookworm + Node 20 + rustfmt/clippy — stock
+rust images have no `node`, so `actions/checkout@v4` dies exit 126);
+wrote self-contained `.forgejo/workflows/quality.yml` mirroring the
+tier-b gate (Forgejo cannot resolve cross-instance `uses:`); removed
+the dead GitHub reusable-workflow gates. All three repos GREEN on the
+NAS runner (flagsd b4e36ce, authbox 9113717, eventbusd bf18e1d);
+GitHub mirrors rebased and force-pushed with lease.
+
+Two scope failures worth keeping: the first registration used generic
+labels (`docker`, `ubuntu`) and claimed a Rankhub job within seconds —
+instance-level generic runners steal other tenants' work; re-registered
+with the project-specific `sis-rust` label. And `config.yml` labels
+override registration labels — the image actually comes from config,
+which cost a re-register to discover.
+
+WORK, the cache. The runner-cache volume sat at 512 B across every
+green run. Added a temporary probe step: the job saw
+`ls: cannot read /cache: No such file or directory`. Whitelisted the
+source in `container.valid_volumes` (the act sanitizer drops any bind
+whose source is not whitelisted; its "not a valid volume" warning goes
+to the job log, not the daemon log) — still no mount. Read the runner
+source at the pinned tag (v6.4.0): `internal/app/run/runner.go` passes
+`ValidVolumes` into the act library but NEVER forwards
+`cfg.Container.Volumes`. The `container.volumes` block is dead config
+in v6 — silently ignored, and invisible because runs stayed green by
+rebuilding into an ephemeral layer every time. Fix: declare the bind in
+`container.options` and whitelist its source in `valid_volumes`.
+Verified by inspecting the live job container (mount present), then by
+the ledger: cache grew to 450 MB and the warm gate dropped from ~2.5-4
+min to ~35 s. Probe removed after diagnosis.
+
+SIDE FINDING: `truenas_admin@192.168.1.3` publickey auth failed for
+~10 minutes (server accepted the key offer, denied the signature),
+then self-recovered with zero state change; `id_ed25519_ferro_test`
+worked throughout. No root cause. Treated as the same class as the
+iteration-26 tailnet flap — transient; the fallback key turned a
+session-blocker into a footnote.
+
+DOCS: `.docs/ci-forgejo.md` (topology, registration, the config.yml
+that actually works, six gotchas, move-to-new-server procedure),
+`ops/ci/runner-image/Dockerfile`, backlog billing item closed as
+"RESOLVED by removal".
+
+Commits: flagsd b4e36ce, authbox 9113717, eventbusd bf18e1d (Forgejo +
+GitHub mirrors); SIS this entry + runbook + Dockerfile.
+
+LESSON: the cheapest way to unblock a payment wall is to stop paying
+for the wall. And the deeper one: dead config is invisible from green
+output — the gate passed while silently rebuilding everything. When a
+feature "works but does nothing", probe the inside of the job, then
+read the wiring at the pinned tag; behavior confirms fiction, source
+confirms truth.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: flagsd/authbox/eventbusd Job succeeded on Forgejo; /cache
+mount present in job container inspect; host cache 450 MB; warm gate
+~35 s measured.
+
 ## Backlog (ranked)
 
 ### New from the Nov 1 estate CI-health audit (iteration 18)
 
-1. **GitHub Actions billing** — PRIVATE repos (authbox, flagsd, eventbusd)
-   have jobs that never start: "recent account payments have failed or
-   your spending limit needs to be increased" (annotation on every job).
-   Operator action: GitHub Settings → Billing & plans. Until fixed, the
-   private repos' quality gates cannot run AT ALL.
+1. ~~**GitHub Actions billing**~~ RESOLVED by removal (iteration 27,
+   2026-11-15): private-repo CI moved off GitHub entirely onto the
+   estate's Forgejo (`git.wyattau.com`) with a self-hosted runner.
+   No billing, no minutes ceiling; gates are real again. Runbook:
+   `.docs/ci-forgejo.md`. flagsd/authbox/eventbusd green on Forgejo.
 2. ~~**hosting-api coverage exit-1 anomaly**~~ RESOLVED + CORRECTED
    (iteration 20): the flag was fine — lines were genuinely 78.41%;
    the 18b "the flag misleads" diagnosis misread the text table

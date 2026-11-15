@@ -1,100 +1,93 @@
-> **STATUS 2026-11-14: STALE.** The fleet migrated to real Tailscale
-> (`controlplane.tailscale.com`, MagicDNS `tail2d2a7d.ts.net`) — this
-> document describes the retired Headscale setup (server
-> `headscale.wyattau.com`, pre-auth key expired 2026-10-02). The NAS
-> (truenas-1) is NOT enrolled in the current tailnet. Enrollment now
-> goes through the Tailscale admin console auth keys.
+# Tailscale Enrollment
 
-# Headscale VPN Enrollment Guide
+**Status: CURRENT (2026-11-14).** Supersedes the retired Headscale setup
+(`headscale.wyattau.com`, pre-auth key expired 2026-10-02). The fleet runs on
+real Tailscale.
 
-## VPN Network Status
+## Tailnet
 
-| Node | IP | Status |
-|------|-----|--------|
-| truenas-1 (exit node) | 100.64.0.2 | Online |
-| cachyos-runner | 100.64.0.3 | Online |
+| Property | Value |
+| --- | --- |
+| Control plane | `https://controlplane.tailscale.com` |
+| MagicDNS suffix | `tail2d2a7d.ts.net` |
 
-**Server**: `https://headscale.wyattau.com`
-**Pre-auth key** (reusable, expires 2026-10-02):
+| Node | Tailnet IP | Role | State |
+| --- | --- | --- | --- |
+| `wyattdeskacercachy` | 100.93.183.32 | workstation, LAN gateway | active |
+| `truenas-1` | 100.124.36.11 | NAS: Forgejo, PG, SIS stacks | active |
+| `josh-laptop` | 100.101.206.65 | | offline |
+| `msi-ge66` | 100.70.111.14 | | offline |
+| `wyatts-a53` | 100.74.27.26 | Android | offline |
+
+Stale record to delete in the admin console: node `truenas` at
+100.108.170.51 (the pre-2026-11-14 registration, offline). Once deleted,
+`truenas-1` can be renamed to `truenas` with
+`tailscale set --hostname=truenas`.
+
+## NAS (TrueNAS SCALE 25.04.2.4)
+
+The NAS runs Tailscale as a **standalone Docker container**, not a TrueNAS
+service or app:
+
+| Setting | Value |
+| --- | --- |
+| Image | `ghcr.io/tailscale/tailscale:latest` |
+| Network | `host` |
+| Capabilities | `NET_ADMIN` + `/dev/net/tun` |
+| Restart policy | `unless-stopped` |
+| State volume | `/mnt/pool_HDD_x2/tank/datasources/sis/appdata/tailscale` → `/var/lib/tailscale` |
+| Env | `TS_HOSTNAME=truenas`, `TS_USERSPACE=false`, `TS_STATE_DIR=/var/lib/tailscale`, `TS_EXTRA_ARGS=--accept-routes`, `TS_AUTHKEY=<reusable key>` |
+
+### Why `TS_STATE_DIR` is mandatory
+
+`containerboot` defaults to `--state=mem: --statedir=/tmp` when an auth key is
+set. With in-memory state, **every container restart re-authenticates with the
+auth key and registers a new node** — that is how the stale `truenas` record
+was created. `TS_STATE_DIR=/var/lib/tailscale` puts `tailscaled.state` on the
+mounted volume; restarts then reuse the same node and IP.
+
+Verified 2026-11-14: `docker restart tailscale` → same node (`truenas-1`) and
+same IP (100.124.36.11).
+
+### Re-authenticate / rebuild the container
+
+```sh
+KEY=$(sudo docker inspect tailscale --format '{{range .Config.Env}}{{println .}}{{end}}' \
+      | sed -n 's/^TS_AUTHKEY=//p')
+sudo docker rm -f tailscale
+sudo docker run -d --name tailscale --restart unless-stopped --network host \
+  --cap-add NET_ADMIN --device /dev/net/tun \
+  -v /mnt/pool_HDD_x2/tank/datasources/sis/appdata/tailscale:/var/lib/tailscale \
+  -e TS_AUTHKEY="$KEY" -e TS_HOSTNAME=truenas -e TS_USERSPACE=false \
+  -e TS_STATE_DIR=/var/lib/tailscale -e TS_EXTRA_ARGS="--accept-routes" \
+  ghcr.io/tailscale/tailscale:latest
 ```
-YOUR_PREAUTH_KEY_HERE
+
+If the stored key has expired, generate a new auth key in the admin console
+(Settings → Keys) and use it in place of `$KEY`.
+
+## Access
+
+```sh
+ssh -i ~/.ssh/id_ed25519 truenas_admin@100.124.36.11     # tailnet
+ssh -i ~/.ssh/id_ed25519 truenas_admin@192.168.1.3       # LAN (unchanged)
 ```
 
----
+MagicDNS: `truenas-1.tail2d2a7d.ts.net`.
 
-## Arch Linux / CachyOS
+## Gotchas
 
-```bash
-# Install
-sudo pacman -S tailscale
-
-# Enable daemon
-sudo systemctl enable --now tailscaled
-
-# Connect to Headscale
-sudo tailscale up \
-  --login-server https://headscale.wyattau.com \
-  --authkey YOUR_PREAUTH_KEY_HERE \
-  --hostname <your-hostname> \
-  --accept-routes
-
-# Verify
-tailscale status
-ping 100.64.0.2  # TrueNAS exit node
-```
-
----
-
-## Windows
-
-1. Download Tailscale from https://tailscale.com/download/windows
-2. Install and run
-3. Open PowerShell **as Administrator**:
-```powershell
-tailscale up `
-  --login-server https://headscale.wyattau.com `
-  --authkey YOUR_PREAUTH_KEY_HERE `
-  --hostname windows-pc `
-  --accept-routes
-```
-4. Verify: `tailscale status`
-
----
-
-## Android
-
-1. Install **Tailscale** from Play Store / F-Droid
-2. Open app
-3. Tap the three dots (⋮) → **Use custom coordination server**
-4. Enter: `https://headscale.wyattau.com`
-5. Tap **Sign in with auth key**
-6. Paste the pre-auth key
-7. Connect
-
----
-
-## iOS
-
-1. Install **Tailscale** from App Store
-2. Open app → Settings (gear icon)
-3. **Use custom server** → Enter: `https://headscale.wyattau.com`
-4. Sign in with the pre-auth key
-
----
-
-## After Enrollment
-
-Once connected, you can:
-- **Access TrueNAS**: `ssh truenas_admin@100.64.0.2` or via Tailscale hostname
-- **Access CachyOS**: `ssh wyatt@100.64.0.3`
-- **Use exit node**: Route all traffic through TrueNAS
-  ```bash
-  sudo tailscale up --exit-node=100.64.0.2
-  ```
-
-## Verify on Server
-
-```bash
-# List all nodes (run on TrueNAS)
-sudo docker exec headscale-server headscale nodes list
-```
+- **The TrueNAS UI is on `:8080`.** Ports 80/443 belong to Traefik (k3s);
+  `https://192.168.1.3/` returns 404.
+- **SSH keys live in the TrueNAS user record.** Credentials → Users →
+  `truenas_admin` → SSH Public Key holds *all* keys; TrueNAS rewrites
+  `~/.ssh/authorized_keys` from it. Edit the record, not the file. A key
+  pasted without its `ssh-ed25519 ` prefix is stored verbatim and silently
+  never matches.
+- **`/etc/ssh/sshd_config` has `Match User "truenas_admin"`** enabling password
+  auth for that account only; pubkey auth is global.
+- The workstation reports a Tailscale health warning about systemd-resolved /
+  NetworkManager wiring. MagicDNS resolution still works
+  (`getent hosts truenas-1.tail2d2a7d.ts.net`), but the warning is unresolved.
+- Enrolling the NAS removes the dependency on the workstation being up as the
+  only route to the NAS.
