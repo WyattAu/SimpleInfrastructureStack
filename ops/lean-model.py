@@ -13,7 +13,8 @@ its limit must either justify a budget revision in the loop doc or be
 rejected.
 
 Hardware basis (spec: .docs/hosting-architecture.md):
-  EPYC 12-core-class VM: 12 vCPU, 96 GiB RAM, 100 GiB system + 1.5 TiB data
+  Dell R730 docker01 VM (re-baseline after first boot; was an assumed
+  EPYC 12-core-class VM): 12 vCPU, 96 GiB RAM, 100 GiB system + 1.5 TiB data
   Pricing basis (.docs/service-catalogue.md): flat monthly, UK GBP.
 """
 
@@ -112,7 +113,7 @@ class ModelInputs:
     tenants: int = 10
     tenant_vcpu: float = 1.0
     tenant_ram_gib: float = 4.0
-    # Staging VM (iter 36): 0 until docker02-staging exists on the EPYC
+    # Staging VM (iter 36): 0 until docker02-staging exists on the hosting node
     # node; 0.5 vCPU when live. Counts INSIDE the capacity check - at
     # 10 tenants + platform + staging the box sits exactly at the
     # 12-vCPU ceiling, which the model asserts.

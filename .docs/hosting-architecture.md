@@ -1,7 +1,9 @@
 # Client-hosting platform: architecture and bare-metal runbook
 
-The production home for customer tenants: a dedicated EPYC server at the
-business premises, running Proxmox, hosting tenant Docker stacks with a
+The production home for customer tenants: a dedicated Dell PowerEdge R730
+(2× Intel Xeon E5-2600 v3/v4; exact CPU/RAM/disk config recorded after
+first boot — the "EPYC" assumption in earlier drafts is corrected here,
+2026-11-17), running Proxmox, hosting tenant Docker stacks with a
 Caddy edge, restic+B2 backups and an independent watchdog.
 
 Code layout:
@@ -34,7 +36,7 @@ validation. App-deploy tooling with first-class staging destinations
 validates the shape, and the pieces already exist here: docker02 from
 the same Terraform module, a second inventory group, and flagsd - the
 cutover control plane - gating which destination receives a deploy.
-Adopted role for docker02 when the EPYC node arrives: STAGING, not a
+Adopted role for docker02 when the R730 node arrives: STAGING, not a
 second production (config validation, tenant-onboarding dry runs, the
 DR-rehearsal restore target, tier-1 rootless spikes) - deliberately
 NOT performance testing. Capacity honesty: a staging VM is a
@@ -168,8 +170,13 @@ Two ZFS pools on the node:
 
 | Pool | Layout | Purpose |
 | --- | --- | --- |
-| `rpool` | 2× NVMe mirror | Proxmox OS, VM system disks |
-| `tank` | 2× NVMe mirror (or RAIDZ1 HDD pair) | VM data disks, backups |
+| `rpool` | 2× SATA-SSD mirror (R730 has no NVMe backplane) | Proxmox OS, VM system disks |
+| `tank` | 2× SATA-SSD mirror (or RAIDZ1 HDD pair) | VM data disks, backups |
+
+**PERC caveat (R730):** the stock H730/H730P cannot put individual disks
+into passthrough (IT) mode. For ZFS: either present each disk as a
+single-disk RAID-0 volume (works, hides SMART — poll via perccli instead),
+or swap the card for an HBA330 (true IT mode, the clean option).
 
 docker01 gets a data zvol from `tank` (scsi1), formatted ext4 and mounted
 at `/srv`. Everything customer-owned lives under `/srv/tenants`; backups
@@ -533,7 +540,7 @@ which many stacks use - stop working without it). THE REAL CATCH was
 not a flag: render-validation of the daemon.json template exposed a
 string-concatenation bug that produced INVALID JSON (`],` + `,"userns-
 remap"` = double comma) - the first docker01 bootstrap would have
-failed dockerd at the EPYC rehearsal. The config is now built as a
+failed dockerd at the hosting-node rehearsal. The config is now built as a
 dict and serialized with to_nice_json, render-tested in both remap
 modes.
 
@@ -578,7 +585,7 @@ as live single-purpose environments, and compose-based tenants would
 need a guest runtime inside (docker-in-microVM), which changes the
 management shape. The spike (backlog #7) now has concrete targets:
 jailer-sealed microVM, snapshot-restore boot, nested-KVM check on the
-EPYC, and a metering story (microVMs report their own memory/cpu via
+the hosting node, and a metering story (microVMs report their own memory/cpu via
 virtio-balloon, sidestepping the tier-1 cAdvisor problem).
 
 ### Backups and recovery
@@ -776,14 +783,18 @@ diff on next deploy instead of silently diverging.
 
 ### 1. BIOS/firmware
 
-- Enable: SR-IOV/ACS off is fine, but enable **IOMMU** (AMD-Vi) and AES-NI
-- ECC reporting visible in BMC/IMPI
-- Boot order: NVMe first
-- Set a BIOS password; note the BMC address and change its default creds
+- R730: enable **VT-d** (Intel IOMMU; System Profile → "Performance"),
+  AES-NI is always-on on E5 v3/v4
+- ECC reporting visible in iDRAC8 (no default-password surprises:
+  set the iDRAC creds BEFORE first network attach)
+- Boot order: SSD first
+- Set a BIOS password; note the iDRAC address and change its default creds
+- iDRAC8 virtual console is the intended install path (no monitor needed)
 
 ### 2. Proxmox VE install
 
-- Install PVE 9.x onto the intended root NVMe pair as **ZFS RAID1**
+- Install PVE 9.x onto the intended root SSD pair as **ZFS RAID1**
+  (R730: SATA SSDs — no NVMe on this chassis)
   (installer: "ZFS (RAID1)", 4–8GB ARC max will be tuned later)
 - Hostname: `hosting01` (matches `pve_node` default in Terraform)
 - Static IP on the business LAN, e.g. `192.168.0.50/24`, gateway = router
@@ -849,8 +860,9 @@ diff on next deploy instead of silently diverging.
 ### 3. ZFS data pool + bridges
 
 ```bash
-# Data pool from the second NVMe pair (adjust device names!)
-zpool create -o ashift=12 tank mirror /dev/nvme1n1 /dev/nvme2n1
+# Data pool from the second SSD pair (adjust device names!)
+# R730 behind a PERC: single-disk RAID-0 volumes surface as /dev/sd*
+zpool create -o ashift=12 tank mirror /dev/sdb /dev/sdc
 zfs set compression=zstd atime=off tank
 zfs create tank/vm-disks
 
