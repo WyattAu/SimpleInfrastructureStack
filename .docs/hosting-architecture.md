@@ -1,10 +1,25 @@
 # Client-hosting platform: architecture and bare-metal runbook
 
 The production home for customer tenants: a dedicated Dell PowerEdge R730
-(2× Intel Xeon E5-2600 v3/v4; exact CPU/RAM/disk config recorded after
-first boot — the "EPYC" assumption in earlier drafts is corrected here,
-2026-11-17), running Proxmox, hosting tenant Docker stacks with a
+(service tag `8Q00JP2`), running Proxmox, hosting tenant Docker stacks with a
 Caddy edge, restic+B2 backups and an independent watchdog.
+
+### Measured inventory (Redfish via iDRAC, 2026-11-20)
+
+| Component | Measured |
+| --- | --- |
+| CPUs | 2× Xeon E5-2620 v4 (8c/16t, 2.1 GHz) = **16c/32t** |
+| RAM | **40 GiB** DDR4 |
+| Disks | 7× 1.2 TB 2.5" SAS HDD + 1× 1 TB SAS HDD (all spinning, bays 0-7) |
+| Current volume | PERC RAID-10, 3.27 TiB (holding a disposable Windows install) |
+| PSUs | 2× 750 W redundant, both OK; idle draw 168 W |
+| Management | iDRAC8 Enterprise at `192.168.0.50` (static, handoff: `~/downloads/r730-management.md` on the workstation) |
+
+Consequences: RAM is the binding constraint (standard-tier tenant = 4 GiB
+→ ~4-5 tenants, not the 10 the EPYC-shaped model assumed); storage is
+all-HDD, so tenant databases want an SSD add-on before latency-sensitive
+tenants land. Both levers are cheap upgrades (~£150-300 total) and are
+the node's first two purchases, ahead of any second production node.
 
 Code layout:
 
