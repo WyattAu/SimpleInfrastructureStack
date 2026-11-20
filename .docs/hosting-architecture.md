@@ -21,6 +21,29 @@ all-HDD, so tenant databases want an SSD add-on before latency-sensitive
 tenants land. Both levers are cheap upgrades (~£150-300 total) and are
 the node's first two purchases, ahead of any second production node.
 
+### Node placement (final three-server estate, 2026-11-20)
+
+| Node | Role | Runs |
+| --- | --- | --- |
+| **NAS** `truenas-1` (TrueNAS, 4c/15 GiB) | storage, control plane, monitoring, backup target | Forgejo + EIR registry, Keycloak, VictoriaMetrics stack, Traefik estate edge, personal apps, ZFS datasets, `zfs send` replication target |
+| **hosting01** (R730 `8Q00JP2`, 16c/32t, 40 GiB) | revenue compute + staging | PVE 9.x → docker01 VM (12 vCPU / 20 GiB: tenants + Caddy edge + cloudflared), docker02 VM (4 vCPU / 6 GiB: staging); storage 3× ZFS mirrors over 6× 1.2 TB SAS + spare |
+| **CI box** (CachyOS, `192.168.1.191`) | CI only | 4× Forgejo runners (`rust-node` image); deliberately off hosting01 so CI bursts never contend with tenant latency |
+| Cloudflare | split DNS | `wyattau.com` → NAS tunnel; tenant domains → hosting01 tunnel |
+
+Monitoring moved NAS-side permanently: docker01's platform overhead
+carries only exporters (model re-baselined: metrics 2.0 → 0.25 GiB,
+backup 2.0 → 1.5 GiB; `lean-model.py` exit 0 at **tenants=4**).
+
+Standard-tier ceiling on this estate is **4 tenants** (RAM-bound). The
+first capacity lever is the SSD add-on for tenant databases; the second
+is a second production node - a future restructure, planned only when
+the hardware exists (per estate rule: no fiction in the plan).
+
+Implementation gates before ANY tenant lands (operator requirement,
+2026-11-20): post-install hardware soak - memtester ≥24 GiB, stress-ng
+1 h, fio on tank, PERC/disk health re-check, network throughput to NAS -
+then runbook §7 smoke checklist, then Terraform VMs, then first tenant.
+
 Code layout:
 
 | Path | What it is |
@@ -51,17 +74,16 @@ validation. App-deploy tooling with first-class staging destinations
 validates the shape, and the pieces already exist here: docker02 from
 the same Terraform module, a second inventory group, and flagsd - the
 cutover control plane - gating which destination receives a deploy.
-Adopted role for docker02 when the R730 node arrives: STAGING, not a
-second production (config validation, tenant-onboarding dry runs, the
+Adopted role for docker02: STAGING, a small VM on the SAME hosting01 node
+(4 vCPU / 6 GiB - config validation, tenant-onboarding dry runs, the
 DR-rehearsal restore target, tier-1 rootless spikes) - deliberately
-NOT performance testing. Capacity honesty: a staging VM is a
-0.5-vCPU/2-GiB line item INSIDE the lean model's capacity check
-(staging_cpu, currently 0 until the host exists) - at full build-out
-10 tenants + platform + staging lands exactly at the 12-vCPU ceiling,
-so staging and the tenth revenue tenant coexist only because the
-backup window borrows compressible headroom; growth past ten tenants
-means a second production node, which is the documented growth path
-anyway.
+NOT performance testing. Capacity honesty: staging is a 0.5-vCPU
+line item INSIDE the lean model's capacity check (staging_cpu, 0
+until the VM exists); at full build-out 4 tenants + platform + staging
+sit at ~6 of docker01's 12 vCPU and ~19 of its 20 GiB - the RAM line,
+not CPU, is the node's binding constraint, and growth past four
+standard-tier tenants means a second production node (the documented
+growth path; its hardware shape is deliberately NOT planned yet).
 
 **Capacity exit triggers (loop iter 47):** the lean model is static;
 these measured conditions are what override it, and every sensor they

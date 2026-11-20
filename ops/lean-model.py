@@ -13,8 +13,10 @@ its limit must either justify a budget revision in the loop doc or be
 rejected.
 
 Hardware basis (spec: .docs/hosting-architecture.md):
-  Dell R730 docker01 VM (re-baseline after first boot; was an assumed
-  EPYC 12-core-class VM): 12 vCPU, 96 GiB RAM, 100 GiB system + 1.5 TiB data
+  Dell R730 docker01 VM (re-baselined 2026-11-20 to the MEASURED hosting01
+  node: 16c/32t E5-2620 v4, 40 GiB RAM, 8x SAS HDD): 12 vCPU, 20 GiB RAM,
+  100 GiB system + 1.5 TiB data. Node splits: 6 GiB PVE host+ARC,
+  20 GiB docker01 (tenants+platform), 6 GiB docker02 staging, ~8 GiB spare
   Pricing basis (.docs/service-catalogue.md): flat monthly, UK GBP.
 """
 
@@ -28,7 +30,7 @@ from dataclasses import dataclass, field
 # ---------------------------------------------------------------------------
 
 VCPUS = 12
-RAM_GIB = 96
+RAM_GIB = 20   # docker01 VM budget on the measured 40 GiB hosting01 node
 DATA_TIB = 1.5
 
 # Reserved for the platform itself (edge, control plane, monitoring,
@@ -37,12 +39,12 @@ DATA_TIB = 1.5
 PLATFORM_OVERHEAD = {
     "edge_cpu": 0.5,        # Caddy, one core-fraction (iter 2: reload-driven onboarding; Pingora/River rejected at this scale)
     "control_cpu": 0.5,     # hosting-api + dashboard; iter 15: units gain Landlock fs-type deny lists (zero cost, kernel LSM)
-    "metrics_cpu": 0.5,     # prometheus exporter pipeline
+    "metrics_cpu": 0.25,    # exporters only (cadvisor/node_exporter); VictoriaMetrics+Grafana live on the NAS (2026-11-20 restructure)
     "backup_cpu": 1.0,      # restic window (peak)
     "edge_ram_gib": 0.5,
     "control_ram_gib": 0.5,
-    "metrics_ram_gib": 2.0,
-    "backup_ram_gib": 2.0,
+    "metrics_ram_gib": 0.25,  # exporters only; TSDB is NAS-side
+    "backup_ram_gib": 1.5,    # restic at this repo scale (~few hundred GiB): RSS peaks ~1.5 GiB
 }
 
 
@@ -52,8 +54,9 @@ class LeanBudgets:
 
     # --- capacity ---------------------------------------------------------
     # Tenants the platform can host at the standard tier (1 vCPU / 4 GiB
-    # per tenant, compose-based).
-    max_tenants: int = 10
+    # per tenant, compose-based). RAM-bound at the 20 GiB docker01 budget:
+    # t*4 + 2.75 platform <= 20 -> t = 4 (CPU would allow far more).
+    max_tenants: int = 4
     # Platform overhead must stay under 20% of purchased capacity.
     max_platform_cpu_frac: float = 0.20
     max_platform_ram_frac: float = 0.15
@@ -110,17 +113,17 @@ class LeanBudgets:
 
 @dataclass
 class ModelInputs:
-    tenants: int = 10
+    tenants: int = 4
     tenant_vcpu: float = 1.0
     tenant_ram_gib: float = 4.0
     # Staging VM (iter 36): 0 until docker02-staging exists on the hosting node
     # node; 0.5 vCPU when live. Counts INSIDE the capacity check - at
-    # 10 tenants + platform + staging the box sits exactly at the
-    # 12-vCPU ceiling, which the model asserts.
+    # 4 tenants + platform + staging the node sits at ~6 of 12 docker01
+    # vCPU (staging has its own 4 vCPU / 6 GiB VM on hosting01).
     staging_cpu: float = 0.0
     # Capacity exits (iter 47): the model's inputs are hypotheses the
     # fleet tests. Measured overrides - 30d sustained PSI cpu some
-    # avg60 > 20% outside the backup window, RSS > 70% of 96 GiB, or
+    # avg60 > 20% outside the backup window, RSS > 70% of 20 GiB, or
     # recurring 85% data-disk pages - each fire a capacity review with
     # measured inputs replacing these estimates (see spec, "Capacity
     # exit triggers").
@@ -183,7 +186,7 @@ def check(b: LeanBudgets, m: ModelInputs) -> list[str]:
             "yield - add CPUWeight/IOWeight to the sweep unit or stagger"
         )
     if m.tenants * (m.tenant_ram_gib + platform_ram / max(m.tenants, 1)) > RAM_GIB:
-        failures.append("capacity: RAM oversubscribed beyond 96 GiB")
+        failures.append("capacity: RAM oversubscribed beyond 20 GiB (docker01 budget)")
     if cpu_frac > b.max_platform_cpu_frac:
         failures.append(
             f"platform CPU overhead {cpu_frac:.0%} > budget {b.max_platform_cpu_frac:.0%}"
