@@ -5326,6 +5326,18 @@ been configured; every run since Nov 20 failed on empty secrets).
 Disposition pending: TrueNAS-side pull-cron (simplest) or a self-hosted
 GH runner; the workflow as written is fiction.
 
+FLEET HAZARD FOUND (2026-11-24 ~06:5x): the fleet rule
+CARGO_TARGET_DIR=$HOME/.cache/cargo-target points builds at a
+CACHEDIR.TAG-marked directory that systemd-tmpfiles-clean purges on its
+weekly run — tonight it emptied the dir DURING a ferro workspace build
+(ENOENT cascades on .fingerprint/ extern-locations/ build outs, ~40 min
+of cryptic debugging before the tmpfiles correlation landed). The
+ferro session relocated to /var/tmp/cargo-target (30-day tmpfiles age).
+FLEET FIX NEEDED in the dotfiles: either relocate the fleet rule to
+/var/lib or /var/tmp, or ship /etc/tmpfiles.d/cargo-target.conf that
+exempts the path. Until then every fleet machine risks a mid-build
+cache wipe on its weekly tmpfiles run.
+
 GATE BUG (the checker auditing itself): the pins gate flapped on pins
 that verifiably exist (redis 7.4-alpine, all three immich tags, EIR
 postgres 17.10). Root cause: TWO checker bugs  -  (1) repo derivation
