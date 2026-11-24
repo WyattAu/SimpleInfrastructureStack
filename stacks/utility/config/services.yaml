@@ -6,6 +6,20 @@
 # siteMonitor: optional URL to check for HTTP status.
 # Services without public URLs show container status only.
 
+- Hosting Platform (zone A):
+    - docker01 (production):
+        icon: docker
+        description: tenants + edge + api - ssh -L 8484/4321 for internal UIs
+        siteMonitor: http://192.168.0.127:9100/metrics
+    - docker02 (staging):
+        icon: docker
+        description: staging mirror + canary
+        siteMonitor: http://192.168.0.129:9100/metrics
+    - hosting01 (PVE):
+        icon: proxmox.svg
+        description: the R730 hypervisor - iDRAC at 192.168.0.50
+        siteMonitor: https://192.168.0.120:8006/
+
 - Infrastructure:
     - Traefik:
         icon: traefik-proxy.svg
