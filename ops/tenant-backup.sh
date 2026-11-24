@@ -63,6 +63,11 @@ command -v restic >/dev/null || die "restic not found (run inside the backup-res
 # the /mnt/pool_HDD_x2 default is the legacy NAS layout (iteration 29:
 # the offsite-credentials check silently used the legacy path and failed
 # confusingly on guest hosts).
+# Platform env (iteration 30): the hosting-api nightly sweep spawns this
+# script WITHOUT the runner's `source /etc/sis-hosting/env` — so platform
+# paths must resolve here. Source when present (loopback NAS-era default
+# stays the last fallback for local runs).
+[ -r /etc/sis-hosting/env ] && . /etc/sis-hosting/env
 BACKUP_BASE="${BACKUP_BASE:-${BACKUP_BASE_PATH:-/mnt/pool_HDD_x2/tank/datasources/sis/backups}}"
 export RESTIC_PASSWORD_FILE="${RESTIC_PASSWORD_FILE:-${BACKUP_BASE}/.restic-password}"
 RESTIC_REPOSITORY="${TENANT_RESTIC_REPO:-${RESTIC_REPOSITORY:-${BACKUP_BASE}/restic-repo-new}}"
