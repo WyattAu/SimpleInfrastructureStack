@@ -21,7 +21,7 @@ Repos migrated: `wyatt_admin/flagsd`, `wyatt_admin/authbox`,
 ## Why a custom image
 
 The stock `rust:*` image has **no `node`**, and `actions/checkout@v4` is a Node
-action — the job dies at step 1 with `exec: "node": executable file not found
+action  -  the job dies at step 1 with `exec: "node": executable file not found
 in $PATH` (exit 126). `sis-ci-rust:1` adds Node 20 and pre-installs
 rustfmt/clippy, so no per-job toolchain install.
 
@@ -80,7 +80,7 @@ docker run -d --name forgejo-runner --restart unless-stopped --user root \
 
 `.forgejo/workflows/quality.yml` mirrors the tier-b `rust-kit` gate:
 fmt, check (all-features and no-default-features), clippy `-D warnings`, tests,
-doctests. It is self-contained — Forgejo cannot resolve a cross-instance
+doctests. It is self-contained  -  Forgejo cannot resolve a cross-instance
 `uses: owner/repo/.github/workflows/x.yml@main`.
 
 ## Gotchas (each cost a failed run)
@@ -90,7 +90,7 @@ doctests. It is self-contained — Forgejo cannot resolve a cross-instance
 2. **Forgejo executes `.github/workflows` too.** The GitHub reusable-workflow
    gate fails there with an unresolvable `uses:`; delete those files when a
    repo moves to Forgejo (or keep them and accept red runs).
-3. **Run the runner as root** — it writes `.runner` in `/data` and talks to
+3. **Run the runner as root**  -  it writes `.runner` in `/data` and talks to
    `/var/run/docker.sock`.
 4. **Never register with generic labels** (`docker`, `ubuntu`) at instance
    level: the runner will pick up other users' repos (observed: a Rankhub job
@@ -100,7 +100,7 @@ doctests. It is self-contained — Forgejo cannot resolve a cross-instance
 6. **In forgejo-runner v6, the `container.volumes` block is dead config.**
    `internal/app/run/runner.go` passes `ValidVolumes` to the act library but
    never forwards `cfg.Container.Volumes`, so host mounts declared there are
-   silently dropped — jobs then rebuild everything into an ephemeral
+   silently dropped  -  jobs then rebuild everything into an ephemeral
    container layer (runs stay green, so nothing surfaces the loss except the
    cache dir staying at 512 B). Declare the bind through `container.options`
    and whitelist its source in `container.valid_volumes`; the act sanitizer

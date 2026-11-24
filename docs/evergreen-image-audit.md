@@ -100,11 +100,13 @@ Database containers require initialization logic (initdb, user creation, locale 
 ### READY -- Drop-in Compatible (2)
 
 #### traefik
+
 - **Base:** scratch | **Ports:** 80, 443, 8080 | **USER:** 65532
 - **SIS adaptation:** Pre-chown letsencrypt dir to 65532. Ensure `net.ipv4.ip_unprivileged_port_start=0` on host for non-root binding to ports 80/443. Add tmpfs for writable dirs if using read-only rootfs.
 - **Risk:** Low. Traefik upstream supports non-root operation.
 
 #### vaultwarden
+
 - **Base:** scratch | **Ports:** 8080 | **USER:** 65532
 - **SIS adaptation:** Change Traefik service port label from 80 to 8080. Pre-chown `/data` volume to 65532. Remove or replace `CMD-SHELL curl` healthcheck (no shell in scratch).
 - **Risk:** Low. Binary is identical to upstream.
@@ -112,66 +114,79 @@ Database containers require initialization logic (initdb, user creation, locale 
 ### NEEDS_ADAPTATION -- Minor Changes Required (13)
 
 #### grafana
+
 - **Base:** wolfi | **Ports:** 3000 | **USER:** 65532
 - **Changes:** Change init container chown from 472 to 65532. Verify homepath `/opt/grafana` vs upstream `/usr/share/grafana`. Add tmpfs mounts for writable dirs.
 - **Risk:** Medium. Config path difference may require testing.
 
 #### node-exporter
+
 - **Base:** scratch | **Ports:** 9100 | **USER:** 65532
 - **Changes:** Convert healthcheck from `CMD-SHELL wget ...` to `CMD ["wget", "-qO-", "http://127.0.0.1:9100/metrics"]` or remove.
 - **Risk:** Low. Binary is identical.
 
 #### oauth2-proxy
+
 - **Base:** scratch | **Ports:** 4180 | **USER:** 65532
 - **Changes:** Verify env var handling works with non-root user. No other changes needed.
 - **Risk:** Low.
 
 #### promtail
+
 - **Base:** scratch | **Ports:** 9080 | **USER:** 65532
 - **Changes:** Verify config file readability by 65532. No other changes.
 - **Risk:** Low.
 
 #### cadvisor
+
 - **Base:** scratch | **Ports:** 8080 | **USER:** 65532
 - **Changes:** Convert healthcheck to CMD format. Dockerfile hardcodes `linux-amd64` download URL -- will fail on arm64.
 - **Risk:** Medium. Multi-arch bug.
 
 #### forgejo
+
 - **Base:** wolfi | **Ports:** 3000, 22 | **USER:** 65532
 - **Changes:** Pre-chown data dir to 65532. Fix SSH port mapping (Evergreen exposes 22, SIS uses 2522 in container). Remove unused caps (CHOWN, DAC_OVERRIDE, etc.). Remove USER_UID/USER_GID env vars (ignored). Convert healthcheck to CMD format.
 - **Risk:** Medium. SSH port change requires Forgejo config update.
 
 #### element-web
+
 - **Base:** wolfi (busybox httpd) | **Ports:** 80 | **USER:** 65532
 - **Changes:** Verify config.json mount at `/app/config.json` works with busybox httpd serving `/app`.
 - **Risk:** Low. Static files only.
 
 #### valkey
+
 - **Base:** wolfi | **Ports:** 6379 | **USER:** 65532
 - **Changes:** Remove unnecessary caps. Verify valkey-cli binary exists in wolfi image for healthcheck.
 - **Risk:** Low. Ephemeral data (Immich cache).
 
 #### cloudflare-warrior (cloudflared)
+
 - **Base:** scratch | **Ports:** 7844 | **USER:** 65532
 - **Changes:** Verify config file readability by 65532.
 - **Risk:** Low. All config via command args.
 
 #### postgres-exporter
+
 - **Base:** scratch | **Ports:** 9187 | **USER:** 65532
 - **Changes:** Fix init container pgpass chown UID from 65534 to 65532. Convert healthcheck to CMD format.
 - **Risk:** Low.
 
 #### redis-exporter
+
 - **Base:** scratch | **Ports:** 9121 | **USER:** 65532
 - **Changes:** None required. Pure env-based config.
 - **Risk:** Low.
 
 #### victoriametrics
+
 - **Base:** scratch | **Ports:** 8428 | **USER:** 65532
 - **Changes:** Pre-chown data dir to 65532. Convert healthcheck to CMD format. Verify download URL is for single-node (not cluster tarball).
 - **Risk:** Medium. Download URL may be wrong.
 
 #### prometheus-blackbox-exporter
+
 - **Base:** scratch | **Ports:** 9115 | **USER:** 65532
 - **Changes:** Fix config file mount path from `/etc/blackbox_exporter/config.yml` to `/etc/prometheus-blackbox-exporter/blackbox.yml`. Convert healthcheck to CMD format.
 - **Risk:** Low. Path change only.
@@ -179,91 +194,113 @@ Database containers require initialization logic (initdb, user creation, locale 
 ### BLOCKED -- Fundamental Incompatibility (20)
 
 #### alertmanager
+
 - **Blocker:** SIS uses custom `/entrypoint.sh` (shell script) for config templating. Scratch image has no shell.
 - **Workaround:** Rewrite entrypoint as a static Go binary, or use a sidecar for templating.
 
 #### postgres (all 6 instances)
+
 - **Blocker:** No initdb, no user creation, no locale setup, no gosu. Bare binary only.
 - **Workaround:** Use init containers to run initdb, or contribute init scripts to Evergreen.
 
 #### redis
+
 - **Blocker:** Redis binary may not be available in wolfi. No data dir setup.
 - **Workaround:** Use valkey (which has a working wolfi package) as a Redis-compatible replacement.
 
 #### keycloak
+
 - **Blocker:** No JRE in wolfi base image. Keycloak cannot start without Java.
 - **Workaround:** Add JRE installation to the Evergreen Dockerfile, or use a distroless base with JRE.
 
 #### uptime-kuma
+
 - **Blocker:** No application code. Only Node.js runtime installed.
 - **Workaround:** Add Uptime Kuma source download to the Dockerfile.
 
 #### crowdsec
+
 - **Blocker:** No initialization logic, no cscli binary, no config management.
 - **Workaround:** Contribute full CrowdSec packaging to Evergreen (complex).
 
 #### freshrss
+
 - **Blocker:** No application code, no web server, no php-pgsql extension.
 - **Workaround:** Add FreshRSS source, nginx config, and php-pgsql to the Dockerfile.
 
 #### synapse
+
 - **Blocker:** Python C extensions (psycopg2) built on glibc won't load on wolfi musl. No `/start.py` for config generation.
 - **Workaround:** Build Python extensions in wolfi stage directly, or use Debian final stage.
 
 #### paperless-ngx
+
 - **Blocker:** Same glibc/musl mismatch. No USERMAP_UID support.
 - **Workaround:** Build Python extensions in wolfi stage, or use Debian final stage.
 
 #### mariadb
+
 - **Blocker:** No binary installed. Skeleton Dockerfile only.
 - **Workaround:** Contribute full MariaDB packaging to Evergreen.
 
 #### restic
+
 - **Blocker:** SIS overrides entrypoint to `tail -f /dev/null` (requires shell). Scratch has no shell.
 - **Workaround:** Use a distroless base with shell for the keepalive entrypoint, or rewrite as a static binary.
 
 #### nextcloud-ocis
+
 - **Blocker:** SIS entrypoint requires `/bin/sh` for first-run `ocis init`. Scratch has no shell.
 - **Workaround:** Move init logic to a separate init container, run OCIS binary directly.
 
 #### homepage
+
 - **Blocker:** Copies `/app` from upstream but misses Node.js runtime at `/usr/local/bin/node` and system deps outside `/app`.
 - **Workaround:** Copy the full upstream filesystem, not just `/app`.
 
 #### collabora-online-code
+
 - **Blocker:** No loolwsd binary. Skeleton Dockerfile only.
 - **Workaround:** Contribute full Collabora packaging to Evergreen (very complex).
 
 #### rabbitmq
+
 - **Blocker:** No Erlang runtime, no RabbitMQ server.
 - **Workaround:** Contribute full RabbitMQ packaging to Evergreen.
 
 #### taiga-backend
+
 - **Blocker:** glibc/musl mismatch. Path structure differs from upstream. Custom entrypoint expects paths that don't exist.
 - **Workaround:** Build in Debian stage, or restructure paths.
 
 #### taiga-front
+
 - **Blocker:** No config generation entrypoint. Frontend needs runtime config injection (API URLs).
 - **Workaround:** Add config generation logic to the Evergreen Dockerfile.
 
 #### akaunting
+
 - **Blocker:** No application code. No web server config.
 - **Workaround:** Add Akaunting source, nginx config to the Dockerfile.
 
 #### calibre-web
+
 - **Blocker:** No application code. Only ca-certificates installed.
 - **Workaround:** Add Calibre-Web source and dependencies to the Dockerfile.
 
 #### wireguard
+
 - **Blocker:** Completely different implementation (userspace wireguard-go vs kernel wg-quick). No config management. No privilege escalation (ALL caps dropped).
 - **Workaround:** Not feasible without adding NET_ADMIN cap back and writing full config management.
 
 ### N/A -- Not Used by SIS (2)
 
 #### prometheus
+
 - SIS uses VictoriaMetrics (Prometheus-compatible), not Prometheus directly.
 
 #### nginx
+
 - SIS uses Traefik as reverse proxy. Only uses Chainguard nginx for taiga-gateway (already hardened).
 
 ### NO MATCH in Evergreen (12)

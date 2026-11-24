@@ -42,7 +42,7 @@ service or app:
 
 `containerboot` defaults to `--state=mem: --statedir=/tmp` when an auth key is
 set. With in-memory state, **every container restart re-authenticates with the
-auth key and registers a new node** — that is how the stale `truenas` record
+auth key and registers a new node**  -  that is how the stale `truenas` record
 was created. `TS_STATE_DIR=/var/lib/tailscale` puts `tailscaled.state` on the
 mounted volume; restarts then reuse the same node and IP.
 

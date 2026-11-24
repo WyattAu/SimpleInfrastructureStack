@@ -1,7 +1,7 @@
 # Image Signature Key Custody & Rotation Policy
 
 **Status:** CURRENT (adopted 2026-11-03)
-**Scope:** signatures on container images consumed by SIS tenant stacks —
+**Scope:** signatures on container images consumed by SIS tenant stacks  - 
 produced by the EvergreenImageRegistry (EIR) build pipeline, enforced by
 `ops/tenant-provision.sh` at the provisioning boundary.
 **Consequence of violation:** an unsigned or untrusting deployment is a
@@ -25,10 +25,23 @@ EIR's build workflow signs every pushed image with `cosign sign` under
 GitHub Actions' workload identity (Fulcio OIDC certificate + Rekor
 transparency log) since 2026-09-13. No long-lived key exists to hold.
 
-**Trust anchor:** the certificate identity
-`https://github.com/WyattAu/EvergreenImageRegistry/...` at issuer
-`https://token.actions.githubusercontent.com`. Only that repository's
-workflows can mint signatures a keyless-armed gate accepts.
+**Trust anchor (amended 2026-11-24, iteration 30):** certificate
+identities matching
+`^https://github\.com/WyattAu/(EvergreenImageRegistry|ferro)/` at
+issuer `https://token.actions.githubusercontent.com`. Two producer
+pipelines mint signatures a keyless-armed gate accepts  -  the EIR (all
+registry images) and the ferro release workflow (the tenant file
+server, whose Nov images were pushed out-of-tree and unsigned; the
+release pipeline now triggers on `prod-*` tags and signs them, GHCR
+auth fixed the same day). Arming regexp:
+
+```bash
+TENANT_COSIGN_IDENTITY='^https://github\.com/WyattAu/(EvergreenImageRegistry|ferro)/'
+```
+
+Adding a third producer = amend this table + widen the regexp in the
+same commit. An identity you no longer trust is removed by narrowing
+the regexp  -  one env var, no ceremony.
 
 **Arming:**
 
@@ -40,10 +53,10 @@ TENANT_COSIGN_IDENTITY='^https://github\.com/WyattAu/EvergreenImageRegistry/'
 
 | Obligation | Practice |
 |---|---|
-| Rotation | Nothing to rotate: signing certificates live ~10 days. "Rotation" = the GitHub org's own credential hygiene (2FA on member accounts, least-privilege workflow tokens — the default `GITHUB_TOKEN` is already repo-scoped) |
-| Revocation | An identity you no longer trust is removed by narrowing `TENANT_COSIGN_IDENTITY` — one env var, no ceremony. A leaked *workflow token* is bounded by its job lifetime and auditable in Rekor |
+| Rotation | Nothing to rotate: signing certificates live ~10 days. "Rotation" = the GitHub org's own credential hygiene (2FA on member accounts, least-privilege workflow tokens  -  the default `GITHUB_TOKEN` is already repo-scoped) |
+| Revocation | An identity you no longer trust is removed by narrowing `TENANT_COSIGN_IDENTITY`  -  one env var, no ceremony. A leaked *workflow token* is bounded by its job lifetime and auditable in Rekor |
 | Recovery | There is no secret to lose. Losing the Rekor log would matter; Rekor is Sigstore-operated public infrastructure with its own transparency guarantees |
-| Verification online | Keyless verify consults the Fulcio chain/Rekor bundle — the tenant host needs egress. Accepted: tenant hosts already pull images over egress |
+| Verification online | Keyless verify consults the Fulcio chain/Rekor bundle  -  the tenant host needs egress. Accepted: tenant hosts already pull images over egress |
 
 **Residual risk accepted:** trust in Sigstore public infrastructure
 (Fulcio/Rekor) and in the GitHub org's membership. Both are the same
@@ -108,7 +121,7 @@ is a rumor, not a recovery.
 
 Discovered 2026-11-03 while writing this document: EIR signs **keyless**;
 `tenant-provision.sh` verified with `--key`. An armed gate in that state
-would have rejected **every** EIR image — the loop could never have
+would have rejected **every** EIR image  -  the loop could never have
 fired. The gate now accepts exactly one arming mode
 (`TENANT_COSIGN_IDENTITY` **xor** `TENANT_COSIGN_KEY`) and verifies with
 the matching method. Rule going forward: **any change to the producer's
@@ -125,9 +138,9 @@ authbox's source is **private**; EIR is **public**. Options:
 |---|---|---|
 | A. Build privately, sign in EIR | authbox CI builds/pushes the image; EIR's sign step signs the pushed ref | no source exposure; two pipelines to keep in sync |
 | B. Token-scoped checkout in EIR | EIR checks out authbox with a fine-grained read-only PAT (secret) | single pipeline; a secret in a public repo's CI (scoped, revocable); source stays private |
-| C. Publish authbox | open-source the control plane | simplest; changes the product's exposure — a business call, not an engineering one |
+| C. Publish authbox | open-source the control plane | simplest; changes the product's exposure  -  a business call, not an engineering one |
 
-**Recommendation:** Option A — the signing identity is what tenants
+**Recommendation:** Option A  -  the signing identity is what tenants
 trust, not where the source lives, and Option A keeps the private/public
 boundary exactly where it is. Requires the GitHub Actions billing fix
 first: authbox cannot build anything until its CI can run.

@@ -213,11 +213,11 @@ The original design assumed a second `tank` pool on SSDs. This build has
 none: bay 4 (the 991 GiB SEAGATE) is excluded and the six 1.2 TB disks
 form a single RAID10. PVE storage is therefore `local` (dir: ISOs,
 snippets, cloud-init) and `local-zfs` (zvols). **There is no `tank`
-datastore** — Terraform must run with `-var datastore_id=local-zfs`.
+datastore**  -  Terraform must run with `-var datastore_id=local-zfs`.
 
 **PERC caveat (R730):** the stock H730/H730P cannot put individual disks
 into passthrough (IT) mode. For ZFS: either present each disk as a
-single-disk RAID-0 volume (works, hides SMART — poll via perccli instead),
+single-disk RAID-0 volume (works, hides SMART  -  poll via perccli instead),
 or swap the card for an HBA330 (true IT mode, the clean option).
 
 docker01 gets a data zvol from `local-zfs` (scsi1), formatted ext4 and mounted
@@ -554,16 +554,16 @@ mature: a signature binds the signer identity/key to the image digest,
 verifiable with one command against any registry. The adopted model:
 (1) the trust boundary is EIR ownership + digest pinning for upstream;
 (2) `ops/tenant-provision.sh` carries a fail-closed cosign gate with
-TWO arming modes — `TENANT_COSIGN_IDENTITY` (operative: keyless;
+TWO arming modes  -  `TENANT_COSIGN_IDENTITY` (operative: keyless;
 EIR's build workflow has signed every pushed image with Fulcio OIDC +
 Rekor since 2026-09-13, and the regexp pins trust to that identity, so
 there is no key to rotate or leak) and `TENANT_COSIGN_KEY` (static-key
 alternative for offline verification, under the ceremony in
-`.docs/key-custody-policy.md`) — and when armed, every image in the
+`.docs/key-custody-policy.md`)  -  and when armed, every image in the
 rendered stack must verify before a single byte is pulled: the one
 enforcement point a non-Kubernetes host actually controls; (3) writing
 the custody policy exposed that the producer (keyless) and the
-consumer (`--key`) modes were incompatible — an armed gate would have
+consumer (`--key`) modes were incompatible  -  an armed gate would have
 rejected every EIR image. Fixed 2026-11-03: the gate verifies with the
 matching method, and the rule is that producer signing-mode changes
 ship with the consumer gate change, proven on a scratch stack.
@@ -635,15 +635,15 @@ virtio-balloon, sidestepping the tier-1 cAdvisor problem).
 
 - Per tenant: `ops/tenant-backup.sh`; restic snapshot tagged
   `tenant:<slug>` into `/srv/backups/restic`, copied offsite to B2.
-- **B2 onboarding (iteration 30 — fill these in when the account
+- **B2 onboarding (iteration 30  -  fill these in when the account
   exists):** (1) create bucket `HostingTenantsBackup` (private,
   object-lock recommended); (2) create a STANDARD application key
   scoped to that bucket, name prefix `tenants/`, capabilities
-  listFiles/readFiles/writeFiles/deleteFiles/shareFiles — NEVER the
+  listFiles/readFiles/writeFiles/deleteFiles/shareFiles  -  NEVER the
   account master key; (3) `sops $EDITOR secrets/hosting.env.encrypted`
   and fill B2_ENDPOINT_HOST, B2_BUCKET, B2_ACCESS_KEY_ID,
   B2_SECRET_ACCESS_KEY; (4) `ops/hosting/deploy-cloudinit.sh` is NOT
-  needed — re-run the hosting bootstrap so hosting.env re-seals onto
+  needed  -  re-run the hosting bootstrap so hosting.env re-seals onto
   docker01/02; (5) the next sweep copies snapshots offsite and writes
   `/srv/backups/.last-offsite-success`, which stops the watchdog's
   `OFFSITE BACKUP STALE` page (it currently pages hourly by design);
@@ -852,7 +852,7 @@ diff on next deploy instead of silently diverging.
 ### 2. Proxmox VE install
 
 - Install PVE 9.x onto the intended root SSD pair as **ZFS RAID1**
-  (R730: SATA SSDs — no NVMe on this chassis)
+  (R730: SATA SSDs  -  no NVMe on this chassis)
   (installer: "ZFS (RAID1)", 4–8GB ARC max will be tuned later)
 - Hostname: `hosting01` (matches `pve_node` default in Terraform)
 - Static IP on the business LAN, e.g. `192.168.0.120/24`, gateway = router
