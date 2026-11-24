@@ -5236,11 +5236,14 @@ ranked by risk-reduction-per-effort, first four IMPLEMENTED tonight):
    push), cAdvisor published beyond loopback with fence-gated sources,
    nftables rule widened to mgmt+NAS segments (syntax-validated).
 
-3. TENANT CONTAINMENT GAP (mitigated): project quotas deferred
-   (backlog #1) meant memory/pids were the only brakes — and the
-   template set NONE. Implemented: mem_limit (postgres 1536m, ferro
-   2048m) + pids_limit on the files template; staging canary recreated
-   under limits and verified (mem=2GiB enforced, healthy, healthz 200).
+3. TENANT CONTAINMENT — FALSE ALARM, then a real one: the templates
+   ALREADY carried containment via deploy.resources.limits (cpu/memory/
+   pids) — my "gap" assessment was wrong. The REAL find: my mem_limit/
+   pids_limit additions collided with deploy.resources (compose rejects
+   the mixed styles) and made `compose config` INVALID — which the
+   cosign gate then consumed as an EMPTY image list, silently verifying
+   zero images. Fixed: limits live in deploy.resources only; the cosign
+   gate now dies on an empty image list (fail closed).
 
 4. DEPLOY-TIME ARTIFACT DEPENDENCY: hosting-api/dashboard build on the
    CONTROL node (the workstation). Workstation down = no deploys.
@@ -5309,6 +5312,33 @@ ferro data). A restored tenant is bootable as-is.
 
 BACKUP COVERAGE NOW: local restic per tenant + ZFS snapshots hourly
 (node-loss layer still = B2, operator task).
+
+MONITORING LOOP CLOSED (2026-11-24 04:5x): SIS pushed (4e9013c..61819fc
+— iteration 29/30 batch + rotation ledger + gates), TrueNAS auto-deploy
+git-pulled 61819fc, VictoriaMetrics restarted on the new scrape.yml, and
+all four hosting targets report UP (docker01/02 node-exporter + cAdvisor).
+The platform's metrics now flow to the estate monitoring stack end to
+end. NOTE: the auto-deploy ran via the NAS-side tool (tools/
+auto-deploy.sh, git pull + redeploy) — the GitHub-side auto-deploy.yml
+SSH trigger is broken-by-design (GH-hosted runners cannot reach a
+private LAN IP, and its DEPLOY_SSH_KEY/TRUENAS_HOST secrets have never
+been configured; every run since Nov 20 failed on empty secrets).
+Disposition pending: TrueNAS-side pull-cron (simplest) or a self-hosted
+GH runner; the workflow as written is fiction.
+
+GATE BUG (the checker auditing itself): the pins gate flapped on pins
+that verifiably exist (redis 7.4-alpine, all three immich tags, EIR
+postgres 17.10). Root cause: TWO checker bugs — (1) repo derivation
+split[-2:] dropped the owner segment for 4-segment ghcr paths
+(wyattau/evergreenimageregistry/postgres -> queried
+evergreenimageregistry/postgres: a repo that does not exist), and (2)
+the Accept header omitted docker manifest-list.v2 (EIR multi-arch
+pushes are list.v2; ghcr 404s manifests whose type is not acceptable).
+Fixed: host-aware repo derivation + full Accept set + rate-limit-aware
+token retries. All 10 pins across 3 templates now verify green.
+The lesson, once more: the checker is also software under test — its
+own wrong-repo query manufactured a phantom defect class that consumed
+an investigation cycle before the gate's conclusions could be trusted.
 IDENTITY-CHAIN BLOCKER (found 2026-11-24 ~03:2x): docker01 cannot reach
 the OIDC issuer (authbox on the NAS, 192.168.1.3:9005) — the guest's
 route to 192.168.1.0/24 goes via the router (default gw), which has no
@@ -5401,6 +5431,25 @@ goes silent within the repeat window; both hosts' bootstraps green
 
 NEXT: operator review (REVIEW.md in the repo root is the guide); B2
 provision; policy amendment + ferro signed tag; cosign arm; tenant #1.
+
+NIGHTLY SWEEP FIRST FIRE (2026-11-24 04:00:39 UTC, jitter +30 min of
+03:30 — worker-kit full-jitter 0.2x gap, by design): FAILED exit 1 on
+the env-resolution defect (the sweep-spawned script lacks the runner's
+env sourcing) — and the EXIT TRAP restarted the smoke stack cleanly,
+proving the restart guarantee in production. The fix deployed 04:1x and
+validated with a minimal-env run (snapshot 01c12d29, stack clean).
+Tomorrow's sweep is the first fully autonomous pass. Verification
+poller evidence: journal "nightly sweep starting count=1" + "backup
+failed code=Some(1)" + snapshots table + containers healthy.
+
+MONITORING LIVE: SIS push 4e9013c..61819fc -> NAS auto-deploy git-pulled
+61819fc -> VictoriaMetrics restarted on the new scrape.yml -> all four
+hosting targets UP (both guests node+cAdvisor). The GH-side auto-deploy
+workflow itself is broken-by-design (cloud runners cannot reach a
+private LAN IP; DEPLOY_SSH_KEY/TRUENAS_HOST secrets never configured;
+failing since Nov 20) — the deploy ran via the NAS-side tools/
+auto-deploy.sh git-pull instead. Disposition pending (TrueNAS-side
+pull-cron vs self-hosted GH runner).
 SECURITY FINDING (found 2026-11-24 ~02:5x, while evaluating the CI
 doctrine): the SIS repo is PUBLIC on GitHub, and gitleaks over all 1340
 commits confirms 22 findings — the eventbusd bearer token, the ntfy
