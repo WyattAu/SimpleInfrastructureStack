@@ -5,6 +5,7 @@
 # Recording/alerting rules are handled by vmalert (not here).
 
 scrape_configs:
+
   # VictoriaMetrics self-scrape (replaces Prometheus self-scrape)
   - job_name: 'victoriametrics'
     static_configs:
@@ -256,3 +257,29 @@ scrape_configs:
     static_configs:
       - targets: ['security-crowdsec:6060']
 
+  # ===================================================================
+  # hosting01 guests (docker01 production / docker02 staging) — added
+  # iteration 29. The exporters ran on the guests since bootstrap but
+  # nothing scraped them: platform metrics were invisible. cAdvisor on
+  # the guests publishes :8081 (fence restricts sources); node-exporter
+  # :9100 is fence-limited to the mgmt segments in the guests'
+  # nftables baseline.
+  # ===================================================================
+  - job_name: 'hosting-node'
+    static_configs:
+      - targets: ['192.168.0.127:9100']
+        labels:
+          host: docker01
+      - targets: ['192.168.0.129:9100']
+        labels:
+          host: docker02
+  - job_name: 'hosting-cadvisor'
+    scrape_interval: 120s
+    scrape_timeout: 90s
+    static_configs:
+      - targets: ['192.168.0.127:8081']
+        labels:
+          host: docker01
+      - targets: ['192.168.0.129:8081']
+        labels:
+          host: docker02

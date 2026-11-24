@@ -19,7 +19,12 @@ TENANT_ROOT="${TENANT_ROOT:-/srv/tenants}"
 PORT_BASE="${PORT_BASE:-18080}"
 TZ_DEFAULT="${TZ:-Europe/London}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEMPLATE_ROOT="${SCRIPT_DIR}/tenants/templates"
+# Template resolution (iteration 29): when installed by Ansible the
+# script lives at /opt/sis-hosting/bin/ and templates at
+# /opt/sis-hosting/tenants/templates — one level up, not beside it.
+# Fall back to the repo layout (ops/tenants/templates) for local runs.
+TEMPLATE_ROOT="${TENANT_TEMPLATE_ROOT:-${SCRIPT_DIR}/../tenants/templates}"
+[ -d "${TEMPLATE_ROOT}" ] || TEMPLATE_ROOT="${SCRIPT_DIR}/tenants/templates"
 
 RED=$'\033[0;31m'; GREEN=$'\033[0;32m'; YELLOW=$'\033[0;33m'; NC=$'\033[0m'
 
@@ -78,7 +83,7 @@ done
 [[ "$DOMAIN"   =~ ^[a-z0-9.-]+$ ]]            || die "domain looks invalid (got: $DOMAIN)"
 
 TEMPLATE_DIR="${TEMPLATE_ROOT}/${SERVICE}"
-[ -d "$TEMPLATE_DIR" ] || die "no template '$SERVICE'. Available: $(ls "$TEMPLATE_ROOT" 2>/dev/null | tr '\n' ' ')"
+[ -d "$TEMPLATE_DIR" ] || die "no template '$SERVICE'. Available: $(find "$TEMPLATE_ROOT" -mindepth 1 -maxdepth 1 -type d -printf '%f ' 2>/dev/null)"
 [ -f "${TEMPLATE_DIR}/docker-compose.yml" ] || die "template $SERVICE has no docker-compose.yml"
 [ -f "${TEMPLATE_DIR}/env.template" ] || die "template $SERVICE has no env.template"
 
@@ -118,6 +123,28 @@ info "generating credentials for tenant '$TENANT' (service: $SERVICE)"
 info "creating $TENANT_DIR"
 mkdir -p "${TENANT_DIR}/data"
 
+# userns-remap (iteration 29): the daemon remaps container root to the
+# FIRST dockremap subuid range, so bind-mounted host dirs must be owned
+# by that range or the container gets EACCES creating its storage
+# (ferro: "Failed to create local storage dir /data/files"). Named
+# volumes don't need this — docker chowns them itself — which is why
+# postgres came up while ferro looped. No-op on non-remapped hosts.
+DATA_UID=0
+if [ -f "${TEMPLATE_DIR}/data-uid" ]; then
+    DATA_UID="$(tr -d '[:space:]' < "${TEMPLATE_DIR}/data-uid")"
+fi
+if [ "$START" = 1 ] || [ -n "${TENANT_CHOWN_DATA:-}" ]; then
+    if grep -q '^dockremap:' /etc/subuid 2>/dev/null; then
+        SUBUID_START="$(grep '^dockremap:' /etc/subuid | head -1 | cut -d: -f2)"
+        # Owner = the remapped identity of the service that WRITES the
+        # bind tree (template-declared in-container uid, default root).
+        # ferro (distroless) runs as 65532 in-container = host
+        # SUBUID_START+65532; owned by remapped root it gets EACCES.
+        TARGET_UID="$(( SUBUID_START + DATA_UID ))"
+        chown -R "${TARGET_UID}:${TARGET_UID}" "${TENANT_DIR}/data"
+    fi
+fi
+
 cp "${TEMPLATE_DIR}/docker-compose.yml" "${TENANT_DIR}/docker-compose.yml"
 cp "${TEMPLATE_DIR}/versions.env" "${TENANT_DIR}/versions.env"
 
@@ -132,6 +159,7 @@ sed \
     -e "s|__REDIS_PASSWORD__|${REDIS_PASSWORD}|g" \
     -e "s|__PAPERLESS_SECRET_KEY__|${PAPERLESS_SECRET_KEY}|g" \
     -e "s|__ADMIN_USER__|${ADMIN_USER}|g" \
+    -e "s|__DATA_UID__|${DATA_UID}|g" \
     -e "s|__ADMIN_PASSWORD__|${ADMIN_PASSWORD}|g" \
     "${TEMPLATE_DIR}/env.template" > "$ENV_FILE"
 
@@ -236,6 +264,17 @@ fi
 if [ "$START" -eq 1 ]; then
     info "starting stack (compose.sh up -d)"
     "${TENANT_DIR}/compose.sh" up -d
+    # userns-remap (iteration 29): dockerd auto-creates missing bind-host
+    # dirs as REAL root, which the remapped container cannot write — the
+    # pre-start chown cannot cover paths compose creates at start. Re-
+    # chown after up, then bounce the stack once so every container
+    # starts against correctly-owned paths (deterministic convergence).
+    if grep -q '^dockremap:' /etc/subuid 2>/dev/null; then
+        SUBUID_START="$(grep '^dockremap:' /etc/subuid | head -1 | cut -d: -f2)"
+        TARGET_UID="$(( SUBUID_START + DATA_UID ))"
+        chown -R "${TARGET_UID}:${TARGET_UID}" "${TENANT_DIR}/data"
+        "${TENANT_DIR}/compose.sh" restart >/dev/null 2>&1 || true
+    fi
     info "waiting for containers to report healthy (up to 5 min)..."
     timeout 300 "${TENANT_DIR}/compose.sh" ps --format 'table {{.Name}}\t{{.Status}}' || true
 else

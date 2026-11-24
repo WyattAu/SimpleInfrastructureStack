@@ -28,3 +28,18 @@ output "next_steps" {
     "3. Onboard the first tenant: ops/tenant-provision.sh (on docker01)",
   ]
 }
+
+output "docker02_vm_id" {
+  description = "Proxmox VM ID of docker02"
+  value       = proxmox_virtual_environment_vm.docker02.vm_id
+}
+
+output "docker02_mgmt_ip" {
+  description = "Management IP (DHCP: read it from the PVE guest agent)"
+  value       = var.docker02_mgmt_use_dhcp ? "(DHCP — query the PVE guest agent after first boot)" : var.docker02_mgmt_ip
+}
+
+output "docker02_tenant_ip" {
+  description = "docker02 on the internal tenant bridge"
+  value       = var.docker02_tenant_ip
+}

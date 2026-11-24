@@ -1,0 +1,44 @@
+name: Hosting Stack CI
+
+# Static gates for the hosting stack (scripts/hosting-ci.sh). Each gate
+# corresponds to a defect that reached a live host on 2026-11-23 — see
+# .docs/engineering-loop.md iteration 29/30. Do not weaken gates; fix
+# findings. The pins gate runs with --offline here (ghcr rate-limits
+# shared runner IPs); run scripts/hosting-ci.sh without the flag locally
+# for registry-truth verification.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ansible/**"
+      - "terraform/hosting/**"
+      - "ops/hosting/**"
+      - "ops/tenants/**"
+      - "ops/tenant-provision.sh"
+      - "ops/tenant-backup.sh"
+      - "scripts/hosting-ci.sh"
+      - "scripts/check-image-pins.py"
+      - ".github/workflows/hosting.yml"
+  pull_request:
+    paths:
+      - "ansible/**"
+      - "ops/hosting/**"
+      - "ops/tenants/**"
+  workflow_dispatch:
+
+jobs:
+  hosting-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install gate toolchain
+        run: |
+          pip install --quiet ansible-core yamllint jinja2
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+
+      - name: Run hosting stack gates
+        run: scripts/hosting-ci.sh --offline

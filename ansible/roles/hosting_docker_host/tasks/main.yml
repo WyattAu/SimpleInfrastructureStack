@@ -68,6 +68,35 @@
     state: present
     update_cache: true
 
+- name: Userns-remap — ensure the dockremap service account exists
+  # Research loop iter 29 (2026-11-23): the daemon would create this on
+  # restart, but the verification task below ran BEFORE handlers fired, so
+  # the first real bootstrap always failed here.
+  ansible.builtin.user:
+    name: dockremap
+    system: true
+    create_home: false
+    shell: /usr/sbin/nologin
+    comment: "docker userns-remap"
+  when: hosting_docker_userns_remap | bool
+
+- name: Userns-remap — check for existing dockremap subordinate UID ranges
+  ansible.builtin.command: grep -q '^dockremap:' /etc/subuid
+  register: hosting_dockremap_subuid
+  changed_when: false
+  failed_when: hosting_dockremap_subuid.rc not in [0, 1]
+  when: hosting_docker_userns_remap | bool
+
+- name: Userns-remap — allocate dockremap subordinate UID/GID ranges
+  # `useradd -r` (system account) does NOT allocate subids on Ubuntu, so
+  # this must be explicit. usermod appends, hence the guard above.
+  ansible.builtin.command: >-
+    usermod --add-subuids 100000-165535 --add-subgids 100000-165535 dockremap
+  changed_when: true
+  when:
+    - hosting_docker_userns_remap | bool
+    - hosting_dockremap_subuid.rc != 0
+
 - name: Docker daemon configuration (log rotation, address pools, userns-remap, hardening)
   # Research loop iter 31: built as a DICT then to_nice_json. The previous
   # string-concatenation template rendered `],` + `,"userns-remap"` — a
@@ -82,7 +111,8 @@
       log-driver: json-file
       log-opts:
         max-size: "{{ hosting_docker_log_max_size }}"
-        max-file: "{{ hosting_docker_log_max_files }}"
+        # |string: dockerd wants a JSON string, not a number
+        max-file: "{{ hosting_docker_log_max_files | string }}"
       default-address-pools: "{{ hosting_docker_address_pools }}"
       no-new-privileges: true
       live-restore: "{{ hosting_docker_live_restore | bool }}"
@@ -91,15 +121,30 @@
          | combine({'userns-remap': 'default'} if (hosting_docker_userns_remap | bool) else {}) }}
   notify: Restart docker
 
+- name: Apply the Docker restart before verifying userns-remap state
+  ansible.builtin.meta: flush_handlers
+  when: hosting_docker_userns_remap | bool
+
+- name: Read the subordinate ID maps from the guest
+  # NOTE: lookup('file', ...) resolves on the CONTROLLER. The original
+  # assertion therefore tested the workstation's /etc/subuid and could
+  # never pass on a correct guest. slurp reads the remote file.
+  ansible.builtin.slurp:
+    src: "/etc/{{ item }}"
+  loop:
+    - subuid
+    - subgid
+  register: hosting_subid_maps
+  when: hosting_docker_userns_remap | bool
+
 - name: Verify the dockremap subordinate ranges exist
   ansible.builtin.assert:
     that:
-      - lookup('file', '/etc/subuid') is search('dockremap')
-      - lookup('file', '/etc/subgid') is search('dockremap')
+      - "'dockremap' in (hosting_subid_maps.results | map(attribute='content') | map('b64decode') | join('\n'))"
     fail_msg: >-
       /etc/subuid or /etc/subgid lacks a dockremap entry after enabling
-      userns-remap — docker creates it on restart; if this fires, check
-      that the daemon restarted successfully.
+      userns-remap — the dockremap account and range tasks should have
+      created it; check both ran.
   when: hosting_docker_userns_remap | bool
 
 - name: Admin user in the docker group
@@ -117,9 +162,13 @@
 # --- 3. Data disk -------------------------------------------------------------
 
 - name: Locate the tenant data disk
+  # docker02 (staging) has no data disk: everything lives on the root
+  # disk and is disposable. An empty hosting_data_disk_by_id skips the
+  # whole disk block below.
   ansible.builtin.stat:
     path: "/dev/disk/by-id/{{ hosting_data_disk_by_id }}"
   register: hosting_data_disk
+  when: hosting_data_disk_by_id | length > 0
 
 - name: Assert the data disk exists
   ansible.builtin.assert:
@@ -128,33 +177,55 @@
       /dev/disk/by-id/{{ hosting_data_disk_by_id }} not found — set
       hosting_data_disk_by_id to the scsi1 disk's by-id name
       (`ls -l /dev/disk/by-id/`).
+  when: hosting_data_disk_by_id | length > 0
 
 - name: Filesystem on the data disk (created once, never reformatted)
   community.general.filesystem:
     dev: "/dev/disk/by-id/{{ hosting_data_disk_by_id }}"
     fstype: ext4
     state: present
+  when: hosting_data_disk_by_id | length > 0
 
-# Research loop iter 9: per-tenant DISK quotas via ext4 project quotas -
-# the storage noisy-neighbor fix without changing filesystems (the spec's
-# ext4 decision stands; ZFS-in-guest remains the documented growth path).
-# Project feature enablement is one-way on ext4 (harmless if quotas are
-# never set).
-- name: Enable ext4 project quota feature on the data disk
+# Per-tenant DISK quotas (research loop iter 9) are DEFERRED (iter 29,
+# 2026-11-23): ext4's internal `quota` feature fails to mount on this
+# guest kernel — "ext4_enable_quotas ... err=-3" then mount(2) ESRCH,
+# even when the inodes are initialized by mkfs (verified empirically:
+# mkfs -O project,quota, tune2fs -O quota -Q prjquota, and e2fsck -f all
+# still fail). `project` requires `quota`, so tenant directory quotas
+# cannot ship until either (a) the kernel bug is fixed/resolved by an
+# external-aquota (usrjquota/jqfmt=vfsv1) setup, or (b) tenants move to
+# per-tenant ZFS datasets — the documented growth path. Backlog entry
+# tracks it; until then a runaway tenant is contained only by its
+# container limits.
+- name: Strip the default quota feature from the data disk
+  # e2fsprogs 1.47 (Ubuntu 24.04) enables `quota` in mkfs defaults; with
+  # the bug above that makes EVERY mount of the data disk fail. Also
+  # normalizes disks provisioned before this fix. One-way, safe.
   ansible.builtin.command:
-    cmd: "tune2fs -O project,quota /dev/disk/by-id/{{ hosting_data_disk_by_id }}"
+    cmd: "tune2fs -O ^quota /dev/disk/by-id/{{ hosting_data_disk_by_id }}"
   register: hosting_project_quota
   changed_when: "'must be run' not in hosting_project_quota.stderr"
   failed_when: >-
     hosting_project_quota.rc != 0 and
     'The filesystem already' not in hosting_project_quota.stderr and
     'is set' not in hosting_project_quota.stderr
+  when: hosting_data_disk_by_id | length > 0
 
-- name: Quota tooling (project quota administration)
+- name: Verify the quota feature is off (a mount-blocking defect if not)
+  ansible.builtin.command: >-
+    dumpe2fs -h /dev/disk/by-id/{{ hosting_data_disk_by_id }}
+  register: hosting_data_fs_features
+  changed_when: false
+  failed_when: "' quota' in hosting_data_fs_features.stdout"
+  when: hosting_data_disk_by_id | length > 0
+
+- name: Runtime dependencies (node for the dashboard service)
+  # Iter 29: the dashboard unit execs /usr/bin/node but nothing installed
+  # it — first bootstrap would have systemd-failed sis-hosting-dashboard
+  # immediately after a green playbook run. Ubuntu 24.04 nodejs = 18.x,
+  # current enough for the Astro server output.
   ansible.builtin.apt:
-    name:
-      - quota
-      - xfsprogs   # xfs_quota administers ext4 project quotas via netlink
+    name: nodejs
     state: present
 
 - name: Mount points under {{ hosting_data_mount }}
@@ -173,14 +244,18 @@
     cmd: "blkid -s UUID -o value /dev/disk/by-id/{{ hosting_data_disk_by_id }}"
   register: hosting_data_disk_uuid
   changed_when: false
+  when: hosting_data_disk_by_id | length > 0
 
 - name: Mount the data disk at {{ hosting_data_mount }}
   ansible.posix.mount:
     path: "{{ hosting_data_mount }}"
     src: "UUID={{ hosting_data_disk_uuid.stdout }}"
     fstype: ext4
-    opts: defaults,noatime,prjquota
+    # prjquota would fail to mount while the quota feature is stripped
+    # (iter 29); re-add it together with the feature when quotas ship.
+    opts: defaults,noatime
     state: mounted
+  when: hosting_data_disk_by_id | length > 0
 
 - name: Platform directories
   ansible.builtin.file:
@@ -282,6 +357,19 @@
     - name: tenant-backup.sh
       src: "{{ hosting_repo_root }}/ops/tenant-backup.sh"
 
+- name: Install tenant service templates
+  # Iteration 29: the provisioner died with "no template 'files'.
+  # Available: (empty)" — the role shipped the script but never the
+  # template tree it reads. Landed at ../tenants/templates relative to
+  # the bin dir, which the provisioner resolves.
+  ansible.builtin.copy:
+    src: "{{ hosting_repo_root }}/ops/tenants/templates/"
+    dest: "{{ hosting_opt_dir }}/tenants/templates/"
+    mode: "0644"
+    directory_mode: "0755"
+    owner: root
+    group: root
+
 - name: Tenant tooling environment (TENANT_ROOT and friends)
   ansible.builtin.copy:
     dest: "{{ hosting_env_dir }}/env"
@@ -293,11 +381,16 @@
       RESTIC_REPOSITORY={{ hosting_backup_local_repo }}
 
 - name: Extract the restic password from platform secrets
+  # Iter 29: the previous `lookup('pipe', '. /etc/sis-hosting/...')`
+  # sourced the file on the CONTROL node, where it never exists (it
+  # lives on the guest, and is sealed + removed there). Source from the
+  # same controller-side sops lookup the env file itself uses.
   ansible.builtin.copy:
     dest: "{{ hosting_env_dir }}/restic-password"
     mode: "0600"
     content: >-
-      {{ lookup('pipe', '. ' + hosting_secret_env_dest + ' && printf %s "$RESTIC_PASSWORD"') }}
+      {{ lookup('community.sops.sops', hosting_secret_env_src)
+         | regex_findall('^RESTIC_PASSWORD=(.*)$', multiline=true) | first }}
   no_log: true
 
 - name: Nightly tenant backup runner
@@ -350,10 +443,22 @@
   notify: Restart hosting-api
 
 - name: Install the dashboard build artifact (dist + production deps)
-  ansible.builtin.copy:
-    src: "{{ hosting_dashboard_dist_src }}"
+  # rsync, not `copy`: the artifact is ~230 MiB with node_modules and
+  # ansible's copy streams it through the controller's connection — slow
+  # enough to hit playbook timeouts mid-transfer (iteration 29), leaving
+  # a truncated tree and a crash-looping unit. synchronize resumes and is
+  # idempotent; delete keeps stale chunks from previous builds out.
+  # Trailing slash semantics: contents land in dest directly.
+  # (community.general.rsync no longer exists in 13.x — synchronize is
+  # the supported form.)
+  ansible.posix.synchronize:
+    src: "{{ hosting_dashboard_dist_src }}/"
     dest: "{{ hosting_opt_dir }}/dashboard/"
-    mode: "preserve"
+    archive: true
+    delete: true
+    rsync_opts:
+      - "--exclude=.git"
+      - "--exclude=.astro"
   notify: Restart hosting-dashboard
 
 - name: Systemd unit (hosting-dashboard)
@@ -387,12 +492,20 @@
 # --- 7. Host-level monitoring exporters -------------------------------------------
 
 - name: Node exporter
+  # Iteration 29 correction: `network_mode: host` + `pid_mode: host` are
+  # INCOMPATIBLE with the daemon's userns-remap (docker rejects the
+  # container: "cannot share the host's network namespace when user
+  # namespaces are enabled"). Bridge networking + published port instead;
+  # host metrics still come from the /host rootfs bind (node-exporter
+  # reads /proc and /sys through it, and netdev counters come from
+  # host sysfs), so the numbers the monitoring stack scrapes are the
+  # host's, not the container's.
   community.docker.docker_container:
     name: hosting-node-exporter
     image: "ghcr.io/wyattau/evergreenimageregistry/node-exporter:{{ hosting_node_exporter_version }}"
     restart_policy: unless-stopped
-    network_mode: host
-    pid_mode: host
+    ports:
+      - "9100:9100"
     volumes:
       - /:/host:ro,rslave
     command:
@@ -402,12 +515,23 @@
   tags: [monitoring]
 
 - name: Container advisor (cAdvisor, per-tenant metrics)
+  # Iteration 29 correction: `privileged: true` is rejected outright when
+  # the daemon runs userns-remap ("privileged mode is incompatible with
+  # user namespaces"). Unprivileged form instead: the docker.sock bind
+  # (ro) drives container discovery/stats and /sys,/rootfs cover the
+  # cgroup+sysfs reads; /dev/kmsg stays exposed for OOM events. If a
+  # future driver genuinely needs host-level access, the answer is a
+  # dedicated non-remapped daemon or a host systemd unit — NOT turning
+  # userns off for everyone.
   community.docker.docker_container:
     name: hosting-cadvisor
     image: "ghcr.io/wyattau/evergreenimageregistry/cadvisor:{{ hosting_cadvisor_version }}"
     restart_policy: unless-stopped
     ports:
-      - "127.0.0.1:8081:8080"
+      # loopback-only would hide cAdvisor from the NAS monitoring stack
+      # (iteration 29); exposure is gated by the guests' nftables input
+      # chain, which allows 8081 only from the mgmt segments.
+      - "8081:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -416,7 +540,6 @@
       - /dev/disk/:/dev/disk:ro
     devices:
       - /dev/kmsg
-    privileged: true
     command:
       - --housekeeping_interval=30s
       - --docker_only=true
@@ -424,5 +547,7 @@
       # (cpu, memory, network, diskIO, oom_event). referenced_memory is
       # disabled because cAdvisor's own docs flag it as intrusive - it
       # perturbs kernel page reclaim to measure working-set size.
-      - --disable_metrics=percpu,referenced_memory,udp,tcp,advtcp,cpuLoad,numa,hugetlb,disk,process
+      # (iter 29: `numa` dropped — this cAdvisor build rejects it as
+      # unsupported and exits to usage text.)
+      - --disable_metrics=percpu,referenced_memory,udp,tcp,advtcp,cpuLoad,hugetlb,disk,process
   tags: [monitoring]

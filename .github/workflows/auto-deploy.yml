@@ -6,7 +6,27 @@ on:
   workflow_dispatch:
 
 jobs:
+  secrets:
+    # Iteration 29: the repo is PUBLIC and its history contains rotated-era
+    # secrets (ntfy topic, eventbusd token, headscale pg password — see
+    # gitleaks-baseline.json). This job blocks auto-deploy on any NEW
+    # secret finding beyond the committed baseline. Do not weaken: rotate
+    # instead, then shrink the baseline.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - name: gitleaks (baseline-gated)
+        run: |
+          curl -fsSL -o gitleaks.tar.gz \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.24.0/gitleaks_8.24.0_linux_x64.tar.gz
+          tar xzf gitleaks.tar.gz gitleaks
+          ./gitleaks detect --source . \
+            --baseline-path gitleaks-baseline.json --redact --verbose
+
   deploy:
+    needs: secrets
     runs-on: ubuntu-latest
     steps:
       - name: Trigger deploy on TrueNAS

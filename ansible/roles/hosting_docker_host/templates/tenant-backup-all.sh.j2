@@ -17,6 +17,7 @@ LOCAL_REPO="{{ hosting_backup_local_repo }}"
 OFFSITE_LOG="{{ hosting_data_mount }}/backups/.last-offsite-success"
 NTFY="{{ hosting_ntfy_url }}"
 FAILURES=""
+OFFSITE_RAN=0
 
 shopt -s nullglob
 for tenant_dir in "$TENANT_ROOT"/*/; do
@@ -26,7 +27,18 @@ for tenant_dir in "$TENANT_ROOT"/*/; do
     [ -x "$tenant_dir/compose.sh" ] || continue
 
     echo "[$(date -Is)] backing up tenant: $tenant"
-    if ! env \
+    # Offsite leg runs only when B2 is provisioned (hosting.env values
+    # non-empty). The watchdog's OFFSITE BACKUP STALE alert owns paging
+    # for a missing offsite — the nightly backup failing nightly for a
+    # KNOWN-unprovisioned dependency is noise, not signal (iteration 29).
+    OFFSITE_ARGS=""
+    if [ -n "${B2_BUCKET:-}" ] && [ -n "${B2_ENDPOINT_HOST:-}" ] \
+        && [ -n "${B2_ACCESS_KEY_ID:-}" ] && [ -n "${B2_SECRET_ACCESS_KEY:-}" ]; then
+        OFFSITE_ARGS="--offsite"
+    else
+        echo "[$(date -Is)] offsite disabled: B2 not provisioned (local snapshot only)"
+    fi
+    if env \
         TENANT_ROOT="$TENANT_ROOT" \
         BACKUP_BASE_PATH="{{ hosting_data_mount }}/backups" \
         RESTIC_REPOSITORY="$LOCAL_REPO" \
@@ -35,7 +47,9 @@ for tenant_dir in "$TENANT_ROOT"/*/; do
         B2_BUCKET="${B2_BUCKET}" \
         B2_ACCESS_KEY_ID="${B2_ACCESS_KEY_ID}" \
         B2_SECRET_ACCESS_KEY="${B2_SECRET_ACCESS_KEY}" \
-        "{{ hosting_bin_dir }}/tenant-backup.sh" "$tenant" --offsite; then
+        "{{ hosting_bin_dir }}/tenant-backup.sh" "$tenant" ${OFFSITE_ARGS}; then
+        [ -n "$OFFSITE_ARGS" ] && OFFSITE_RAN=1
+    else
         FAILURES="$FAILURES\n- $tenant"
         echo "[$(date -Is)] BACKUP FAILED: $tenant" >&2
     fi
@@ -100,8 +114,11 @@ if [ "$(date +%u)" = "7" ] && [ "$(date +%-d)" -le 7 ]; then
     for t in "${all_tenants[@]}"; do
         [ -x "$TENANT_ROOT/$t/compose.sh" ] && drill_candidates+=("$t")
     done
-    if [ "${#drill_candidates[@]}" -gt 0 ]; then
-        drill_tenant="${drill_candidates[$(( $(date +%-m) % ${#drill_candidates[@]} ))]}"
+    # NOTE: bash array-length syntax looks like a Jinja comment opener,
+    # so those expressions are raw-wrapped (iteration 29: this template
+    # had never rendered before this fix).
+    if [ "{% raw %}${#drill_candidates[@]}{% endraw %}" -gt 0 ]; then
+        drill_tenant="{% raw %}${drill_candidates[$(( $(date +%-m) % ${#drill_candidates[@]} ))]}{% endraw %}"
         drill_dir="{{ hosting_data_mount }}/backups/restore-test/$drill_tenant"
         echo "[$(date -Is)] monthly restore drill: $drill_tenant"
         rm -rf "$drill_dir"
@@ -130,5 +147,14 @@ if [ "$(date +%u)" = "7" ] && [ "$(date +%-d)" -le 7 ]; then
     fi
 fi
 
-date +%s > "$OFFSITE_LOG"
-echo "[$(date -Is)] all tenant backups OK (offsite copy done)"
+# Offsite freshness marker: written ONLY when the offsite leg actually
+# ran. (Iteration 29 regression caught by the watchdog itself: the old
+# unconditional write refreshed the marker on local-only sweeps, so the
+# OFFSITE BACKUP STALE page for a missing B2 would have gone quiet
+# forever — the exact failure the marker exists to surface.)
+if [ "${OFFSITE_RAN:-0}" = 1 ]; then
+    date +%s > "$OFFSITE_LOG"
+    echo "[$(date -Is)] all tenant backups OK (offsite copy done)"
+else
+    echo "[$(date -Is)] all tenant backups OK (LOCAL ONLY — offsite not provisioned; watchdog pages until B2 exists)"
+fi

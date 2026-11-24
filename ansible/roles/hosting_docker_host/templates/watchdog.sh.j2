@@ -43,12 +43,17 @@ for compose in "$TENANT_ROOT"/*/compose.sh; do
 done
 [ "$BAD" -gt 0 ] && failures="$failures\n- TENANTS DEGRADED: $BAD container(s) unhealthy/restarting"
 
-# 2. Edge proxy answers locally
-if ! curl -fsS --max-time 8 -o /dev/null http://127.0.0.1:80/ 2>/dev/null; then
-    # Port 80 may legitimately refuse plain HTTP if Caddy redirects; test 443 too.
-    if ! echo | timeout 8 openssl s_client -connect 127.0.0.1:443 -servername localhost 2>/dev/null | grep -q "BEGIN CERTIFICATE"; then
-        failures="$failures\n- EDGE PROXY NOT RESPONDING on 80/443"
-    fi
+# 2. Edge proxy alive — via its loopback admin API (iteration 29 fix).
+#    The old probe curled 127.0.0.1:80 and fell back to an SNI-localhost
+#    TLS handshake, which fails whenever Caddy serves only internal-cert
+#    tenant sites (no :80 listener, no cert for "localhost") — the healthy
+#    staging canary tripped it nightly. The admin API answers iff the
+#    daemon is up and its config loaded; serving-correctness for actual
+#    tenants is what the fleet healthz probes and container healthchecks
+#    are for.
+CADDY_ADMIN="{{ hosting_caddy_admin_listen | default('127.0.0.1:2019') }}"
+if ! curl -fsS --max-time 8 -o /dev/null "http://${CADDY_ADMIN}/config/" 2>/dev/null; then
+    failures="$failures\n- EDGE PROXY NOT RESPONDING (admin API ${CADDY_ADMIN})"
 fi
 
 # 3. Offsite backup freshness
@@ -95,6 +100,22 @@ DATA_PCT=$(disk_pct "{{ hosting_data_mount }}")
 [ "${DATA_PCT:-0}" -ge 85 ] && failures="$failures\n- DATA DISK ${DATA_PCT}% full (tenants + restic repo)"
 
 if [ -n "$failures" ]; then
+    # Alert dedup (iteration 29): an UNCHANGED failure set re-pages at most
+    # once per repeat window (default 60 min). Rationale: until B2 is
+    # provisioned the offsite check pages every 15 min for a known-missing
+    # dependency — fatigue that trains the operator to ignore pages.
+    # systemd still records exit 1 each run, so `systemctl --failed` stays
+    # the live marker between pages; a CHANGED failure set always pages
+    # immediately (new alerts are never held back).
+    PAGE_STATE="{{ hosting_env_dir }}/.watchdog-last-page"
+    REPEAT_SECS=$(( ${HOSTING_WATCHDOG_REPEAT_MIN:-{{ hosting_watchdog_repeat_min | default(60) }}} * 60 ))
+    HASH=$(printf '%s' "$failures" | md5sum | cut -d' ' -f1)
+    LAST_HASH=$(cut -d'|' -f1 "$PAGE_STATE" 2>/dev/null || echo "")
+    LAST_TS=$(cut -d'|' -f2 "$PAGE_STATE" 2>/dev/null || echo 0)
+    if [ "$HASH" = "$LAST_HASH" ] && [ $(( NOW - LAST_TS )) -lt "$REPEAT_SECS" ]; then
+        exit 1
+    fi
+    printf '%s|%s\n' "$HASH" "$NOW" > "$PAGE_STATE"
     curl -s -H "Title: HOSTING WATCHDOG: degraded" -H "Priority: high" \
         -d "$(echo -e "$failures")" "$NTFY" > /dev/null
     FAILURES_JSON=$(printf '%s' "$failures" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null || echo '"{}"')

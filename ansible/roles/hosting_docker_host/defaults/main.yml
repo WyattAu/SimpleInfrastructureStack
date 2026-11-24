@@ -18,7 +18,11 @@ hosting_secret_env_dest: "{{ hosting_env_dir }}/hosting.env"
 
 # Docker daemon tuning
 hosting_docker_log_max_size: 10m
-hosting_docker_log_max_files: 3
+# STRING on purpose: dockerd rejects a JSON number here (iteration 29:
+# the unquoted 3 rendered as "max-file": 3 and the daemon refused to
+# start — the first play wrote the file and its handlers never ran, so
+# the landmine sat through two more runs).
+hosting_docker_log_max_files: "3"
 
 # Daemon-level user namespace remapping: container root becomes an
 # unprivileged high UID on the host (dockremap, 231072:65536). This is the
@@ -66,7 +70,6 @@ hosting_docker_address_pools:
 hosting_docker_address_pools_v6:
   - base: fd00::/8
     size: 64
-    size: 22
 
 # SSH hardening: management interface only sees key auth (cloud-init sets
 # ssh_pwauth false; this belt-and-braces the running config).

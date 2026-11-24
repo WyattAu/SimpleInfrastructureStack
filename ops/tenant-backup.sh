@@ -59,13 +59,28 @@ DATA_DIR="${TENANT_DIR}/data"
 
 command -v restic >/dev/null || die "restic not found (run inside the backup-restic container or install it)"
 
-BACKUP_BASE="${BACKUP_BASE:-/mnt/pool_HDD_x2/tank/datasources/sis/backups}"
+# BACKUP_BASE_PATH is what the platform env (/etc/sis-hosting/env) sets;
+# the /mnt/pool_HDD_x2 default is the legacy NAS layout (iteration 29:
+# the offsite-credentials check silently used the legacy path and failed
+# confusingly on guest hosts).
+BACKUP_BASE="${BACKUP_BASE:-${BACKUP_BASE_PATH:-/mnt/pool_HDD_x2/tank/datasources/sis/backups}}"
 export RESTIC_PASSWORD_FILE="${RESTIC_PASSWORD_FILE:-${BACKUP_BASE}/.restic-password}"
 RESTIC_REPOSITORY="${TENANT_RESTIC_REPO:-${RESTIC_REPOSITORY:-${BACKUP_BASE}/restic-repo-new}}"
 export RESTIC_REPOSITORY
 
 [ -r "$RESTIC_PASSWORD_FILE" ] || die "cannot read restic password file: $RESTIC_PASSWORD_FILE"
 [ -d "$DATA_DIR" ] || die "no tenant data directory at $DATA_DIR (provisioned? name correct?)"
+
+# --- repo init-on-first-use (iteration 29) ----------------------------------
+# The script assumed a pre-initialized repo; nothing on the platform ever
+# initializes it, so the FIRST nightly backup died with "unable to open
+# config file" — and (before the restart trap below) left the tenant
+# stopped. restic cat config succeeds iff the repo exists AND the
+# password is right; init only when neither holds.
+if ! restic cat config >/dev/null 2>&1; then
+    info "initializing restic repo at $RESTIC_REPOSITORY (first use)"
+    restic init >/dev/null
+fi
 
 info "tenant   $TENANT"
 info "data     $DATA_DIR"
@@ -90,8 +105,10 @@ if [ -n "$RESTORE" ]; then
     "$COMPOSE" stop || warn "could not stop stack (was it running?)"
 
     info "restoring (this can take a while for large libraries)"
-    restic restore "$RESTORE" --target "$DATA_DIR" --verify
-    chown -R 65532:65532 "$DATA_DIR" 2>/dev/null || warn "could not chown restored data to 65532"
+    restic restore "$RESTORE" --target "$TENANT_DIR" --verify
+    # only the runtime data subtree needs the remapped uid; compose/env
+    # stay root-owned as provisioned
+    chown -R 65532:65532 "$TENANT_DIR/data" 2>/dev/null || warn "could not chown restored data to 65532"
 
     info "done — start the stack when satisfied: $COMPOSE up -d"
     exit 0
@@ -106,10 +123,24 @@ COMPOSE="${TENANT_DIR}/compose.sh"
 if [ "${TENANT_NO_STOP:-0}" != "1" ]; then
     info "stopping stack for a consistent snapshot"
     "$COMPOSE" stop || warn "could not stop stack; snapshot may be inconsistent"
+    # Restart guarantee (iteration 29): the script used to die between the
+    # stop and its own restart step (e.g. restic failing on an
+    # uninitialized repo), leaving the tenant STOPPED overnight. The EXIT
+    # trap brings the stack back no matter how we exit; disarmed after the
+    # explicit successful restart below.
+    STACK_DOWN=1
+    trap 'if [ "${STACK_DOWN:-0}" = 1 ]; then "$COMPOSE" up -d >/dev/null 2>&1 || echo "!! STACK DID NOT RESTART — bring $TENANT up manually" >&2; fi' EXIT
 fi
 
-info "creating snapshot (tag tenant:${TENANT})"
-SNAP_JSON="$(restic backup "$DATA_DIR" \
+info "creating snapshot (tag tenant:${TENANT}) — full tenant tree"
+# Iteration 29: back up the WHOLE tenant directory, not just data/.
+# The stack definition (compose.yml, versions.env, compose.sh) plus
+# .env (generated DB/admin secrets) are NOT reproducible after node
+# loss — a data-only snapshot restores an unbootable tenant (the
+# monthly drill's own compose check would have caught this on its
+# first run). Repo is encrypted local + encrypted B2, so shipping
+# .env inside is within the trust model.
+SNAP_JSON="$(restic backup "$TENANT_DIR" \
     --tag "tenant:${TENANT}" \
     --tag "service:$(grep -E '^service=' "${TENANT_DIR}/.credentials" 2>/dev/null | cut -d= -f2 || echo unknown)" \
     --host "tenants" \
@@ -140,6 +171,8 @@ info "snapshot ${SNAP_ID} created"
 if [ "${TENANT_NO_STOP:-0}" != "1" ]; then
     info "restarting stack"
     "$COMPOSE" up -d || warn "stack did not come back up cleanly — CHECK IT"
+    STACK_DOWN=0
+    trap - EXIT
 fi
 
 # --- offsite ----------------------------------------------------------------

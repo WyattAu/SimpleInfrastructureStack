@@ -26,10 +26,15 @@
     mode: "0644"
 
 - name: Caddy apt repository
+  # Iteration 29: the URL was `.../stable/debian any-version main` — not
+  # a real Cloudsmith path for EITHER distro (the tree is /deb/debian and
+  # /deb/ubuntu), so apt-cache update failed hard on first edge bring-up
+  # and the whole apt cache update was poisoned with it.
   ansible.builtin.apt_repository:
     repo: >-
       deb [signed-by=/etc/apt/keyrings/caddy-stable-archive-keyring.asc]
-      https://dl.cloudsmith.io/public/caddy/stable/debian any-version main
+      https://dl.cloudsmith.io/public/caddy/stable/deb/{{ ansible_distribution | lower }}
+      any-version main
     filename: caddy-stable
     state: present
 
@@ -38,6 +43,20 @@
     name: caddy
     state: present
     update_cache: true
+
+- name: Caddy log directory (owned by the caddy user BEFORE first load)
+  # Iteration 29: on first tenant bring-up the reload created
+  # /var/log/caddy/smoke.access.log as ROOT (dir race during package
+  # install), mode 0600 — and then EVERY reload failed with
+  # "permission denied" because the running daemon could never open its
+  # own log again. Asserting ownership AFTER the package install closes
+  # that race (the user only exists once the package is in).
+  ansible.builtin.file:
+    path: /var/log/caddy
+    state: directory
+    owner: caddy
+    group: caddy
+    mode: "0750"
 
 - name: Caddyfile (per-tenant routes)
   ansible.builtin.copy:

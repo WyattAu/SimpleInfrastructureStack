@@ -1,0 +1,21 @@
+#cloud-config
+hostname: docker01
+manage_etc_hosts: true
+timezone: Europe/London
+users:
+  - name: wyatt
+    groups: [adm, sudo]
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMC3678uXVDuIF1H534emyZuDcopGXGl9kOjP3beA6vb terraform-provider@hosting01
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINavqi0oS6M+feHsUnK7CON69+a+fqeCbYcZ+zhEormL wyatt@cachyos
+ssh_pwauth: false
+package_update: true
+packages:
+  - qemu-guest-agent
+  - cloud-guest-utils
+runcmd:
+  - systemctl enable --now qemu-guest-agent
+  - echo "docker01 cloud-init complete" > /var/log/cloud-init-runcmd.done

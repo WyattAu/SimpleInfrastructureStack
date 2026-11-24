@@ -1,0 +1,5 @@
+---
+# staging: no dedicated data disk (root disk is disposable by design).
+hosting_data_disk_by_id: ""
+hosting_tenants: []
+ansible_host: 192.168.0.129

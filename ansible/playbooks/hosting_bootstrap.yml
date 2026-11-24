@@ -25,10 +25,10 @@
     - name: Confirm we are provisioning the right host
       ansible.builtin.assert:
         that:
-          - ansible_hostname == 'docker01'
+          - ansible_hostname in ['docker01', 'docker02']
         fail_msg: >-
-          Refusing to run: expected docker01, got {{ ansible_hostname }}.
-          Check the inventory / ProxyJump.
+          Refusing to run: expected docker01 or docker02, got
+          {{ ansible_hostname }}. Check the inventory / ansible_host.
 
     - name: Verify the encrypted secrets file exists on the control node
       ansible.builtin.stat:
@@ -55,5 +55,7 @@
     - name: Summary
       ansible.builtin.debug:
         msg: >-
-          docker01 ready. Tenants routed by the edge:
-          {{ hosting_tenants | map(attribute='domain') | list | join(', ') if hosting_tenants | length > 0 else '(none yet — provision with ops/tenant-provision.sh, then re-run)' }}
+          {{ ansible_hostname }} ready. Tenants routed by the edge:
+          {{ hosting_tenants | map(attribute='domain') | list | join(', ')
+             if hosting_tenants | length > 0 else
+             '(none yet — provision with ops/tenant-provision.sh, then re-run)' }}

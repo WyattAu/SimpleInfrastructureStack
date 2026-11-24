@@ -7,16 +7,29 @@
 # tenant-EGRESS fence (research loop iter 8). The `forward` path is owned
 # by Docker (iptables-nft), so the fence is a separate table hooked at
 # priority -5 — it runs BEFORE Docker's rules and contains only DROPs, so
-# it can never break container publishing/NAT, and `flush ruleset` does
-# not touch Docker's own table. Effect: tenant containers (the
-# hosting_docker_address_pools ranges) can reach the internet but NOT the
-# LAN — the mgmt LAN, TrueNAS and every RFC1918 neighbour — so one
-# compromised tenant cannot pivot laterally. Docker's embedded DNS
-# egresses from the host namespace and is unaffected; tenants wanting LAN
-# services should be a reviewed exception, not a default.
+# it can never break container publishing/NAT.
+#
+# ITERATION 29 CORRECTION (2026-11-23): the previous version claimed
+# "`flush ruleset` does not touch Docker's own table" — FALSE. flush
+# ruleset wipes EVERY table including Docker's `ip nat` (iptables-nft),
+# silently destroying all container port publishing until the daemon
+# restarts (found when cAdvisor could not start: "No chain/target/match
+# by that name"). This file therefore flushes ONLY the tables it owns,
+# via the create-then-flush idiom, leaving Docker's tables alone.
+# Effect: tenant containers (the hosting_docker_address_pools ranges)
+# can reach the internet but NOT the LAN — the mgmt LAN, TrueNAS and
+# every RFC1918 neighbour — so one compromised tenant cannot pivot
+# laterally. Docker's embedded DNS egresses from the host namespace and
+# is unaffected; tenants wanting LAN services should be a reviewed
+# exception, not a default.
 # ===================================================================
 
-flush ruleset
+# Create (if missing) then flush, so repeated applies never touch
+# Docker's or anyone else's tables.
+table inet tenant_fence
+table inet filter
+flush table inet tenant_fence
+flush table inet filter
 
 # Tenant egress fence: deny docker bridges -> private ranges. Drops only.
 # Research loop iter 18: the table is family `inet` so IPv6 tenants are
@@ -75,6 +88,11 @@ table inet filter {
         # SSH — from the management LAN only (Proxmox node + workstation).
         # Tenant-bridge peers are NOT allowed to SSH here.
         ip saddr 192.168.0.0/24 tcp dport 22 ct state new accept
+        # Tenant bridge: the node itself (10.10.10.1) and trusted sibling
+        # VMs. The Ansible ProxyJump path arrives with this source.
+        # Tenant containers cannot use it: the fence drops their forward
+        # traffic to 10/8 before it ever reaches input.
+        ip saddr 10.10.10.0/24 tcp dport 22 ct state new accept
 
         # Edge proxy — the only tenant-facing surface.
 {% for port in hosting_public_tcp_ports %}

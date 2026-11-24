@@ -144,3 +144,47 @@ variable "search_domain" {
   type        = string
   default     = "hosting.internal"
 }
+
+# --- docker02 sizing (staging) ---------------------------------------------
+
+variable "docker02_cores" {
+  description = "vCPUs for docker02 (staging)"
+  type        = number
+  default     = 4
+}
+
+variable "docker02_memory_mib" {
+  description = "Dedicated RAM for docker02 in MiB"
+  type        = number
+  default     = 6144
+}
+
+variable "docker02_root_gib" {
+  description = "System disk size in GiB for docker02"
+  type        = number
+  default     = 60
+}
+
+variable "docker02_mgmt_use_dhcp" {
+  description = "Give docker02 its mgmt address by DHCP (true) or use docker02_mgmt_ip"
+  type        = bool
+  default     = true
+}
+
+variable "docker02_mgmt_ip" {
+  description = "Static mgmt IP for docker02 (only used when mgmt_use_dhcp = false)"
+  type        = string
+  default     = ""
+}
+
+variable "docker02_mgmt_gateway" {
+  description = "Static mgmt gateway for docker02 (only used when mgmt_use_dhcp = false)"
+  type        = string
+  default     = ""
+}
+
+variable "docker02_tenant_ip" {
+  description = "docker02's address on the tenant bridge"
+  type        = string
+  default     = "10.10.10.20/24"
+}
