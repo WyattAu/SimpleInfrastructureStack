@@ -27,7 +27,7 @@ the node's first two purchases, ahead of any second production node.
 | --- | --- | --- |
 | **NAS** `truenas-1` (TrueNAS, 4c/15 GiB) | storage, control plane, monitoring, backup target | Forgejo + EIR registry, Keycloak, VictoriaMetrics stack, Traefik estate edge, personal apps, ZFS datasets, `zfs send` replication target |
 | **hosting01** (R730 `8Q00JP2`, 16c/32t, 40 GiB) | revenue compute + staging | PVE 9.x → docker01 VM (12 vCPU / 20 GiB: tenants + Caddy edge + cloudflared), docker02 VM (4 vCPU / 6 GiB: staging); storage 3× ZFS mirrors over 6× 1.2 TB SAS + spare |
-| **CI box** (CachyOS, `192.168.1.191`) | CI only | 4× Forgejo runners (`rust-node` image); deliberately off hosting01 so CI bursts never contend with tenant latency |
+| **CI box** (CachyOS, `192.168.1.191`) | **freed 2026-11-24 — custom-OS testbed** | runners consolidated onto the NAS: `forgejo-runner-2` clones the `nas-sis-rust` registration (2 concurrent sis-rust jobs, root user for the docker socket). The box is now the operator's custom-OS testbed (QEMU/bare metal). The cachyos-* runner registrations (2 idle) were left in Forgejo — they hosted no workflow files; clean them if their hosts are decommissioned |
 | Cloudflare | split DNS | `wyattau.com` → NAS tunnel; tenant domains → hosting01 tunnel |
 
 Monitoring moved NAS-side permanently: docker01's platform overhead

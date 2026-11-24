@@ -5454,6 +5454,20 @@ Tomorrow's sweep is the first fully autonomous pass. Verification
 poller evidence: journal "nightly sweep starting count=1" + "backup
 failed code=Some(1)" + snapshots table + containers healthy.
 
+CI CONSOLIDATED (2026-11-24 23:1x): the CI box (.191) is FREED for the
+operator's custom-OS testbed. forgejo-runner-2 deployed on the NAS —
+the same registration as nas-sis-rust (2 concurrent sis-rust jobs;
+act_runner supports multi-instance per registration), root user (the
+docker socket needs it — the first attempt as user 1000 hit permission
+denied), same appdata pattern + docker.sock mount. The cachyos-*
+runner registrations left in place (zero workflows target them; they
+may belong to other cachyos machines — the operator cleans them when
+decommissioning those hosts). The NAS capacity math: 2 concurrent
+sis-rust jobs (docker-mode, the sis-ci-rust:1 image); the heavy ferro
+matrix runs serial-ish — slower CI is the accepted cost of freeing the
+box. The box's remaining duties: none (no monitoring scrape, no estate
+service) — it was the one server with zero production duties.
+
 MONITORING LIVE: SIS push 4e9013c..61819fc -> NAS auto-deploy git-pulled
 61819fc -> VictoriaMetrics restarted on the new scrape.yml -> all four
 hosting targets UP (both guests node+cAdvisor). The GH-side auto-deploy
