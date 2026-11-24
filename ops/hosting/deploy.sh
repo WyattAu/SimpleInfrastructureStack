@@ -39,10 +39,15 @@ SSH_NODE=(ssh "${SSH_OPTS[@]}" "root@${NODE}")
 
 echo "== 1/5 dashboard artifact"
 if [ "$SKIP_BUILD" = 0 ]; then
-    ( cd "$ROOT/../hosting-api" && CARGO_TARGET_DIR="$HOME/.cache/cargo-target" \
+    # /var/tmp (30-day tmpfiles age): the fleet default
+    # ~/.cache/cargo-target is CACHEDIR.TAG-marked and gets purged by the
+    # hourly systemd-tmpfiles run — a mid-build wipe corrupted the ferro
+    # workspace build on 2026-11-24 (iteration 30, fleet hazard logged).
+    BUILD_TARGET="/var/tmp/cargo-target"
+    ( cd "$ROOT/../hosting-api" && CARGO_TARGET_DIR="$BUILD_TARGET" \
         cargo build --release -p hosting-api )
     mkdir -p "$ROOT/../hosting-api/target/release"
-    cp "$HOME/.cache/cargo-target/release/hosting-api" \
+    cp "$BUILD_TARGET/release/hosting-api" \
        "$ROOT/../hosting-api/target/release/hosting-api"
     ( cd "$ROOT/../hosting-dashboard" && bun install --frozen-lockfile --production )
 else
