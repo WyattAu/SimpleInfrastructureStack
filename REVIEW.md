@@ -124,6 +124,15 @@ needs a brief tailnet-control outage  -  do it in a window:
     # NOTE: POSTGRES_PASSWORD env only seeds NEW volumes  -  the ALTER USER
     # is the real rotation for the existing database.
 
+## Fleet hazard: CARGO_TARGET_DIR in ~/.cache
+
+The fleet default `~/.cache/cargo-target` is CACHEDIR.TAG-marked and
+**systemd-tmpfiles purges it hourly** — tonight it emptied the dir
+mid-build (corrupting the ferro workspace verification for ~40 min).
+`ops/hosting/deploy.sh` now builds in `/var/tmp/cargo-target`. FLEET
+FIX NEEDED in the dotfiles: relocate the rule or ship an
+`/etc/tmpfiles.d` exemption.
+
 ## Watch out
 
 - The watchdog's exit-1 marks the unit failed in systemd while any
