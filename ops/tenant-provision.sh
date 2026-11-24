@@ -226,6 +226,10 @@ GITIGNORE
 #
 # Unset (both) it logs and skips — the gate arrived before arming was
 # required, and arming is a one-env-var change.
+# Arming source (iteration 30): the gate is armed via
+# /etc/sis-hosting/env (TENANT_COSIGN_IDENTITY / TENANT_COSIGN_KEY),
+# shipped by Ansible — the same pattern as the backup script.
+[ -r /etc/sis-hosting/env ] && . /etc/sis-hosting/env
 TENANT_COSIGN_IDENTITY="${TENANT_COSIGN_IDENTITY:-}"
 TENANT_COSIGN_KEY="${TENANT_COSIGN_KEY:-}"
 if [ -n "${TENANT_COSIGN_IDENTITY}" ] || [ -n "${TENANT_COSIGN_KEY}" ]; then
@@ -237,6 +241,11 @@ if [ -n "${TENANT_COSIGN_IDENTITY}" ] || [ -n "${TENANT_COSIGN_KEY}" ]; then
         echo "arm exactly ONE cosign mode (TENANT_COSIGN_IDENTITY or TENANT_COSIGN_KEY), not both" >&2
         exit 1
     fi
+    # Fail closed on an EMPTY image list (iteration 30): a config error
+    # (invalid compose, missing env) yields zero images — a gate that
+    # verifies zero images is a no-op masquerading as enforcement.
+    images="$("${TENANT_DIR}/compose.sh" config --images 2>/dev/null)"
+    [ -n "$images" ] || die "cosign gate: compose config returned no images — refusing to provision (invalid stack?)"
     while IFS= read -r image; do
         [ -n "$image" ] || continue
         if [ -n "${TENANT_COSIGN_IDENTITY}" ]; then

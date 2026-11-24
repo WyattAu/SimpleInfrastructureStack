@@ -41,17 +41,16 @@ services:
       retries: 5
       start_period: 30s
     cpu_shares: 512
-    # Containment (iteration 29): project quotas are deferred, so memory
-    # and pids are the per-tenant brakes that exist today. Standard tier:
-    # 4 GiB shared across the stack.
-    mem_limit: 1536m
-    pids_limit: 200
+    # Containment (iteration 29/30): ONE deploy block, one style —
+    # compose REJECTS duplicate deploy keys and mixed limit styles
+    # (mem_limit/pids_limit + deploy.resources.*); the cosign gate
+    # consumes config output, so this must stay a valid compose project.
     deploy:
       resources:
         limits:
           cpus: '0.50'
-          memory: 512M
-          pids: 100
+          memory: 1536m
+          pids: 200
     logging:
       driver: json-file
       options:
@@ -100,9 +99,6 @@ services:
     # Liveness is covered by the EvergreenShim's own supervisor + the
     # monitoring stack; add an image-side health binary before
     # reintroducing a probe.
-    cpu_shares: 2048
-    mem_limit: 2048m
-    pids_limit: 200
     deploy:
       resources:
         limits:
