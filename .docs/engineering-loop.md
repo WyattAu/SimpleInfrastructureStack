@@ -4935,7 +4935,667 @@ VERIFY: flagsd/authbox/eventbusd Job succeeded on Forgejo; /cache
 mount present in job container inspect; host cache 450 MB; warm gate
 ~35 s measured.
 
+### Iteration 28: 2026-11-22: hosting01 rises — R730 to Proxmox VE 9.2
+### on ZFS RAID10, and the two blockers that were never DNS
+
+CONTEXT: the new R730 (8Q00JP2, 2×E5-2620v4, 40 GiB, PERC H730, 7×1.2 TB
++ 1×991 GiB SEAGATE) had RAID rebuilt to 7 per-disk RAID-0 volumes
+(iteration-27 night) and the PVE 9.2-1 USB written with a patched ISO
+(GRUB `default=1` + `timeout=5`, because VNC keystrokes never reach
+legacy-GRUB). iDRAC web/REST stayed broken (500/404) all night; only
+racadm-over-SSH + VNC worked, so every console interaction was vncdo
+with per-key pauses.
+
+BLOCKER 1, THE PHYSICAL ONE: the installer's FQDN check failed with
+"failed to retrieve host address" no matter what was typed. Chased DNS
+shapes for an hour (fake resolver on 10.42.0.1, NAT on the workstation,
+Cloudflare A record) — all fiction, because the server was sending ZERO
+frames: the only cable was in the dedicated iDRAC port, which the host
+OS never sees. Fix: `racadm set iDRAC.NIC.Selection 2` (LOM1, shared
+mode; this build has no failover variant) + one cable move to LOM port
+1. iDRAC followed onto LOM1 and stayed reachable at 192.168.0.50.
+
+BLOCKER 2, THE SUBTLE ONE: even with link, the check kept failing. The
+installer validates the FQDN against its BOOT-TIME resolver (from
+boot DHCP), not the DNS server typed into the form. Fix: one clean
+reboot into the now-live DHCP, then the check passed with real internet
+DNS (router forwarder → Cloudflare A record).
+
+THE Tedious PART, worth recording: iDRAC VNC drops keystrokes
+non-deterministically (same-key runs collapse worst: 30 backspaces →
+~4 effective). Everything typed got verified by pixel evidence: run
+counts for masked fields, red-band detection for focus, probe-char +
+row-diff for Tab landing. A Tab that silently doesn't land cost the
+password page twice; the working pattern is probe-verify-then-act, in
+scripts, never blind sequences.
+
+RESULT: PVE 9.2.2 (kernel 7.0.2-6-pve) up on hosting01.wyattau.com =
+192.168.0.120/24 (DHCP, gw 192.168.0.1), rpool ONLINE as mirror-0/1/2
+= RAID10 over the six 1.2 TB disks, sde excluded, ashift 12, 3.15 TiB,
+no data errors. Post-install: tz Europe/London, ARC 8 GiB at next
+boot, no-subscription repos (trixie; the installer ships deb822
+`.sources`, not `.list` — the sed-everything approach missed them),
+SSH key installed. Root password regenerated into
+~/.config/opencode/keys/pve-hosting01-root; the first-generation
+password is BURNED (it scrolled through a VNC capture).
+
+TEMPORARY SHAPES (deliberate, tracked): the node lives on the
+WiFi-router segment, not the 192.168.1.0/24 LAN, because the switch
+was unreachable — re-address to 192.168.1.50 + move the Cloudflare
+record when a LAN cable exists. Timezone was install-time
+Europe/Vienna, already corrected. Workstation still runs the temp
+10.42.0.1 + NAT plumbing (`setup-net.sh --undo` when done) and its own
+LAN cable is still out (enp3s0 down since 01:15, NAS/CI cut off from
+it).
+
+SOAK GATE (2026-11-23, ~7 h total): PASS.
+- memtester 24G full default suite: exit 0, zero failures (~2.5 h;
+  walking-ones/zeroes dominate the runtime).
+- stress-ng 1 h: exit 0 (32 cpu threads all-methods, 4x512M vm,
+  2x iomix; load 38.85 sustained on 32 threads). First attempt aborted
+  instantly on `--progress 10m` (unsupported syntax) — rerun without it.
+- fio matrix on rpool (4G files, libaio, 100-120 s tests):
+  seq write 742 MiB/s; seq read 411 MiB/s; 4k randread 350 IOPS (async)
+  / 202 (direct); 4k randwrite 210 (async) / 464 (direct — PERC
+  write-back ACKs O_DIRECT faster than ZFS async path).
+- SEL clean throughout: NO slot-6 PCI-bus-fatal recurrence under
+  sustained stress.
+- OPERATIONAL NOTE: 4k random IOPS (~200-460) is modest — six 10K SAS
+  spindles through ZFS sync semantics with no SLOG. Fine for the pilot
+  docker tier; if a tenant needs more, the lever is an SSD SLOG or an
+  SSD pool for VM disks (bay 4 is physically free).
+- MEASUREMENT HAZARDS, recorded because they cost an hour: detached
+  node-side scripts get killed when the paramiko SSH channel closes
+  (use setsid + </dev/null); concurrent matrix instances interleave and
+  corrupt shared logs (pkill + one instance at a time); under full CPU
+  saturation, sshd slows enough that 15-20 s paramiko timeouts return
+  empty output (retry with headroom).
+
+NEXT: Terraform docker01 (12 vCPU/20 GiB) + docker02 (4 vCPU/6 GiB),
+then first tenant. iDRAC web-UI repair stays parked (see OS DECISION
+note above). Re-address hosting01 to 192.168.1.50 + move the DNS
+record when the LAN cable work happens; pull the USB stick from the
+R730 BEFORE any reboot (boot order still has it first).
+
+OS DECISION, confirmed by operator 2026-11-22: hosting01 stays Proxmox
+VE; CachyOS lives in the GUEST layer (tenant VMs run Arch/CachyOS).
+Hypervisor metal is the one place stable beats familiar. iDRAC flash
+note from the same night: firmware is already 2.86.86.86 (latest —
+nothing to upgrade); the queued task was a REPAIR of the broken web
+UI. racadm update fails pre-fetch on same-version (2 failed jobs), but
+the Redfish multipart push WORKS (DUP staged as
+Available-25227-2.86.86.86) — scheduling a staged package is the only
+broken leg (no Dell OEM Jobs API on this build, JobService broken,
+racadm can't schedule staged over SSH). Deferred: craft a Dell
+catalog.xml for `racadm update -f catalog -t HTTP`, or physical repair
+at next rack visit. Operations unaffected (VNC + racadm SSH + Redfish).
+
+LESSON: "check layer 1 before layer 7" is not a joke — a missing
+physical link defeats every DNS theory. And a validator that depends
+on boot-time state (the FQDN check) must be re-anchored by the same
+reboot that changes that state; typing new values cannot re-anchor it.
+
+LEAN PROOF: unchanged, exit 0.
+
+VERIFY: pveversion 9.2.2 over SSH; zpool status ONLINE mirror-0/1/2,
+no data errors; pveproxy :8006 listening; ssh key auth accepted;
+apt update clean on trixie no-subscription.
+
+### Iteration 29: 2026-11-23: soak gate passed, docker01 provisioned,
+### and the four bugs hiding behind "it must be my network"
+
+SOAK GATE: PASS, recorded in the previous section (memtester exit 0,
+stress-ng exit 0, fio 742/411 MiB/s seq, 202-464 IOPS 4k, SEL clean).
+CLOSED: the hardware gate is done; docker01 was cleared for provisioning.
+
+TERRAFORM: docker01 (VM 110, 12 vCPU / 20 GiB / 100G root + 1.5T data
+on `local-zfs`) applied cleanly after three environmental fixes —
+`/var/lib/vz/snippets` had to exist, `local` storage needed `images`
+content for the cloud-init ISO, and the provider needs an agent-loaded
+SSH key (`tf_ed25519`, installed to root@hosting01) to upload snippets.
+The provider's `proxmox_virtual_environment_file` read-back breaks
+against a `dir` datastore on PVE 9.2, so the cloud-init user-data is now
+MANAGED OUT OF TERRAFORM STATE and shipped by
+`ops/hosting/deploy-cloudinit.sh` (docker02.tf added the same way).
+
+DEFECT 1 — THE ONE THAT COST THREE VM REBUILDS: the generated
+cloud-init snippet was unparseable YAML (heredoc `${}` interpolation
+left ragged indentation; `ssh_pwauth` ended up nested inside `users:`).
+cloud-init's failure mode is SILENT: it logs a warning, runs with an
+empty config, and the VM boots to a bare `ubuntu login:` with no user,
+no key, no hostname. Two full clone+boot cycles were burned before the
+serial-console capture surfaced "Failed loading yaml blob ... - name:
+wyatt". Fix: reviewed snippet files in ops/hosting/, YAML-linted by the
+deploy script, deployed verbatim. LESSON: cloud-init failures do not
+block boot; a guest that "comes up" is not evidence cloud-init worked.
+Check `cloud-init status` and the hostname before anything else.
+
+DEFECT 2 — HANDLER-ORDER RACE: the role asserted `dockremap` exists in
+/etc/subuid BEFORE the "Restart docker" handler that creates it; first
+bootstrap always died at that assert. Also, Ubuntu `useradd -r` does
+NOT allocate subids, and the assert used `lookup('file', ...)` which
+reads the CONTROLLER's /etc/subuid, not the guest's — so it could never
+pass on a correct host. Fixed: explicit account + usermod subid
+allocation, handler flush, slurp-based remote check. LESSON: an assert
+that reads files must say WHICH machine; lookups are controller-side.
+
+DEFECT 3 — GROUP VARS NEVER LOADED: `ansible/group_vars/` is invisible
+to playbook runs (Ansible resolves group_vars relative to the inventory
+and playbook dirs, not cwd — `ansible-inventory` DOES read cwd, which
+masks the bug during ad-hoc checks). `hosting_data_disk_by_id` blew up
+as "undefined" at the data-disk task. Fixed: `git mv` to
+`ansible/inventory/group_vars/hosting.yml`. LESSON: when a var is
+"undefined", check WHERE ansible resolves group_vars before checking
+the file itself.
+
+DEFECT 4 — DUPLICATE YAML KEY: the v6 Docker address pool had `size: 64`
+then `size: 22`; last-one-wins silently carved /22s out of fd00::/8.
+Caught by ansible's duplicate-mapping warning during --list-tasks.
+Fixed to /64. LESSON: warnings in `--list-tasks` are defects, not noise.
+
+DEFECT 5 — EXT4 QUOTA FEATURE BREAKS MOUNTS (deferred, not fixed): the
+role enabled `project,quota` on the data disk; every mount then failed
+`ext4_enable_quotas ... err=-3` → ESRCH. Tried e2fsck -f, mkfs-time
+initialization (`mkfs.ext4 -O project,quota`), and `tune2fs -Q
+prjquota` — ALL still fail on guest kernel 6.8.0-147. `project`
+requires `quota`, so tenant directory quotas are impossible until that
+kernel path works. Decision: strip the quota feature (e2fsprogs 1.47
+mkfs defaults now include it, so EVERY fresh ext4 here mounts broken
+until stripped), mount `defaults,noatime`, defer enforcement to
+external aquota files or per-tenant ZFS datasets. Backlog entry #1.
+LESSON: the quota feature's failure is a MOUNT failure, not a mount
+warning — a disk that formats clean can still be unmountable.
+
+DEFECT 8 — `flush ruleset` KILLS DOCKER PUBLISHING: the nftables
+baseline's global `flush ruleset` wipes Docker's `ip nat` table
+(iptables-nft) too — every container port-publish breaks until the
+daemon restarts ("No chain/target/match by that name" on DNAT; cAdvisor
+was the first victim). The file's own DESIGN NOTE claimed the opposite.
+Fixed with the create-then-flush idiom (`table X` / `flush table X` for
+only the tables the file owns) and a syntax-validated render.
+LESSON: any config that starts with `flush ruleset` owns the whole
+machine's packet path, not just its own table.
+
+DEFECT 9 — daemon.json LANDMINE (`max-file`: 3 as a JSON number):
+dockerd requires log-opts values as STRINGS; the unquoted YAML default
+rendered `"max-file": 3` and dockerd refuses to start with that file.
+The first play wrote the file AFTER dockerd had already started, and
+its restart handler never ran (the play died at defect 2) — so the
+landmine sat through three more runs, masking the DNAT failure as
+"docker won't publish ports" when the truth was "docker can never
+restart". Fixed: quoted default + `| string` cast at the task site.
+LESSON: when a service "runs but misbehaves", check whether its config
+has EVER been loaded — a config written after first boot is fiction
+until a restart proves it.
+
+DEFECT 10 — EXPORTERS ASSUMED NO USERNS: node-exporter used
+`network_mode: host` + `pid_mode: host`, both rejected once the
+daemon's userns-remap actually activates (which, thanks to defect 9,
+happened three hours after "docker works"). Rebuilt as bridge +
+published 9100 with the /host rootfs bind — node-exporter reads host
+/proc and /sys through it, so the metrics remain the HOST's. Lesson
+repeated: the daemon config's userns line and the containers that
+assume it is absent must be reviewed together, or the first real
+restart detonates the difference.
+
+DEFECT 11 — CADDY REPO URL THAT NEVER EXISTED: the edge role pointed
+apt at `.../caddy/stable/debian any-version main` — not a real
+Cloudsmith path for either distro (the tree is `/deb/debian` and
+`/deb/ubuntu`), so the first edge bring-up poisoned apt update and
+every apt task on the host retried and failed on it. Fixed with a
+distribution-aware URL. Same lesson as the loop's recurring disease:
+a repo line that has never served a package is fiction.
+
+DEFECT 12 — cAdvisor FLAG FOR A METRIC THAT NO LONGER EXISTS: the
+`--disable_metrics` list contained `numa`; this cAdvisor build rejects
+unknown names and exits to usage text, so the container crash-looped.
+`healthy` in `docker ps` is now part of the bootstrap verification.
+
+DEFECT 13 — DASHBOARD ARTIFACT NESTED + DEPS MISSING: two more firsts
+found by the first real service start. (a) `copy` without a trailing
+slash on a dir src nests the basename under dest, so the unit's
+WorkingDirectory found the repo one level down and crash-looped on
+MODULE_NOT_FOUND. (b) The Astro server entry imports real packages
+(astro, cookie, devalue, @astrojs/*) at runtime — `dist/` alone is not
+an artifact; `bun install --production` ships with it (228 MiB).
+LESSON (whole session's theme in miniature): every "green" deploy step
+that has never produced a RUNNING service is fiction.
+
+DEFECT 14 — `community.general.rsync` NO LONGER EXISTS (13.x removed
+it): the artifact task that replaced `copy` broke the next run with
+"couldn't resolve module/action". The supported form is
+`ansible.posix.synchronize` (posix already in use for `mount`).
+Also captured here because it bit twice: group_vars AND host_vars must
+live under `inventory/` — the repo-root locations are invisible to
+playbook runs (defect 3's class, second instance).
+
+SMOKE-TENANT ROUND (docker02 staging canary — defects 15-17):
+
+DEFECT 15 — PROVISIONER SHIPPED WITHOUT ITS TEMPLATES: the role
+installed tenant-provision.sh but not ops/tenants/templates/, so the
+first `provision smoke files` died with "no template 'files'.
+Available: (empty)". Fixed: templates install to
+/opt/sis-hosting/tenants/templates; the provisioner resolves them
+relative to its install dir with a repo-layout fallback.
+
+DEFECT 16 — STALE IMAGE PINS: files/versions.env pinned
+ferro:prod-20260905 (never existed; real tags prod-20261101/05) and
+EIR postgres:17.10 (registry published only `latest`). ferro re-pinned
+to prod-20261105. postgres FIXED AT THE SOURCE (operator owns the EIR):
+postgres:17.10 retro-tagged from the signed latest digest — after
+verifying the image really is PG 17.10 — and the EIR workflow's
+versioned push is no longer swallowable (3 retries, then ::error: +
+FAILED; a release without its version tag breaks every downstream
+Renovate pin; EIR commit 1ace7a551). Same fiction class: a pin that
+was never pulled is not a pin, it's a guess.
+
+DEFECT 17 — USERNS x BIND MOUNTS (the deep one): under
+userns-remap, dockerd auto-creates missing bind-host dirs as REAL
+root, and distroless ferro runs as in-container uid 65532 — which maps
+to host subuid_start+65532. Root-owned dir + non-root-in-container
+writer = EACCES crash loop ("Failed to create local storage dir").
+Provisioner now: chowns the bind tree to the remapped identity of the
+template-declared writer uid (files/data-uid), once before start and
+again after compose creates its subdirs, then bounces the stack once.
+Named volumes (postgres) need none of this — docker chowns them.
+
+DEFECT 18 — ROOT-OWNED CADDY ACCESS LOG: the first tenant reload
+created /var/log/caddy/smoke.access.log as root 0600; from then on
+EVERY caddy reload failed "permission denied" on its own log (the
+running daemon can't open a root-0600 file), while the config was
+still being served from an earlier successful load — so the symptom
+was "reload fails but routing works", pointing nowhere useful. Fixed:
+edge role asserts /var/log/caddy caddy-owned before any Caddyfile
+deploy; cleared the poisoned file; reload now succeeds.
+
+RESULT: the staging canary is END-TO-END green: provision -> ferro+pg
+up -> Caddy route -> https://smoke.docker02.staging.localhost/healthz
+200 through the edge with an internal cert. This is the template the
+first PAYING tenant walks through.
+
+STACK ARCHITECTURE EVALUATION (2026-11-23, evidence-based; findings
+ranked by risk-reduction-per-effort, first four IMPLEMENTED tonight):
+
+1. BACKUP CO-LOCATION (highest risk): the restic local repo lives on
+   /srv/backups — the SAME data zvol as tenant data. Pool-level RAID10
+   protects against disk loss, but dataset corruption or node loss
+   takes tenants AND their only backups together. MITIGATED tonight:
+   rolling ZFS snapshots on hosting01 (ops/hosting/zfs-snap.sh, hourly
+   systemd timer, 48 hourly + 14 daily, 6 snapshots created and
+   verified) — point-in-time recovery against deletion/corruption.
+   STILL OPEN: node-loss layer = B2 offsite (needs an account + B2
+   application key, operator task) and/or zfs replication to the NAS
+   (the NAS's documented role as replication target is unimplemented).
+
+2. MONITORING BLINDNESS (fixed): exporters ran on both guests since
+   bootstrap but NOTHING scraped them — the NAS VictoriaMetrics stack
+   only scraped NAS-local services. Platform metrics were invisible
+   (a tenant filling the data disk would have surfaced only via the
+   guest watchdog's threshold ping). Implemented: scrape targets for
+   both hosts in stacks/monitoring (deploy to NAS pending the SIS
+   push), cAdvisor published beyond loopback with fence-gated sources,
+   nftables rule widened to mgmt+NAS segments (syntax-validated).
+
+3. TENANT CONTAINMENT GAP (mitigated): project quotas deferred
+   (backlog #1) meant memory/pids were the only brakes — and the
+   template set NONE. Implemented: mem_limit (postgres 1536m, ferro
+   2048m) + pids_limit on the files template; staging canary recreated
+   under limits and verified (mem=2GiB enforced, healthy, healthz 200).
+
+4. DEPLOY-TIME ARTIFACT DEPENDENCY: hosting-api/dashboard build on the
+   CONTROL node (the workstation). Workstation down = no deploys.
+   Roadmap: build in Forgejo CI (estate runners), deploy.sh pulls
+   release artifacts — decouples deploys from the desktop.
+
+5. EDGE ON THE TENANT HOST: Caddy co-tenants with tenants (a tenant
+   melt can take the edge down with it). Acceptable at pilot scale
+   (the fence + limits bound the blast radius); revisit if a real
+   tenant shows noisy-neighbor behavior.
+
+6. DHCP MGMT ADDRESSES: resolved per-deploy by deploy.sh into
+   inventory/host_vars (last-known-truth committed). Works; a router
+   swap invalidates committed truth until the next deploy. Static
+   reservations are the cleanup when the LAN re-address lands.
+
+NOT NEEDED (evaluated, rejected): k8s/k3s/firecracker — the estate
+doctrine holds. Terraform + Ansible + compose + PVE gives deterministic
+deploys with failure domains we can reason about; container
+orchestration would add a second control plane to babysit without
+removing any tonight's risks.
+
+OVERNIGHT AUDIT (2026-11-24 morning, first timer soak): snapshots
+ticking (45 by morning, hourly cadence verified), watchdog running
+every 15 min — and paging OFFSITE BACKUP STALE every 15 min because no
+B2 offsite has EVER succeeded (by design until an account exists).
+Three more defects fell out of tracing that page:
+
+DEFECT 20 — BACKUP ARCHITECTURE TRUTH: the shell backup timer is
+deliberately DISABLED ("backup sweep lives inside hosting-api now") —
+hosting-api registers a nightly sweep on the estate's worker-kit cron
+(03:30 UTC, breaker-wrapped). Nothing was broken about the timer; the
+migration just means the sweep's first-ever fire is tomorrow 03:30 UTC.
+
+DEFECT 21 — NIGHTLY BACKUP COULD STRAND TENANTS DOWN: tenant-backup.sh
+(a) assumed a pre-initialized restic repo — nothing on the platform
+initializes it, so the first backup died "unable to open config file",
+and (b) died BETWEEN its stack-stop and stack-restart steps, leaving
+the tenant STOPPED. Fixed: restic init-on-first-use (cat-config probe)
++ an EXIT trap that guarantees compose up -d no matter how the script
+exits. Validated live on the staging canary: repo initialized, snapshot
+taken, stack restarted clean.
+
+DEFECT 22 — OFFSITE LEG CONFUSION: the credential check used the legacy
+NAS path default (BACKUP_BASE vs BACKUP_BASE_PATH — two names for one
+concept) and the all-runner passed --offsite even with B2 unprovisioned,
+so every sweep failed confusingly instead of cleanly skipping. Fixed:
+path honors the platform env; runner skips --offsite when B2 values are
+empty (the watchdog's stale-offsite alert remains the paging signal).
+Validated: sweep exits 0, local snapshot + 3 snapshots in repo.
+
+
+DEFECT 23 — BACKUP SCOPE GAP (data-only snapshots restore unbootable
+tenants): tenant-backup.sh snapshotted ${TENANT_DIR}/data only. The
+stack definition (compose.yml, versions.env, compose.sh) is
+re-provisionable from SIS, but .env holds GENERATED secrets (DB/admin
+credentials) that are not — a restore would yield a data tree with no
+way to boot it. Also the monthly restore drill's own verification
+(compose file present) would have failed on its first run — the design
+self-detects, but only pages after the fact. Fixed: snapshot the whole
+tenant dir (encrypted local restic + encrypted B2 keeps .env inside
+the trust model); restore retargets the tenant dir with the data
+subtree chowned to the remapped uid. PROVEN LIVE: backup -> restore
+drill -> 1293 files, compose PRESENT, .env PRESENT (plus postgres +
+ferro data). A restored tenant is bootable as-is.
+
+BACKUP COVERAGE NOW: local restic per tenant + ZFS snapshots hourly
+(node-loss layer still = B2, operator task).
+IDENTITY-CHAIN BLOCKER (found 2026-11-24 ~03:2x): docker01 cannot reach
+the OIDC issuer (authbox on the NAS, 192.168.1.3:9005) — the guest's
+route to 192.168.1.0/24 goes via the router (default gw), which has no
+.1.x route. The workstation is the only inter-segment router, and its
+FORWARD rules (setup-net.sh era) cover .1.x->wlan0 only. Verified:
+route added on docker01 (runtime, via 192.168.0.105), packets die at
+the workstation; workstation ip_forward=1; operator sudo needed for
+FORWARD rules. EXACT UNBLOCK (operator, on the workstation):
+  iptables -I FORWARD 1 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+  iptables -I FORWARD 2 -i wlan0 -o enp3s0 -s 192.168.0.0/24 \
+    -d 192.168.1.0/24 -j ACCEPT
+Then test from docker01: curl -m8 http://192.168.1.3:9005/.well-known/
+openid-configuration. DURABLE FIX = the hosting01 gateway VM (this
+workstation dependency is the same SPOF as the LAN cable). Impact while
+blocked: hosting-api's OIDC issuer is set but unreachable — logins via
+authbox flows will fail; legacy break-glass token auth still works.
+
+
+HOSTING-CI GATE (scripts/hosting-ci.sh + check-image-pins.py): the
+defect classes from this iteration are now STATIC GATES — ansible
+syntax, yamllint with key-duplicates (defect 4), cloud-init snippet
+validity + both-keys assertion (defect 1), Jinja parse of every role
+template (defects 7/12), ops-shellcheck at warning+ severity, data-uid
+declaration for any template binding host dirs under userns (defect 17),
+and registry-truth verification of every image pin against ghcr
+(defect 16). Runs green except the pins gate, which is currently
+environment-limited: ghcr 404s manifests for a public package with 1173
+versions that resolved cleanly an hour earlier (verified ferro OK,
+postgres 200 in isolated runs, then 404-by-digest as the package OWNER
+— ghcr-side flakiness, not missing pins). Design consequence: the pins
+gate fails closed on unverifiable, retries twice, and distinguishes
+FATAL (ready template, missing pin) from PENDING (DRAFT template
+awaiting EIR publishes — photos on the immich images). DO NOT weaken
+it to green; run it when ghcr cooperates.
+
+
+COSIGN GATE STATUS (operator owns the packages, so the fixes went to
+them): the gate is fully implemented and fail-closed; arming is one env
+var. Found while walking the arming path: (a) ferro's images carry ZERO
+
+### Iteration 30: 2026-11-24: the timers soak overnight — and three
+### fictions surface before breakfast
+
+CONTEXT: iteration 29's platform (two VMs, canary, monitoring, backups,
+watchdog, snapshots) ran its first night unattended. The audit is the
+test: what did the timers ACTUALLY do?
+
+EVIDENCE: ZFS snapshots 45 by morning, hourly cadence exact (48/14
+retention). Watchdog fired on schedule. Backup timer: DISABLED —
+correctly (sweep moved into hosting-api, 03:30 UTC cron on worker-kit),
+but that meant the backup pipeline had never executed at all. The
+restic repo was EMPTY. Reporting "backups configured" would have been
+the same fiction the whole iteration fought.
+
+BACKUP PIPELINE FIXED AND PROVEN LIVE (3 defects):
+
+20. tenant-backup.sh assumed a PRE-INITIALIZED restic repo (nothing on
+    the platform initializes it) AND died between stack-stop and its
+    own stack-restart step — so the first nightly run would have left
+    the tenant STOPPED. Fixed: restic init-on-first-use (cat-config
+    probe) + an EXIT trap guaranteeing compose up -d on any exit path.
+21. offsite credential check used the legacy NAS path default
+    (BACKUP_BASE vs BACKUP_BASE_PATH — two names, one concept), and the
+    runner passed --offsite even with B2 unprovisioned. Fixed: path
+    honors the platform env; runner skips the leg when B2 values are
+    empty. Validated: sweep exit 0, snapshot + repo initialized live.
+22. the offsite-freshness MARKER was written unconditionally after the
+    tenant loop — local-only sweeps refreshed it, which would have
+    silenced the watchdog's OFFSITE STALE page forever. The watchdog
+    itself caught this: it paged stale-offsite, then ran "OK" because
+    the marker looked fresh. Fixed: marker written only when the
+    offsite leg actually ran; watchdog now pages until B2 exists (by
+    design), with a 60-minute repeat window so a known-missing
+    dependency pages hourly, not every 15 minutes (changed-set alerts
+    still page immediately). Dedup verified live: manual page at 02:41,
+    timer run at 02:45 silent.
+
+ALSO: edge liveness check rewritten — the old probe curled :80 and
+handshook SNI localhost, failing nightly on the healthy staging canary
+(Caddy with only internal-cert tenant sites has no :80 listener and no
+localhost cert). Now probes the Caddy admin API on loopback, which
+answers iff the daemon is up. Plus: monitoring scrape targets staged
+for both guests (deploy with the SIS push); tenant containment
+(mem/pids) implemented and verified under recreate.
+
+VERIFY: sweep on staging exit 0 (snapshot + repo + restart clean);
+marker correctly ABSENT without B2; watchdog pages stale-offsite then
+goes silent within the repeat window; both hosts' bootstraps green
+(docker01 ok=59, docker02 ok=52); lean-model exit 0.
+
+NEXT: operator review (REVIEW.md in the repo root is the guide); B2
+provision; policy amendment + ferro signed tag; cosign arm; tenant #1.
+SECURITY FINDING (found 2026-11-24 ~02:5x, while evaluating the CI
+doctrine): the SIS repo is PUBLIC on GitHub, and gitleaks over all 1340
+commits confirms 22 findings — the eventbusd bearer token, the ntfy
+alert topic, a literal headscale postgres password, and realm secrets
+recoverable from deleted files. No age private keys, no GH tokens.
+Remediation landed in the review batch: gitleaks-baseline.json (22
+redacted entries, rotation-status annotated) + a baseline-gated
+gitleaks job in auto-deploy.yml (deploy blocked on any NEW finding) +
+a local pre-push hook (untracked) for push-time enforcement. Rotation
+of the three live values is the operator action — rotation, not
+history rewrite, is the primary remedy on a public repo (old commits
+stay fetchable by SHA regardless).
+DOCTRINE QUESTION raised for the operator: SIS is public while the
+fleet doctrine says private-repo CI never runs on GitHub — SIS runs
+PUBLIC CI on GitHub (free tier), which is consistent with the billing
+rationale but means everything committed (tonight's infra narrative
+included) is world-readable. Sanitize-and-stay-public vs go-private
+is an operator call; the review batch is holdable indefinitely.
+
+
+signatures — its release.yml HAD a sign job but without GHCR login or
+packages:write, so every signature push died on auth; fixed in the
+ferro repo (next prod tag ships a keyless signature); (b) ferro's
+November prod images were pushed OUT OF TREE — the GH release workflow
+hasn't run since June (last run cancelled), which is its own finding:
+the in-repo release path is bypassed and deserves the operator's
+attention; (c) the files template pulls ferro from OUTSIDE the EIR, so
+the policy's single trust anchor (EIR workflow identity) cannot cover
+it as-is — either EIR mirrors ferro (evergreenctl builds from
+manifests; a ferro mirror is a real project) or the key-custody policy
+amends the anchor to include ferro's workflow identity (operator call,
+policy doc lives in SIS .docs/key-custody-policy.md); (d) EIR postgres
+is keyless-signed (sig/att tags present) and now also carries the
+17.10 version tag. Arming env: TENANT_COSIGN_IDENTITY (keyless) or
+TENANT_COSIGN_KEY (static, custody ceremony applies) — documented in
+the provisioner and the policy doc; gate refuses to provision
+unverified images once armed.
+
+POST-SCRIPT, defect 19 — the impossible healthcheck: the files template
+probed with `wget --spider` inside a DISTROLESS image (no shell, no
+wget): exit 127 on every probe, "unhealthy" forever while the app
+served perfectly — and `compose up -d` wouldn't even recreate on the
+healthcheck's removal because the TENANT's compose file is a provision-
+time COPY, not a link to the template (updating a template never
+propagates; that is by design for tenant isolation but it means
+template fixes need per-tenant propagation). Removed the probe;
+liveness = the shim's supervisor + monitoring. NOTE: the nightly
+backup timer now picks the smoke tenant up automatically (it scans
+/srv/tenants/*) and its --offsite leg will FAIL loudly until a real
+B2 application key exists — expected, by design, and the operator
+will see it page.
+
+FINAL STATE (2026-11-23 ~12:1x GMT): docker01 production complete
+(api healthy, dashboard 200, exporters serving, edge armed, data disk
+mounted, timers on); docker02 staging complete + staging canary green
+through the edge; caddy reload clean; lean-model exit 0. SIS tree
+uncommitted pending operator review.
+
+DETERMINISM (operator challenge, 2026-11-23): "are we deploying with a
+centralized deterministic system?" — YES by construction: Terraform
+owns VMs, Ansible owns every host config byte, tenant-provision.sh owns
+tenants, and PVE VMs + per-tenant compose is the right isolation model
+at this scale (k8s/firecracker would add machinery, not determinism).
+Tonight's manual commands were debugging; every fix landed in a SOURCE
+artifact (role, template, script, estate commit), never in a
+hand-edited host. Evidence, not claims: ops/hosting/deploy.sh — ONE
+command, ONE key (hosting01-deploy-ed25519 in the keys dir; zero
+operator-agent dependency): build -> snippets -> terraform apply
+[--replace <vm>] -> resolve guest IPs -> bootstrap. PROOF: deploy.sh
+--replace docker02 destroys the staging VM and rebuilds through ONLY
+that path; the smoke tenant is then re-provisioned through the
+bootstrap-installed provisioner. Result below.
+REBUILD-FROM-ZERO PROOF: DONE (2026-11-23 ~12:2x GMT), with two honest
+caveats recorded. deploy.sh --replace docker02 destroyed VM 120 and
+rebuilt it: terraform replace clean, guest-agent IP resolution caught
+the NEW lease (.129, not the committed .128 — the wrapper now writes
+resolved IPs into inventory/host_vars/docker0X.yml, which are the
+last-known-truth record), ansible converged the fresh VM (ok=53).
+The smoke tenant then re-provisioned in ONE SHOT on the rebuilt host —
+every fix from tonight (templates shipped, honest pins, data-uid chown,
+no impossible healthcheck) proved itself with zero manual steps; ferro
+healthy, postgres healthy, edge healthz 200, reload clean, lean-model
+exit 0. CAVEATS: (1) the first rebuild cloned BEFORE the two-key
+snippet landed, so it came up with only the operator key — a final
+hand-repair this clone needed; any rebuild AFTER this point carries
+both keys from birth. (2) deploy.sh v1 had a shell-array expansion bug
+("$SSH_NODE" vs "${SSH_NODE[@]}") — fixed in source, like everything
+else. Determinism is now EVIDENCED: destroy staging, run one command,
+get serving infrastructure back.
+
+SUPPLY-CHAIN FIX AT THE RIGHT LAYER (operator: "you can always fix the
+package"): pushing the versioned-push fix to the EIR was BLOCKED by its
+own pre-push gate — cargo audit flagged RUSTSEC-2026-0592 (url 2.5.8,
+stack overflow in Url::origin) in evergreenctl. Fixed in the package:
+url -> 2.5.9 (lockfile bump, clean audit). RUSTSEC-2026-0555
+(chrono-tz unmaintained) has NO fix path — regorus 0.15 still depends
+on it and evergreenctl reaches it through the estate's policy-kit — so
+it is ignored in evergreenctl/.cargo/audit.toml with a dated
+justification and a revisit trigger (regorus tz migration / policy-kit
+evaluator swap). EIR commit(s) pushed: 1ace7a551 (loud versioned push)
++ the url bump. LESSON: the gate did its job — it blocked a push
+carrying an unpatched advisory, and the fix happened in the package
+the operator owns, exactly as designed.
+
+DEFECT 6 — SAME CLASS AS 2, THIRD INSTANCE: the restic-password task
+sourced `/etc/sis-hosting/hosting.env` with `lookup('pipe', ...)` —
+which executes on the CONTROL node, where that file never exists. The
+pattern class: "lookups are controller-side; only command/script/shell
+run remote". Fixed to extract RESTIC_PASSWORD from the same
+controller-side `community.sops.sops` lookup the env file itself uses.
+Swept the repo for more `lookup('pipe')`: only site.yml's, which is
+correct (truenas play runs connection=local).
+
+DEFECT 7 — TEMPLATE THAT COULD NEVER RENDER: tenant-backup-all.sh.j2
+contains bash array-length syntax `${#...}`, which Jinja parses as the
+opener of a comment — the template has been broken SINCE IT WAS WRITTEN
+(never rendered anywhere: the loop's fixture gates never template it).
+Fixed with `{% raw %}` wraps + a Jinja-syntax CI sweep across every
+role template (all clean now). LESSON: a template that has never
+rendered is fiction, same rule as "a gate that never executed".
+
+DEPENDENCY DISCOVERED: the role installs hosting-api from the estate
+repo (WyattAu/hosting-api) at `target/release/hosting-api` — first
+bootstrap on this node found the repo present but never built. Release
+build kicked off (shared CARGO_TARGET_DIR); the playbook needs it
+before its final phase.
+
+PROXYJUMP / SSH STATE (revised twice, 2026-11-23): the first "hostbound
+signatures" theory was partly wrong — the deeper truth found while
+debugging: (a) the workstation's id_ed25519 PRIVATE key is
+passphrase-protected and a persistent keychain agent
+(~/.keychain/*.s) holds the working key, so any test that pins
+IdentityAgent=none or bypasses the agent fails SILENTLY (client offers
+the pub, gets PK_OK, then cannot sign — server logs only "Connection
+closed by authenticating user", nothing else); (b) the fence input
+chain allowed ssh only from 192.168.0.0/24, so proxied connections
+(source 10.10.10.1) timed out at banner exchange — fixed in the
+template (+10.10.10.0/24; tenants still fenced on the forward path).
+ProxyJump to 10.10.10.10 still denies with the agent present; the
+mgmt-IP path is what Ansible uses and works. Revisit the jump path
+later with a dedicated, passphrase-free deploy key rather than the
+operator agent.
+
+ALSO: runbook corrected from the fictional `tank` pool + `.50` endpoint
+to the real `local-zfs` + `192.168.0.120` (five references); docker02.tf
+(VM 120, 4 vCPU / 6 GiB / 60G, tenant 10.10.10.20) added, plan verified;
+secrets/hosting.env.encrypted created (RESTIC_PASSWORD + HOSTING_API_TOKEN
+generated, B2 left empty by design — absent offsite must fail loudly).
+
+LEAN PROOF: exit 0.
+
+VERIFY (2026-11-23, evidence not status): docker01 — docker, caddy,
+sis-hosting-api, sis-hosting-dashboard, fail2ban, nftables all active;
+api /healthz {"status":"healthy"} on 127.0.0.1:8484; dashboard HTTP 200
+on 127.0.0.1:4321; node-exporter HTTP 200 + 743 node_* lines;
+cAdvisor Up (healthy) serving container_* on 127.0.0.1:8081;
+data disk ext4 mounted /srv (1.5T, quota feature stripped); watchdog
+timer armed; restic-password sealed from SOPS secrets. docker02 (staging,
+VM 120, 4 vCPU/6 GiB/60G, 192.168.0.128) — same bootstrap green
+(ok=53, failed=0, data-disk block skipped by host_vars override),
+dashboard 200, api 200. Terraform state: docker01+docker02 tracked,
+2 VMs running on hosting01. SIS changes NOT committed — operator review
+gate (SIS auto-deploys TrueNAS); hosting-dashboard SSR fix pushed
+separately (119254c, estate repo).
+
+NEXT (handoff): 1) operator review + commit of the SIS tree above;
+2) onboarding tenant #1: ops/tenant-provision.sh on docker01, then
+add to hosting_tenants and re-run bootstrap; 3) when the 10 m LAN
+cable lands, re-address hosting01 to 192.168.1.50 + move the
+Cloudflare record (or leave if the router segment wins); 4) pull the
+R730 USB stick BEFORE any reboot (boot order hazard, unchanged);
+5) ProxyJump path + deterministic docker0X addresses (DHCP by MAC
+today) once the re-address settles; 6) tenant disk quotas (backlog #1).
+Cleanup note: /tmp/dashboard-staging on docker01 and /root/boot110*.log
++ fio scratch (rpool/soak-fio3) on hosting01 are disposable.
+
+CLEANUP DECISION: the install-night workstation plumbing
+(/tmp/opencode/r730/setup-net.sh: 10.42.0.1 + 192.168.1.0/24→wlan0
+MASQUERADE + FORWARD rules) is deliberately NOT undone. Its MASQUERADE
+is the LAN's only internet path until the gateway/router VM exists
+(removal would kill NAS cloudflared and Forgejo's public tunnel). The
+--undo is safe to run only AFTER that SPOF is fixed.
+
+
+
 ## Backlog (ranked)
+
+### NEW 2026-11-23 (iteration 29)
+
+1. **Tenant disk quotas on docker01** — deferred at bootstrap: ext4's
+   internal quota feature fails to mount on the guest kernel (iter 29
+   details); project quotas require it. Restore via external aquota
+   files (usrjquota + jqfmt=vfsv1) once a tenant actually needs
+   enforcement, or skip straight to per-tenant ZFS datasets (growth
+   path). Until then, container limits are the only containment.
 
 ### New from the Nov 1 estate CI-health audit (iteration 18)
 

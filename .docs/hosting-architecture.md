@@ -41,7 +41,7 @@ the hardware exists (per estate rule: no fiction in the plan).
 
 Implementation gates before ANY tenant lands (operator requirement,
 2026-11-20): post-install hardware soak - memtester ≥24 GiB, stress-ng
-1 h, fio on tank, PERC/disk health re-check, network throughput to NAS -
+1 h, fio on rpool, PERC/disk health re-check, network throughput to NAS -
 then runbook §7 smoke checklist, then Terraform VMs, then first tenant.
 
 Code layout:
@@ -96,7 +96,7 @@ is real demand, and the iter-16 watchdog + TrueNAS PSI alerts are the
 sensors). T3 - memory: platform+tenant RSS sustained > 70% of 96 GiB
 (cAdvisor gauges; memory is NOT the binding constraint at ten tenants
 - CPU is). T4 - storage: recurring 85% watchdog pages on the data disk
-(iter 43) = zvol growth on tank, before any second node. Any trigger
+(iter 43) = zvol growth on local-zfs, before any second node. Any trigger
 fires a capacity review against the lean model with MEASURED inputs
 replacing the estimates - the model's numbers are hypotheses the fleet
 tests, per the loop contract.
@@ -203,19 +203,24 @@ by `ops/tenant-provision.sh` (idempotent route block + `caddy validate`
 
 ### Storage
 
-Two ZFS pools on the node:
+One ZFS pool on the node (measured, 2026-11-23):
 
 | Pool | Layout | Purpose |
 | --- | --- | --- |
-| `rpool` | 2× SATA-SSD mirror (R730 has no NVMe backplane) | Proxmox OS, VM system disks |
-| `tank` | 2× SATA-SSD mirror (or RAIDZ1 HDD pair) | VM data disks, backups |
+| `rpool` | RAID10 over six 1.2 TB SAS (3× mirror vdevs, `ashift=12`, 3.15 TiB) | Proxmox OS **and** all VM disks (`local-zfs`) |
+
+The original design assumed a second `tank` pool on SSDs. This build has
+none: bay 4 (the 991 GiB SEAGATE) is excluded and the six 1.2 TB disks
+form a single RAID10. PVE storage is therefore `local` (dir: ISOs,
+snippets, cloud-init) and `local-zfs` (zvols). **There is no `tank`
+datastore** — Terraform must run with `-var datastore_id=local-zfs`.
 
 **PERC caveat (R730):** the stock H730/H730P cannot put individual disks
 into passthrough (IT) mode. For ZFS: either present each disk as a
 single-disk RAID-0 volume (works, hides SMART — poll via perccli instead),
 or swap the card for an HBA330 (true IT mode, the clean option).
 
-docker01 gets a data zvol from `tank` (scsi1), formatted ext4 and mounted
+docker01 gets a data zvol from `local-zfs` (scsi1), formatted ext4 and mounted
 at `/srv`. Everything customer-owned lives under `/srv/tenants`; backups
 under `/srv/backups` (restic local repo) with the B2 offsite copy.
 
@@ -232,7 +237,7 @@ spec's ext4 decision stands, and the enforcement is kernel-native with
 zero new layers. ZFS datasets per tenant remain the growth path (quotas +
 instant per-tenant snapshots as a paid feature) when tenants outgrow the
 flat layout. On the node side, OpenZFS 2.3's fast dedup was evaluated for
-`tank` and rejected: the restic repo already dedups, so kernel dedup would
+`local-zfs` and rejected: the restic repo already dedups, so kernel dedup would
 pay RAM for deduplication we already have. Quota math is asserted in
 `ops/lean-model.py` (10 x 100 GiB + 400 GiB backups = 1.4 TiB <= 1.5 TiB).
 
@@ -280,7 +285,7 @@ layer duplicates the job restic+B2 already owns (offsite), and a
 permanent daemon buys nothing for local snapshots. sanoid's shape
 (timers + a config file; syncoid as a separate invoked script) is the
 lean fit for the PVE node. Policy recorded now so the paid tier is
-priced honestly later: per-tenant ZFS datasets on `tank` +
+priced honestly later: per-tenant ZFS datasets on `local-zfs` +
 sanoid-class timer snapshots (frequent/ hourly/ daily fading) give
 instant per-tenant rollback ("oops" recovery) and drop effective RPO
 from 24h to ~15min; SNAPSHOTS ARE NOT BACKUPS - same-pool copies never
@@ -292,7 +297,7 @@ recoverability.
 ```text
 business router ── vmbr0 (mgmt/WAN, 192.168.0.0/24)
                        │
-                       ├─ PVE host  (static, e.g. 192.168.0.50)
+                       ├─ PVE host  (static, 192.168.0.120)
                        └─ docker01 NIC1 (DHCP or reserved)
 
 vmbr1 (tenant bridge, 10.10.10.0/24, host = 10.10.10.1)
@@ -630,6 +635,22 @@ virtio-balloon, sidestepping the tier-1 cAdvisor problem).
 
 - Per tenant: `ops/tenant-backup.sh`; restic snapshot tagged
   `tenant:<slug>` into `/srv/backups/restic`, copied offsite to B2.
+- **B2 onboarding (iteration 30 — fill these in when the account
+  exists):** (1) create bucket `HostingTenantsBackup` (private,
+  object-lock recommended); (2) create a STANDARD application key
+  scoped to that bucket, name prefix `tenants/`, capabilities
+  listFiles/readFiles/writeFiles/deleteFiles/shareFiles — NEVER the
+  account master key; (3) `sops $EDITOR secrets/hosting.env.encrypted`
+  and fill B2_ENDPOINT_HOST, B2_BUCKET, B2_ACCESS_KEY_ID,
+  B2_SECRET_ACCESS_KEY; (4) `ops/hosting/deploy-cloudinit.sh` is NOT
+  needed — re-run the hosting bootstrap so hosting.env re-seals onto
+  docker01/02; (5) the next sweep copies snapshots offsite and writes
+  `/srv/backups/.last-offsite-success`, which stops the watchdog's
+  `OFFSITE BACKUP STALE` page (it currently pages hourly by design);
+  (6) verify with `restic --repo s3:... snapshots` from docker01.
+  Backup coverage ladder: local restic + hourly ZFS snapshots on
+  hosting01 (48 hourly/14 daily, ops/hosting/zfs-snap.sh) = recovery
+  tiers; B2 = the node-loss tier.
 - **Backup research (loop iter 14):** the CDC research frontier (fresh
   ICDE'27 benchmark arXiv:2610.13704; VectorCDC FAST'25/ACM-TOSS follow-up
   arXiv:2508.05797) confirms AE-class chunkers as most balanced and SIMD
@@ -713,7 +734,7 @@ virtio-balloon, sidestepping the tier-1 cAdvisor problem).
   contract with RPO < 24h; priced as an add-on like the isolation/WAF
   tiers.
 - **Second offsite (loop iter 38):** against the 3-2-1-1-0 rule the
-  platform currently holds TWO copies (local restic on the tank mirror;
+  platform currently holds TWO copies (local restic on the rpool RAID10;
   B2 offsite) - the missing third copy is also a SINGLE-VENDOR risk
   (B2 credentials could delete the only offsite). The mechanism is
   restic's own `copy` command: a second repository at a DIFFERENT
@@ -834,7 +855,7 @@ diff on next deploy instead of silently diverging.
   (R730: SATA SSDs — no NVMe on this chassis)
   (installer: "ZFS (RAID1)", 4–8GB ARC max will be tuned later)
 - Hostname: `hosting01` (matches `pve_node` default in Terraform)
-- Static IP on the business LAN, e.g. `192.168.0.50/24`, gateway = router
+- Static IP on the business LAN, e.g. `192.168.0.120/24`, gateway = router
 - Post-install:
 
   ```bash
@@ -894,14 +915,24 @@ diff on next deploy instead of silently diverging.
   the host. Runtime sizing above covers the whole path; test it with
   `upsmon -c fsd` during the DR rehearsal.
 
-### 3. ZFS data pool + bridges
+### 3. ZFS pool + bridges (as built, 2026-11-23)
+
+The installer created `rpool` itself: RAID10 over six 1.2 TB SAS disks
+(bay 4 excluded), `ashift=12`, 3.15 TiB. There is **no second pool**;
+VM disks live on `rpool` via the `local-zfs` storage. Do not create a
+`tank` pool unless the disk layout actually changes.
 
 ```bash
-# Data pool from the second SSD pair (adjust device names!)
-# R730 behind a PERC: single-disk RAID-0 volumes surface as /dev/sd*
-zpool create -o ashift=12 tank mirror /dev/sdb /dev/sdc
-zfs set compression=zstd atime=off tank
-zfs create tank/vm-disks
+# Verify what the installer built (expected: mirror-0/1/2, ONLINE)
+zpool status -v rpool
+zfs list -o name,used,avail
+zfs set compression=zstd atime=off rpool
+zfs set -u xattr=sa rpool
+
+# PVE storage: `local` needs snippets+images for cloud-init, and the
+# provider uploads a snippet that must be readable by pvedaemon.
+pvesm set local --content images,iso,vztmpl,backup,snippets
+mkdir -p /var/lib/vz/snippets
 
 # Internal tenant bridge (vmbr1). vmbr0 already exists from the installer.
 cat >> /etc/network/interfaces <<'EOF'
@@ -926,9 +957,9 @@ wget https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-
 qm create 9000 --name ubuntu-2404-template --memory 2048 --cores 2 \
   --net0 virtio,bridge=vmbr0 --agent enabled=1 \
   --serial0 socket --vga serial0
-qm importdisk 9000 ubuntu-24.04-server-cloudimg-amd64.img tank
+qm importdisk 9000 ubuntu-24.04-server-cloudimg-amd64.img local-zfs
 qm set 9000 --scsihw virtio-scsi-pci \
-  --scsi0 tank:vm-9000-disk-0,discard=on,ssd=1 \
+  --scsi0 local-zfs:vm-9000-disk-0,discard=on,ssd=1 \
   --ide2 local:cloudinit --boot order=scsi0
 qm template 9000
 ```
@@ -936,7 +967,7 @@ qm template 9000
 ### 5. Terraform
 
 ```bash
-export TF_VAR_pve_endpoint="https://192.168.0.50:8006/"
+export TF_VAR_pve_endpoint="https://192.168.0.120:8006/"   # hosting01 vmbr0
 export TF_VAR_pve_api_token="root@pam!terraform=<token>"   # create in PVE UI
 #   PVE UI → Datacenter → Permissions → API Tokens (no privilege separation,
 #   or grant the token Administrator on the hosting pool)
