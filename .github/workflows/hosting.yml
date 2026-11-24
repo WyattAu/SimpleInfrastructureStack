@@ -37,7 +37,7 @@ jobs:
       - name: Install gate toolchain
         run: |
           pip install --quiet ansible-core yamllint jinja2
-          ansible-galaxy collection install community.general ansible.posix
+          ansible-galaxy collection install community.general community.docker ansible.posix
           sudo apt-get update -qq
           sudo apt-get install -y -qq shellcheck
 
