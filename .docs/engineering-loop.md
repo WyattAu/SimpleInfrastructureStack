@@ -5821,3 +5821,20 @@ LEAN PROOF: unchanged, exit 0.
 VERIFY: live matrix green after fixes; oauth-toolkit 88 tests; both
 binaries clean.
 
+IDENTITY-CHAIN FORWARD DIAGNOSIS (2026-11-25 ~08:1x): after the
+iptables rules landed, docker01's requests to the authbox still die at
+the workstation. Evidence: docker01's tcpdump shows the ICMP requests
+LEAVE eth0; the NAS's tcpdump on enp2s0 sees ZERO arrivals - the
+packets die in the workstation's forward. The rules LOOK correct
+(ESTABLISHED + wlan0->enp3s0 .0.x->.1.x both ACCEPT, inserted at
+FORWARD 1-2). Operator diagnostic needed (sudo):
+  iptables -L FORWARD -v --line-numbers | head -20
+  tcpdump -ni wlan0 'host 192.168.1.3 and icmp'
+  tcpdump -ni enp3s0 'host 192.168.1.3 and icmp'
+Candidates: a rule above the operator's inserts, rp_filter on wlan0 for
+the .127 source, conntrack invalid on the forwarded NEW streams, or the
+FORWARD policy. The tailscale alternative (no workstation forward at
+all): docker01 route 100.64.0.0/16 via 192.168.0.105, the OIDC issuer
+URL -> http://100.64.0.1:9005 (the NAS's tailscale IP), authbox issuer
+config matched. Sketched, not executed.
+
