@@ -5930,3 +5930,14 @@ name match), re-points prod-20261124 at 147ee2da on green, and lets
 the tag push trigger the release natively. Two prior runs were
 externally cancelled mid-flight (45641328214 twice, zero failures
 each time) - GitHub-side, cause unknown, cancel-in-progress is off.
+
+GHCR UPPERCASE-TAG DEFECT (2026-11-26 05:3x): ci.yml's Docker Publish
+failed on the main push with "invalid tag ghcr.io/WyattAu/ferro:latest"
+- github.repository carries the mixed-case owner and buildx does not
+normalize; docker tags must be lowercase. Four ci.yml refs fixed to
+lowercase literals (2d62bc0f); the release workflow was already safe
+(env.OWNER via a tr-lowercase step) and its IMAGE/cosign refs now match
+the literal. Latent since Nov 5: every run since died at the verify
+gate BEFORE publishing, so the broken publish never executed until the
+suite-stability fixes let runs reach it. The main-line publish feeds
+staging - it was silently dead for three weeks.
