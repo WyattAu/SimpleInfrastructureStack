@@ -5941,3 +5941,18 @@ the literal. Latent since Nov 5: every run since died at the verify
 gate BEFORE publishing, so the broken publish never executed until the
 suite-stability fixes let runs reach it. The main-line publish feeds
 staging - it was silently dead for three weeks.
+
+VERIFY-GATE PAGINATION BUG (2026-11-26 19:5x, root cause of the whole
+release arc): the release's "Verify CI Passes on Main" poller called
+gh api .../commits/main/check-runs WITHOUT --paginate - the endpoint
+returns 30 per page while the CI run has 31 jobs, so the poller saw
+only Test + MSRV and failed every release since at least Nov 24
+(each "Verify CI Passes on Main" 1h24m failure). Meanwhile chain-level
+job checks saw all five green - the discrepancy that hid the bug.
+Fixed with --paginate --slurp (2f023497). The gate loop this round:
+the suite-stability fixes exposed the wopi test bug -> the wopi fix
+exposed the uppercase-tag failure -> the lowercase fix exposed the
+zip CRITICAL + the musl openssl failure -> those fixes exposed the
+bzip2 license gap + the test-assertion E0369s -> that green run
+exposed the verify-gate pagination. Each layer was real, and each
+fix is IN the tagged commit.
