@@ -5915,3 +5915,18 @@ first); rerun --failed is in flight. The earlier "failure" run
 (4fce97f5) failed Rustfmt+Clippy on the bool-literal assert the QR
 debug pass had introduced into the committed tree - fixed in abe286ee
 with the multiline route-syntax completion.
+
+RELEASE-CHAIN TRIAGE (2026-11-26 04:4x-05:0x): with the suite finally
+running to completion, the previously-masked failures surfaced: (1)
+server-wopi test_wopi_get_file_contents - the TEST bound its token to
+the route path (/doc.txt/contents) instead of the file (/doc.txt);
+the validator correctly 401'd it. Fixed (147ee2da), 23/23 green. This
+one test was failing EVERY workspace-test job across the CI matrix
+(the azure flag job failed on it, its fail-fast siblings cancelled).
+(2) The release verify gate checks only 5 named CI jobs (Clippy/
+Rustfmt/MSRV/Test/Security Audit) - the feature-flag matrix is not
+gating for the release. chain8 now gates on exactly those 5 (exact
+name match), re-points prod-20261124 at 147ee2da on green, and lets
+the tag push trigger the release natively. Two prior runs were
+externally cancelled mid-flight (45641328214 twice, zero failures
+each time) - GitHub-side, cause unknown, cancel-in-progress is off.
