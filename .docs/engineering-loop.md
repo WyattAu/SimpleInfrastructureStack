@@ -5852,3 +5852,45 @@ all): docker01 route 100.64.0.0/16 via 192.168.0.105, the OIDC issuer
 URL -> http://100.64.0.1:9005 (the NAS's tailscale IP), authbox issuer
 config matched. Sketched, not executed.
 
+
+IDENTITY-CHAIN ROUND-11 CLOSE (2026-11-26 03:0x): two authbox defects
+fixed on the NAS itself - (1) the compose bound 9005 to 127.0.0.1 only
+(hidden from every consumer cross-zone; now bound to 192.168.1.3 and
+NAS-local curl is 200); (2) the running authbox image is the pre-round-7
+build that still requires the legacy AUTHBOX_CLIENT_SECRET var the
+compose had stopped passing (added back alongside AUTHBOX_CLIENTS).
+Root cause of the remaining break, capture-proven: docker01's SYNs to
+192.168.1.3:9005 never leave the workstation. Via the ROUTER (default
+gw 192.168.0.1) the flow is SILENTLY DROPPED (curl timeout) - an
+inter-zone ACL; via the WORKSTATION (.0.105, route persisted in
+netplan 60-zone-b-route.yaml after DHCP renewals kept flushing it) the
+flow is INSTANTLY REJECTED with icmp-host-unreachable (2ms
+EHOSTUNREACH) - the ts-forward chain or a rule below the operator's
+paste window. Both blocking surfaces are operator-owned (router UI /
+workstation sudo); the NAS-side is now clean. Also discovered:
+hosting01 REVERTED to 192.168.0.120 (the .1.50 re-address did not
+persist; the Cloudflare record to .1.50 is stale). The tailscale
+alternative remains valid but the workstation's tailscale is
+stale-enrolled against the rebuilt headscale (tx 156 rx 0) and needs
+re-enrollment.
+
+B2 OFFSITE STATE (2026-11-26 03:1x): bucket SisInfraBackup located -
+holds a populated restic repo (config 2026-04-11, newest blob
+2026-11-14) plus repo-new/. The NAS's Sep-5 .offsite-credentials file
+carries a WORKING but READ-ONLY key (list OK, write 403 not-entitled)
+in pre-script var names (OFFSITE_AWS_KEY/SECRET vs the script's
+B2_ENDPOINT/B2_BUCKET/B2_ACCESS_KEY_ID/B2_SECRET_ACCESS_KEY). The
+operator's newly pasted write key arrived as secret-only (K003...)
+without its keyID - one value completes the pair. Resume path: write
+the 4-var credentials file -> tenant-backup OFFSITE=1 -> prom
+sis_backup_offsite_last_success fresh -> the watchdog's OFFSITE STALE
+page stops. The offsite history is intact and restorable with the
+read-only key in the meantime.
+
+CI META (2026-11-26 03:0x): the abe286ee CI run's 8 test jobs were
+killed mid-run by an EXTERNAL cancellation (zero failures, all static
+gates - Clippy/Rustfmt/MSRV/Feature Combos/Security Audit - green
+first); rerun --failed is in flight. The earlier "failure" run
+(4fce97f5) failed Rustfmt+Clippy on the bool-literal assert the QR
+debug pass had introduced into the committed tree - fixed in abe286ee
+with the multiline route-syntax completion.
