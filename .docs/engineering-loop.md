@@ -5887,6 +5887,27 @@ sis_backup_offsite_last_success fresh -> the watchdog's OFFSITE STALE
 page stops. The offsite history is intact and restorable with the
 read-only key in the meantime.
 
+QR ROOT CAUSE — CORRECTION (2026-11-26 03:3x, supersedes the matchit
+theory): the QR 404 was NEVER a matchit 0.8 tree behavior. The
+"axum 0.8 migration" commit (abe286ee) converted route STRINGS to
+{param} syntax but the workspace dependency stayed axum = "0.7"
+(Cargo.toml:98) - under matchit 0.7, {token} is a LITERAL segment, so
+every migrated route became literal-only at runtime. Only the QR tests
+noticed (the 3 ignored tests were the only coverage of the affected
+shapes); trash, sync/blocks, upload, /s/* share endpoints and the
+activitypub /fed/* routes were silently broken for real API consumers
+on every migration-era commit. Minimal repro proved the mechanism
+(standalone axum 0.8 rejects :param outright - so ferro was never
+running 0.8). Fix: reverted all 12 route strings to :param across
+routes.rs + server-activitypub (matching the actual dependency),
+un-ignored the 3 QR tests - 69/69 integration tests green (was 66+3
+ignored). LESSON: a syntax migration is not done until the dependency
+that gives the syntax its meaning moves with it; string-only
+"migrations" silently invert semantics. The TRUE axum 0.8 pass (dep
+bump across workspace members + {param} strings together + the auth/
+dav/observability pins) stays the tracked planned work, now with the
+correct recipe: never split the two.
+
 CI META (2026-11-26 03:0x): the abe286ee CI run's 8 test jobs were
 killed mid-run by an EXTERNAL cancellation (zero failures, all static
 gates - Clippy/Rustfmt/MSRV/Feature Combos/Security Audit - green
