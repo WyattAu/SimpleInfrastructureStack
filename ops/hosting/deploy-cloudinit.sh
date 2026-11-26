@@ -23,7 +23,7 @@ DEST_DIR=/var/lib/vz/snippets
 SSH=(ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o IdentitiesOnly=yes -i "$KEY")
 SCP=(scp -o StrictHostKeyChecking=no -o BatchMode=yes -o IdentitiesOnly=yes -i "$KEY")
 
-for f in "$DIR"/docker0*-user-data.yaml; do
+for f in "$DIR"/docker0*-user-data.yaml "$DIR"/tradebot-user-data.yaml; do
   python3 -c "import yaml,sys; yaml.safe_load(open(sys.argv[1]))" "$f"
   name="$(basename "$f")"
   "${SCP[@]}" -q "$f" "root@${NODE}:${DEST_DIR}/${name}"
