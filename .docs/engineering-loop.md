@@ -5956,3 +5956,11 @@ zip CRITICAL + the musl openssl failure -> those fixes exposed the
 bzip2 license gap + the test-assertion E0369s -> that green run
 exposed the verify-gate pagination. Each layer was real, and each
 fix is IN the tagged commit.
+
+VERIFY-GATE MOVING TARGET (2026-11-26 20:4x, companion to the
+pagination bug): the poller queried commits/main/check-runs - MAIN IS
+A MOVING TARGET. Any push to main during the release (docs commits,
+other sessions' work) changed what the in-flight verify polled and
+failed it through no defect of its own. Fixed: the poller now pins
+github.sha - the tag's own commit - so the gate answers the question
+that matters ("is the commit I am releasing green"). 1fda333b.
