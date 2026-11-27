@@ -5987,3 +5987,20 @@ diagnosis layer (ts-forward suspicion, router-ACL theory, the
 wrong-model artifact: the topology map lacked the workstation-as-
 gateway fact the operator held. LESSON: ask the operator what the
 network design IS before reverse-engineering it from probes.
+
+RELEASE ARC FINAL CHAPTER (2026-11-27): after the matrix de-gating
+(continue-on-error for the macOS/aarch64 desktop targets — the tenant
+image needs only the linux builds), the pipeline reached the release
+job for the first time ever — and revealed the LAST layer: the
+softprops release action's asset uploads abort on a stale GitHub
+release object created by an earlier partial run (the action fetches
+the stale asset list once, PATCHes assets by those IDs, one ID dead →
+"update-a-release-asset: Not Found" → abort → the docker stage
+canceled by dependency). Fix: delete the stale release object (the tag
+survives), let the action create fresh. The rerun's second pass hit it
+pre-deletion; the next cycle runs clean. The docker stage now rebuilds
+UNCACHED (the gha cache-from removed: expired blobs were fatal).
+Also: the aarch64-gnu smoke was structurally inapplicable (no
+qemu-user on the x86 runner — the binary could never execute; the 90s
+window was polling a process that never started) — skipped with the
+docker stage as the aarch64 coverage.
