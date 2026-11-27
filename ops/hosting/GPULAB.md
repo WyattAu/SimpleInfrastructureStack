@@ -82,3 +82,13 @@ CPU-only VM.
 - Tradebot strategy sweeps: CPU (vectorized numpy is already fast);
   a 2060-class GPU later if sweeps grow.
 - Video transcode: CPU, or a future modern GPU with NVENC.
+
+## DECISION (2026-11-27): keep, idle
+
+The operator elected to keep the card in the chassis (sale value ~$20-40
+net did not justify the effort). The K2 stays passed through to VM 150;
+the guest holds the 367.57 driver attempt and remains a working CPU
+guest. If a use materializes (cloud desktop via Sunshine+Moonlight, NVR,
+hashcat bursts), the old-kernel + 367.57 path in this file is the build
+recipe. Idle cost: ~25-45 W. Revisit when the tradebot/clawdius stack
+settles.
