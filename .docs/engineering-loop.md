@@ -5964,3 +5964,26 @@ other sessions' work) changed what the in-flight verify polled and
 failed it through no defect of its own. Fixed: the poller now pins
 github.sha - the tag's own commit - so the gate answers the question
 that matters ("is the commit I am releasing green"). 1fda333b.
+
+THE FIREWALLD REVELATION (2026-11-27, the identity chain's TRUE root
+cause): the 192.168.1.1 gateway everyone routed through was never a
+router appliance - it is THE WORKSTATION (enp3s0 = 192.168.1.1/24,
+the inter-zone router between .0.x and .1.x; the NAS's default route
+and the guests' cross-zone default both point here). And the silent
+killer of all .0.x->.1.x forwarded traffic was **firewalld's
+nft-native inet firewalld table**, hooking filter_FORWARD at priority
+filter+10 - AFTER the iptables-compat table where the operator's
+ACCEPT rules lived. The packet passed every iptables check (counters
+proved ACCEPTs) and then hit firewalld's final
+"reject with icmpx admin-prohibited". An iptables ACCEPT does not
+terminate nft-native evaluation in a different table - the two
+rulesets stack. FIX (operator-applied):
+firewall-cmd --zone=public --add-interface=enp3s0 --permanent
+firewall-cmd --zone=public --add-forward --permanent
+firewall-cmd --reload  (intra-public-zone forwarding enabled).
+authbox-from-docker01 went 000 -> 200 SAME MINUTE. Every previous
+diagnosis layer (ts-forward suspicion, router-ACL theory, the
+.0.x-router theory - which was actually this workstation) was a
+wrong-model artifact: the topology map lacked the workstation-as-
+gateway fact the operator held. LESSON: ask the operator what the
+network design IS before reverse-engineering it from probes.
